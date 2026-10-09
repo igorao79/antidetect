@@ -309,6 +309,14 @@ impl CookieManager {
           Err(format!("Cookie database not found at: {}", path.display()))
         }
       }
+      "camoufox" => {
+        let path = profile_data_path.join("cookies.sqlite");
+        if path.exists() {
+          Ok(path)
+        } else {
+          Err(format!("Cookie database not found at: {}", path.display()))
+        }
+      }
       _ => Err(format!(
         "Unsupported browser type for cookie operations: {}",
         profile.browser
@@ -331,6 +339,13 @@ impl CookieManager {
         let path = Self::wayfern_cookie_path(&profile_data_path);
         if !path.exists() {
           Self::create_empty_chrome_cookies_db(&path)?;
+        }
+        Ok(path)
+      }
+      "camoufox" => {
+        let path = profile_data_path.join("cookies.sqlite");
+        if !path.exists() {
+          Self::create_empty_firefox_cookies_db(&path)?;
         }
         Ok(path)
       }
@@ -392,6 +407,39 @@ impl CookieManager {
     Ok(())
   }
 
+  /// Create an empty Firefox-format cookies.sqlite database at `path`.
+  fn create_empty_firefox_cookies_db(path: &Path) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+      std::fs::create_dir_all(parent)
+        .map_err(|e| format!("Failed to create cookie directory: {e}"))?;
+    }
+    let conn =
+      Connection::open(path).map_err(|e| format!("Failed to create cookie database: {e}"))?;
+    conn
+      .execute_batch(
+        "CREATE TABLE moz_cookies (
+          id INTEGER PRIMARY KEY,
+          originAttributes TEXT NOT NULL DEFAULT '',
+          name TEXT,
+          value TEXT,
+          host TEXT,
+          path TEXT,
+          expiry INTEGER,
+          lastAccessed INTEGER,
+          creationTime INTEGER,
+          isSecure INTEGER,
+          isHttpOnly INTEGER,
+          inBrowserElement INTEGER DEFAULT 0,
+          sameSite INTEGER DEFAULT 0,
+          rawSameSite INTEGER DEFAULT 0,
+          schemeMap INTEGER DEFAULT 0,
+          CONSTRAINT moz_uniqueid UNIQUE (name, host, path, originAttributes)
+        );",
+      )
+      .map_err(|e| format!("Failed to initialize cookie database schema: {e}"))?;
+    Ok(())
+  }
+
   /// Convert Chrome timestamp (Windows epoch, microseconds) to Unix timestamp (seconds)
   fn chrome_time_to_unix(chrome_time: i64) -> i64 {
     if chrome_time == 0 {
@@ -406,6 +454,40 @@ impl CookieManager {
       return 0;
     }
     (unix_time + Self::WINDOWS_EPOCH_DIFF) * 1_000_000
+  }
+
+  /// Read cookies from a Firefox/Camoufox profile
+  fn read_firefox_cookies(db_path: &Path) -> Result<Vec<UnifiedCookie>, String> {
+    let conn = Connection::open(db_path).map_err(|e| format!("Failed to open database: {e}"))?;
+
+    let mut stmt = conn
+      .prepare(
+        "SELECT name, value, host, path, expiry, isSecure, isHttpOnly,
+                        sameSite, creationTime, lastAccessed
+                 FROM moz_cookies",
+      )
+      .map_err(|e| format!("Failed to prepare statement: {e}"))?;
+
+    let cookies = stmt
+      .query_map([], |row| {
+        Ok(UnifiedCookie {
+          name: row.get(0)?,
+          value: row.get(1)?,
+          domain: row.get(2)?,
+          path: row.get(3)?,
+          expires: row.get(4)?,
+          is_secure: row.get::<_, i32>(5)? != 0,
+          is_http_only: row.get::<_, i32>(6)? != 0,
+          same_site: row.get(7)?,
+          creation_time: row.get::<_, i64>(8)? / 1_000_000,
+          last_accessed: row.get::<_, i64>(9)? / 1_000_000,
+        })
+      })
+      .map_err(|e| format!("Failed to query cookies: {e}"))?
+      .collect::<Result<Vec<_>, _>>()
+      .map_err(|e| format!("Failed to collect cookies: {e}"))?;
+
+    Ok(cookies)
   }
 
   /// Read cookies from a Chrome/Wayfern profile.
@@ -469,6 +551,122 @@ impl CookieManager {
       .map_err(|e| format!("Failed to collect cookies: {e}"))?;
 
     Ok(cookies)
+  }
+
+  /// Write cookies to a Firefox/Camoufox profile.
+  ///
+  /// Firefox's `moz_cookies.expiry` is "seconds since Unix epoch", so `expiry = 0`
+  /// is interpreted as 1970-01-01 and purged on read. To let imported session
+  /// cookies survive browser restart, we rewrite them to a far-future expiry.
+  ///
+  /// `schemeMap` is a bitfield (1 = HTTP, 2 = HTTPS, 3 = both). Setting it based
+  /// on `is_secure` preserves Firefox's scheme-bound cookie enforcement.
+  fn write_firefox_cookies(
+    db_path: &Path,
+    cookies: &[UnifiedCookie],
+  ) -> Result<(usize, usize), String> {
+    let conn = Connection::open(db_path).map_err(|e| format!("Failed to open database: {e}"))?;
+
+    let mut copied = 0;
+    let mut replaced = 0;
+
+    let now = std::time::SystemTime::now()
+      .duration_since(std::time::UNIX_EPOCH)
+      .unwrap()
+      .as_secs() as i64;
+    // Session cookies get 30 days of persistence so they survive restart.
+    let session_cookie_expiry = now + 30 * 86400;
+
+    for cookie in cookies {
+      let expiry = if cookie.expires > 0 {
+        cookie.expires
+      } else {
+        session_cookie_expiry
+      };
+      // schemeMap bitfield: 1 = HTTP, 2 = HTTPS
+      let scheme_map: i32 = if cookie.is_secure { 2 } else { 1 };
+
+      let existing: Option<i64> = conn
+        .query_row(
+          "SELECT id FROM moz_cookies WHERE host = ?1 AND name = ?2 AND path = ?3",
+          params![&cookie.domain, &cookie.name, &cookie.path],
+          |row| row.get(0),
+        )
+        .ok();
+
+      if existing.is_some() {
+        conn
+          .execute(
+            "UPDATE moz_cookies SET value = ?1, expiry = ?2, isSecure = ?3,
+                     isHttpOnly = ?4, sameSite = ?5, rawSameSite = ?5,
+                     lastAccessed = ?6, schemeMap = ?7
+                     WHERE host = ?8 AND name = ?9 AND path = ?10",
+            params![
+              &cookie.value,
+              expiry,
+              cookie.is_secure as i32,
+              cookie.is_http_only as i32,
+              cookie.same_site,
+              cookie.last_accessed * 1_000_000,
+              scheme_map,
+              &cookie.domain,
+              &cookie.name,
+              &cookie.path,
+            ],
+          )
+          .map_err(|e| format!("Failed to update cookie: {e}"))?;
+        replaced += 1;
+      } else {
+        conn
+          .execute(
+            "INSERT INTO moz_cookies
+                     (originAttributes, name, value, host, path, expiry, lastAccessed,
+                      creationTime, isSecure, isHttpOnly, sameSite, rawSameSite, schemeMap)
+                     VALUES ('', ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10, ?11)",
+            params![
+              &cookie.name,
+              &cookie.value,
+              &cookie.domain,
+              &cookie.path,
+              expiry,
+              cookie.last_accessed * 1_000_000,
+              cookie.creation_time * 1_000_000,
+              cookie.is_secure as i32,
+              cookie.is_http_only as i32,
+              cookie.same_site,
+              scheme_map,
+            ],
+          )
+          .map_err(|e| format!("Failed to insert cookie: {e}"))?;
+        copied += 1;
+      }
+    }
+
+    Ok((copied, replaced))
+  }
+
+  /// Write cookies to a Camoufox profile with the same modes and counts as
+  /// `write_chrome_cookies`, so paste and copy treat both engines alike.
+  fn write_firefox_cookies_with_mode(
+    db_path: &Path,
+    cookies: &[UnifiedCookie],
+    mode: CookieWriteMode,
+  ) -> Result<CookieWriteCounts, String> {
+    let mut deleted = 0;
+    if mode == CookieWriteMode::ReplaceMatchingSites {
+      let conn = Connection::open(db_path).map_err(|e| format!("Failed to open database: {e}"))?;
+      for host in Self::replace_host_keys(cookies) {
+        deleted += conn
+          .execute("DELETE FROM moz_cookies WHERE host = ?1", params![host])
+          .map_err(|e| format!("Failed to clear existing cookies: {e}"))?;
+      }
+    }
+    let (added, overwritten) = Self::write_firefox_cookies(db_path, cookies)?;
+    Ok(CookieWriteCounts {
+      added,
+      overwritten,
+      deleted,
+    })
   }
 
   /// Write cookies to a Chrome/Wayfern profile.
@@ -626,14 +824,23 @@ impl CookieManager {
   /// preview into an error.
   fn count_replaceable_rows(db_path: &Path, cookies: &[UnifiedCookie]) -> Result<usize, String> {
     let conn = Self::open_cookie_db_readonly(db_path)?;
+    // Camoufox (Firefox) keeps cookies in `moz_cookies` keyed by `host`.
+    let is_firefox_db = conn
+      .query_row(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'moz_cookies'",
+        [],
+        |_| Ok(()),
+      )
+      .is_ok();
+    let count_sql = if is_firefox_db {
+      "SELECT COUNT(*) FROM moz_cookies WHERE host = ?1"
+    } else {
+      "SELECT COUNT(*) FROM cookies WHERE host_key = ?1"
+    };
     let mut total = 0usize;
     for host in Self::replace_host_keys(cookies) {
       let count: i64 = conn
-        .query_row(
-          "SELECT COUNT(*) FROM cookies WHERE host_key = ?1",
-          params![host],
-          |row| row.get(0),
-        )
+        .query_row(count_sql, params![host], |row| row.get(0))
         .map_err(|e| crate::backend_error_with_detail("COOKIE_DB_UNAVAILABLE", e))?;
       total += count as usize;
     }
@@ -656,6 +863,7 @@ impl CookieManager {
     let db_path = Self::get_cookie_db_path(profile, &profiles_dir)?;
 
     let cookies = match profile.browser.as_str() {
+      "camoufox" => Self::read_firefox_cookies(&db_path)?,
       "wayfern" => {
         let key = Self::get_chrome_encryption_key(profile, &profiles_dir);
         Self::read_chrome_cookies(&db_path, key.as_ref())?
@@ -762,6 +970,10 @@ impl CookieManager {
     let conn = Self::open_cookie_db_readonly(&db_path)?;
 
     let (count_sql, domain_sql) = match profile.browser.as_str() {
+      "camoufox" => (
+        "SELECT COUNT(*) FROM moz_cookies",
+        "SELECT host, COUNT(*) FROM moz_cookies GROUP BY host ORDER BY COUNT(*) DESC, host ASC",
+      ),
       "wayfern" => (
         "SELECT COUNT(*) FROM cookies",
         "SELECT host_key, COUNT(*) FROM cookies GROUP BY host_key ORDER BY COUNT(*) DESC, host_key ASC",
@@ -836,6 +1048,7 @@ impl CookieManager {
 
     let source_db_path = Self::get_cookie_db_path(source, &profiles_dir)?;
     let all_cookies = match source.browser.as_str() {
+      "camoufox" => Self::read_firefox_cookies(&source_db_path)?,
       "wayfern" => {
         let key = Self::get_chrome_encryption_key(source, &profiles_dir);
         Self::read_chrome_cookies(&source_db_path, key.as_ref())?
@@ -907,6 +1120,11 @@ impl CookieManager {
       };
 
       let write_result = match target.browser.as_str() {
+        "camoufox" => Self::write_firefox_cookies_with_mode(
+          &target_db_path,
+          &cookies_to_copy,
+          CookieWriteMode::Merge,
+        ),
         "wayfern" => {
           Self::write_chrome_cookies(&target_db_path, &cookies_to_copy, CookieWriteMode::Merge)
         }
@@ -1138,12 +1356,16 @@ impl CookieManager {
     cookies: &[UnifiedCookie],
     mode: CookieWriteMode,
   ) -> Result<CookieWriteCounts, String> {
-    if profile.browser.as_str() != "wayfern" {
-      return Err(crate::backend_error_with_detail(
-        "COOKIE_DB_UNAVAILABLE",
-        format!("unsupported browser: {}", profile.browser),
-      ));
-    }
+    let is_camoufox = match profile.browser.as_str() {
+      "wayfern" => false,
+      "camoufox" => true,
+      _ => {
+        return Err(crate::backend_error_with_detail(
+          "COOKIE_DB_UNAVAILABLE",
+          format!("unsupported browser: {}", profile.browser),
+        ))
+      }
+    };
 
     // A profile that has never launched has no Cookies file yet.
     let db_path =
@@ -1151,10 +1373,16 @@ impl CookieManager {
         .map_err(|e| crate::backend_error_with_detail("COOKIE_DB_UNAVAILABLE", e))?;
     let owned: Vec<UnifiedCookie> = cookies.to_vec();
 
-    tokio::task::spawn_blocking(move || Self::write_chrome_cookies(&db_path, &owned, mode))
-      .await
-      .map_err(|e| crate::backend_error_with_detail("COOKIE_DB_UNAVAILABLE", e))?
-      .map_err(|e| crate::backend_error_with_detail("COOKIE_DB_UNAVAILABLE", e))
+    tokio::task::spawn_blocking(move || {
+      if is_camoufox {
+        Self::write_firefox_cookies_with_mode(&db_path, &owned, mode)
+      } else {
+        Self::write_chrome_cookies(&db_path, &owned, mode)
+      }
+    })
+    .await
+    .map_err(|e| crate::backend_error_with_detail("COOKIE_DB_UNAVAILABLE", e))?
+    .map_err(|e| crate::backend_error_with_detail("COOKIE_DB_UNAVAILABLE", e))
   }
 
   fn now_secs() -> i64 {
@@ -1442,6 +1670,85 @@ mod tests {
         );",
       )
       .unwrap();
+  }
+
+  /// Set up a minimal Firefox moz_cookies SQLite schema for testing writes.
+  fn create_firefox_cookies_db(path: &Path) {
+    let conn = Connection::open(path).unwrap();
+    conn
+      .execute_batch(
+        "CREATE TABLE moz_cookies (
+          id INTEGER PRIMARY KEY,
+          originAttributes TEXT NOT NULL DEFAULT '',
+          name TEXT,
+          value TEXT,
+          host TEXT,
+          path TEXT,
+          expiry INTEGER,
+          lastAccessed INTEGER,
+          creationTime INTEGER,
+          isSecure INTEGER,
+          isHttpOnly INTEGER,
+          inBrowserElement INTEGER DEFAULT 0,
+          sameSite INTEGER DEFAULT 0,
+          rawSameSite INTEGER DEFAULT 0,
+          schemeMap INTEGER DEFAULT 0,
+          CONSTRAINT moz_uniqueid UNIQUE (name, host, path, originAttributes)
+        );",
+      )
+      .unwrap();
+  }
+
+  #[test]
+  fn firefox_writes_honor_merge_and_replace_modes() {
+    let tmp =
+      std::env::temp_dir().join(format!("antidetect_ff_cookie_{}.db", uuid::Uuid::new_v4()));
+    create_firefox_cookies_db(&tmp);
+
+    let first = vec![
+      cookie(".example.com", "a", "1"),
+      cookie(".example.com", "b", "2"),
+      cookie(".other.com", "keep", "3"),
+    ];
+    let counts =
+      CookieManager::write_firefox_cookies_with_mode(&tmp, &first, CookieWriteMode::Merge).unwrap();
+    assert_eq!(
+      (counts.added, counts.overwritten, counts.deleted),
+      (3, 0, 0)
+    );
+
+    let merged = vec![cookie(".example.com", "a", "updated")];
+    let counts =
+      CookieManager::write_firefox_cookies_with_mode(&tmp, &merged, CookieWriteMode::Merge)
+        .unwrap();
+    assert_eq!(
+      (counts.added, counts.overwritten, counts.deleted),
+      (0, 1, 0)
+    );
+
+    let replaced = vec![cookie(".example.com", "c", "4")];
+    let counts = CookieManager::write_firefox_cookies_with_mode(
+      &tmp,
+      &replaced,
+      CookieWriteMode::ReplaceMatchingSites,
+    )
+    .unwrap();
+    assert_eq!(
+      (counts.added, counts.overwritten, counts.deleted),
+      (1, 0, 2)
+    );
+
+    let conn = Connection::open(&tmp).unwrap();
+    let mut stmt = conn
+      .prepare("SELECT host || '|' || name FROM moz_cookies ORDER BY host, name")
+      .unwrap();
+    let rows: Vec<String> = stmt
+      .query_map([], |row| row.get(0))
+      .unwrap()
+      .collect::<Result<_, _>>()
+      .unwrap();
+    assert_eq!(rows, vec![".example.com|c", ".other.com|keep"]);
+    let _ = std::fs::remove_file(&tmp);
   }
 
   #[test]
@@ -1923,6 +2230,39 @@ mod tests {
       })
       .unwrap();
     assert!(!version.is_empty());
+
+    let _ = std::fs::remove_dir_all(&dir);
+  }
+
+  /// Same regression, Firefox side: a fresh Camoufox profile has no
+  /// `cookies.sqlite` until the browser launches.
+  #[test]
+  fn test_create_empty_firefox_cookies_db_then_write() {
+    let dir = std::env::temp_dir().join(format!("donut_empty_ff_{}", uuid::Uuid::new_v4()));
+    let db_path = dir.join("cookies.sqlite");
+    assert!(!db_path.exists());
+
+    CookieManager::create_empty_firefox_cookies_db(&db_path).unwrap();
+    assert!(db_path.exists());
+
+    let cookies = vec![UnifiedCookie {
+      name: "sid".to_string(),
+      value: "ff-session".to_string(),
+      domain: ".example.org".to_string(),
+      path: "/".to_string(),
+      expires: 1900000000,
+      is_secure: true,
+      is_http_only: false,
+      same_site: 1,
+      creation_time: 1700000000,
+      last_accessed: 1700000000,
+    }];
+    let (inserted, _) = CookieManager::write_firefox_cookies(&db_path, &cookies).unwrap();
+    assert_eq!(inserted, 1);
+
+    let read = CookieManager::read_firefox_cookies(&db_path).unwrap();
+    assert_eq!(read.len(), 1);
+    assert_eq!(read[0].value, "ff-session");
 
     let _ = std::fs::remove_dir_all(&dir);
   }
