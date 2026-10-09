@@ -91,6 +91,25 @@ const DEFAULT_PAID: Capabilities = {
 export function getEntitlements(
   user: CloudUser | null | undefined,
 ): Entitlements {
+  return withLocalCapabilities(resolveCloudEntitlements(user));
+}
+
+/**
+ * Antidetect fork: what runs on this machine (local API/MCP automation,
+ * fingerprint editing, any fingerprint OS) is always available. Capabilities
+ * that need a cloud account keep coming from the plan.
+ */
+function withLocalCapabilities(entitlements: Entitlements): Entitlements {
+  return {
+    ...entitlements,
+    browserAutomation: true,
+    crossOsFingerprints: true,
+  };
+}
+
+function resolveCloudEntitlements(
+  user: CloudUser | null | undefined,
+): Entitlements {
   if (user?.entitlements) {
     const server = user.entitlements;
     // A backend (or a cached login) older than the current release omits these

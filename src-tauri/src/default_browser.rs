@@ -102,7 +102,7 @@ mod macos {
 
   pub fn is_default_browser() -> Result<bool, String> {
     let schemes = ["http", "https"];
-    let bundle_id = "com.donutbrowser";
+    let bundle_id = "com.company.antidetect";
 
     for scheme in schemes {
       let scheme_str = CFString::new(scheme);
@@ -124,7 +124,7 @@ mod macos {
   }
 
   pub fn set_as_default_browser() -> Result<(), String> {
-    let bundle_id = CFString::new("com.donutbrowser");
+    let bundle_id = CFString::new("com.company.antidetect");
     let schemes = ["http", "https"];
 
     for scheme in schemes {
@@ -160,7 +160,7 @@ mod windows {
   use winreg::RegKey;
 
   /// The key Windows knows us by. Never shown to a person.
-  const APP_NAME: &str = "DonutBrowser";
+  const APP_NAME: &str = "Antidetect";
   /// The name Windows shows in "Default apps" and in "Open with".
   const DISPLAY_NAME: &str = "Donut Browser";
   const DESCRIPTION: &str = "Donut Browser - Simple Yet Powerful Anti-Detect Browser";
