@@ -413,7 +413,7 @@ mod tests {
     BrowserProfile {
       id,
       name: "test".to_string(),
-      browser: "wayfern".to_string(),
+      browser: "camoufox".to_string(),
       version: "1.0".to_string(),
       proxy_id: None,
       vpn_id: None,
@@ -421,6 +421,7 @@ mod tests {
       process_id: None,
       last_launch: None,
       release_type: "stable".to_string(),
+      camoufox_config: None,
       wayfern_config: None,
       group_id: None,
       tags: Vec::new(),

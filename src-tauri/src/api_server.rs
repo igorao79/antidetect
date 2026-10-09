@@ -1,4 +1,5 @@
 use crate::browser::ProxySettings;
+use crate::camoufox_manager::CamoufoxConfig;
 use crate::events;
 use crate::group_manager::GROUP_MANAGER;
 use crate::log_redaction::{Plain, ShortId};
@@ -100,7 +101,11 @@ impl From<&crate::profile::types::BrowserProfile> for ApiProfile {
       cloud_sync_enabled: profile.is_sync_enabled(),
       host_os: profile.resolved_os().map(|os| os.to_string()),
       is_cross_os: profile.is_cross_os(),
-      fingerprint_os: profile.wayfern_config.as_ref().and_then(|c| c.os.clone()),
+      fingerprint_os: profile
+        .wayfern_config
+        .as_ref()
+        .and_then(|c| c.os.clone())
+        .or_else(|| profile.camoufox_config.as_ref().and_then(|c| c.os.clone())),
     }
   }
 }
@@ -119,8 +124,8 @@ pub struct ApiProfileResponse {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CreateProfileRequest {
   pub name: String,
-  /// Browser engine. Must be `"wayfern"` (anti-detect Chromium). Any other
-  /// value (e.g. `"chromium"`) is rejected with 400.
+  /// Browser engine: `"camoufox"` (anti-detect Firefox) or `"wayfern"`
+  /// (anti-detect Chromium). Any other value is rejected with 400.
   pub browser: String,
   /// Optional. Omit (or pass `"latest"`) to use the newest already-downloaded
   /// version of the chosen browser. A concrete version must already be
@@ -135,10 +140,14 @@ pub struct CreateProfileRequest {
   pub vpn_id: Option<String>,
   pub launch_hook: Option<String>,
   pub release_type: Option<String>,
-  /// Wayfern fingerprint/config. Send only when `browser` is `"wayfern"`.
+  /// Camoufox fingerprint/config. Send only when `browser` is `"camoufox"`.
   /// Omit it, or pass an empty object `{}`, to have a fresh fingerprint
   /// generated automatically at creation. Provide a `fingerprint` field to
   /// pin a specific one.
+  #[serde(default)]
+  #[schema(value_type = Option<Object>)]
+  pub camoufox_config: Option<serde_json::Value>,
+  /// Wayfern fingerprint/config. Send only when `browser` is `"wayfern"`.
   #[schema(value_type = Option<Object>)]
   pub wayfern_config: Option<serde_json::Value>,
   pub group_id: Option<String>,
@@ -176,6 +185,10 @@ pub struct UpdateProfileRequest {
   /// Wipe browsing data (keeping extensions and bookmarks) when the browser
   /// exits. Rejected (400) for ephemeral or password-protected profiles.
   pub clear_on_close: Option<bool>,
+  /// Replace a Camoufox profile's fingerprint config.
+  #[serde(default)]
+  #[schema(value_type = Option<Object>)]
+  pub camoufox_config: Option<serde_json::Value>,
 }
 
 #[derive(Clone)]
@@ -1429,12 +1442,12 @@ async fn get_profile(
 
 /// Create a profile.
 ///
-/// - `browser` must be `"wayfern"`; any other value is rejected
+/// - `browser` must be `"wayfern"` or `"camoufox"`; any other value is rejected
 ///   with 400.
 /// - `version` is optional: omit it or pass `"latest"` to use the newest
 ///   already-downloaded version of that browser. The version must be present
 ///   locally (this endpoint does not download new versions); 400 if none is.
-/// - Omitting the matching `wayfern_config`, or passing an
+/// - Omitting the matching `wayfern_config`/`camoufox_config`, or passing an
 ///   empty object `{}`, generates a fresh fingerprint automatically.
 /// - `wayfern_config.os` picks the fingerprint OS (`"windows"`, `"macos"`,
 ///   `"linux"`, `"android"`, `"ios"`). Omit it to match the host. Any other
@@ -1470,16 +1483,16 @@ async fn create_profile(
 ) -> Result<Json<ApiProfileResponse>, (StatusCode, String)> {
   let profile_manager = ProfileManager::instance();
 
-  // Only Wayfern profiles are launchable; the rest of the system
+  // Only Wayfern and Camoufox profiles are launchable; the rest of the system
   // (fingerprint generation, launch, run) supports nothing else. Reject anything
   // else up front — otherwise the profile is created with no fingerprint and an
   // unrecognized browser, then crashes with a 500 on /run. Mirrors the MCP
   // create_profile validation.
-  if request.browser != "wayfern" {
+  if request.browser != "wayfern" && request.browser != "camoufox" {
     return Err((
       StatusCode::BAD_REQUEST,
       format!(
-        "Invalid browser \"{}\". Must be \"wayfern\" (anti-detect Chromium).",
+        "Invalid browser \"{}\". Must be \"wayfern\" (anti-detect Chromium) or \"camoufox\" (anti-detect Firefox).",
         request.browser
       ),
     ));
@@ -1526,6 +1539,16 @@ async fn create_profile(
     None => None,
   };
 
+  let camoufox_config: Option<CamoufoxConfig> = match &request.camoufox_config {
+    Some(config) => Some(serde_json::from_value(config.clone()).map_err(|e| {
+      (
+        StatusCode::BAD_REQUEST,
+        format!("Invalid camoufox_config: {e}"),
+      )
+    })?),
+    None => None,
+  };
+
   // Cross-OS fingerprints are a paid capability. The Tauri command, the
   // importer and MCP each check this; REST did not, so the restriction was
   // bypassable through this endpoint alone.
@@ -1567,6 +1590,7 @@ async fn create_profile(
       request.release_type.as_deref().unwrap_or("stable"),
       request.proxy_id.clone(),
       request.vpn_id.clone(),
+      camoufox_config,
       wayfern_config,
       request.group_id.clone(),
       request.ephemeral.unwrap_or(false) || request.temporary.unwrap_or(false),
@@ -1702,6 +1726,19 @@ async fn update_profile(
     if let Err(e) = profile_manager.update_profile_launch_hook(&state.app_handle, &id, normalized) {
       return Err(manager_error_response(e));
     }
+  }
+
+  if let Some(camoufox_config) = request.camoufox_config {
+    let config: CamoufoxConfig = serde_json::from_value(camoufox_config).map_err(|e| {
+      (
+        StatusCode::BAD_REQUEST,
+        format!("Invalid camoufox_config: {e}"),
+      )
+    })?;
+    profile_manager
+      .update_camoufox_config(state.app_handle.clone(), &id, config)
+      .await
+      .map_err(|e| (StatusCode::BAD_REQUEST, e.to_string()))?;
   }
 
   if let Some(group_id) = request.group_id {

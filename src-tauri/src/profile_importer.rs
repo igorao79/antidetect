@@ -5,6 +5,7 @@ use std::fs::{self, create_dir_all, File};
 use std::io;
 use std::path::{Path, PathBuf};
 
+use crate::camoufox_manager::CamoufoxConfig;
 use crate::downloaded_browsers_registry::DownloadedBrowsersRegistry;
 use crate::events;
 use crate::profile::types::{get_host_os, BrowserProfile, SyncMode};
@@ -637,7 +638,7 @@ impl ProfileImporter {
       "arc" => "Arc",
       "yandex" => "Yandex Browser",
       "zen" => "Zen Browser",
-
+      "camoufox" => "Camoufox",
       "wayfern" => "Wayfern",
       _ => "Unknown Browser",
     }
@@ -920,6 +921,10 @@ impl ProfileImporter {
       }
     };
 
+    // Camoufox import is removed; only Wayfern profiles are imported now, so the
+    // imported profile never carries a Camoufox config.
+    let final_camoufox_config: Option<CamoufoxConfig> = None;
+
     let final_wayfern_config = if mapped == "wayfern" {
       let mut config = wayfern_config.unwrap_or_default();
       config.sanitize_launch_args().await;
@@ -971,6 +976,7 @@ impl ProfileImporter {
           process_id: None,
           last_launch: None,
           release_type: "stable".to_string(),
+          camoufox_config: None,
           wayfern_config: None,
           group_id: None,
           tags: Vec::new(),
@@ -1052,6 +1058,7 @@ impl ProfileImporter {
       process_id: None,
       last_launch: None,
       release_type: "stable".to_string(),
+      camoufox_config: final_camoufox_config,
       wayfern_config: final_wayfern_config,
       group_id,
       tags: Vec::new(),
@@ -1256,7 +1263,6 @@ mod tests {
   fn test_map_browser_type() {
     assert_eq!(map_browser_type("chromium"), "wayfern");
     assert_eq!(map_browser_type("brave"), "wayfern");
-    assert_eq!(map_browser_type("camoufox"), "wayfern");
     assert_eq!(map_browser_type("wayfern"), "wayfern");
     assert_eq!(map_browser_type("something_else"), "wayfern");
   }

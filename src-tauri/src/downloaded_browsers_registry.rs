@@ -981,9 +981,9 @@ impl DownloadedBrowsersRegistry {
       }
     }
 
-    // Check if GeoIP database is missing for Wayfern profiles
+    // Check if GeoIP database is missing for Camoufox profiles
     if self.geoip_downloader.check_missing_geoip_database()? {
-      log::info!("GeoIP database is missing for Wayfern profiles, downloading...");
+      log::info!("GeoIP database is missing for Camoufox profiles, downloading...");
 
       match self
         .geoip_downloader
@@ -991,7 +991,7 @@ impl DownloadedBrowsersRegistry {
         .await
       {
         Ok(_) => {
-          downloaded.push("GeoIP database".to_string());
+          downloaded.push("GeoIP database for Camoufox".to_string());
           log::info!("GeoIP database downloaded successfully");
         }
         Err(e) => {
@@ -1542,7 +1542,7 @@ pub async fn ensure_active_browsers_downloaded(
   let version_manager = crate::browser_version_manager::BrowserVersionManager::instance();
   let mut downloaded = Vec::new();
 
-  for browser in &["wayfern"] {
+  for browser in &["wayfern", "camoufox"] {
     // Check if any version is already downloaded
     let existing = registry.get_downloaded_versions(browser);
     if !existing.is_empty() {
@@ -1600,7 +1600,7 @@ pub async fn ensure_active_browsers_downloaded(
     // Retry transient failures a few times. Each attempt is wrapped in an overall
     // timeout so that a hang anywhere in the download pipeline (version resolution,
     // a stalled stream, extraction) cannot block the next browser forever. This is
-    // the core of the bug fix: Wayfern downloads proceed independently.
+    // the core of the bug fix: Wayfern going first must never starve Camoufox.
     const MAX_ATTEMPTS: u32 = 3;
     const ATTEMPT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(600);
     let mut succeeded = false;
@@ -1654,7 +1654,7 @@ pub async fn ensure_active_browsers_downloaded(
     }
 
     if !succeeded {
-      // Do NOT abort the whole routine: continue with remaining browsers
+      // Do NOT abort the whole routine: continue so the next browser (Camoufox)
       // still gets its chance even though this one failed/timed out.
       log::warn!("Giving up on auto-download of {browser} {version} after {MAX_ATTEMPTS} attempts");
     }

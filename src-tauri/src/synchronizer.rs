@@ -328,7 +328,10 @@ impl SynchronizerManager {
       .clone();
 
     if leader.browser != "wayfern" {
-      return Err("Synchronizer only supports Wayfern profiles.".to_string());
+      return Err(
+        "Synchronizer only supports Wayfern profiles. Camoufox profiles cannot be used."
+          .to_string(),
+      );
     }
 
     // Check leader is not already running
