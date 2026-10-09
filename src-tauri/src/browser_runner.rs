@@ -12,6 +12,9 @@ use std::path::PathBuf;
 use std::sync::{Arc, LazyLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+mod camoufox;
+mod launch_network;
+
 static PROFILE_LAUNCH_LOCKS: LazyLock<
   tokio::sync::Mutex<HashMap<String, Arc<tokio::sync::Mutex<()>>>>,
 > = LazyLock::new(|| tokio::sync::Mutex::new(HashMap::new()));
@@ -255,6 +258,19 @@ impl BrowserRunner {
     kind: crate::wayfern_manager::LaunchKind,
     gate: &crate::launch_gate::FingerprintGate,
   ) -> Result<BrowserProfile, Box<dyn std::error::Error + Send + Sync>> {
+    if profile.browser == "camoufox" {
+      return self
+        .launch_camoufox_internal(
+          app_handle,
+          profile,
+          url,
+          remote_debugging_port,
+          headless,
+          gate,
+        )
+        .await;
+    }
+
     // Handle Wayfern profiles using WayfernManager
     if profile.browser == "wayfern" {
       let _launch_in_progress = crate::wayfern_identity_storage::yield_to_launch().await;
@@ -845,6 +861,10 @@ impl BrowserRunner {
     url: &str,
     _internal_proxy_settings: Option<&ProxySettings>,
   ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    if profile.browser == "camoufox" {
+      return self.open_url_in_camoufox(profile, url).await;
+    }
+
     // Handle Wayfern profiles using WayfernManager
     if profile.browser == "wayfern" {
       let profiles_dir = self.profile_manager.get_profiles_dir();
@@ -1100,6 +1120,10 @@ impl BrowserRunner {
     app_handle: tauri::AppHandle,
     profile: &BrowserProfile,
   ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    if profile.browser == "camoufox" {
+      return self.kill_camoufox_process(app_handle, profile).await;
+    }
+
     // Handle Wayfern profiles using WayfernManager
     if profile.browser == "wayfern" {
       let profiles_dir = self.profile_manager.get_profiles_dir();

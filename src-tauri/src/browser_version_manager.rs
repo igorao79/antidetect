@@ -62,13 +62,20 @@ impl BrowserVersionManager {
             | "windows-arm64"
         ))
       }
+      "camoufox" => {
+        let platform_key = format!("{os}-{arch}");
+        Ok(matches!(
+          platform_key.as_str(),
+          "macos-arm64" | "macos-x64" | "linux-x64" | "linux-arm64" | "windows-x64"
+        ))
+      }
       _ => Err(format!("Unknown browser: {browser}").into()),
     }
   }
 
   /// Get list of browsers supported on the current platform
   pub fn get_supported_browsers(&self) -> Vec<String> {
-    let all_browsers = vec!["wayfern"];
+    let all_browsers = vec!["camoufox", "wayfern"];
 
     all_browsers
       .into_iter()
@@ -109,12 +116,12 @@ impl BrowserVersionManager {
     self.api_client.is_cache_expired(browser)
   }
 
-  /// Get the latest Wayfern version (fresh cache first)
+  /// Get the latest version of a browser (fresh cache first)
   pub async fn get_browser_release_types(
     &self,
     browser: &str,
   ) -> Result<BrowserReleaseTypes, Box<dyn std::error::Error + Send + Sync>> {
-    if browser != "wayfern" {
+    if browser != "wayfern" && browser != "camoufox" {
       return Err(format!("Unsupported browser: {browser}").into());
     }
 
@@ -172,6 +179,7 @@ impl BrowserVersionManager {
     // Fetch fresh versions from API
     let fresh_versions = match browser {
       "wayfern" => self.fetch_wayfern_versions(true).await?,
+      "camoufox" => self.fetch_camoufox_versions().await?,
       _ => return Err(format!("Unsupported browser: {browser}").into()),
     };
 
@@ -234,7 +242,7 @@ impl BrowserVersionManager {
     // Since we don't have detailed date/prerelease info for cached versions,
     // we'll fetch fresh detailed info and map it to our merged versions
     let detailed_info: Vec<BrowserVersionInfo> = match browser {
-      "wayfern" => merged_versions
+      "wayfern" | "camoufox" => merged_versions
         .into_iter()
         .map(|version| BrowserVersionInfo {
           version: version.clone(),
@@ -322,6 +330,28 @@ impl BrowserVersionManager {
           is_archive,
         })
       }
+      "camoufox" => {
+        // Camoufox assets: camoufox-{ff_version}-{release}-{os}.{arch}.zip on the
+        // GitHub release tagged `version`. The downloader resolves the exact
+        // asset URL from the release list.
+        let (os_name, arch_name) = match (os.as_str(), arch.as_str()) {
+          ("macos", "arm64") => ("mac", "arm64"),
+          ("macos", "x64") => ("mac", "x86_64"),
+          ("linux", "x64") => ("lin", "x86_64"),
+          ("linux", "arm64") => ("lin", "arm64"),
+          ("windows", "x64") => ("win", "x86_64"),
+          _ => {
+            return Err(
+              format!("Unsupported platform/architecture for Camoufox: {os}/{arch}").into(),
+            )
+          }
+        };
+        Ok(DownloadInfo {
+          url: format!("https://github.com/daijro/camoufox/releases/tag/{version}"),
+          filename: format!("camoufox-{version}-{os_name}.{arch_name}.zip"),
+          is_archive: true,
+        })
+      }
       _ => Err(format!("Unsupported browser: {browser}").into()),
     }
   }
@@ -347,6 +377,16 @@ impl BrowserVersionManager {
     };
 
     (os.to_string(), arch.to_string())
+  }
+
+  async fn fetch_camoufox_versions(
+    &self,
+  ) -> Result<Vec<String>, Box<dyn std::error::Error + Send + Sync>> {
+    let releases = self
+      .api_client
+      .fetch_camoufox_releases_with_caching(true)
+      .await?;
+    Ok(releases.into_iter().map(|r| r.tag_name).collect())
   }
 
   async fn fetch_wayfern_versions(

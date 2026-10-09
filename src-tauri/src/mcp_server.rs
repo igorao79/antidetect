@@ -3069,7 +3069,7 @@ impl McpServer {
       // Fingerprint management tools
       McpTool {
         name: "get_profile_fingerprint".to_string(),
-        description: "Get the fingerprint configuration for a Wayfern profile"
+        description: "Get the fingerprint configuration for a Wayfern or Camoufox profile"
           .to_string(),
         input_schema: serde_json::json!({
           "type": "object",
@@ -3085,7 +3085,7 @@ impl McpServer {
       McpTool {
         name: "update_profile_fingerprint".to_string(),
         description:
-          "Update the fingerprint configuration for a Wayfern profile. Requires an active Pro subscription."
+          "Update the fingerprint configuration for a Wayfern or Camoufox profile. Requires an active Pro subscription."
             .to_string(),
         input_schema: serde_json::json!({
           "type": "object",
@@ -3305,7 +3305,7 @@ impl McpServer {
       // Cookie management tools
       McpTool {
         name: "import_profile_cookies".to_string(),
-        description: "Import cookies into a Wayfern profile from a JSON array (Puppeteer / EditThisCookie format) or a Netscape cookies.txt. Format is auto-detected. The browser must not be running.".to_string(),
+        description: "Import cookies into a Wayfern or Camoufox profile from a JSON array (Puppeteer / EditThisCookie format) or a Netscape cookies.txt. Format is auto-detected. The browser must not be running.".to_string(),
         input_schema: serde_json::json!({
           "type": "object",
           "properties": {
@@ -5270,6 +5270,7 @@ impl McpServer {
         version,
         "stable",
         proxy_id,
+        None,
         None,
         None,
         group_id,

@@ -62,6 +62,8 @@ mod automation_rate_limiter;
 mod browser;
 mod browser_runner;
 mod browser_version_manager;
+pub mod camoufox;
+mod camoufox_manager;
 mod cdp_target;
 mod checksum;
 mod default_browser;
@@ -141,7 +143,7 @@ use browser_runner::{
 
 use profile::manager::{
   check_browser_status, clone_profile, create_browser_profile_new, delete_profile,
-  list_browser_profiles, rename_profile, update_profile_clear_on_close,
+  list_browser_profiles, rename_profile, update_camoufox_config, update_profile_clear_on_close,
   update_profile_dns_blocklist, update_profile_launch_hook, update_profile_note,
   update_profile_proxy, update_profile_proxy_bypass_rules, update_profile_tags, update_profile_vpn,
   update_profile_window_color, update_wayfern_config,
@@ -1826,6 +1828,7 @@ async fn generate_sample_fingerprint(
     launch_hook: None,
     last_launch: None,
     release_type: "stable".to_string(),
+    camoufox_config: None,
     wayfern_config: None,
     group_id: None,
     tags: Vec::new(),
@@ -1848,7 +1851,20 @@ async fn generate_sample_fingerprint(
     updated_at: None,
   };
 
-  if browser == "wayfern" {
+  if browser == "camoufox" {
+    let config: crate::camoufox_manager::CamoufoxConfig =
+      serde_json::from_str(&config_json).map_err(|e| format!("Failed to parse config: {e}"))?;
+    let manager = crate::camoufox_manager::CamoufoxManager::instance();
+    manager
+      .generate_fingerprint_config(&app_handle, &temp_profile, &config)
+      .await
+      .map(|fingerprint| SampleFingerprint {
+        fingerprint,
+        identity_id: None,
+        location: None,
+      })
+      .map_err(|e| format!("Failed to generate fingerprint: {e}"))
+  } else if browser == "wayfern" {
     let config: crate::wayfern_manager::WayfernConfig =
       serde_json::from_str(&config_json).map_err(|e| format!("Failed to parse config: {e}"))?;
     let manager = crate::wayfern_manager::WayfernManager::instance();
@@ -2976,6 +2992,20 @@ pub fn run_with_builder(
         });
       }
 
+      // Start Camoufox cleanup task
+      tauri::async_runtime::spawn(async move {
+        let camoufox_manager = crate::camoufox_manager::CamoufoxManager::instance();
+        let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60));
+
+        loop {
+          interval.tick().await;
+
+          if let Err(e) = camoufox_manager.cleanup_dead_instances().await {
+            log::error!("Error during Camoufox cleanup: {e}");
+          }
+        }
+      });
+
       // Start proxy cleanup task for dead browser processes
       let app_handle_proxy_cleanup = app.handle().clone();
       tauri::async_runtime::spawn(async move {
@@ -3370,6 +3400,7 @@ pub fn run_with_builder(
       import_proxies_json,
       parse_txt_proxies,
       import_proxies_from_parsed,
+      update_camoufox_config,
       update_wayfern_config,
       generate_sample_fingerprint,
       get_profile_groups,

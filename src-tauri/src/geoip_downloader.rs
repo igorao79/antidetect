@@ -90,7 +90,8 @@ impl GeoIPDownloader {
     now.saturating_sub(timestamp) > SEVEN_DAYS
   }
 
-  /// Check if GeoIP database is missing or stale for Wayfern fingerprint geo.
+  /// Check if GeoIP database is missing or stale for fingerprint geo
+  /// (Wayfern and Camoufox).
   pub fn check_missing_geoip_database(
     &self,
   ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
@@ -98,7 +99,9 @@ impl GeoIPDownloader {
       .list_profiles()
       .map_err(|e| format!("Failed to list profiles: {e}"))?;
 
-    let needs_geoip = profiles.iter().any(|profile| profile.browser == "wayfern");
+    let needs_geoip = profiles
+      .iter()
+      .any(|profile| matches!(profile.browser.as_str(), "wayfern" | "camoufox"));
 
     if needs_geoip {
       return Ok(!Self::is_geoip_database_available() || Self::is_geoip_stale());

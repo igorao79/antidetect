@@ -1375,7 +1375,7 @@ impl WayfernManager {
   ///
   /// Keys are the camelCase fields Wayfern uses in its fingerprint
   /// (`windowOuterWidth`, `screenAvailWidth`, …) — NOT the dotted
-  /// Preference order, matching how the fingerprint
+  /// Camoufox-style keys. Preference order, matching how the fingerprint
   /// describes the window:
   /// 1. `windowOuterWidth` / `windowOuterHeight` — the real window size.
   /// 2. `screenAvailWidth` / `screenAvailHeight` — usable screen area.
