@@ -209,6 +209,9 @@ path = "tests/vpn_integration.rs"
 codegen-units = 256
 incremental = true
 opt-level = 0
+# Line tables keep backtraces readable at a fraction of full debug info's
+# size; full DWARF for this crate alone ran to several GB per build flavour.
+debug = "line-tables-only"
 # Split debuginfo on macOS for faster linking (ignored on other platforms)
 split-debuginfo = "unpacked"
 
