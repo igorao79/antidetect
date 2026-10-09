@@ -85,6 +85,7 @@ mod ip_utils;
 mod launch_gate;
 mod launch_gate_prefs;
 mod log_redaction;
+mod octo_compat_api;
 mod platform_browser;
 mod profile;
 mod profile_generation_limiter;
@@ -2991,6 +2992,9 @@ pub fn run_with_builder(
           }
         });
       }
+
+      // Octo Browser compatible local automation API (127.0.0.1:58888).
+      octo_compat_api::spawn(app.handle().clone());
 
       // Start Camoufox cleanup task
       tauri::async_runtime::spawn(async move {

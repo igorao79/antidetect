@@ -94,14 +94,18 @@ fn cast_to_properties(
 
 /// Replace Firefox version in user agent and related strings.
 fn replace_ff_version(s: &str, version: u32) -> String {
-  // Match patterns like "135.0" (Firefox version) and replace with new version
-  let re = regex_lite::Regex::new(r"(?<!\d)(1[0-9]{2})(\.0)(?!\d)").unwrap_or_else(|_| {
-    // Fallback - just do simple replacement
-    regex_lite::Regex::new(r"Firefox/\d+").unwrap()
-  });
-
-  re.replace_all(s, format!("{}.0", version).as_str())
-    .to_string()
+  // The fingerprint data names the Firefox version it was sampled from in two
+  // places (`rv:133.0` and `Firefox/133.0`); both must name the engine that
+  // actually runs, or feature detection gives the profile away. regex_lite has
+  // no lookbehind, so each token is matched with its prefix.
+  static RV: std::sync::LazyLock<regex_lite::Regex> =
+    std::sync::LazyLock::new(|| regex_lite::Regex::new(r"rv:1[0-9]{2}\.0").unwrap());
+  static FIREFOX: std::sync::LazyLock<regex_lite::Regex> =
+    std::sync::LazyLock::new(|| regex_lite::Regex::new(r"Firefox/1[0-9]{2}\.0").unwrap());
+  let s = RV.replace_all(s, format!("rv:{version}.0").as_str());
+  FIREFOX
+    .replace_all(&s, format!("Firefox/{version}.0").as_str())
+    .into_owned()
 }
 
 /// Handle window.screenX and window.screenY generation.
@@ -601,25 +605,85 @@ pub enum ConfigError {
 
 /// Get Firefox version from executable path.
 pub fn get_firefox_version(executable_path: &Path) -> Option<u32> {
-  // Try to read version.json from the same directory
-  let version_path = executable_path.parent()?.join("version.json");
-
-  if let Ok(content) = std::fs::read_to_string(&version_path) {
-    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-      if let Some(version_str) = json.get("version").and_then(|v| v.as_str()) {
-        // Parse major version from "135.0" or similar
-        let major: u32 = version_str.split('.').next()?.parse().ok()?;
+  // The bundle states its own version (`Version=156.0.1-beta.36`): macOS keeps
+  // application.ini in Contents/Resources, Linux and Windows next to the binary.
+  let dir = executable_path.parent()?;
+  for ini in [
+    dir.join("application.ini"),
+    dir.join("..").join("Resources").join("application.ini"),
+  ] {
+    if let Ok(content) = std::fs::read_to_string(&ini) {
+      if let Some(major) = content
+        .lines()
+        .find_map(|line| line.strip_prefix("Version="))
+        .and_then(parse_major_version)
+      {
         return Some(major);
       }
     }
   }
 
-  None
+  // Fallback: the version.json the downloader writes at the version root,
+  // a few levels above the binary inside an .app bundle.
+  executable_path.ancestors().skip(1).take(5).find_map(|dir| {
+    let content = std::fs::read_to_string(dir.join("version.json")).ok()?;
+    let json: serde_json::Value = serde_json::from_str(&content).ok()?;
+    parse_major_version(json.get("version")?.as_str()?)
+  })
+}
+
+/// `156` from `156.0.1-beta.36` or `v156.0.1`.
+fn parse_major_version(version: &str) -> Option<u32> {
+  version
+    .trim()
+    .trim_start_matches(['v', 'V'])
+    .split('.')
+    .next()?
+    .parse()
+    .ok()
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn firefox_version_is_rewritten_in_user_agent() {
+    assert_eq!(
+      replace_ff_version(
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0",
+        156
+      ),
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:156.0) Gecko/20100101 Firefox/156.0"
+    );
+  }
+
+  #[test]
+  fn firefox_major_version_parses_camoufox_tags() {
+    assert_eq!(parse_major_version("156.0.1-beta.36"), Some(156));
+    assert_eq!(parse_major_version("v156.0.1"), Some(156));
+    assert_eq!(parse_major_version("beta"), None);
+  }
+
+  #[test]
+  fn firefox_version_is_read_from_the_app_bundle() {
+    let root = std::env::temp_dir().join(format!("antidetect-ffver-{}", uuid::Uuid::new_v4()));
+    let macos = root.join("Camoufox.app/Contents/MacOS");
+    let resources = root.join("Camoufox.app/Contents/Resources");
+    std::fs::create_dir_all(&macos).unwrap();
+    std::fs::create_dir_all(&resources).unwrap();
+    std::fs::write(
+      resources.join("application.ini"),
+      "[App]\nName=Camoufox\nVersion=156.0.1-beta.36\n",
+    )
+    .unwrap();
+    assert_eq!(get_firefox_version(&macos.join("camoufox")), Some(156));
+
+    std::fs::remove_file(resources.join("application.ini")).unwrap();
+    std::fs::write(root.join("version.json"), r#"{"version":"v150.0.2"}"#).unwrap();
+    assert_eq!(get_firefox_version(&macos.join("camoufox")), Some(150));
+    let _ = std::fs::remove_dir_all(&root);
+  }
 
   #[test]
   fn test_config_builder() {
