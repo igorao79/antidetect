@@ -6,6 +6,7 @@ import { motion, useReducedMotion } from "motion/react";
 import type * as React from "react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { FaChrome, FaFirefox } from "react-icons/fa";
 import { GoPlus } from "react-icons/go";
 import {
   LuCheck,
@@ -22,6 +23,7 @@ import {
 import { LoadingButton } from "@/components/loading-button";
 import { ProfileGlyph } from "@/components/profile-glyph";
 import { ProxyFormDialog } from "@/components/proxy-form-dialog";
+import { SharedCamoufoxConfigForm } from "@/components/shared-camoufox-config-form";
 import {
   AnimatedDisclosureChevron,
   AnimatedDisclosureContent,
@@ -72,7 +74,13 @@ import { useVpnEvents } from "@/hooks/use-vpn-events";
 import { DNS_BLOCKLIST_LEVELS } from "@/lib/dns-blocklist-levels";
 import { MOTION_EASE_OUT } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-import type { BrowserReleaseTypes, WayfernConfig, WayfernOS } from "@/types";
+import type {
+  BrowserReleaseTypes,
+  CamoufoxConfig,
+  CamoufoxOS,
+  WayfernConfig,
+  WayfernOS,
+} from "@/types";
 
 const PASSWORD_MIN_LEN = 8;
 
@@ -83,6 +91,20 @@ const getCurrentOS = (): WayfernOS => {
   if (platform.includes("mac")) return "macos";
   return "linux";
 };
+
+/** Anti-detect engines a profile can be created on. */
+export type ProfileEngine = "camoufox" | "wayfern";
+
+const ENGINE_LABELS: Record<ProfileEngine, string> = {
+  camoufox: "Camoufox",
+  wayfern: "Wayfern",
+};
+
+const defaultCamoufoxConfig = (): CamoufoxConfig => ({
+  // getCurrentOS never reports "android"; only desktop OSes are detected.
+  os: getCurrentOS() as CamoufoxOS,
+  geoip: true,
+});
 
 const defaultWayfernConfig = (): WayfernConfig => ({
   os: getCurrentOS(),
@@ -97,11 +119,12 @@ interface CreateProfileDialogProps {
   onClose: () => void;
   onCreateProfile: (profileData: {
     name: string;
-    browserStr: "wayfern";
+    browserStr: ProfileEngine;
     version: string;
     releaseType: string;
     proxyId?: string;
     vpnId?: string;
+    camoufoxConfig?: CamoufoxConfig;
     wayfernConfig?: WayfernConfig;
     groupId?: string;
     extensionGroupId?: string;
@@ -135,6 +158,12 @@ export function CreateProfileDialog({
   const [showProxyForm, setShowProxyForm] = useState(false);
   const [dnsBlocklist, setDnsBlocklist] = useState("");
   const [launchHook, setLaunchHook] = useState("");
+  // Camoufox is the default: it is free, while Wayfern needs a subscription.
+  const [engine, setEngine] = useState<ProfileEngine>("camoufox");
+  const engineLabel = ENGINE_LABELS[engine];
+  const [camoufoxConfig, setCamoufoxConfig] = useState<CamoufoxConfig>(
+    defaultCamoufoxConfig,
+  );
   const [wayfernConfig, setWayfernConfig] =
     useState<WayfernConfig>(defaultWayfernConfig);
   const [isCreating, setIsCreating] = useState(false);
@@ -204,30 +233,30 @@ export function CreateProfileDialog({
       const releases = await invoke<BrowserReleaseTypes>(
         "get_browser_release_types",
         {
-          browserStr: "wayfern",
+          browserStr: engine,
         },
       );
-      await loadDownloadedVersions("wayfern");
+      await loadDownloadedVersions(engine);
       if (versionRequestRef.current === request) {
         setReleaseTypes(releases.stable ? { stable: releases.stable } : {});
       }
     } catch (error) {
-      console.error("Failed to load Wayfern release types:", error);
+      console.error(`Failed to load ${engine} release types:`, error);
       try {
-        const downloaded = await loadDownloadedVersions("wayfern");
+        const downloaded = await loadDownloadedVersions(engine);
         if (versionRequestRef.current === request) {
           setReleaseTypes(downloaded.length ? { stable: downloaded[0] } : {});
           setReleaseTypesError(downloaded.length === 0);
         }
       } catch (error) {
-        console.error("Failed to load downloaded Wayfern versions:", error);
+        console.error(`Failed to load downloaded ${engine} versions:`, error);
         if (versionRequestRef.current === request) setReleaseTypesError(true);
       }
     } finally {
       if (versionRequestRef.current === request)
         setIsLoadingReleaseTypes(false);
     }
-  }, [loadDownloadedVersions]);
+  }, [engine, loadDownloadedVersions]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -249,13 +278,13 @@ export function CreateProfileDialog({
     };
   }, [isOpen, loadReleaseTypes]);
 
-  const downloadedVersions = downloadedVersionsMap.wayfern ?? [];
+  const downloadedVersions = downloadedVersionsMap[engine] ?? [];
   const latestVersion = releaseTypes.stable;
   const creatableVersion =
     latestVersion && downloadedVersions.includes(latestVersion)
       ? latestVersion
       : downloadedVersions[0];
-  const downloading = isBrowserDownloading("wayfern");
+  const downloading = isBrowserDownloading(engine);
   const isCreateDisabled =
     !profileName.trim() ||
     !creatableVersion ||
@@ -292,6 +321,8 @@ export function CreateProfileDialog({
     setReleaseTypes({});
     setIsLoadingReleaseTypes(false);
     setReleaseTypesError(false);
+    setEngine("camoufox");
+    setCamoufoxConfig(defaultCamoufoxConfig());
     setWayfernConfig(defaultWayfernConfig());
     setEphemeral(false);
     clearPassword();
@@ -318,12 +349,13 @@ export function CreateProfileDialog({
     try {
       await onCreateProfile({
         name: profileName.trim(),
-        browserStr: "wayfern",
+        browserStr: engine,
         version: creatableVersion,
         releaseType: "stable",
         proxyId: isVpnSelection ? undefined : selectedProxyId,
         vpnId: isVpnSelection ? selectedProxyId?.slice(4) : undefined,
-        wayfernConfig,
+        camoufoxConfig: engine === "camoufox" ? camoufoxConfig : undefined,
+        wayfernConfig: engine === "wayfern" ? wayfernConfig : undefined,
         groupId:
           selectedGroupId && selectedGroupId !== "__all__"
             ? selectedGroupId
@@ -346,11 +378,18 @@ export function CreateProfileDialog({
   const handleDownload = async () => {
     if (!latestVersion) return;
     try {
-      await downloadBrowser("wayfern", latestVersion);
+      await downloadBrowser(engine, latestVersion);
     } catch (error) {
-      console.error("Failed to download Wayfern:", error);
+      console.error(`Failed to download ${engineLabel}:`, error);
     }
   };
+
+  const updateCamoufoxConfig = useCallback(
+    (key: keyof CamoufoxConfig, value: unknown) => {
+      setCamoufoxConfig((previous) => ({ ...previous, [key]: value }));
+    },
+    [],
+  );
 
   const updateWayfernConfig = useCallback(
     (key: keyof WayfernConfig, value: unknown) => {
@@ -449,6 +488,42 @@ export function CreateProfileDialog({
               className="h-9 text-base font-medium md:text-base"
             />
           </motion.label>
+
+          <motion.div
+            role="radiogroup"
+            aria-label={t("createProfile.engine.label")}
+            className="flex flex-wrap items-center gap-1.5"
+            {...rise(0.02)}
+          >
+            {(["camoufox", "wayfern"] as const).map((option) => (
+              <Tooltip key={option} delayDuration={600}>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    role="radio"
+                    aria-checked={engine === option}
+                    className={optionPill(engine === option)}
+                    disabled={isCreating}
+                    onClick={() => {
+                      if (engine === option) return;
+                      setEngine(option);
+                      setReleaseTypes({});
+                    }}
+                  >
+                    {option === "camoufox" ? (
+                      <FaFirefox aria-hidden="true" />
+                    ) : (
+                      <FaChrome aria-hidden="true" />
+                    )}
+                    <span className="truncate">{ENGINE_LABELS[option]}</span>
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="top" sideOffset={6} className="max-w-72">
+                  {t(`createProfile.engine.${option}Hint`)}
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </motion.div>
 
           <motion.div
             className="flex flex-wrap items-center gap-1.5"
@@ -695,7 +770,7 @@ export function CreateProfileDialog({
                 aria-hidden="true"
               />
               {t("createProfile.version.downloading", {
-                browser: "Wayfern",
+                browser: engineLabel,
                 version: latestVersion,
               })}
             </motion.p>
@@ -734,7 +809,7 @@ export function CreateProfileDialog({
               >
                 <p className="flex-1">
                   {t("createProfile.version.needsDownload", {
-                    browser: "Wayfern",
+                    browser: engineLabel,
                     version: latestVersion,
                   })}
                 </p>
@@ -752,7 +827,7 @@ export function CreateProfileDialog({
                 className={cn(STATUS_CLASS, "text-warning-text")}
               >
                 {t("createProfile.platformUnavailable", {
-                  browser: "Wayfern",
+                  browser: engineLabel,
                 })}
               </p>
             ))
@@ -884,7 +959,7 @@ export function CreateProfileDialog({
                     {creatableVersion && (
                       <p className="text-xs text-muted-foreground">
                         {t("createProfile.version.available", {
-                          browser: "Wayfern",
+                          browser: engineLabel,
                           version: creatableVersion,
                         })}
                       </p>
@@ -896,7 +971,7 @@ export function CreateProfileDialog({
                         <div className={cn(STATUS_CLASS, "py-1.5 pr-1.5")}>
                           <p className="flex-1">
                             {t("createProfile.version.upgradeAvailable", {
-                              browser: "Wayfern",
+                              browser: engineLabel,
                               version: latestVersion,
                             })}
                           </p>
@@ -911,18 +986,34 @@ export function CreateProfileDialog({
                           </Button>
                         </div>
                       )}
-                    <WayfernConfigForm
-                      className="[&_[data-slot=select-trigger]]:w-full"
-                      config={wayfernConfig}
-                      onConfigChange={updateWayfernConfig}
-                      isCreating
-                      forceAdvanced
-                      readOnly={isCreating}
-                      crossOsUnlocked={crossOsUnlocked}
-                      limitedMode={!crossOsUnlocked}
-                      profileVersion={creatableVersion}
-                      profileBrowser="wayfern"
-                    />
+                    {engine === "camoufox" ? (
+                      <SharedCamoufoxConfigForm
+                        className="[&_[data-slot=select-trigger]]:w-full"
+                        config={camoufoxConfig}
+                        onConfigChange={updateCamoufoxConfig}
+                        isCreating
+                        forceAdvanced
+                        readOnly={isCreating}
+                        browserType="camoufox"
+                        crossOsUnlocked={crossOsUnlocked}
+                        limitedMode={!crossOsUnlocked}
+                        profileVersion={creatableVersion}
+                        profileBrowser="camoufox"
+                      />
+                    ) : (
+                      <WayfernConfigForm
+                        className="[&_[data-slot=select-trigger]]:w-full"
+                        config={wayfernConfig}
+                        onConfigChange={updateWayfernConfig}
+                        isCreating
+                        forceAdvanced
+                        readOnly={isCreating}
+                        crossOsUnlocked={crossOsUnlocked}
+                        limitedMode={!crossOsUnlocked}
+                        profileVersion={creatableVersion}
+                        profileBrowser="wayfern"
+                      />
+                    )}
                   </div>
                 </div>
               </SoftFields>

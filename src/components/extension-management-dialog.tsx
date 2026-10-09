@@ -12,7 +12,7 @@ import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FaChrome } from "react-icons/fa";
+import { FaChrome, FaFirefox } from "react-icons/fa";
 import { GoPlus } from "react-icons/go";
 import {
   LuExternalLink,
@@ -802,19 +802,34 @@ export function ExtensionManagementDialog({
   const renderCompatIcons = useCallback(
     (compat: string[]) => {
       const hasChromium = compat.includes("chromium");
-      if (!hasChromium) return null;
+      const hasFirefox = compat.includes("firefox");
+      if (!hasChromium && !hasFirefox) return null;
       return (
         <div className="flex shrink-0 items-center gap-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span className="inline-flex">
-                <FaChrome className="size-3.5 text-muted-foreground" />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent>
-              {t("extensions.compatibility.chromium")}
-            </TooltipContent>
-          </Tooltip>
+          {hasChromium && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex">
+                  <FaChrome className="size-3.5 text-muted-foreground" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {t("extensions.compatibility.chromium")}
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {hasFirefox && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="inline-flex">
+                  <FaFirefox className="size-3.5 text-muted-foreground" />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                {t("extensions.compatibility.firefox")}
+              </TooltipContent>
+            </Tooltip>
+          )}
         </div>
       );
     },

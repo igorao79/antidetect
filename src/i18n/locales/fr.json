@@ -512,6 +512,11 @@
       "reached": "Votre offre permet {{limit}} nouveaux profils par heure. Vous pourrez créer le suivant dans environ {{minutes}} min.",
       "warningTitle": "Vous créez des profils trop rapidement",
       "warning": "Patientez un peu. Créer trop de profils en une heure entraîne un blocage temporaire de 24 heures ou plus, pendant lequel vous ne pourrez pas générer de nouvelles identités. Si vous avez besoin d'une limite horaire plus élevée, pensez à soutenir Donut avec une offre payante."
+    },
+    "engine": {
+      "label": "Browser engine",
+      "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
+      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
     }
   },
   "deleteDialog": {
@@ -1007,6 +1012,12 @@
     "shared": {
       "browserBehavior": "Comportement du navigateur",
       "allowAddonsOpenTabs": "Autoriser les modules complémentaires à ouvrir automatiquement de nouveaux onglets"
+    },
+    "camoufox": {
+      "fingerprint": {
+        "osCpuPlaceholder": "p. ex., Intel Mac OS X 10.15",
+        "webglRendererPlaceholder": "p. ex., llvmpipe, ou similaire"
+      }
     }
   },
   "cookies": {
@@ -1393,7 +1404,8 @@
     "enterAsJson": "Entrez {{title}} en JSON",
     "launchArgs": "Arguments de lancement",
     "launchArgsDescription": "Saisissez un argument par ligne, sous la forme --name ou --name=value. Seuls les arguments pris en charge sont acceptés, par exemple --disable-gpu, --mute-audio ou --disable-features=Name. Donut gère les arguments de profil, de proxy, de fenêtre et de débogage.",
-    "launchArgsSkipped": "Les arguments de lancement personnalisés n'ont pas été utilisés pour {{profile}}. {{reason}}"
+    "launchArgsSkipped": "Les arguments de lancement personnalisés n'ont pas été utilisés pour {{profile}}. {{reason}}",
+    "refreshFingerprint": "Actualiser l'empreinte"
   },
   "warnings": {
     "windowResizeTitle": "Dimensions de fenêtre personnalisées",
@@ -1584,7 +1596,8 @@
     "extensionGroup": "Groupe d'Extensions",
     "compatibility": {
       "label": "Compatibilité",
-      "chromium": "Chromium"
+      "chromium": "Chromium",
+      "firefox": "Firefox"
     },
     "selectedFile": "Fichier sélectionné",
     "namePlaceholder": "Nom de l'extension",
@@ -3646,5 +3659,13 @@
     "noTags": "Aucune étiquette",
     "noProxy": "Aucun proxy",
     "encrypted": "Chiffré"
+  },
+  "camoufoxDialog": {
+    "invalidFingerprint": "Configuration d'empreinte invalide",
+    "invalidFingerprintDescription": "La configuration d'empreinte contient du JSON invalide. Vérifiez vos paramètres avancés.",
+    "saveFailed": "Échec de la sauvegarde de la configuration",
+    "unknownError": "Une erreur inconnue s'est produite",
+    "titleView": "Voir les paramètres d'empreinte - {{name}} ({{browser}})",
+    "titleConfigure": "Configurer les paramètres d'empreinte - {{name}} ({{browser}})"
   }
 }

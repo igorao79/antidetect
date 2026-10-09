@@ -511,6 +511,11 @@
       "reached": "Planınız saatte {{limit}} yeni profile izin verir. Bir sonrakini yaklaşık {{minutes}} dk sonra oluşturabilirsiniz.",
       "warningTitle": "Profilleri çok hızlı oluşturuyorsunuz",
       "warning": "Lütfen biraz bekleyin. Bir saatte çok fazla profil oluşturmak, 24 saat veya daha uzun süren geçici bir engele yol açar; bu süre boyunca yeni kimlik oluşturamazsınız. Daha yüksek bir saatlik sınıra ihtiyacınız varsa, Donut'u ücretli bir planla desteklemeyi düşünün."
+    },
+    "engine": {
+      "label": "Browser engine",
+      "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
+      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
     }
   },
   "deleteDialog": {
@@ -1003,6 +1008,12 @@
     "shared": {
       "browserBehavior": "Tarayıcı Davranışı",
       "allowAddonsOpenTabs": "Tarayıcı eklentilerinin otomatik olarak yeni sekme açmasına izin ver"
+    },
+    "camoufox": {
+      "fingerprint": {
+        "osCpuPlaceholder": "e.g., Intel Mac OS X 10.15",
+        "webglRendererPlaceholder": "e.g., llvmpipe, or similar"
+      }
     }
   },
   "cookies": {
@@ -1387,7 +1398,8 @@
     "enterAsJson": "{{title}} değerini JSON olarak girin",
     "launchArgs": "Başlatma argümanları",
     "launchArgsDescription": "Her satıra bir argüman girin: --name veya --name=value. Yalnızca desteklenen argümanlar kabul edilir; örneğin --disable-gpu, --mute-audio veya --disable-features=Name. Profil, proxy, pencere ve hata ayıklama argümanlarını Donut yönetir.",
-    "launchArgsSkipped": "{{profile}} için özel başlatma argümanları kullanılmadı. {{reason}}"
+    "launchArgsSkipped": "{{profile}} için özel başlatma argümanları kullanılmadı. {{reason}}",
+    "refreshFingerprint": "Refresh Fingerprint"
   },
   "warnings": {
     "windowResizeTitle": "Özel Pencere Boyutları",
@@ -1578,7 +1590,8 @@
     "extensionGroup": "Uzantı Grubu",
     "compatibility": {
       "label": "Uyumluluk",
-      "chromium": "Chromium"
+      "chromium": "Chromium",
+      "firefox": "Firefox"
     },
     "selectedFile": "Seçilen dosya",
     "namePlaceholder": "Uzantı adı",
@@ -3613,5 +3626,13 @@
     "noTags": "Etiket yok",
     "noProxy": "Proxy yok",
     "encrypted": "Şifreli"
+  },
+  "camoufoxDialog": {
+    "invalidFingerprint": "Invalid fingerprint configuration",
+    "invalidFingerprintDescription": "The fingerprint configuration contains invalid JSON. Please check your advanced settings.",
+    "saveFailed": "Failed to save configuration",
+    "unknownError": "Unknown error occurred",
+    "titleView": "View Fingerprint Settings - {{name}} ({{browser}})",
+    "titleConfigure": "Configure Fingerprint Settings - {{name}} ({{browser}})"
   }
 }
