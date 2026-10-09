@@ -511,6 +511,11 @@
       "reached": "Gói của bạn cho phép tạo {{limit}} hồ sơ mới mỗi giờ. Bạn có thể tạo hồ sơ tiếp theo sau khoảng {{minutes}} phút.",
       "warningTitle": "Bạn đang tạo hồ sơ quá nhanh",
       "warning": "Vui lòng đợi một chút. Tạo quá nhiều hồ sơ trong một giờ sẽ dẫn đến việc bị chặn tạm thời từ 24 giờ trở lên, trong thời gian đó bạn không thể tạo danh tính mới. Nếu cần giới hạn mỗi giờ cao hơn, hãy cân nhắc ủng hộ Donut bằng một gói trả phí."
+    },
+    "engine": {
+      "label": "Browser engine",
+      "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
+      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
     }
   },
   "deleteDialog": {
@@ -1003,6 +1008,12 @@
     "shared": {
       "browserBehavior": "Hành vi trình duyệt",
       "allowAddonsOpenTabs": "Cho phép tiện ích trình duyệt tự động mở tab mới"
+    },
+    "camoufox": {
+      "fingerprint": {
+        "osCpuPlaceholder": "ví dụ: Intel Mac OS X 10.15",
+        "webglRendererPlaceholder": "ví dụ: llvmpipe, hoặc tương tự"
+      }
     }
   },
   "cookies": {
@@ -1387,7 +1398,8 @@
     "enterAsJson": "Nhập {{title}} dưới dạng JSON",
     "launchArgs": "Tham số khởi chạy",
     "launchArgsDescription": "Nhập một tham số trên mỗi dòng, dạng --name hoặc --name=value. Chỉ chấp nhận các tham số được hỗ trợ, ví dụ --disable-gpu, --mute-audio hoặc --disable-features=Name. Donut quản lý các tham số hồ sơ, proxy, cửa sổ và gỡ lỗi.",
-    "launchArgsSkipped": "Các tham số khởi chạy tùy chỉnh không được dùng cho {{profile}}. {{reason}}"
+    "launchArgsSkipped": "Các tham số khởi chạy tùy chỉnh không được dùng cho {{profile}}. {{reason}}",
+    "refreshFingerprint": "Làm mới vân tay"
   },
   "warnings": {
     "windowResizeTitle": "Kích thước cửa sổ tùy chỉnh",
@@ -1578,7 +1590,8 @@
     "extensionGroup": "Nhóm tiện ích",
     "compatibility": {
       "label": "Tương thích",
-      "chromium": "Chromium"
+      "chromium": "Chromium",
+      "firefox": "Firefox"
     },
     "selectedFile": "Tệp đã chọn",
     "namePlaceholder": "Tên tiện ích",
@@ -3613,5 +3626,13 @@
     "noTags": "Không có thẻ",
     "noProxy": "Không có proxy",
     "encrypted": "Đã mã hóa"
+  },
+  "camoufoxDialog": {
+    "invalidFingerprint": "Cấu hình vân tay không hợp lệ",
+    "invalidFingerprintDescription": "Cấu hình vân tay chứa JSON không hợp lệ. Vui lòng kiểm tra cài đặt nâng cao.",
+    "saveFailed": "Lưu cấu hình thất bại",
+    "unknownError": "Đã xảy ra lỗi không xác định",
+    "titleView": "Xem cài đặt vân tay - {{name}} ({{browser}})",
+    "titleConfigure": "Cấu hình cài đặt vân tay - {{name}} ({{browser}})"
   }
 }

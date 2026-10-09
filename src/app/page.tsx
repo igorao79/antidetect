@@ -10,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { AboutDialog } from "@/components/about-dialog";
 import { AccountPage } from "@/components/account-page";
 import { AgentPage, type AgentTab } from "@/components/agent-page";
+import { CamoufoxConfigDialog } from "@/components/camoufox-config-dialog";
 import { CloneProfileDialog } from "@/components/clone-profile-dialog";
 import { CloseConfirmDialog } from "@/components/close-confirm-dialog";
 import { CommandPalette } from "@/components/command-palette";
@@ -108,6 +109,7 @@ import {
 } from "@/lib/toast-utils";
 import type {
   BrowserProfile,
+  CamoufoxConfig,
   ConsistencyResult,
   ExtensionGroup,
   PreLaunchChecks,
@@ -147,7 +149,7 @@ function consistencyFromErrorParams(
   };
 }
 
-type BrowserTypeString = "wayfern";
+type BrowserTypeString = "camoufox" | "wayfern";
 
 interface PendingUrl {
   id: string;
@@ -463,6 +465,8 @@ export default function Home() {
   const [proxyManagementDialogOpen, setProxyManagementDialogOpen] =
     useState(false);
   const [wayfernConfigDialogOpen, setWayfernConfigDialogOpen] = useState(false);
+  const [camoufoxConfigProfile, setCamoufoxConfigProfile] =
+    useState<BrowserProfile | null>(null);
   const [groupManagementDialogOpen, setGroupManagementDialogOpen] =
     useState(false);
   const [extensionManagementDialogOpen, setExtensionManagementDialogOpen] =
@@ -1110,9 +1114,24 @@ export default function Home() {
   }, [handleUrlOpen, t]);
 
   const handleConfigureWayfern = useCallback((profile: BrowserProfile) => {
+    if (profile.browser === "camoufox") {
+      setCamoufoxConfigProfile(profile);
+      return;
+    }
     setCurrentProfileForWayfernConfig(profile);
     setWayfernConfigDialogOpen(true);
   }, []);
+
+  const handleSaveCamoufoxConfig = useCallback(
+    async (profile: BrowserProfile, config: CamoufoxConfig) => {
+      await invoke("update_camoufox_config", {
+        profileId: profile.id,
+        config,
+      });
+      setCamoufoxConfigProfile(null);
+    },
+    [],
+  );
 
   const handleSaveWayfernConfig = useCallback(
     async (profile: BrowserProfile, config: WayfernConfig) => {
@@ -1139,6 +1158,7 @@ export default function Home() {
       releaseType: string;
       proxyId?: string;
       vpnId?: string;
+      camoufoxConfig?: CamoufoxConfig;
       wayfernConfig?: WayfernConfig;
       groupId?: string;
       extensionGroupId?: string;
@@ -1157,6 +1177,7 @@ export default function Home() {
             releaseType: profileData.releaseType,
             proxyId: profileData.proxyId,
             vpnId: profileData.vpnId,
+            camoufoxConfig: profileData.camoufoxConfig,
             wayfernConfig: profileData.wayfernConfig,
             groupId:
               profileData.groupId ??
@@ -2718,6 +2739,19 @@ export default function Home() {
               );
             }
           }}
+        />
+
+        <CamoufoxConfigDialog
+          isOpen={camoufoxConfigProfile !== null}
+          onClose={() => setCamoufoxConfigProfile(null)}
+          profile={camoufoxConfigProfile}
+          onSave={handleSaveCamoufoxConfig}
+          isRunning={
+            camoufoxConfigProfile
+              ? runningProfiles.has(camoufoxConfigProfile.id)
+              : false
+          }
+          crossOsUnlocked={crossOsUnlocked}
         />
 
         <WayfernConfigDialog

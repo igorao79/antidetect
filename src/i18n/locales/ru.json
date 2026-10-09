@@ -513,6 +513,11 @@
       "reached": "Ваш тариф позволяет создавать {{limit}} новых профилей в час. Следующий можно будет создать примерно через {{minutes}} мин.",
       "warningTitle": "Вы создаёте профили слишком быстро",
       "warning": "Подождите немного. Если создать слишком много профилей за час, генерация новых личностей будет временно заблокирована на 24 часа или дольше. Если вам нужен более высокий часовой лимит, поддержите Donut платным тарифом."
+    },
+    "engine": {
+      "label": "Движок браузера",
+      "camoufoxHint": "Camoufox: антидетект Firefox. Бесплатный, отпечатки генерируются локально.",
+      "wayfernHint": "Wayfern: антидетект Chromium. Нужна подписка Wayfern."
     }
   },
   "deleteDialog": {
@@ -1011,6 +1016,12 @@
     "shared": {
       "browserBehavior": "Поведение браузера",
       "allowAddonsOpenTabs": "Разрешить расширениям браузера автоматически открывать новые вкладки"
+    },
+    "camoufox": {
+      "fingerprint": {
+        "osCpuPlaceholder": "напр., Intel Mac OS X 10.15",
+        "webglRendererPlaceholder": "напр., llvmpipe или похожее"
+      }
     }
   },
   "cookies": {
@@ -1399,7 +1410,8 @@
     "enterAsJson": "Введите {{title}} в формате JSON",
     "launchArgs": "Аргументы запуска",
     "launchArgsDescription": "Введите по одному аргументу в строке: --name или --name=value. Принимаются только поддерживаемые аргументы, например --disable-gpu, --mute-audio или --disable-features=Name. Donut управляет аргументами профиля, прокси, окна и отладки.",
-    "launchArgsSkipped": "Собственные аргументы запуска не были применены к {{profile}}. {{reason}}"
+    "launchArgsSkipped": "Собственные аргументы запуска не были применены к {{profile}}. {{reason}}",
+    "refreshFingerprint": "Обновить отпечаток"
   },
   "warnings": {
     "windowResizeTitle": "Пользовательские размеры окна",
@@ -1590,7 +1602,8 @@
     "extensionGroup": "Группа расширений",
     "compatibility": {
       "label": "Совместимость",
-      "chromium": "Chromium"
+      "chromium": "Chromium",
+      "firefox": "Firefox"
     },
     "selectedFile": "Выбранный файл",
     "namePlaceholder": "Название расширения",
@@ -3679,5 +3692,13 @@
     "noTags": "Без тегов",
     "noProxy": "Без прокси",
     "encrypted": "Зашифровано"
+  },
+  "camoufoxDialog": {
+    "invalidFingerprint": "Неверная конфигурация отпечатка",
+    "invalidFingerprintDescription": "Конфигурация отпечатка содержит недопустимый JSON. Проверьте расширенные настройки.",
+    "saveFailed": "Не удалось сохранить конфигурацию",
+    "unknownError": "Произошла неизвестная ошибка",
+    "titleView": "Просмотр настроек отпечатка - {{name}} ({{browser}})",
+    "titleConfigure": "Настроить отпечаток - {{name}} ({{browser}})"
   }
 }

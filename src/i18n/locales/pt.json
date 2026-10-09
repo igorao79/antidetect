@@ -512,6 +512,11 @@
       "reached": "O seu plano permite {{limit}} novos perfis por hora. Poderá criar o próximo em cerca de {{minutes}} min.",
       "warningTitle": "Você está criando perfis rápido demais",
       "warning": "Aguarde um pouco. Criar perfis demais em uma hora resulta em um bloqueio temporário de 24 horas ou mais, durante o qual você não poderá gerar novas identidades. Se precisar de um limite por hora maior, considere apoiar o Donut com um plano pago."
+    },
+    "engine": {
+      "label": "Browser engine",
+      "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
+      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
     }
   },
   "deleteDialog": {
@@ -1007,6 +1012,12 @@
     "shared": {
       "browserBehavior": "Comportamento do navegador",
       "allowAddonsOpenTabs": "Permitir que extensões abram novas abas automaticamente"
+    },
+    "camoufox": {
+      "fingerprint": {
+        "osCpuPlaceholder": "ex., Intel Mac OS X 10.15",
+        "webglRendererPlaceholder": "ex., llvmpipe ou similar"
+      }
     }
   },
   "cookies": {
@@ -1393,7 +1404,8 @@
     "enterAsJson": "Insira {{title}} como JSON",
     "launchArgs": "Argumentos de inicialização",
     "launchArgsDescription": "Insira um argumento por linha, como --name ou --name=value. Apenas argumentos compatíveis são aceitos, por exemplo --disable-gpu, --mute-audio ou --disable-features=Name. O Donut controla os argumentos de perfil, proxy, janela e depuração.",
-    "launchArgsSkipped": "Os argumentos de inicialização personalizados não foram usados em {{profile}}. {{reason}}"
+    "launchArgsSkipped": "Os argumentos de inicialização personalizados não foram usados em {{profile}}. {{reason}}",
+    "refreshFingerprint": "Atualizar Impressão Digital"
   },
   "warnings": {
     "windowResizeTitle": "Dimensões de janela personalizadas",
@@ -1584,7 +1596,8 @@
     "extensionGroup": "Grupo de Extensões",
     "compatibility": {
       "label": "Compatibilidade",
-      "chromium": "Chromium"
+      "chromium": "Chromium",
+      "firefox": "Firefox"
     },
     "selectedFile": "Arquivo selecionado",
     "namePlaceholder": "Nome da extensão",
@@ -3646,5 +3659,13 @@
     "noTags": "Sem etiquetas",
     "noProxy": "Sem proxy",
     "encrypted": "Criptografado"
+  },
+  "camoufoxDialog": {
+    "invalidFingerprint": "Configuração de impressão digital inválida",
+    "invalidFingerprintDescription": "A configuração de impressão digital contém JSON inválido. Verifique suas configurações avançadas.",
+    "saveFailed": "Falha ao salvar configuração",
+    "unknownError": "Ocorreu um erro desconhecido",
+    "titleView": "Ver configurações de impressão digital - {{name}} ({{browser}})",
+    "titleConfigure": "Configurar impressão digital - {{name}} ({{browser}})"
   }
 }

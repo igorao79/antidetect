@@ -512,6 +512,11 @@
       "reached": "Tu plan permite {{limit}} perfiles nuevos por hora. Podrás crear el siguiente en unos {{minutes}} min.",
       "warningTitle": "Estás creando perfiles demasiado rápido",
       "warning": "Espera un poco. Crear demasiados perfiles en una hora provoca un bloqueo temporal de 24 horas o más, durante el cual no podrás generar nuevas identidades. Si necesitas un límite por hora más alto, considera apoyar a Donut con un plan de pago."
+    },
+    "engine": {
+      "label": "Browser engine",
+      "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
+      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
     }
   },
   "deleteDialog": {
@@ -1007,6 +1012,12 @@
     "shared": {
       "browserBehavior": "Comportamiento del navegador",
       "allowAddonsOpenTabs": "Permitir que los complementos abran nuevas pestañas automáticamente"
+    },
+    "camoufox": {
+      "fingerprint": {
+        "osCpuPlaceholder": "p. ej., Intel Mac OS X 10.15",
+        "webglRendererPlaceholder": "p. ej., llvmpipe, o similar"
+      }
     }
   },
   "cookies": {
@@ -1393,7 +1404,8 @@
     "enterAsJson": "Ingresa {{title}} como JSON",
     "launchArgs": "Argumentos de inicio",
     "launchArgsDescription": "Introduce un argumento por línea, como --name o --name=value. Solo se aceptan argumentos compatibles, por ejemplo --disable-gpu, --mute-audio o --disable-features=Name. Donut controla los argumentos de perfil, proxy, ventana y depuración.",
-    "launchArgsSkipped": "No se usaron los argumentos de inicio personalizados de {{profile}}. {{reason}}"
+    "launchArgsSkipped": "No se usaron los argumentos de inicio personalizados de {{profile}}. {{reason}}",
+    "refreshFingerprint": "Actualizar Huella Digital"
   },
   "warnings": {
     "windowResizeTitle": "Dimensiones de ventana personalizadas",
@@ -1584,7 +1596,8 @@
     "extensionGroup": "Grupo de Extensiones",
     "compatibility": {
       "label": "Compatibilidad",
-      "chromium": "Chromium"
+      "chromium": "Chromium",
+      "firefox": "Firefox"
     },
     "selectedFile": "Archivo seleccionado",
     "namePlaceholder": "Nombre de la extensión",
@@ -3646,5 +3659,13 @@
     "noTags": "Sin etiquetas",
     "noProxy": "Sin proxy",
     "encrypted": "Cifrado"
+  },
+  "camoufoxDialog": {
+    "invalidFingerprint": "Configuración de huella inválida",
+    "invalidFingerprintDescription": "La configuración de huella contiene JSON inválido. Revisa la configuración avanzada.",
+    "saveFailed": "Error al guardar la configuración",
+    "unknownError": "Ocurrió un error desconocido",
+    "titleView": "Ver configuración de huella - {{name}} ({{browser}})",
+    "titleConfigure": "Configurar huella - {{name}} ({{browser}})"
   }
 }

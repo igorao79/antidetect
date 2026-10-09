@@ -511,6 +511,11 @@
       "reached": "Your plan allows {{limit}} new profiles per hour. You can create the next one in about {{minutes}} min.",
       "warningTitle": "You're creating profiles too quickly",
       "warning": "Please wait a little. Creating too many profiles in one hour leads to a temporary block of 24 hours or more, during which you can't generate new identities. If you need a higher hourly limit, consider supporting Donut with a paid plan."
+    },
+    "engine": {
+      "label": "Browser engine",
+      "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
+      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
     }
   },
   "deleteDialog": {
@@ -1003,6 +1008,12 @@
     "shared": {
       "browserBehavior": "Browser Behavior",
       "allowAddonsOpenTabs": "Allow browser addons to open new tabs automatically"
+    },
+    "camoufox": {
+      "fingerprint": {
+        "osCpuPlaceholder": "e.g., Intel Mac OS X 10.15",
+        "webglRendererPlaceholder": "e.g., llvmpipe, or similar"
+      }
     }
   },
   "cookies": {
@@ -1387,7 +1398,8 @@
     "enterAsJson": "Enter {{title}} as JSON",
     "launchArgs": "Launch arguments",
     "launchArgsDescription": "Enter one argument per line, as --name or --name=value. Only supported arguments are accepted, for example --disable-gpu, --mute-audio or --disable-features=Name. Donut controls the profile, proxy, window and debugging arguments.",
-    "launchArgsSkipped": "Custom launch arguments were not used for {{profile}}. {{reason}}"
+    "launchArgsSkipped": "Custom launch arguments were not used for {{profile}}. {{reason}}",
+    "refreshFingerprint": "Refresh Fingerprint"
   },
   "warnings": {
     "windowResizeTitle": "Custom Window Dimensions",
@@ -1578,7 +1590,8 @@
     "extensionGroup": "Extension Group",
     "compatibility": {
       "label": "Compatibility",
-      "chromium": "Chromium"
+      "chromium": "Chromium",
+      "firefox": "Firefox"
     },
     "selectedFile": "Selected file",
     "namePlaceholder": "Extension name",
@@ -3613,5 +3626,13 @@
     "noTags": "No tags",
     "noProxy": "No proxy",
     "encrypted": "Encrypted"
+  },
+  "camoufoxDialog": {
+    "invalidFingerprint": "Invalid fingerprint configuration",
+    "invalidFingerprintDescription": "The fingerprint configuration contains invalid JSON. Please check your advanced settings.",
+    "saveFailed": "Failed to save configuration",
+    "unknownError": "Unknown error occurred",
+    "titleView": "View Fingerprint Settings - {{name}} ({{browser}})",
+    "titleConfigure": "Configure Fingerprint Settings - {{name}} ({{browser}})"
   }
 }

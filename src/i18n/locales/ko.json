@@ -511,6 +511,11 @@
       "reached": "현재 요금제는 시간당 새 프로필 {{limit}}개까지 허용합니다. 약 {{minutes}}분 후에 다음 프로필을 만들 수 있습니다.",
       "warningTitle": "프로필을 너무 빠르게 만들고 있습니다",
       "warning": "잠시 기다려 주세요. 1시간 안에 너무 많은 프로필을 만들면 24시간 이상 일시적으로 차단되며, 그동안 새 아이덴티티를 생성할 수 없습니다. 더 높은 시간당 한도가 필요하다면 유료 요금제로 Donut을 후원해 주세요."
+    },
+    "engine": {
+      "label": "Browser engine",
+      "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
+      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
     }
   },
   "deleteDialog": {
@@ -1003,6 +1008,12 @@
     "shared": {
       "browserBehavior": "브라우저 동작",
       "allowAddonsOpenTabs": "브라우저 확장 프로그램이 새 탭을 자동으로 열도록 허용"
+    },
+    "camoufox": {
+      "fingerprint": {
+        "osCpuPlaceholder": "예: Intel Mac OS X 10.15",
+        "webglRendererPlaceholder": "예: llvmpipe 또는 유사"
+      }
     }
   },
   "cookies": {
@@ -1387,7 +1398,8 @@
     "enterAsJson": "{{title}}을(를) JSON으로 입력",
     "launchArgs": "실행 인수",
     "launchArgsDescription": "한 줄에 하나의 인수를 --name 또는 --name=value 형식으로 입력하세요. 지원되는 인수만 사용할 수 있습니다(예: --disable-gpu, --mute-audio, --disable-features=Name). 프로필, 프록시, 창 및 디버깅 인수는 Donut이 관리합니다.",
-    "launchArgsSkipped": "{{profile}}에 사용자 지정 실행 인수가 적용되지 않았습니다. {{reason}}"
+    "launchArgsSkipped": "{{profile}}에 사용자 지정 실행 인수가 적용되지 않았습니다. {{reason}}",
+    "refreshFingerprint": "핑거프린트 새로 고침"
   },
   "warnings": {
     "windowResizeTitle": "사용자 지정 창 크기",
@@ -1578,7 +1590,8 @@
     "extensionGroup": "확장 프로그램 그룹",
     "compatibility": {
       "label": "호환성",
-      "chromium": "크로미움"
+      "chromium": "크로미움",
+      "firefox": "파이어폭스"
     },
     "selectedFile": "선택된 파일",
     "namePlaceholder": "확장 프로그램 이름",
@@ -3613,5 +3626,13 @@
     "noTags": "태그 없음",
     "noProxy": "프록시 없음",
     "encrypted": "암호화됨"
+  },
+  "camoufoxDialog": {
+    "invalidFingerprint": "잘못된 핑거프린트 구성",
+    "invalidFingerprintDescription": "핑거프린트 구성에 잘못된 JSON이 포함되어 있습니다. 고급 설정을 확인하세요.",
+    "saveFailed": "구성 저장 실패",
+    "unknownError": "알 수 없는 오류가 발생했습니다",
+    "titleView": "핑거프린트 설정 보기 - {{name}} ({{browser}})",
+    "titleConfigure": "핑거프린트 설정 구성 - {{name}} ({{browser}})"
   }
 }

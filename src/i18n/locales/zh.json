@@ -511,6 +511,11 @@
       "reached": "你的套餐每小时可新建 {{limit}} 个配置文件。约 {{minutes}} 分钟后可创建下一个。",
       "warningTitle": "你创建配置文件的速度太快了",
       "warning": "请稍等片刻。一小时内创建过多配置文件会导致 24 小时或更长时间的临时封锁，期间无法生成新的身份。如需更高的每小时上限，欢迎通过付费套餐支持 Donut。"
+    },
+    "engine": {
+      "label": "Browser engine",
+      "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
+      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
     }
   },
   "deleteDialog": {
@@ -1003,6 +1008,12 @@
     "shared": {
       "browserBehavior": "浏览器行为",
       "allowAddonsOpenTabs": "允许浏览器附加组件自动打开新标签页"
+    },
+    "camoufox": {
+      "fingerprint": {
+        "osCpuPlaceholder": "例如: Intel Mac OS X 10.15",
+        "webglRendererPlaceholder": "例如: llvmpipe 或类似"
+      }
     }
   },
   "cookies": {
@@ -1387,7 +1398,8 @@
     "enterAsJson": "以 JSON 格式输入 {{title}}",
     "launchArgs": "启动参数",
     "launchArgsDescription": "每行输入一个参数，格式为 --name 或 --name=value。只接受受支持的参数，例如 --disable-gpu、--mute-audio 或 --disable-features=Name。配置文件、代理、窗口和调试参数由 Donut 管理。",
-    "launchArgsSkipped": "{{profile}} 未使用自定义启动参数。{{reason}}"
+    "launchArgsSkipped": "{{profile}} 未使用自定义启动参数。{{reason}}",
+    "refreshFingerprint": "刷新指纹"
   },
   "warnings": {
     "windowResizeTitle": "自定义窗口尺寸",
@@ -1578,7 +1590,8 @@
     "extensionGroup": "扩展程序组",
     "compatibility": {
       "label": "兼容性",
-      "chromium": "Chromium"
+      "chromium": "Chromium",
+      "firefox": "Firefox"
     },
     "selectedFile": "已选文件",
     "namePlaceholder": "扩展程序名称",
@@ -3613,5 +3626,13 @@
     "noTags": "无标签",
     "noProxy": "无代理",
     "encrypted": "已加密"
+  },
+  "camoufoxDialog": {
+    "invalidFingerprint": "无效的指纹配置",
+    "invalidFingerprintDescription": "指纹配置包含无效的 JSON。请检查高级设置。",
+    "saveFailed": "保存配置失败",
+    "unknownError": "发生未知错误",
+    "titleView": "查看指纹设置 - {{name}} ({{browser}})",
+    "titleConfigure": "配置指纹设置 - {{name}} ({{browser}})"
   }
 }
