@@ -846,6 +846,9 @@ pub struct GithubRelease {
 pub struct GithubAsset {
   pub name: String,
   pub browser_download_url: String,
+  /// `sha256:<hex>` digest GitHub computes for every release asset.
+  #[serde(default)]
+  pub digest: Option<String>,
   #[serde(default)]
   pub size: u64,
   #[serde(default)]

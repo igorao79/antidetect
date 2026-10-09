@@ -390,6 +390,7 @@ mod tests {
         id: Some(1),
         node_id: Some("test_asset_node_id".to_string()),
         name: "GeoLite2-City.mmdb".to_string(),
+        digest: None,
         label: None,
         content_type: Some("application/octet-stream".to_string()),
         state: Some("uploaded".to_string()),

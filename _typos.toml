@@ -9,6 +9,8 @@ extend-exclude = [
     "CHANGELOG.md",
     # Upstream patches for the Flatpak's tray libraries, applied verbatim.
     "packaging/flatpak/patches/",
+    # Camoufox fingerprint data (font names, device strings) copied verbatim.
+    "src-tauri/src/camoufox/data/",
 ]
 
 [default.extend-words]
