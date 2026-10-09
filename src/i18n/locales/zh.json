@@ -134,16 +134,16 @@
       "title": "默认浏览器",
       "setAsDefault": "设为默认浏览器",
       "alreadyDefault": "已是默认浏览器",
-      "description": "设为默认后，Donut Browser 将处理网页链接并允许您选择使用哪个配置文件。",
-      "setSuccess": "Donut Browser 现在是您的默认浏览器",
+      "description": "设为默认后，Antidetect 将处理网页链接并允许您选择使用哪个配置文件。",
+      "setSuccess": "Antidetect 现在是您的默认浏览器",
       "setFailed": "无法设置默认浏览器",
       "finishInSystemSettings": "请在 Windows 设置中完成",
-      "finishInSystemSettingsDescription": "Donut Browser 已注册。Windows 设置已打开：在“Web 浏览器”中选择 Donut Browser 即可完成。"
+      "finishInSystemSettingsDescription": "Antidetect 已注册。Windows 设置已打开：在“Web 浏览器”中选择 Antidetect 即可完成。"
     },
     "permissions": {
       "title": "系统权限",
       "loading": "加载权限中...",
-      "description": "这些权限允许从 Donut Browser 启动的浏览器访问系统资源。每个网站仍会单独请求您的权限。",
+      "description": "这些权限允许从 Antidetect 启动的浏览器访问系统资源。每个网站仍会单独请求您的权限。",
       "microphone": "麦克风",
       "microphoneDescription": "浏览器应用程序的麦克风访问权限",
       "camera": "摄像头",
@@ -200,7 +200,7 @@
       "copyLogsDescription": "复制经过脱敏的近期日志包（最多 5 MB）。脱敏无法识别所有类型的个人数据，请在分享前检查内容。"
     },
     "disableAutoUpdates": "禁用应用自动更新",
-    "disableAutoUpdatesDescription": "阻止应用程序自动检查和安装 Donut Browser 更新。浏览器更新不受影响。",
+    "disableAutoUpdatesDescription": "阻止应用程序自动检查和安装 Antidetect 更新。浏览器更新不受影响。",
     "keepDecryptedProfilesInRam": "在内存中保留已解密的配置文件",
     "keepDecryptedProfilesInRamDescription": "在启动之间保留密码保护配置文件的已解密内存副本,以便更快地启动。无论如何磁盘上的副本始终保持加密。",
     "privacy": {
@@ -230,9 +230,9 @@
       "chooseTitle": "为数据目录选择一个文件夹",
       "move": "移动",
       "willMoveTo": "全部移动到",
-      "moved": "数据目录已移动。重启 Donut Browser 后生效。",
+      "moved": "数据目录已移动。重启 Antidetect 后生效。",
       "reading": "正在读取数据目录…",
-      "restartRequired": "重启 Donut Browser 以使用新位置。在此之前仍从旧位置运行。",
+      "restartRequired": "重启 Antidetect 以使用新位置。在此之前仍从旧位置运行。",
       "environmentOverride": "已设置 DONUTBROWSER_DATA_DIR，因此无论在这里选择哪里，应用都会使用该位置。",
       "missing": "所选的数据目录不存在。如果它在可移动磁盘上，请重新接上并重启。",
       "useDefault": "重新使用默认位置",
@@ -265,7 +265,7 @@
       "extensions": "扩展程序"
     },
     "newProfile": "新建",
-    "donutLogo": "Donut Browser 标识",
+    "donutLogo": "Antidetect 标识",
     "scrollGroupsLeft": "向左滚动分组",
     "scrollGroupsRight": "向右滚动分组"
   },
@@ -510,7 +510,7 @@
     "hourlyLimit": {
       "reached": "你的套餐每小时可新建 {{limit}} 个配置文件。约 {{minutes}} 分钟后可创建下一个。",
       "warningTitle": "你创建配置文件的速度太快了",
-      "warning": "请稍等片刻。一小时内创建过多配置文件会导致 24 小时或更长时间的临时封锁，期间无法生成新的身份。如需更高的每小时上限，欢迎通过付费套餐支持 Donut。"
+      "warning": "请稍等片刻。一小时内创建过多配置文件会导致 24 小时或更长时间的临时封锁，期间无法生成新的身份。如需更高的每小时上限，欢迎通过付费套餐支持 Antidetect。"
     },
     "engine": {
       "label": "Browser engine",
@@ -1397,7 +1397,7 @@
     "addFontsPlaceholder": "添加字体...",
     "enterAsJson": "以 JSON 格式输入 {{title}}",
     "launchArgs": "启动参数",
-    "launchArgsDescription": "每行输入一个参数，格式为 --name 或 --name=value。只接受受支持的参数，例如 --disable-gpu、--mute-audio 或 --disable-features=Name。配置文件、代理、窗口和调试参数由 Donut 管理。",
+    "launchArgsDescription": "每行输入一个参数，格式为 --name 或 --name=value。只接受受支持的参数，例如 --disable-gpu、--mute-audio 或 --disable-features=Name。配置文件、代理、窗口和调试参数由 Antidetect 管理。",
     "launchArgsSkipped": "{{profile}} 未使用自定义启动参数。{{reason}}",
     "refreshFingerprint": "刷新指纹"
   },
@@ -1480,7 +1480,7 @@
     "launchHook": {
       "title": "启动钩子 URL",
       "label": "启动钩子 URL",
-      "description": "每次启动配置文件时，Donut Browser 都会向此 URL 发送一个 GET 请求。",
+      "description": "每次启动配置文件时，Antidetect 都会向此 URL 发送一个 GET 请求。",
       "placeholder": "https://example.com/hooks/profile-launch",
       "invalidUrlHint": "请输入有效的 http:// 或 https:// URL。"
     },
@@ -1630,8 +1630,8 @@
     "selectedFolder": "已选文件夹",
     "selectFolder": "选择文件夹",
     "linkFolder": "直接从该文件夹加载",
-    "linkFolderOff": "文件夹会复制到 Donut，扩展可随身携带并同步到你的其他设备。",
-    "linkFolderOn": "Donut 每次启动都直接从该文件夹加载扩展。你的修改会在下次启动浏览器时生效，但扩展只保留在本机，不会同步。",
+    "linkFolderOff": "文件夹会复制到 Antidetect，扩展可随身携带并同步到你的其他设备。",
+    "linkFolderOn": "Antidetect 每次启动都直接从该文件夹加载扩展。你的修改会在下次启动浏览器时生效，但扩展只保留在本机，不会同步。",
     "replaceSource": "替换来源",
     "linkedNoSync": "已链接的扩展只保留在本机，无法同步。",
     "uploadFailed": "添加扩展失败",
@@ -1664,7 +1664,7 @@
     "fromUrl": "从链接添加",
     "fromUrlTooltip": "通过 Chrome 应用商店链接、扩展 ID 或 .crx/.zip 直链添加扩展",
     "urlPlaceholder": "应用商店链接、扩展 ID 或 .crx 链接",
-    "urlHint": "Donut 通过 HTTPS 下载扩展包，并在保存前读取其名称和版本。",
+    "urlHint": "Antidetect 通过 HTTPS 下载扩展包，并在保存前读取其名称和版本。",
     "fetchExtension": "获取",
     "fetching": "获取中…",
     "fetchedIdentity": "{{name}} · 版本 {{version}}",
@@ -1954,7 +1954,7 @@
   },
   "wayfernTerms": {
     "title": "Wayfern 条款和条件",
-    "description": "在使用 Donut Browser 之前,你必须阅读并同意 Wayfern 的条款和条件。",
+    "description": "在使用 Antidetect 之前,你必须阅读并同意 Wayfern 的条款和条件。",
     "reviewLabel": "请查看以下条款和条件:",
     "agreeNotice": "点击「我接受」即表示你同意受这些条款约束。",
     "acceptButton": "我接受",
@@ -1973,10 +1973,10 @@
   "permissionDialog": {
     "titleMicrophone": "需要麦克风访问权限",
     "titleCamera": "需要摄像头访问权限",
-    "descMicrophone": "Donut Browser 需要访问你的麦克风以在浏览器中启用麦克风功能。每个想使用麦克风的网站仍会单独请求你的许可。",
-    "descCamera": "Donut Browser 需要访问你的摄像头以在浏览器中启用摄像头功能。每个想使用摄像头的网站仍会单独请求你的许可。",
-    "grantedMicrophone": "权限已授予!从 Donut Browser 启动的浏览器现在可以访问你的麦克风。",
-    "grantedCamera": "权限已授予!从 Donut Browser 启动的浏览器现在可以访问你的摄像头。",
+    "descMicrophone": "Antidetect 需要访问你的麦克风以在浏览器中启用麦克风功能。每个想使用麦克风的网站仍会单独请求你的许可。",
+    "descCamera": "Antidetect 需要访问你的摄像头以在浏览器中启用摄像头功能。每个想使用摄像头的网站仍会单独请求你的许可。",
+    "grantedMicrophone": "权限已授予!从 Antidetect 启动的浏览器现在可以访问你的麦克风。",
+    "grantedCamera": "权限已授予!从 Antidetect 启动的浏览器现在可以访问你的摄像头。",
     "notGrantedMicrophone": "未授予权限。点击下方按钮请求访问你的麦克风。",
     "notGrantedCamera": "未授予权限。点击下方按钮请求访问你的摄像头。",
     "doneButton": "完成",
@@ -2096,7 +2096,7 @@
   },
   "appUpdate": {
     "toast": {
-      "updateFailed": "更新 Donut Browser 失败",
+      "updateFailed": "更新 Antidetect 失败",
       "restartFailed": "重启失败",
       "updateReady": "更新就绪，请重启以应用",
       "manualDownloadRequired": "需要手动下载",
@@ -2190,7 +2190,7 @@
     },
     "warnings": {
       "forgetWarningTitle": "重要:此密码无法恢复",
-      "forgetWarningBody": "Donut Browser 无法重置、恢复或绕过此密码。如果忘记,您将永久无法访问此配置文件的数据。"
+      "forgetWarningBody": "Antidetect 无法重置、恢复或绕过此密码。如果忘记,您将永久无法访问此配置文件的数据。"
     },
     "modes": {
       "set": "设置",
@@ -2233,7 +2233,7 @@
     "extensionNotADirectory": "该路径不是文件夹。",
     "extensionManifestMissing": "该文件夹中没有 manifest.json。请选择包含扩展 manifest.json 的文件夹。",
     "extensionManifestInvalid": "无法读取该文件夹中的 manifest.json。",
-    "extensionDirTooLarge": "该文件夹过大，无法复制到 Donut（上限为 256 MB、20,000 个文件）。请改用链接方式加载。",
+    "extensionDirTooLarge": "该文件夹过大，无法复制到 Antidetect（上限为 256 MB、20,000 个文件）。请改用链接方式加载。",
     "extensionPathHasComma": "该文件夹路径中包含逗号，Chromium 无法加载。请重命名或移动该文件夹。",
     "extensionLinkRequiresDirectory": "只有文件夹才能就地加载。要添加压缩包，请关闭链接选项。",
     "extensionLinkedCannotSync": "该扩展是从本机文件夹加载的，没有需要同步的内容。",
@@ -2273,14 +2273,14 @@
     "dnsRulesSaveFailed": "保存 DNS 规则失败。",
     "dnsRulesExportFailed": "导出 DNS 规则失败。",
     "fingerprintMatchFailed": "无法将指纹匹配到代理。",
-    "proxySidecarVersionMismatch": "部分 Donut Browser 文件来自不同版本。请重新安装最新更新；你的配置文件将保持安全。",
+    "proxySidecarVersionMismatch": "部分 Antidetect 文件来自不同版本。请重新安装最新更新；你的配置文件将保持安全。",
     "updateProfilesRunning": "安装更新前，请停止所有正在运行的配置文件。",
-    "updatePreparationFailed": "Donut Browser 无法安全停止后台网络进程。请重启电脑，然后再次尝试更新。",
+    "updatePreparationFailed": "Antidetect 无法安全停止后台网络进程。请重启电脑，然后再次尝试更新。",
     "wayfernTermsRequired": "请先接受 Wayfern 条款与条件，再使用 Wayfern。",
     "apiPortUnavailable": "API 服务器找不到可用端口。",
     "mcpAgentUnknown": "不支持此 MCP 客户端。",
-    "mcpAgentInstallFailed": "无法将 Donut Browser 添加到 MCP 客户端：{{detail}}",
-    "mcpAgentRemoveFailed": "无法从 MCP 客户端移除 Donut Browser：{{detail}}",
+    "mcpAgentInstallFailed": "无法将 Antidetect 添加到 MCP 客户端：{{detail}}",
+    "mcpAgentRemoveFailed": "无法从 MCP 客户端移除 Antidetect：{{detail}}",
     "vlessConfigInvalid": "分享链接无效。",
     "xrayUnavailable": "此系统无法使用 Xray-core。",
     "xrayUnsupportedOs": "VLESS、VMess、Trojan 和 Hysteria2 代理需要 macOS 12 或更高版本。",
@@ -2328,17 +2328,17 @@
     "vpnWorkerStartFailed": "无法启动 VPN 连接：{{detail}}",
     "exitProbeFailed": "无法连接代理出口节点以检查其位置。",
     "vlessUnsupported": {
-      "security": "此链接使用了 Donut 不支持的安全设置。Donut 支持 none、TLS 和 REALITY，且 REALITY 只能用于 RAW (TCP)、gRPC 或 XHTTP。",
-      "flow": "此链接使用了 Donut 不支持的 flow。XTLS Vision 只能用于搭配 TLS 或 REALITY 的 RAW (TCP) 上的 VLESS。",
-      "transport": "此链接使用了 Donut 不支持的传输方式或传输模式。Donut 支持 RAW (TCP)、WebSocket、gRPC、HTTPUpgrade 和 XHTTP，不支持 mKCP、HTTP/2 和 QUIC。",
-      "encryption": "此链接使用了 Donut 不支持的加密设置。",
-      "headerType": "此链接使用了 Donut 不支持的头部伪装。",
-      "fingerprint": "此链接要求的 TLS 指纹 Donut 不支持。",
+      "security": "此链接使用了 Antidetect 不支持的安全设置。Antidetect 支持 none、TLS 和 REALITY，且 REALITY 只能用于 RAW (TCP)、gRPC 或 XHTTP。",
+      "flow": "此链接使用了 Antidetect 不支持的 flow。XTLS Vision 只能用于搭配 TLS 或 REALITY 的 RAW (TCP) 上的 VLESS。",
+      "transport": "此链接使用了 Antidetect 不支持的传输方式或传输模式。Antidetect 支持 RAW (TCP)、WebSocket、gRPC、HTTPUpgrade 和 XHTTP，不支持 mKCP、HTTP/2 和 QUIC。",
+      "encryption": "此链接使用了 Antidetect 不支持的加密设置。",
+      "headerType": "此链接使用了 Antidetect 不支持的头部伪装。",
+      "fingerprint": "此链接要求的 TLS 指纹 Antidetect 不支持。",
       "sni": "链接缺少有效的服务器名称 (sni)。",
       "publicKey": "链接缺少 REALITY 公钥 (pbk)。",
-      "obfs": "此 Hysteria2 链接使用了 Donut 不支持的混淆方式。Donut 仅支持 Salamander。",
+      "obfs": "此 Hysteria2 链接使用了 Antidetect 不支持的混淆方式。Antidetect 仅支持 Salamander。",
       "scheme": "这不是受支持的分享链接，必须以 vless://、vmess://、trojan://、hysteria2:// 或 hy2:// 开头。",
-      "parameter": "链接中包含 Donut 不支持的选项。",
+      "parameter": "链接中包含 Antidetect 不支持的选项。",
       "malformed": "分享链接无效。"
     },
     "camoufoxRemoved": "Camoufox 已不再受支持。请使用 Wayfern 重新创建此配置文件。",
@@ -2361,7 +2361,7 @@
     "profileExportFailed": "无法导出此配置文件。{{detail}}",
     "profileExportTooLarge": "此配置文件太大，无法导出。请清理部分浏览数据后重试。",
     "profileImportFailed": "无法读取此存档。{{detail}}",
-    "profileImportTooNew": "此存档由更新版本的 Donut Browser 写入。请更新应用后重试。",
+    "profileImportTooNew": "此存档由更新版本的 Antidetect 写入。请更新应用后重试。",
     "profileImportUnsafeArchive": "此存档试图写入配置文件目录之外的位置，已被拒绝。",
     "recordingAlreadyRunning": "已经有一个录制在进行。请先停止它再开始新的。",
     "profileNotRunning": "该配置文件的浏览器未在运行，请先启动它。",
@@ -2421,12 +2421,12 @@
     "syncDisplayTooSmall": "显示器太小，无法以该布局排列 {{windows}} 个窗口。",
     "syncArrangeFailed": "没有窗口被移动。",
     "extensionPathInvalid": "该路径不允许使用：它包含“..”。",
-    "systemProxyUnreachable": "Donut 无法通过系统代理 {{proxy}} 连接。请在系统网络设置中修正或关闭该代理，然后重试。",
+    "systemProxyUnreachable": "Antidetect 无法通过系统代理 {{proxy}} 连接。请在系统网络设置中修正或关闭该代理，然后重试。",
     "profileRouteRequired": "此配置文件没有代理或 VPN。设置的“隐私”中已阻止在没有它们的情况下启动。",
     "profileRouteUnavailable": "此配置文件的代理或 VPN 不可用，为隐藏您的 IP 地址已停止启动。请为该配置文件分配可用的代理或 VPN。",
     "wayfernLaunchArgsRequiresPro": "自定义启动参数需要 Pro 或更高套餐。请清除参数或升级套餐。",
     "wayfernLaunchArgInvalid": "每个参数请使用 --name 或 --name=value 格式。不允许使用控制字符。",
-    "wayfernLaunchArgReserved": "{{argument}} 由 Donut 管理。请移除此参数。",
+    "wayfernLaunchArgReserved": "{{argument}} 由 Antidetect 管理。请移除此参数。",
     "wayfernLaunchArgNotAllowed": "{{argument}} 不是受支持的启动参数。请移除它。",
     "wayfernLaunchArgValueInvalid": "{{argument}} 的值不受支持。",
     "wayfernLaunchArgsLimit": "最多使用 {{count}} 个启动参数，每个最多 {{length}} 个字符。",
@@ -2446,7 +2446,7 @@
       "importProfileHint": "从其他工具导入",
       "keyboardShortcuts": "键盘快捷键",
       "keyboardShortcutsHint": "查看所有快捷键",
-      "about": "关于 Donut Browser",
+      "about": "关于 Antidetect",
       "aboutHint": "版本和应用信息",
       "trash": "回收站",
       "trashHint": "恢复已删除的配置文件",
@@ -2523,7 +2523,7 @@
     },
     "selfHosted": {
       "title": "自托管同步服务器",
-      "description": "将 Donut 连接到您自己的 donut-sync 服务器，无需使用托管云即可同步配置文件、代理、组和扩展程序。",
+      "description": "将 Antidetect 连接到您自己的 donut-sync 服务器，无需使用托管云即可同步配置文件、代理、组和扩展程序。",
       "disabledWhileLoggedIn": "登录 Donut 账户时无法使用自托管同步。请先退出登录以使用自定义服务器。",
       "connectionStatus": "连接：",
       "statusUnknown": "未测试",
@@ -2553,7 +2553,7 @@
       "stopProfile": "停止 {{name}}",
       "profileInfo": "信息 — {{name}}",
       "createProfile": "创建配置文件",
-      "about": "关于 Donut Browser"
+      "about": "关于 Antidetect"
     }
   },
   "shortcuts": {
@@ -2573,13 +2573,13 @@
     "openTips": "打开小贴士"
   },
   "closeConfirm": {
-    "title": "关闭 Donut Browser？",
+    "title": "关闭 Antidetect？",
     "description": "您想将应用最小化到系统托盘还是退出？",
     "minimize": "最小化到托盘",
     "quit": "退出"
   },
   "tray": {
-    "show": "显示 Donut Browser",
+    "show": "显示 Antidetect",
     "quit": "退出"
   },
   "onboarding": {
@@ -2600,13 +2600,13 @@
       "finish": "完成"
     },
     "thankYou": {
-      "title": "感谢您选择 Donut Browser",
+      "title": "感谢您选择 Antidetect",
       "body": "希望它能让您的网络浏览更加私密——每个身份彼此独立，数据不会离开您的设备。祝您使用愉快！",
       "cta": "开始浏览"
     }
   },
   "welcome": {
-    "title": "欢迎使用 Donut Browser",
+    "title": "欢迎使用 Antidetect",
     "tagline": "一款开源的反检测浏览器，可同时管理多个身份。",
     "skip": "跳过",
     "next": "下一步",
@@ -2619,7 +2619,7 @@
     },
     "ready": {
       "title": "正在准备",
-      "descDownloading": "正在下载你的第一个浏览器（Wayfern）。此一次性设置在后台运行——请稍候。",
+      "descDownloading": "正在下载你的第一个浏览器（Camoufox）。此一次性设置在后台运行——请稍候。",
       "descReady": "你的浏览器已就绪。来创建你的第一个配置文件吧。",
       "cta": "创建我的第一个配置文件",
       "downloading": "正在下载…",
@@ -2650,7 +2650,7 @@
     },
     "license": {
       "title": "许可",
-      "body": "Donut Browser 是开源软件，可免费使用。",
+      "body": "Antidetect 是开源软件，可免费使用。",
       "agree": "我知道了",
       "personalTitle": "个人使用",
       "personalDesc": "永久免费。",
@@ -2682,7 +2682,7 @@
     "version": "版本 {{version}}",
     "portableBadge": "便携版",
     "licenseNotice": "开源反检测浏览器。",
-    "website": "官网",
+    "basedOn": "基于 Donut Browser（AGPL-3.0）。",
     "github": "GitHub",
     "licenses": "许可证",
     "searchLicenses": "搜索许可证…",
@@ -3038,16 +3038,16 @@
     "vpnExtensionConfirmed": "已知的 VPN 或代理工具",
     "vpnExtensionLikely": "疑似 VPN 或代理工具",
     "vpnExtensionCapability": "拥有代理权限",
-    "vpnExtensionExplainer": "如果其中之一将流量转发到别处，浏览器的真实位置将不再与创建此配置文件时使用的时区、语言和地理位置一致，而 Donut 无法从外部察觉。",
+    "vpnExtensionExplainer": "如果其中之一将流量转发到别处，浏览器的真实位置将不再与创建此配置文件时使用的时区、语言和地理位置一致，而 Antidetect 无法从外部察觉。",
     "proxyCapableHeading": "可以更改代理的扩展",
-    "proxyCapableIntro": "它们看起来不是 VPN，但拥有 Chromium 的代理权限，下载管理器和调试工具同样需要该权限。Donut 无法判断它们是否在使用它：",
-    "sourceDonut": "由 Donut 管理",
+    "proxyCapableIntro": "它们看起来不是 VPN，但拥有 Chromium 的代理权限，下载管理器和调试工具同样需要该权限。Antidetect 无法判断它们是否在使用它：",
+    "sourceDonut": "由 Antidetect 管理",
     "sourceBrowser": "已安装在配置文件中",
     "measurementUnreliable": "此配置文件中有扩展拥有代理权限，因此出口检测结果可能并非浏览器实际使用的线路。",
-    "scanIncompleteEncrypted": "此配置文件已加密，因此只能检查由 Donut 管理的扩展。",
-    "scanIncompleteEphemeral": "此配置文件尚无数据，因此只能检查由 Donut 管理的扩展。",
+    "scanIncompleteEncrypted": "此配置文件已加密，因此只能检查由 Antidetect 管理的扩展。",
+    "scanIncompleteEphemeral": "此配置文件尚无数据，因此只能检查由 Antidetect 管理的扩展。",
     "scanIncompletePartial": "扩展扫描被中断，可能有部分扩展未列出。",
-    "probePending": "尚未测量代理出口。Donut 会在启动过程中检查，如不匹配则停止。",
+    "probePending": "尚未测量代理出口。Antidetect 会在启动过程中检查，如不匹配则停止。",
     "launchAnyway": "仍要启动",
     "dontBlockAgain": "不再因这一完全相同的不匹配而阻止",
     "dontWarnExtensions": "不再就这些扩展发出警告",
@@ -3055,7 +3055,7 @@
     "cancelledSummary": "已取消 {{total}} 次启动中的 {{cancelled}} 次",
     "vpnExtensionEntry": " {{version}} — {{capability}}、{{source}}",
     "vpnExtensionEntryNoVersion": " — {{capability}}、{{source}}",
-    "scanIncompleteMissing": "此配置文件尚未启动过，因此只能检查由 Donut 管理的扩展。",
+    "scanIncompleteMissing": "此配置文件尚未启动过，因此只能检查由 Antidetect 管理的扩展。",
     "exitUnverifiedTimezone": "此配置文件的指纹未声明时区，因此出口检测无法进行验证。启动不会被阻止，但也没有进行任何比较。",
     "exitUnverifiedLanguage": "此配置文件的指纹语言无法与出口国家/地区比较，因此该项检测属于未验证，而非通过。"
   },
@@ -3439,7 +3439,7 @@
   },
   "groupBookmarks": {
     "title": "{{name}} 的书签",
-    "description": "该分组中的每个配置文件都会在 Donut 管理的文件夹中获得这些书签，其他书签保持不变。",
+    "description": "该分组中的每个配置文件都会在 Antidetect 管理的文件夹中获得这些书签，其他书签保持不变。",
     "editTooltip": "分组书签（{{n}}）",
     "empty": "该分组还没有共享书签。",
     "addRow": "添加书签",
@@ -3491,7 +3491,7 @@
       "fingerprintGate": {
         "label": "指纹检查",
         "title": "让指纹与出口保持一致",
-        "body": "启动前，Donut 会将代理出口的时区和语言与配置文件的指纹进行比较，并阻止不一致的启动。请修正指纹，或者在确认无误的情况下于“高级”中关闭此检查。",
+        "body": "启动前，Antidetect 会将代理出口的时区和语言与配置文件的指纹进行比较，并阻止不一致的启动。请修正指纹，或者在确认无误的情况下于“高级”中关闭此检查。",
         "action": "打开高级设置"
       },
       "profilePassword": {
@@ -3509,7 +3509,7 @@
       "defaultBrowser": {
         "label": "默认浏览器",
         "title": "让每个链接在正确的配置文件中打开",
-        "body": "将 Donut 设为默认浏览器后，来自其他应用的每个链接都会询问应由哪个配置文件打开。",
+        "body": "将 Antidetect 设为默认浏览器后，来自其他应用的每个链接都会询问应由哪个配置文件打开。",
         "action": "打开默认浏览器设置"
       },
       "extensionGroups": {
@@ -3521,7 +3521,7 @@
       "selfHostedSync": {
         "label": "自托管同步",
         "title": "备份到自己的服务器",
-        "body": "将 Donut 指向自托管的 donut-sync 服务器，配置文件、代理和分组就会镜像到那里。再加上端到端密码，服务器只会看到密文。",
+        "body": "将 Antidetect 指向自托管的 donut-sync 服务器，配置文件、代理和分组就会镜像到那里。再加上端到端密码，服务器只会看到密文。",
         "action": "打开账户"
       },
       "trash": {
@@ -3532,14 +3532,14 @@
       },
       "localApi": {
         "label": "API 与 MCP",
-        "title": "用脚本和智能体自动化 Donut",
+        "title": "用脚本和智能体自动化 Antidetect",
         "body": "本地 REST API 可让脚本列出、创建和配置配置文件。在“集成”中开启并复制令牌。",
         "action": "打开集成"
       },
       "importProfiles": {
         "label": "导入",
         "title": "从 Chrome、Edge 或 Brave 迁移配置文件",
-        "body": "导入会把 Chromium 配置文件或压缩包中的 Cookie、登录信息和扩展复制到新的 Donut 配置文件，随时可以启动。",
+        "body": "导入会把 Chromium 配置文件或压缩包中的 Cookie、登录信息和扩展复制到新的 Antidetect 配置文件，随时可以启动。",
         "action": "打开导入"
       },
       "cloudBackup": {

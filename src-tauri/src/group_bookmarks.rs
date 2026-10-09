@@ -26,7 +26,7 @@ use std::path::{Path, PathBuf};
 use crate::profile::types::BrowserProfile;
 
 /// The folder Donut owns inside the bookmark bar. Users see this name.
-pub const MANAGED_FOLDER_NAME: &str = "Donut Group Bookmarks";
+pub const MANAGED_FOLDER_NAME: &str = "Antidetect Group Bookmarks";
 
 /// Marker written into the folder's `meta_info`, so the folder is still
 /// recognised after someone renames it. Chromium round-trips `meta_info`

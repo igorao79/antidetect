@@ -126,6 +126,9 @@ pub struct AppUpdateInfo {
   pub asset_digest: Option<String>,
 }
 
+/// Whether to offer upstream Donut Browser releases as app updates.
+const UPSTREAM_SELF_UPDATE_ENABLED: bool = false;
+
 pub struct AppAutoUpdater {
   client: Client,
   extractor: &'static crate::extraction::Extractor,
@@ -171,6 +174,13 @@ impl AppAutoUpdater {
   pub async fn check_for_updates(
     &self,
   ) -> Result<Option<AppUpdateInfo>, Box<dyn std::error::Error + Send + Sync>> {
+    // Antidetect fork: upstream's releases are Donut Browser builds and would
+    // replace this app, so self-update stays off until the fork has its own
+    // release channel.
+    if !UPSTREAM_SELF_UPDATE_ENABLED {
+      return Ok(None);
+    }
+
     let current_version = Self::get_current_version();
     let is_nightly = Self::is_nightly_build();
 
