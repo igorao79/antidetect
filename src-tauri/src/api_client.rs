@@ -34,8 +34,24 @@ impl VersionComponent {
       major: parts.first().copied().unwrap_or(0),
       minor: parts.get(1).copied().unwrap_or(0),
       patch: parts.get(2).copied().unwrap_or(0),
-      build: parts.get(3).copied().unwrap_or(0),
+      // Camoufox tags carry their build as a beta number
+      // (`v156.0.1-beta.36`); it orders releases of one Firefox version.
+      build: parts
+        .get(3)
+        .copied()
+        .or_else(|| Self::beta_number(version))
+        .unwrap_or(0),
     }
+  }
+
+  fn beta_number(version: &str) -> Option<u32> {
+    let rest = &version[version.to_lowercase().find("beta")? + 4..];
+    let digits: String = rest
+      .trim_start_matches(['.', '-'])
+      .chars()
+      .take_while(char::is_ascii_digit)
+      .collect();
+    digits.parse().ok()
   }
 
   fn numeric_prefix(version: &str) -> String {
@@ -385,6 +401,27 @@ static API_CLIENT: std::sync::LazyLock<ApiClient> = std::sync::LazyLock::new(Api
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn camoufox_betas_sort_by_beta_number() {
+    let mut versions = vec![
+      "v156.0.1-beta.32".to_string(),
+      "v156.0.1-beta.36".to_string(),
+      "v150.0-beta.40".to_string(),
+      "v156.0.1-beta.9".to_string(),
+    ];
+    sort_versions(&mut versions);
+    assert_eq!(
+      versions,
+      vec![
+        "v156.0.1-beta.36",
+        "v156.0.1-beta.32",
+        "v156.0.1-beta.9",
+        "v150.0-beta.40"
+      ]
+    );
+    assert_eq!(VersionComponent::parse("138.0.7204.50").build, 50);
+  }
 
   #[test]
   fn test_version_parsing() {

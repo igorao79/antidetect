@@ -381,9 +381,14 @@ impl Downloader {
     // Every browser asset is published with a `<asset>.sha256` sidecar. Fetch
     // it before the transfer starts: an asset nobody can verify costs one small
     // request to reject here, or a wasted gigabyte to reject later.
-    let expected_sha256 = self
-      .fetch_expected_archive_checksum(&download_url, browser_type.display_name(), version)
-      .await?;
+    let expected_sha256 = if browser_type == BrowserType::Camoufox {
+      // Camoufox publishes no sidecar; GitHub's own asset digest serves instead.
+      self.camoufox_asset_digest(version, &download_url).await?
+    } else {
+      self
+        .fetch_expected_archive_checksum(&download_url, browser_type.display_name(), version)
+        .await?
+    };
 
     let file_path = self
       .stream_download(
@@ -420,6 +425,43 @@ impl Downloader {
     .await?;
 
     Ok(file_path)
+  }
+
+  /// The SHA-256 GitHub reports for the Camoufox asset at `download_url`.
+  async fn camoufox_asset_digest(
+    &self,
+    version: &str,
+    download_url: &str,
+  ) -> Result<String, Box<dyn std::error::Error + Send + Sync>> {
+    let unavailable = || -> Box<dyn std::error::Error + Send + Sync> {
+      serde_json::json!({
+        "code": "BROWSER_CHECKSUM_UNAVAILABLE",
+        "params": { "browser": "Camoufox", "version": version }
+      })
+      .to_string()
+      .into()
+    };
+    let releases = self
+      .api_client
+      .fetch_camoufox_releases_with_caching(true)
+      .await
+      .map_err(|e| {
+        log::warn!("Could not read Camoufox releases for the checksum: {e}");
+        unavailable()
+      })?;
+    releases
+      .iter()
+      .filter(|release| release.tag_name == version)
+      .flat_map(|release| release.assets.iter())
+      .find(|asset| asset.browser_download_url == download_url)
+      .and_then(|asset| asset.digest.as_deref())
+      .and_then(|digest| digest.strip_prefix("sha256:"))
+      .filter(|hex| hex.len() == 64 && hex.bytes().all(|b| b.is_ascii_hexdigit()))
+      .map(str::to_string)
+      .ok_or_else(|| {
+        log::warn!("GitHub reports no SHA-256 digest for Camoufox {version}");
+        unavailable()
+      })
   }
 
   /// Fetch `<asset>.sha256` and return the digest it publishes for the asset.

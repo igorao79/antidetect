@@ -1542,7 +1542,9 @@ pub async fn ensure_active_browsers_downloaded(
   let version_manager = crate::browser_version_manager::BrowserVersionManager::instance();
   let mut downloaded = Vec::new();
 
-  for browser in &["wayfern", "camoufox"] {
+  // Only the free engine is fetched up front. Wayfern is a ~1.2 GB download
+  // that needs a subscription, so it is fetched when a profile asks for it.
+  for browser in &["camoufox"] {
     // Check if any version is already downloaded
     let existing = registry.get_downloaded_versions(browser);
     if !existing.is_empty() {
@@ -1601,8 +1603,10 @@ pub async fn ensure_active_browsers_downloaded(
     // timeout so that a hang anywhere in the download pipeline (version resolution,
     // a stalled stream, extraction) cannot block the next browser forever. This is
     // the core of the bug fix: Wayfern going first must never starve Camoufox.
+    // Camoufox is ~1.3 GB, so an attempt gets 30 minutes on a slow link; a
+    // retry resumes the partial file rather than starting over.
     const MAX_ATTEMPTS: u32 = 3;
-    const ATTEMPT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(600);
+    const ATTEMPT_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(1800);
     let mut succeeded = false;
     for attempt in 1..=MAX_ATTEMPTS {
       let result = tokio::time::timeout(

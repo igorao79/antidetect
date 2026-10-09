@@ -212,6 +212,11 @@ opt-level = 0
 # Split debuginfo on macOS for faster linking (ignored on other platforms)
 split-debuginfo = "unpacked"
 
+# Dependencies carry no debug info: with it the dev/test/clippy builds grew
+# target/ past 25 GB. Our own crate keeps full debug info.
+[profile.dev.package."*"]
+debug = false
+
 [profile.release]
 codegen-units = 1
 opt-level = 3
