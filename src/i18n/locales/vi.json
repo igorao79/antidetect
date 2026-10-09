@@ -134,16 +134,16 @@
       "title": "Trình duyệt mặc định",
       "setAsDefault": "Đặt làm trình duyệt mặc định",
       "alreadyDefault": "Đã là trình duyệt mặc định",
-      "description": "Khi được đặt làm mặc định, Donut Browser sẽ xử lý các liên kết web và cho phép bạn chọn hồ sơ để sử dụng.",
-      "setSuccess": "Donut Browser hiện là trình duyệt mặc định của bạn",
+      "description": "Khi được đặt làm mặc định, Antidetect sẽ xử lý các liên kết web và cho phép bạn chọn hồ sơ để sử dụng.",
+      "setSuccess": "Antidetect hiện là trình duyệt mặc định của bạn",
       "setFailed": "Không thể đặt trình duyệt mặc định",
       "finishInSystemSettings": "Hoàn tất trong Cài đặt Windows",
-      "finishInSystemSettingsDescription": "Donut Browser đã được đăng ký. Cài đặt Windows đang mở: chọn Donut Browser trong mục Trình duyệt web để hoàn tất."
+      "finishInSystemSettingsDescription": "Antidetect đã được đăng ký. Cài đặt Windows đang mở: chọn Antidetect trong mục Trình duyệt web để hoàn tất."
     },
     "permissions": {
       "title": "Quyền hệ thống",
       "loading": "Đang tải quyền...",
-      "description": "Các quyền này cho phép trình duyệt được khởi chạy từ Donut Browser truy cập tài nguyên hệ thống. Mỗi trang web vẫn sẽ yêu cầu quyền riêng lẻ.",
+      "description": "Các quyền này cho phép trình duyệt được khởi chạy từ Antidetect truy cập tài nguyên hệ thống. Mỗi trang web vẫn sẽ yêu cầu quyền riêng lẻ.",
       "microphone": "Micro",
       "microphoneDescription": "Quyền truy cập micro cho ứng dụng trình duyệt",
       "camera": "Camera",
@@ -200,7 +200,7 @@
       "copyLogsDescription": "Sao chép gói nhật ký gần đây đã được che thông tin nhạy cảm (tối đa 5 MB). Hãy xem lại trước khi chia sẻ vì việc che dữ liệu không thể nhận diện mọi loại dữ liệu cá nhân."
     },
     "disableAutoUpdates": "Tắt tự động cập nhật ứng dụng",
-    "disableAutoUpdatesDescription": "Ngăn ứng dụng tự động kiểm tra và cài đặt bản cập nhật Donut Browser. Cập nhật trình duyệt không bị ảnh hưởng.",
+    "disableAutoUpdatesDescription": "Ngăn ứng dụng tự động kiểm tra và cài đặt bản cập nhật Antidetect. Cập nhật trình duyệt không bị ảnh hưởng.",
     "keepDecryptedProfilesInRam": "Giữ hồ sơ đã giải mã trong RAM",
     "keepDecryptedProfilesInRamDescription": "Giữ bản sao đã giải mã trong RAM của hồ sơ được bảo vệ bằng mật khẩu giữa các lần khởi chạy để khởi động nhanh hơn. Bản sao trên ổ đĩa vẫn được mã hóa.",
     "privacy": {
@@ -230,9 +230,9 @@
       "chooseTitle": "Chọn một thư mục cho thư mục dữ liệu",
       "move": "Chuyển",
       "willMoveTo": "Mọi thứ sẽ chuyển đến",
-      "moved": "Đã chuyển thư mục dữ liệu. Khởi động lại Donut Browser để dùng nó.",
+      "moved": "Đã chuyển thư mục dữ liệu. Khởi động lại Antidetect để dùng nó.",
       "reading": "Đang đọc thư mục dữ liệu…",
-      "restartRequired": "Khởi động lại Donut Browser để dùng vị trí mới. Đến lúc đó nó vẫn chạy từ vị trí cũ.",
+      "restartRequired": "Khởi động lại Antidetect để dùng vị trí mới. Đến lúc đó nó vẫn chạy từ vị trí cũ.",
       "environmentOverride": "DONUTBROWSER_DATA_DIR đã được đặt, nên ứng dụng dùng vị trí đó dù bạn chọn gì ở đây.",
       "missing": "Không thấy thư mục dữ liệu đã chọn. Nếu nó nằm trên ổ rời, hãy cắm lại và khởi động lại.",
       "useDefault": "Dùng lại vị trí mặc định",
@@ -265,7 +265,7 @@
       "extensions": "Tiện ích mở rộng"
     },
     "newProfile": "Mới",
-    "donutLogo": "Logo Donut Browser",
+    "donutLogo": "Logo Antidetect",
     "scrollGroupsLeft": "Cuộn nhóm sang trái",
     "scrollGroupsRight": "Cuộn nhóm sang phải"
   },
@@ -510,7 +510,7 @@
     "hourlyLimit": {
       "reached": "Gói của bạn cho phép tạo {{limit}} hồ sơ mới mỗi giờ. Bạn có thể tạo hồ sơ tiếp theo sau khoảng {{minutes}} phút.",
       "warningTitle": "Bạn đang tạo hồ sơ quá nhanh",
-      "warning": "Vui lòng đợi một chút. Tạo quá nhiều hồ sơ trong một giờ sẽ dẫn đến việc bị chặn tạm thời từ 24 giờ trở lên, trong thời gian đó bạn không thể tạo danh tính mới. Nếu cần giới hạn mỗi giờ cao hơn, hãy cân nhắc ủng hộ Donut bằng một gói trả phí."
+      "warning": "Vui lòng đợi một chút. Tạo quá nhiều hồ sơ trong một giờ sẽ dẫn đến việc bị chặn tạm thời từ 24 giờ trở lên, trong thời gian đó bạn không thể tạo danh tính mới. Nếu cần giới hạn mỗi giờ cao hơn, hãy cân nhắc ủng hộ Antidetect bằng một gói trả phí."
     },
     "engine": {
       "label": "Browser engine",
@@ -1397,7 +1397,7 @@
     "addFontsPlaceholder": "Thêm phông chữ...",
     "enterAsJson": "Nhập {{title}} dưới dạng JSON",
     "launchArgs": "Tham số khởi chạy",
-    "launchArgsDescription": "Nhập một tham số trên mỗi dòng, dạng --name hoặc --name=value. Chỉ chấp nhận các tham số được hỗ trợ, ví dụ --disable-gpu, --mute-audio hoặc --disable-features=Name. Donut quản lý các tham số hồ sơ, proxy, cửa sổ và gỡ lỗi.",
+    "launchArgsDescription": "Nhập một tham số trên mỗi dòng, dạng --name hoặc --name=value. Chỉ chấp nhận các tham số được hỗ trợ, ví dụ --disable-gpu, --mute-audio hoặc --disable-features=Name. Antidetect quản lý các tham số hồ sơ, proxy, cửa sổ và gỡ lỗi.",
     "launchArgsSkipped": "Các tham số khởi chạy tùy chỉnh không được dùng cho {{profile}}. {{reason}}",
     "refreshFingerprint": "Làm mới vân tay"
   },
@@ -1480,7 +1480,7 @@
     "launchHook": {
       "title": "URL hook khởi chạy",
       "label": "URL hook khởi chạy",
-      "description": "Donut Browser sẽ gửi yêu cầu GET đến URL này mỗi khi profile được khởi chạy.",
+      "description": "Antidetect sẽ gửi yêu cầu GET đến URL này mỗi khi profile được khởi chạy.",
       "placeholder": "https://example.com/hooks/profile-launch",
       "invalidUrlHint": "Nhập URL http:// hoặc https:// hợp lệ."
     },
@@ -1630,8 +1630,8 @@
     "selectedFolder": "Thư mục đã chọn",
     "selectFolder": "Chọn thư mục",
     "linkFolder": "Tải trực tiếp từ thư mục này",
-    "linkFolderOff": "Thư mục được sao chép vào Donut. Tiện ích có thể mang đi và đồng bộ sang các thiết bị khác của bạn.",
-    "linkFolderOn": "Donut tải tiện ích trực tiếp từ thư mục này mỗi lần khởi chạy. Các thay đổi của bạn có hiệu lực ở lần mở trình duyệt tiếp theo, nhưng tiện ích chỉ nằm trên máy này và không bao giờ đồng bộ.",
+    "linkFolderOff": "Thư mục được sao chép vào Antidetect. Tiện ích có thể mang đi và đồng bộ sang các thiết bị khác của bạn.",
+    "linkFolderOn": "Antidetect tải tiện ích trực tiếp từ thư mục này mỗi lần khởi chạy. Các thay đổi của bạn có hiệu lực ở lần mở trình duyệt tiếp theo, nhưng tiện ích chỉ nằm trên máy này và không bao giờ đồng bộ.",
     "replaceSource": "Thay nguồn",
     "linkedNoSync": "Tiện ích được liên kết chỉ nằm trên máy này nên không thể đồng bộ.",
     "uploadFailed": "Không thêm được tiện ích",
@@ -1664,7 +1664,7 @@
     "fromUrl": "Từ liên kết",
     "fromUrlTooltip": "Thêm tiện ích từ liên kết Chrome Web Store, ID tiện ích hoặc liên kết .crx hay .zip trực tiếp",
     "urlPlaceholder": "Liên kết Web Store, ID tiện ích hoặc liên kết .crx",
-    "urlHint": "Donut tải gói qua HTTPS và đọc tên cùng phiên bản trước khi lưu bất cứ thứ gì.",
+    "urlHint": "Antidetect tải gói qua HTTPS và đọc tên cùng phiên bản trước khi lưu bất cứ thứ gì.",
     "fetchExtension": "Tải về",
     "fetching": "Đang tải…",
     "fetchedIdentity": "{{name}} · phiên bản {{version}}",
@@ -1954,7 +1954,7 @@
   },
   "wayfernTerms": {
     "title": "Điều khoản và điều kiện Wayfern",
-    "description": "Trước khi sử dụng Donut Browser, bạn phải đọc và đồng ý với Điều khoản và Điều kiện của Wayfern.",
+    "description": "Trước khi sử dụng Antidetect, bạn phải đọc và đồng ý với Điều khoản và Điều kiện của Wayfern.",
     "reviewLabel": "Vui lòng xem lại Điều khoản và Điều kiện tại:",
     "agreeNotice": "Bằng cách nhấn \"Tôi chấp nhận\", bạn đồng ý bị ràng buộc bởi các điều khoản này.",
     "acceptButton": "Tôi chấp nhận",
@@ -1973,10 +1973,10 @@
   "permissionDialog": {
     "titleMicrophone": "Yêu cầu quyền truy cập micro",
     "titleCamera": "Yêu cầu quyền truy cập camera",
-    "descMicrophone": "Donut Browser cần quyền truy cập micro để bật tính năng micro trong trình duyệt web. Mỗi trang web muốn sử dụng micro vẫn sẽ hỏi quyền bạn riêng lẻ.",
-    "descCamera": "Donut Browser cần quyền truy cập camera để bật tính năng camera trong trình duyệt web. Mỗi trang web muốn sử dụng camera vẫn sẽ hỏi quyền bạn riêng lẻ.",
-    "grantedMicrophone": "Đã cấp quyền! Trình duyệt khởi chạy từ Donut Browser giờ có thể truy cập micro của bạn.",
-    "grantedCamera": "Đã cấp quyền! Trình duyệt khởi chạy từ Donut Browser giờ có thể truy cập camera của bạn.",
+    "descMicrophone": "Antidetect cần quyền truy cập micro để bật tính năng micro trong trình duyệt web. Mỗi trang web muốn sử dụng micro vẫn sẽ hỏi quyền bạn riêng lẻ.",
+    "descCamera": "Antidetect cần quyền truy cập camera để bật tính năng camera trong trình duyệt web. Mỗi trang web muốn sử dụng camera vẫn sẽ hỏi quyền bạn riêng lẻ.",
+    "grantedMicrophone": "Đã cấp quyền! Trình duyệt khởi chạy từ Antidetect giờ có thể truy cập micro của bạn.",
+    "grantedCamera": "Đã cấp quyền! Trình duyệt khởi chạy từ Antidetect giờ có thể truy cập camera của bạn.",
     "notGrantedMicrophone": "Chưa cấp quyền. Nhấn nút bên dưới để yêu cầu quyền truy cập micro.",
     "notGrantedCamera": "Chưa cấp quyền. Nhấn nút bên dưới để yêu cầu quyền truy cập camera.",
     "doneButton": "Xong",
@@ -2096,7 +2096,7 @@
   },
   "appUpdate": {
     "toast": {
-      "updateFailed": "Cập nhật Donut Browser thất bại",
+      "updateFailed": "Cập nhật Antidetect thất bại",
       "restartFailed": "Khởi động lại thất bại",
       "updateReady": "Bản cập nhật sẵn sàng, khởi động lại để áp dụng",
       "manualDownloadRequired": "Cần tải xuống thủ công",
@@ -2190,7 +2190,7 @@
     },
     "warnings": {
       "forgetWarningTitle": "Quan trọng: mật khẩu này không thể khôi phục",
-      "forgetWarningBody": "Donut Browser không thể đặt lại, khôi phục hoặc bỏ qua mật khẩu này. Nếu bạn quên, bạn sẽ mất quyền truy cập vĩnh viễn vào dữ liệu profile này."
+      "forgetWarningBody": "Antidetect không thể đặt lại, khôi phục hoặc bỏ qua mật khẩu này. Nếu bạn quên, bạn sẽ mất quyền truy cập vĩnh viễn vào dữ liệu profile này."
     },
     "modes": {
       "set": "Đặt",
@@ -2233,7 +2233,7 @@
     "extensionNotADirectory": "Đường dẫn đó không phải là thư mục.",
     "extensionManifestMissing": "Thư mục đó không có manifest.json. Hãy chọn thư mục chứa manifest.json của tiện ích.",
     "extensionManifestInvalid": "Không đọc được manifest.json trong thư mục đó.",
-    "extensionDirTooLarge": "Thư mục đó quá lớn để sao chép vào Donut (giới hạn là 256 MB và 20.000 tệp). Hãy liên kết thư mục thay vì sao chép.",
+    "extensionDirTooLarge": "Thư mục đó quá lớn để sao chép vào Antidetect (giới hạn là 256 MB và 20.000 tệp). Hãy liên kết thư mục thay vì sao chép.",
     "extensionPathHasComma": "Đường dẫn thư mục có dấu phẩy nên Chromium không tải được. Hãy đổi tên hoặc di chuyển thư mục.",
     "extensionLinkRequiresDirectory": "Chỉ có thể tải tại chỗ một thư mục. Hãy tắt liên kết để thêm tệp nén.",
     "extensionLinkedCannotSync": "Tiện ích này được tải từ một thư mục trên máy này nên không có gì để đồng bộ.",
@@ -2273,14 +2273,14 @@
     "dnsRulesSaveFailed": "Không thể lưu quy tắc DNS.",
     "dnsRulesExportFailed": "Không thể xuất quy tắc DNS.",
     "fingerprintMatchFailed": "Không thể khớp vân tay với proxy.",
-    "proxySidecarVersionMismatch": "Một số tệp Donut Browser thuộc các phiên bản khác nhau. Hãy cài đặt lại bản cập nhật mới nhất; hồ sơ của bạn vẫn được giữ an toàn.",
+    "proxySidecarVersionMismatch": "Một số tệp Antidetect thuộc các phiên bản khác nhau. Hãy cài đặt lại bản cập nhật mới nhất; hồ sơ của bạn vẫn được giữ an toàn.",
     "updateProfilesRunning": "Hãy dừng tất cả hồ sơ đang chạy trước khi cài đặt bản cập nhật.",
-    "updatePreparationFailed": "Donut Browser không thể dừng an toàn một tiến trình mạng chạy nền. Hãy khởi động lại máy tính rồi thử cập nhật lại.",
+    "updatePreparationFailed": "Antidetect không thể dừng an toàn một tiến trình mạng chạy nền. Hãy khởi động lại máy tính rồi thử cập nhật lại.",
     "wayfernTermsRequired": "Hãy chấp nhận Điều khoản và Điều kiện của Wayfern để sử dụng Wayfern.",
     "apiPortUnavailable": "Máy chủ API không tìm thấy cổng khả dụng.",
     "mcpAgentUnknown": "Ứng dụng MCP này không được hỗ trợ.",
-    "mcpAgentInstallFailed": "Không thể thêm Donut Browser vào ứng dụng MCP: {{detail}}",
-    "mcpAgentRemoveFailed": "Không thể xóa Donut Browser khỏi ứng dụng MCP: {{detail}}",
+    "mcpAgentInstallFailed": "Không thể thêm Antidetect vào ứng dụng MCP: {{detail}}",
+    "mcpAgentRemoveFailed": "Không thể xóa Antidetect khỏi ứng dụng MCP: {{detail}}",
     "vlessConfigInvalid": "Liên kết chia sẻ không hợp lệ.",
     "xrayUnavailable": "Xray-core không khả dụng trên hệ thống này.",
     "xrayUnsupportedOs": "Proxy VLESS, VMess, Trojan và Hysteria2 yêu cầu macOS 12 trở lên.",
@@ -2328,17 +2328,17 @@
     "vpnWorkerStartFailed": "Không thể khởi động kết nối VPN: {{detail}}",
     "exitProbeFailed": "Không thể kết nối tới nút thoát của proxy để kiểm tra vị trí.",
     "vlessUnsupported": {
-      "security": "Liên kết này dùng một thiết lập bảo mật mà Donut không hỗ trợ. Donut hỗ trợ none, TLS và REALITY, và REALITY chỉ qua RAW (TCP), gRPC hoặc XHTTP.",
-      "flow": "Liên kết này dùng một flow mà Donut không hỗ trợ. XTLS Vision chỉ hoạt động với VLESS qua RAW (TCP) kèm TLS hoặc REALITY.",
-      "transport": "Liên kết này dùng một phương thức truyền tải, hoặc một chế độ truyền tải, mà Donut không hỗ trợ. Donut hỗ trợ RAW (TCP), WebSocket, gRPC, HTTPUpgrade và XHTTP, nhưng không hỗ trợ mKCP, HTTP/2 hay QUIC.",
-      "encryption": "Liên kết này dùng một thiết lập mã hóa mà Donut không hỗ trợ.",
-      "headerType": "Liên kết này dùng một kiểu làm rối header mà Donut không hỗ trợ.",
-      "fingerprint": "Liên kết này yêu cầu một dấu vân tay TLS mà Donut không hỗ trợ.",
+      "security": "Liên kết này dùng một thiết lập bảo mật mà Antidetect không hỗ trợ. Antidetect hỗ trợ none, TLS và REALITY, và REALITY chỉ qua RAW (TCP), gRPC hoặc XHTTP.",
+      "flow": "Liên kết này dùng một flow mà Antidetect không hỗ trợ. XTLS Vision chỉ hoạt động với VLESS qua RAW (TCP) kèm TLS hoặc REALITY.",
+      "transport": "Liên kết này dùng một phương thức truyền tải, hoặc một chế độ truyền tải, mà Antidetect không hỗ trợ. Antidetect hỗ trợ RAW (TCP), WebSocket, gRPC, HTTPUpgrade và XHTTP, nhưng không hỗ trợ mKCP, HTTP/2 hay QUIC.",
+      "encryption": "Liên kết này dùng một thiết lập mã hóa mà Antidetect không hỗ trợ.",
+      "headerType": "Liên kết này dùng một kiểu làm rối header mà Antidetect không hỗ trợ.",
+      "fingerprint": "Liên kết này yêu cầu một dấu vân tay TLS mà Antidetect không hỗ trợ.",
       "sni": "Liên kết thiếu tên máy chủ (sni) hợp lệ.",
       "publicKey": "Liên kết thiếu khóa công khai REALITY (pbk).",
-      "obfs": "Liên kết Hysteria2 này dùng một kiểu làm rối mà Donut không hỗ trợ. Donut chỉ hỗ trợ Salamander.",
+      "obfs": "Liên kết Hysteria2 này dùng một kiểu làm rối mà Antidetect không hỗ trợ. Antidetect chỉ hỗ trợ Salamander.",
       "scheme": "Đây không phải liên kết chia sẻ được hỗ trợ. Nó phải bắt đầu bằng vless://, vmess://, trojan://, hysteria2:// hoặc hy2://.",
-      "parameter": "Liên kết chứa một tùy chọn mà Donut không hỗ trợ.",
+      "parameter": "Liên kết chứa một tùy chọn mà Antidetect không hỗ trợ.",
       "malformed": "Liên kết chia sẻ không hợp lệ."
     },
     "camoufoxRemoved": "Camoufox không còn được hỗ trợ. Hãy tạo lại hồ sơ này bằng Wayfern.",
@@ -2361,7 +2361,7 @@
     "profileExportFailed": "Không thể xuất hồ sơ này. {{detail}}",
     "profileExportTooLarge": "Hồ sơ này quá lớn để xuất. Hãy xóa bớt dữ liệu duyệt web rồi thử lại.",
     "profileImportFailed": "Không thể đọc tệp lưu trữ này. {{detail}}",
-    "profileImportTooNew": "Tệp này được tạo bởi phiên bản Donut Browser mới hơn. Hãy cập nhật ứng dụng rồi thử lại.",
+    "profileImportTooNew": "Tệp này được tạo bởi phiên bản Antidetect mới hơn. Hãy cập nhật ứng dụng rồi thử lại.",
     "profileImportUnsafeArchive": "Tệp này cố ghi ra ngoài thư mục hồ sơ nên đã bị từ chối.",
     "recordingAlreadyRunning": "Đã có một bản ghi đang chạy. Hãy dừng nó trước khi bắt đầu bản mới.",
     "profileNotRunning": "Trình duyệt của hồ sơ này chưa chạy. Hãy khởi động nó trước.",
@@ -2421,12 +2421,12 @@
     "syncDisplayTooSmall": "Màn hình quá nhỏ cho {{windows}} cửa sổ theo cách xếp đó.",
     "syncArrangeFailed": "Không cửa sổ nào được di chuyển.",
     "extensionPathInvalid": "Đường dẫn đó không được phép: nó chứa '..'.",
-    "systemProxyUnreachable": "Donut không thể kết nối qua proxy hệ thống {{proxy}}. Hãy sửa hoặc tắt proxy trong cài đặt mạng của hệ thống rồi thử lại.",
+    "systemProxyUnreachable": "Antidetect không thể kết nối qua proxy hệ thống {{proxy}}. Hãy sửa hoặc tắt proxy trong cài đặt mạng của hệ thống rồi thử lại.",
     "profileRouteRequired": "Hồ sơ này không có proxy hoặc VPN. Việc khởi chạy khi không có chúng đang bị chặn trong Cài đặt, mục Quyền riêng tư.",
     "profileRouteUnavailable": "Proxy hoặc VPN của hồ sơ này không khả dụng, nên việc khởi chạy đã dừng để giữ địa chỉ IP của bạn được ẩn. Hãy gán cho hồ sơ một proxy hoặc VPN hoạt động được.",
     "wayfernLaunchArgsRequiresPro": "Tham số khởi chạy tùy chỉnh yêu cầu gói Pro trở lên. Xóa các tham số hoặc nâng cấp gói của bạn.",
     "wayfernLaunchArgInvalid": "Dùng --name hoặc --name=value cho mỗi tham số. Không cho phép ký tự điều khiển.",
-    "wayfernLaunchArgReserved": "Donut quản lý {{argument}}. Hãy xóa tham số này.",
+    "wayfernLaunchArgReserved": "Antidetect quản lý {{argument}}. Hãy xóa tham số này.",
     "wayfernLaunchArgNotAllowed": "{{argument}} không phải là tham số khởi chạy được hỗ trợ. Hãy xóa nó.",
     "wayfernLaunchArgValueInvalid": "Giá trị của {{argument}} không được hỗ trợ.",
     "wayfernLaunchArgsLimit": "Dùng tối đa {{count}} tham số khởi chạy, mỗi tham số tối đa {{length}} ký tự.",
@@ -2446,7 +2446,7 @@
       "importProfileHint": "Đưa profile từ công cụ khác",
       "keyboardShortcuts": "Phím tắt",
       "keyboardShortcutsHint": "Xem tất cả phím tắt",
-      "about": "Giới thiệu về Donut Browser",
+      "about": "Giới thiệu về Antidetect",
       "aboutHint": "Phiên bản và thông tin ứng dụng",
       "trash": "Thùng rác",
       "trashHint": "Khôi phục hồ sơ đã xóa",
@@ -2523,7 +2523,7 @@
     },
     "selfHosted": {
       "title": "Máy chủ đồng bộ tự lưu trữ",
-      "description": "Trỏ Donut đến máy chủ donut-sync của riêng bạn để đồng bộ profile, proxy, nhóm và tiện ích mà không cần sử dụng đám mây.",
+      "description": "Trỏ Antidetect đến máy chủ donut-sync của riêng bạn để đồng bộ profile, proxy, nhóm và tiện ích mà không cần sử dụng đám mây.",
       "disabledWhileLoggedIn": "Đồng bộ tự lưu trữ không khả dụng khi bạn đã đăng nhập vào tài khoản Donut. Đăng xuất để sử dụng máy chủ tùy chỉnh.",
       "connectionStatus": "Kết nối:",
       "statusUnknown": "Chưa kiểm tra",
@@ -2553,7 +2553,7 @@
       "stopProfile": "Dừng {{name}}",
       "profileInfo": "Thông tin — {{name}}",
       "createProfile": "Tạo hồ sơ",
-      "about": "Giới thiệu về Donut Browser"
+      "about": "Giới thiệu về Antidetect"
     }
   },
   "shortcuts": {
@@ -2573,13 +2573,13 @@
     "openTips": "Mở mẹo"
   },
   "closeConfirm": {
-    "title": "Đóng Donut Browser?",
+    "title": "Đóng Antidetect?",
     "description": "Bạn muốn thu nhỏ ứng dụng vào khay hệ thống hay thoát?",
     "minimize": "Thu nhỏ vào khay",
     "quit": "Thoát"
   },
   "tray": {
-    "show": "Hiển thị Donut Browser",
+    "show": "Hiển thị Antidetect",
     "quit": "Thoát"
   },
   "onboarding": {
@@ -2600,13 +2600,13 @@
       "finish": "Hoàn tất"
     },
     "thankYou": {
-      "title": "Cảm ơn bạn đã chọn Donut Browser",
+      "title": "Cảm ơn bạn đã chọn Antidetect",
       "body": "Hy vọng nó giúp việc duyệt web của bạn riêng tư hơn — mỗi danh tính được giữ riêng, và không có gì rời khỏi máy của bạn. Chúc bạn duyệt web vui vẻ.",
       "cta": "Bắt đầu duyệt web"
     }
   },
   "welcome": {
-    "title": "Chào mừng đến với Donut Browser",
+    "title": "Chào mừng đến với Antidetect",
     "tagline": "Trình duyệt chống phát hiện mã nguồn mở để quản lý nhiều danh tính cùng lúc.",
     "skip": "Bỏ qua",
     "next": "Tiếp theo",
@@ -2619,7 +2619,7 @@
     },
     "ready": {
       "title": "Đang thiết lập",
-      "descDownloading": "Đang tải trình duyệt đầu tiên của bạn (Wayfern). Quá trình thiết lập một lần này chạy ngầm — vui lòng chờ.",
+      "descDownloading": "Đang tải trình duyệt đầu tiên của bạn (Camoufox). Quá trình thiết lập một lần này chạy ngầm — vui lòng chờ.",
       "descReady": "Trình duyệt của bạn đã sẵn sàng. Hãy tạo hồ sơ đầu tiên của bạn.",
       "cta": "Tạo hồ sơ đầu tiên của tôi",
       "downloading": "Đang tải xuống…",
@@ -2650,7 +2650,7 @@
     },
     "license": {
       "title": "Cấp phép",
-      "body": "Donut Browser là mã nguồn mở và miễn phí sử dụng.",
+      "body": "Antidetect là mã nguồn mở và miễn phí sử dụng.",
       "agree": "Tôi hiểu",
       "personalTitle": "Sử dụng cá nhân",
       "personalDesc": "Miễn phí vĩnh viễn.",
@@ -2682,7 +2682,7 @@
     "version": "Phiên bản {{version}}",
     "portableBadge": "bản portable",
     "licenseNotice": "Trình duyệt chống phát hiện mã nguồn mở.",
-    "website": "Trang web",
+    "basedOn": "Dựa trên Donut Browser (AGPL-3.0).",
     "github": "GitHub",
     "licenses": "Giấy phép",
     "searchLicenses": "Tìm kiếm giấy phép…",
@@ -3038,16 +3038,16 @@
     "vpnExtensionConfirmed": "Công cụ VPN hoặc proxy đã biết",
     "vpnExtensionLikely": "Có vẻ là công cụ VPN hoặc proxy",
     "vpnExtensionCapability": "Có quyền proxy",
-    "vpnExtensionExplainer": "Nếu một trong số đó chuyển lưu lượng của bạn đi nơi khác, vị trí thực của trình duyệt sẽ không còn khớp với múi giờ, ngôn ngữ và vị trí địa lý mà hồ sơ này được tạo ra, và Donut không thể phát hiện điều đó từ bên ngoài.",
+    "vpnExtensionExplainer": "Nếu một trong số đó chuyển lưu lượng của bạn đi nơi khác, vị trí thực của trình duyệt sẽ không còn khớp với múi giờ, ngôn ngữ và vị trí địa lý mà hồ sơ này được tạo ra, và Antidetect không thể phát hiện điều đó từ bên ngoài.",
     "proxyCapableHeading": "Các tiện ích có thể thay đổi proxy",
-    "proxyCapableIntro": "Chúng không giống VPN, nhưng có quyền proxy của Chromium, thứ mà trình quản lý tải xuống và công cụ gỡ lỗi cũng cần. Donut không thể biết liệu có tiện ích nào đang dùng quyền đó hay không:",
-    "sourceDonut": "Do Donut quản lý",
+    "proxyCapableIntro": "Chúng không giống VPN, nhưng có quyền proxy của Chromium, thứ mà trình quản lý tải xuống và công cụ gỡ lỗi cũng cần. Antidetect không thể biết liệu có tiện ích nào đang dùng quyền đó hay không:",
+    "sourceDonut": "Do Antidetect quản lý",
     "sourceBrowser": "Đã cài trong hồ sơ",
     "measurementUnreliable": "Một tiện ích trong hồ sơ này có quyền proxy, nên kết quả kiểm tra điểm ra có thể không phản ánh tuyến đường mà trình duyệt thực sự dùng.",
-    "scanIncompleteEncrypted": "Hồ sơ này được mã hóa nên chỉ có thể kiểm tra các tiện ích do Donut quản lý.",
-    "scanIncompleteEphemeral": "Hồ sơ này chưa có dữ liệu nên chỉ có thể kiểm tra các tiện ích do Donut quản lý.",
+    "scanIncompleteEncrypted": "Hồ sơ này được mã hóa nên chỉ có thể kiểm tra các tiện ích do Antidetect quản lý.",
+    "scanIncompleteEphemeral": "Hồ sơ này chưa có dữ liệu nên chỉ có thể kiểm tra các tiện ích do Antidetect quản lý.",
     "scanIncompletePartial": "Quá trình quét tiện ích bị ngắt giữa chừng nên có thể thiếu một số tiện ích.",
-    "probePending": "Điểm ra của proxy chưa được đo. Donut sẽ kiểm tra trong lúc khởi động và dừng lại nếu không khớp.",
+    "probePending": "Điểm ra của proxy chưa được đo. Antidetect sẽ kiểm tra trong lúc khởi động và dừng lại nếu không khớp.",
     "launchAnyway": "Vẫn khởi chạy",
     "dontBlockAgain": "Không chặn lại với đúng sai lệch này",
     "dontWarnExtensions": "Không cảnh báo lại về các tiện ích này",
@@ -3055,7 +3055,7 @@
     "cancelledSummary": "Đã hủy {{cancelled}} trên {{total}} lượt khởi chạy",
     "vpnExtensionEntry": " {{version}} — {{capability}}, {{source}}",
     "vpnExtensionEntryNoVersion": " — {{capability}}, {{source}}",
-    "scanIncompleteMissing": "Hồ sơ này chưa từng được khởi chạy nên chỉ có thể kiểm tra các tiện ích do Donut quản lý.",
+    "scanIncompleteMissing": "Hồ sơ này chưa từng được khởi chạy nên chỉ có thể kiểm tra các tiện ích do Antidetect quản lý.",
     "exitUnverifiedTimezone": "Vân tay của hồ sơ này không khai báo múi giờ nào nên việc kiểm tra điểm ra không thể xác minh. Khởi chạy không bị chặn, nhưng cũng không có gì được so sánh.",
     "exitUnverifiedLanguage": "Ngôn ngữ vân tay của hồ sơ này không thể so sánh với quốc gia thoát, nên kiểm tra đó là chưa xác minh chứ không phải đã đạt."
   },
@@ -3439,7 +3439,7 @@
   },
   "groupBookmarks": {
     "title": "Dấu trang của {{name}}",
-    "description": "Mọi hồ sơ trong nhóm này nhận các dấu trang trong một thư mục do Donut quản lý. Các dấu trang khác được giữ nguyên.",
+    "description": "Mọi hồ sơ trong nhóm này nhận các dấu trang trong một thư mục do Antidetect quản lý. Các dấu trang khác được giữ nguyên.",
     "editTooltip": "Dấu trang của nhóm ({{n}})",
     "empty": "Nhóm này chưa có dấu trang dùng chung.",
     "addRow": "Thêm dấu trang",
@@ -3491,7 +3491,7 @@
       "fingerprintGate": {
         "label": "Kiểm tra dấu vân tay",
         "title": "Giữ dấu vân tay khớp với điểm ra",
-        "body": "Trước khi khởi chạy, Donut so sánh múi giờ và ngôn ngữ của điểm ra proxy với dấu vân tay của hồ sơ và chặn khi không khớp. Hãy sửa dấu vân tay, hoặc tắt kiểm tra trong Nâng cao nếu bạn biết mình đang làm gì.",
+        "body": "Trước khi khởi chạy, Antidetect so sánh múi giờ và ngôn ngữ của điểm ra proxy với dấu vân tay của hồ sơ và chặn khi không khớp. Hãy sửa dấu vân tay, hoặc tắt kiểm tra trong Nâng cao nếu bạn biết mình đang làm gì.",
         "action": "Mở cài đặt nâng cao"
       },
       "profilePassword": {
@@ -3509,7 +3509,7 @@
       "defaultBrowser": {
         "label": "Trình duyệt mặc định",
         "title": "Mở mọi liên kết trong đúng hồ sơ",
-        "body": "Đặt Donut làm trình duyệt mặc định và mỗi liên kết từ ứng dụng khác sẽ hỏi nên mở bằng hồ sơ nào.",
+        "body": "Đặt Antidetect làm trình duyệt mặc định và mỗi liên kết từ ứng dụng khác sẽ hỏi nên mở bằng hồ sơ nào.",
         "action": "Mở cài đặt trình duyệt mặc định"
       },
       "extensionGroups": {
@@ -3521,7 +3521,7 @@
       "selfHostedSync": {
         "label": "Đồng bộ tự lưu trữ",
         "title": "Sao lưu lên máy chủ của riêng bạn",
-        "body": "Trỏ Donut đến máy chủ donut-sync tự lưu trữ và hồ sơ, proxy, nhóm sẽ được phản chiếu lên đó. Thêm mật khẩu đầu cuối và máy chủ chỉ thấy văn bản đã mã hóa.",
+        "body": "Trỏ Antidetect đến máy chủ donut-sync tự lưu trữ và hồ sơ, proxy, nhóm sẽ được phản chiếu lên đó. Thêm mật khẩu đầu cuối và máy chủ chỉ thấy văn bản đã mã hóa.",
         "action": "Mở Tài khoản"
       },
       "trash": {
@@ -3532,14 +3532,14 @@
       },
       "localApi": {
         "label": "API và MCP",
-        "title": "Tự động hóa Donut từ script và tác nhân",
+        "title": "Tự động hóa Antidetect từ script và tác nhân",
         "body": "REST API cục bộ cho phép script liệt kê, tạo và cấu hình hồ sơ. Bật nó trong Tích hợp và sao chép mã thông báo.",
         "action": "Mở Tích hợp"
       },
       "importProfiles": {
         "label": "Nhập",
         "title": "Mang hồ sơ từ Chrome, Edge hoặc Brave sang",
-        "body": "Nhập sao chép cookie, thông tin đăng nhập và tiện ích từ hồ sơ Chromium hoặc tệp nén vào một hồ sơ Donut mới, sẵn sàng khởi chạy.",
+        "body": "Nhập sao chép cookie, thông tin đăng nhập và tiện ích từ hồ sơ Chromium hoặc tệp nén vào một hồ sơ Antidetect mới, sẵn sàng khởi chạy.",
         "action": "Mở Nhập"
       },
       "cloudBackup": {

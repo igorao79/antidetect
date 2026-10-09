@@ -254,7 +254,7 @@ export function AboutDialog({ isOpen, onClose }: AboutDialogProps) {
                 )}
 
                 <div className="text-center">
-                  <p className="text-lg font-semibold">Donut Browser</p>
+                  <p className="text-lg font-semibold">Antidetect</p>
                   {systemInfo && (
                     <>
                       <p className="text-sm text-muted-foreground">
@@ -276,16 +276,11 @@ export function AboutDialog({ isOpen, onClose }: AboutDialogProps) {
 
                 <p className="text-center text-xs text-muted-foreground">
                   {t("about.licenseNotice")}
+                  <br />
+                  {t("about.basedOn")}
                 </p>
 
                 <div className="flex flex-wrap justify-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void openUrl("https://donutbrowser.com")}
-                  >
-                    {t("about.website")}
-                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
