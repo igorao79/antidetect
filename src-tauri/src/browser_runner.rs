@@ -13,6 +13,8 @@ use std::sync::{Arc, LazyLock};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 mod camoufox;
+mod cloakbrowser;
+mod engine_common;
 mod launch_network;
 
 static PROFILE_LAUNCH_LOCKS: LazyLock<
@@ -261,6 +263,18 @@ impl BrowserRunner {
     if profile.browser == "camoufox" {
       return self
         .launch_camoufox_internal(
+          app_handle,
+          profile,
+          url,
+          remote_debugging_port,
+          headless,
+          gate,
+        )
+        .await;
+    }
+    if profile.browser == "cloakbrowser" {
+      return self
+        .launch_cloakbrowser_internal(
           app_handle,
           profile,
           url,
@@ -864,6 +878,9 @@ impl BrowserRunner {
     if profile.browser == "camoufox" {
       return self.open_url_in_camoufox(profile, url).await;
     }
+    if profile.browser == "cloakbrowser" {
+      return self.open_url_in_cloakbrowser(profile, url).await;
+    }
 
     // Handle Wayfern profiles using WayfernManager
     if profile.browser == "wayfern" {
@@ -1122,6 +1139,9 @@ impl BrowserRunner {
   ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     if profile.browser == "camoufox" {
       return self.kill_camoufox_process(app_handle, profile).await;
+    }
+    if profile.browser == "cloakbrowser" {
+      return self.kill_cloakbrowser_process(app_handle, profile).await;
     }
 
     // Handle Wayfern profiles using WayfernManager

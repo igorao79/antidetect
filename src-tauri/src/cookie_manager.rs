@@ -301,7 +301,7 @@ impl CookieManager {
     let profile_data_path = profile.get_profile_data_path(profiles_dir);
 
     match profile.browser.as_str() {
-      "wayfern" => {
+      "wayfern" | "cloakbrowser" => {
         let path = Self::wayfern_cookie_path(&profile_data_path);
         if path.exists() {
           Ok(path)
@@ -335,7 +335,7 @@ impl CookieManager {
     let profile_data_path = profile.get_profile_data_path(profiles_dir);
 
     match profile.browser.as_str() {
-      "wayfern" => {
+      "wayfern" | "cloakbrowser" => {
         let path = Self::wayfern_cookie_path(&profile_data_path);
         if !path.exists() {
           Self::create_empty_chrome_cookies_db(&path)?;
@@ -864,7 +864,7 @@ impl CookieManager {
 
     let cookies = match profile.browser.as_str() {
       "camoufox" => Self::read_firefox_cookies(&db_path)?,
-      "wayfern" => {
+      "wayfern" | "cloakbrowser" => {
         let key = Self::get_chrome_encryption_key(profile, &profiles_dir);
         Self::read_chrome_cookies(&db_path, key.as_ref())?
       }
@@ -974,7 +974,7 @@ impl CookieManager {
         "SELECT COUNT(*) FROM moz_cookies",
         "SELECT host, COUNT(*) FROM moz_cookies GROUP BY host ORDER BY COUNT(*) DESC, host ASC",
       ),
-      "wayfern" => (
+      "wayfern" | "cloakbrowser" => (
         "SELECT COUNT(*) FROM cookies",
         "SELECT host_key, COUNT(*) FROM cookies GROUP BY host_key ORDER BY COUNT(*) DESC, host_key ASC",
       ),
@@ -1049,7 +1049,7 @@ impl CookieManager {
     let source_db_path = Self::get_cookie_db_path(source, &profiles_dir)?;
     let all_cookies = match source.browser.as_str() {
       "camoufox" => Self::read_firefox_cookies(&source_db_path)?,
-      "wayfern" => {
+      "wayfern" | "cloakbrowser" => {
         let key = Self::get_chrome_encryption_key(source, &profiles_dir);
         Self::read_chrome_cookies(&source_db_path, key.as_ref())?
       }
@@ -1125,7 +1125,7 @@ impl CookieManager {
           &cookies_to_copy,
           CookieWriteMode::Merge,
         ),
-        "wayfern" => {
+        "wayfern" | "cloakbrowser" => {
           Self::write_chrome_cookies(&target_db_path, &cookies_to_copy, CookieWriteMode::Merge)
         }
         _ => {
@@ -1357,7 +1357,7 @@ impl CookieManager {
     mode: CookieWriteMode,
   ) -> Result<CookieWriteCounts, String> {
     let is_camoufox = match profile.browser.as_str() {
-      "wayfern" => false,
+      "wayfern" | "cloakbrowser" => false,
       "camoufox" => true,
       _ => {
         return Err(crate::backend_error_with_detail(

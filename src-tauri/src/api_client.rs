@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 mod camoufox;
+mod cloakbrowser;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VersionComponent {

@@ -1,4 +1,5 @@
 use crate::camoufox_manager::CamoufoxConfig;
+use crate::cloakbrowser_manager::CloakBrowserConfig;
 use crate::wayfern_manager::WayfernConfig;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
@@ -43,6 +44,8 @@ pub struct BrowserProfile {
   pub camoufox_config: Option<CamoufoxConfig>, // Camoufox configuration
   #[serde(default)]
   pub wayfern_config: Option<WayfernConfig>, // Wayfern configuration
+  #[serde(default)]
+  pub cloakbrowser_config: Option<CloakBrowserConfig>,
   #[serde(default)]
   pub group_id: Option<String>, // Reference to profile group
   #[serde(default)]
@@ -137,6 +140,12 @@ impl BrowserProfile {
       .host_os
       .as_deref()
       .or_else(|| self.camoufox_config.as_ref().and_then(|c| c.os.as_deref()))
+      .or_else(|| {
+        self
+          .cloakbrowser_config
+          .as_ref()
+          .and_then(|c| c.os.as_deref())
+      })
       .or_else(|| self.wayfern_config.as_ref().and_then(|c| c.os.as_deref()))
   }
 
