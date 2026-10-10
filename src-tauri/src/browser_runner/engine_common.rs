@@ -24,6 +24,25 @@ fn emit_running_changed(profile: &BrowserProfile, is_running: bool) {
   }
 }
 
+/// How long a launch waits to learn its own exit address before going ahead
+/// with what the profile already says about its location.
+const EXIT_PROBE_TIMEOUT: Duration = Duration::from_secs(8);
+
+/// The address sites will see this launch come from, measured through its
+/// local proxy unless a launch gate has measured it already.
+pub(super) async fn exit_ip(profile: &BrowserProfile, local_proxy_url: &str) -> Option<String> {
+  if let Some(ip) = crate::fingerprint_consistency::cached_exit_ip(profile) {
+    return Some(ip);
+  }
+  tokio::time::timeout(
+    EXIT_PROBE_TIMEOUT,
+    crate::ip_utils::fetch_public_ip(Some(local_proxy_url)),
+  )
+  .await
+  .ok()
+  .and_then(Result::ok)
+}
+
 pub(super) fn process_is_gone(pid: u32) -> bool {
   let system = sysinfo::System::new_all();
   system.process(sysinfo::Pid::from(pid as usize)).is_none()
