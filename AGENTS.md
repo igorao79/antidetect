@@ -9,12 +9,32 @@ Fork-specific rules:
 
 - Paid-plan gates on local features (API/MCP automation, any fingerprint OS) are removed in
   `cloud_auth.rs` and `src/lib/entitlements.ts`. Features that need Donut's cloud stay off.
-- Engines: Camoufox (free, restored from upstream `23dab4c8e4`) is the default; Wayfern stays
-  available for a paid subscription; CloakBrowser is planned.
-- Put fork code in its own modules (`browser_runner/`, `api_client/`, `camoufox/`) and keep edits
-  to upstream files small, so upstream merges stay easy.
+- Engines: Camoufox (anti-detect Firefox, free, restored from upstream `23dab4c8e4`) is the
+  default; CloakBrowser (anti-detect Chromium, free build pinned per platform, macOS = Chromium
+  145) is the Chromium option; Wayfern stays available for a paid subscription and is only
+  downloaded on demand. Only Camoufox and CloakBrowser are fetched at startup.
+- `octo_compat_api.rs` serves an Octo Browser compatible API on `127.0.0.1:58888` (no token,
+  loopback only): profile start/stop/active plus profile and proxy list/create/delete.
+- Put fork code in its own modules and keep edits to upstream files small, so upstream merges
+  stay easy. Fork modules: `browser_runner/{launch_network,engine_common,camoufox,cloakbrowser}.rs`,
+  `api_client/{camoufox,cloakbrowser}.rs`, `camoufox/`, `camoufox_manager.rs`,
+  `cloakbrowser_manager.rs`, `profile/cloakbrowser.rs`, `octo_compat_api.rs`, and on the frontend
+  `cloakbrowser-config-{form,dialog}.tsx`, `camoufox-config-dialog.tsx`,
+  `shared-camoufox-config-form.tsx`.
 - Keep the AGPL license and upstream copyright notices.
 - Commit only when the user asks.
+
+What testing established about the engines (`scripts/scenarios/` reruns these checks against a
+running dev app):
+
+- Camoufox 156 keeps stock Firefox's per-session canvas randomization (baseline fingerprinting
+  protection). Profiles are not linkable by canvas, but a profile's canvas is not stable across
+  restarts; `canvas:seed` does not change 2D canvas output in this build.
+- The free CloakBrowser 145 macOS build applies its per-seed noise to `getImageData` and WebGL
+  `readPixels` only. `toDataURL`/`toBlob` and the audio fingerprint are the real hardware's, so
+  profiles on one machine share them. Whether newer (paid) builds differ is untested.
+- Launch the dev app without `HTTP(S)_PROXY` in its environment: the app's own lookups honour
+  those variables while a profile's traffic does not, so geolocation ends up for the wrong exit.
 
 ---
 
