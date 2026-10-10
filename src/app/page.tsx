@@ -19,6 +19,7 @@ import { CommercialTrialModal } from "@/components/commercial-trial-modal";
 import { CookieBotPage, type CookieBotTab } from "@/components/cookie-bot-page";
 import { CookieCopyDialog } from "@/components/cookie-copy-dialog";
 import { CookieManagementDialog } from "@/components/cookie-management-dialog";
+import { CookieRobotDialog } from "@/components/cookie-robot-dialog";
 import { CreateProfileDialog } from "@/components/create-profile-dialog";
 import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialog";
 import { DeviceCodeVerifyDialog } from "@/components/device-code-verify-dialog";
@@ -488,6 +489,7 @@ export default function Home() {
   const [proxyAssignmentDialogOpen, setProxyAssignmentDialogOpen] =
     useState(false);
   const [cookieCopyDialogOpen, setCookieCopyDialogOpen] = useState(false);
+  const [cookieRobotDialogOpen, setCookieRobotDialogOpen] = useState(false);
   const [cookieManagementDialogOpen, setCookieManagementDialogOpen] =
     useState(false);
   const [
@@ -2427,6 +2429,9 @@ export default function Home() {
                   onBulkProxyAssignment={handleBulkProxyAssignment}
                   onBulkProxyDistribution={handleBulkProxyDistribution}
                   onBulkCopyCookies={handleBulkCopyCookies}
+                  onBulkCookieRobot={() => {
+                    setCookieRobotDialogOpen(true);
+                  }}
                   onBulkRun={handleBulkRun}
                   onBulkStop={handleBulkStop}
                   bulkActionsUnlocked={automationUnlocked}
@@ -2829,6 +2834,13 @@ export default function Home() {
           profiles={profiles}
         />
 
+        <CookieRobotDialog
+          isOpen={cookieRobotDialogOpen}
+          onClose={() => {
+            setCookieRobotDialogOpen(false);
+          }}
+          selectedProfiles={selectedProfiles}
+        />
         <ProxyAssignmentDialog
           isOpen={proxyAssignmentDialogOpen}
           onClose={() => {

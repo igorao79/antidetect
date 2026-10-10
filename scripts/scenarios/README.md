@@ -29,6 +29,7 @@ python3 s1_camoufox_fingerprints.py
 | `s5b_dead_proxy.py` | A proxy that dies never makes a profile fall back to a direct connection. |
 | `s6_bot_detection.py` | `bot.sannysoft.com` reports no failed test for either engine. |
 | `s7_ssh_proxy.py` | Both engines route through an SSH proxy; a wrong password refuses the profile. Needs `cargo build --example ssh_test_server` in `src-tauri`. |
+| `s9_cookie_robot.py` | Cookie Robot on both engines: bad requests refused, sites visited and counted, profiles closed afterwards with their cookies kept, a running robot stopped. |
 | `s8_remote_exit.py` | Through a real remote proxy (`SCN_REMOTE_PROXY=http://user:password@host:port`): sites see the proxy's address and timezone, WebRTC shows nothing of this machine, the language is the same at every launch, and a profile whose exit moves follows it at the next launch. Skipped without the variable. |
 
 `EXPECT_TZ` and `EXPECT_LANG` (comma-separated) add geolocation assertions to

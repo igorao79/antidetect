@@ -2434,7 +2434,14 @@
     "wayfernLaunchArgsLimit": "起動引数は {{count}} 個まで、1 つあたり {{length}} 文字までにしてください。",
     "tablePreferencesInvalid": "テーブル設定が無効です。",
     "tablePreferencesLoadFailed": "テーブル設定を読み込めませんでした。再試行してください。",
-    "tablePreferencesSaveFailed": "テーブル設定を保存できませんでした。再試行してください。"
+    "tablePreferencesSaveFailed": "テーブル設定を保存できませんでした。再試行してください。",
+    "cookieRobotInvalidUrl": "「{{url}}」はウェブアドレスではありません。",
+    "cookieRobotNoSites": "サイトを 1 つ以上追加してください。",
+    "cookieRobotTooManySites": "サイトが多すぎます（最大 {{max}}）。",
+    "cookieRobotNoProfiles": "プロファイルを 1 つ以上選択してください。",
+    "cookieRobotAlreadyRunning": "Cookie Robot はすでに実行中です。終了を待つか停止してください。",
+    "cookieRobotProfileRunning": "プロファイルが開いています。閉じてからもう一度実行してください。",
+    "cookieRobotNoControl": "ブラウザは起動しましたが、制御できませんでした: {{detail}}"
   },
   "rail": {
     "profiles": "プロファイル",
@@ -3661,6 +3668,30 @@
       "memory": "Memory, GB",
       "screenWidth": "Screen width",
       "screenHeight": "Screen height"
+    }
+  },
+  "cookieRobot": {
+    "title": "Cookie Robot",
+    "description": "選択したプロファイルを開き、それぞれで下のサイトを巡回してから閉じます。作業を始める前に、各プロファイルに Cookie と履歴がたまります。",
+    "actionBar": "Cookie をウォームアップ",
+    "profilesSelected": "選択中のプロファイル: {{count}}",
+    "sites": "サイト",
+    "sitesPlaceholder": "example.com\nhttps://news.example.com/world",
+    "sitesHint": "1 行に 1 つ。http:// や https:// のないアドレスは HTTPS で開きます。",
+    "secondsFrom": "サイトごとの秒数（最小）",
+    "secondsTo": "最大",
+    "parallel": "同時に実行するプロファイル数",
+    "shuffle": "プロファイルごとに順序を変える",
+    "headless": "ブラウザのウィンドウを表示せずに実行",
+    "newRun": "新しい実行",
+    "visited": "{{total}} サイト中 {{visited}}",
+    "unreachable": "開けなかった数: {{count}}",
+    "state": {
+      "queued": "待機中",
+      "running": "実行中",
+      "done": "完了",
+      "failed": "失敗",
+      "cancelled": "停止"
     }
   }
 }

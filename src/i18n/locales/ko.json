@@ -2434,7 +2434,14 @@
     "wayfernLaunchArgsLimit": "실행 인수는 최대 {{count}}개, 각각 {{length}}자 이하로 입력하세요.",
     "tablePreferencesInvalid": "테이블 설정이 올바르지 않습니다.",
     "tablePreferencesLoadFailed": "테이블 설정을 불러올 수 없습니다. 다시 시도하세요.",
-    "tablePreferencesSaveFailed": "테이블 설정을 저장할 수 없습니다. 다시 시도하세요."
+    "tablePreferencesSaveFailed": "테이블 설정을 저장할 수 없습니다. 다시 시도하세요.",
+    "cookieRobotInvalidUrl": "\"{{url}}\"은(는) 웹 주소가 아닙니다.",
+    "cookieRobotNoSites": "사이트를 하나 이상 추가하세요.",
+    "cookieRobotTooManySites": "사이트가 너무 많습니다. 최대 {{max}}개입니다.",
+    "cookieRobotNoProfiles": "프로필을 하나 이상 선택하세요.",
+    "cookieRobotAlreadyRunning": "Cookie Robot이 이미 실행 중입니다. 끝날 때까지 기다리거나 중지하세요.",
+    "cookieRobotProfileRunning": "프로필이 열려 있습니다. 닫은 뒤 로봇을 다시 실행하세요.",
+    "cookieRobotNoControl": "브라우저가 시작되었지만 제어할 수 없습니다: {{detail}}"
   },
   "rail": {
     "profiles": "프로필",
@@ -3661,6 +3668,30 @@
       "memory": "Memory, GB",
       "screenWidth": "Screen width",
       "screenHeight": "Screen height"
+    }
+  },
+  "cookieRobot": {
+    "title": "Cookie Robot",
+    "description": "선택한 프로필을 열고 각 프로필에서 아래 사이트를 방문한 뒤 닫습니다. 작업을 시작하기 전에 프로필마다 쿠키와 기록이 쌓입니다.",
+    "actionBar": "쿠키 워밍업",
+    "profilesSelected": "선택한 프로필: {{count}}",
+    "sites": "사이트",
+    "sitesPlaceholder": "example.com\nhttps://news.example.com/world",
+    "sitesHint": "한 줄에 하나씩. http:// 또는 https://가 없는 주소는 HTTPS로 엽니다.",
+    "secondsFrom": "사이트당 초(최소)",
+    "secondsTo": "최대",
+    "parallel": "동시에 실행할 프로필 수",
+    "shuffle": "프로필마다 다른 순서",
+    "headless": "브라우저 창 없이 실행",
+    "newRun": "새 실행",
+    "visited": "{{total}}개 사이트 중 {{visited}}개",
+    "unreachable": "열리지 않음: {{count}}",
+    "state": {
+      "queued": "대기 중",
+      "running": "실행 중",
+      "done": "완료",
+      "failed": "실패",
+      "cancelled": "중지됨"
     }
   }
 }

@@ -2434,7 +2434,14 @@
     "wayfernLaunchArgsLimit": "En fazla {{count}} başlatma argümanı kullanın; her biri en fazla {{length}} karakter olsun.",
     "tablePreferencesInvalid": "Bu tablo ayarları geçersiz.",
     "tablePreferencesLoadFailed": "Tablo ayarları yüklenemedi. Tekrar deneyin.",
-    "tablePreferencesSaveFailed": "Tablo ayarları kaydedilemedi. Tekrar deneyin."
+    "tablePreferencesSaveFailed": "Tablo ayarları kaydedilemedi. Tekrar deneyin.",
+    "cookieRobotInvalidUrl": "\"{{url}}\" bir web adresi değil.",
+    "cookieRobotNoSites": "En az bir site ekleyin.",
+    "cookieRobotTooManySites": "Çok fazla site: en fazla {{max}}.",
+    "cookieRobotNoProfiles": "En az bir profil seçin.",
+    "cookieRobotAlreadyRunning": "Cookie Robot zaten çalışıyor. Bitmesini bekleyin veya durdurun.",
+    "cookieRobotProfileRunning": "Profil açık. Kapatıp robotu yeniden çalıştırın.",
+    "cookieRobotNoControl": "Tarayıcı başladı ama denetlenemedi: {{detail}}"
   },
   "rail": {
     "profiles": "Profiller",
@@ -3661,6 +3668,30 @@
       "memory": "Memory, GB",
       "screenWidth": "Screen width",
       "screenHeight": "Screen height"
+    }
+  },
+  "cookieRobot": {
+    "title": "Cookie Robot",
+    "description": "Seçilen profilleri açar, her birinde listedeki siteleri gezer ve kapatır; böylece her profil kullanılmadan önce çerez ve geçmiş biriktirir.",
+    "actionBar": "Çerezleri ısıt",
+    "profilesSelected": "Seçilen profil: {{count}}",
+    "sites": "Siteler",
+    "sitesPlaceholder": "example.com\nhttps://news.example.com/world",
+    "sitesHint": "Her satıra bir tane. http:// veya https:// olmayan adres HTTPS ile açılır.",
+    "secondsFrom": "Site başına saniye, en az",
+    "secondsTo": "en çok",
+    "parallel": "Aynı anda profil",
+    "shuffle": "Her profilde farklı sıra",
+    "headless": "Tarayıcı pencereleri olmadan çalıştır",
+    "newRun": "Yeni çalıştırma",
+    "visited": "{{total}} siteden {{visited}}",
+    "unreachable": "açılmadı: {{count}}",
+    "state": {
+      "queued": "Sırada",
+      "running": "Çalışıyor",
+      "done": "Tamamlandı",
+      "failed": "Başarısız",
+      "cancelled": "Durduruldu"
     }
   }
 }

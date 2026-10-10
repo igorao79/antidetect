@@ -1186,3 +1186,28 @@ export interface TrashedProfileSummary {
   /** Whether the profile synced when it was deleted. */
   sync_enabled: boolean;
 }
+
+export type CookieRobotState =
+  | "queued"
+  | "running"
+  | "done"
+  | "failed"
+  | "cancelled";
+
+/** One profile in a Cookie Robot run (`cookie_robot.rs::ProfileProgress`). */
+export interface CookieRobotProfileProgress {
+  profile_id: string;
+  name: string;
+  state: CookieRobotState;
+  visited: number;
+  unreachable: number;
+  total: number;
+  current_url: string | null;
+  /** A backend error code, for a profile that could not be warmed at all. */
+  error: string | null;
+}
+
+export interface CookieRobotStatus {
+  running: boolean;
+  profiles: CookieRobotProfileProgress[];
+}

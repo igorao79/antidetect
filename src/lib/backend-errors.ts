@@ -244,6 +244,13 @@ export type BackendErrorCode =
   | "SYNC_DISPLAY_UNAVAILABLE"
   | "SYNC_DISPLAY_TOO_SMALL"
   | "SYNC_ARRANGE_FAILED"
+  | "COOKIE_ROBOT_INVALID_URL"
+  | "COOKIE_ROBOT_NO_SITES"
+  | "COOKIE_ROBOT_TOO_MANY_SITES"
+  | "COOKIE_ROBOT_NO_PROFILES"
+  | "COOKIE_ROBOT_ALREADY_RUNNING"
+  | "COOKIE_ROBOT_PROFILE_RUNNING"
+  | "COOKIE_ROBOT_NO_CONTROL"
   | "INTERNAL_ERROR";
 
 export interface BackendError {
@@ -849,6 +856,26 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       });
     case "SYNC_ARRANGE_FAILED":
       return t("backendErrors.syncArrangeFailed");
+    case "COOKIE_ROBOT_INVALID_URL":
+      return t("backendErrors.cookieRobotInvalidUrl", {
+        url: parsed.params?.url ?? "",
+      });
+    case "COOKIE_ROBOT_NO_SITES":
+      return t("backendErrors.cookieRobotNoSites");
+    case "COOKIE_ROBOT_TOO_MANY_SITES":
+      return t("backendErrors.cookieRobotTooManySites", {
+        max: parsed.params?.max ?? "",
+      });
+    case "COOKIE_ROBOT_NO_PROFILES":
+      return t("backendErrors.cookieRobotNoProfiles");
+    case "COOKIE_ROBOT_ALREADY_RUNNING":
+      return t("backendErrors.cookieRobotAlreadyRunning");
+    case "COOKIE_ROBOT_PROFILE_RUNNING":
+      return t("backendErrors.cookieRobotProfileRunning");
+    case "COOKIE_ROBOT_NO_CONTROL":
+      return t("backendErrors.cookieRobotNoControl", {
+        detail: parsed.params?.detail ?? "",
+      });
     case "INTERNAL_ERROR":
       return t("backendErrors.internal", {
         detail: parsed.params?.detail ?? "",

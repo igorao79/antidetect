@@ -15,6 +15,10 @@ Fork-specific rules:
   downloaded on demand. Only Camoufox and CloakBrowser are fetched at startup.
 - `octo_compat_api.rs` serves an Octo Browser compatible API on `127.0.0.1:58888` (no token,
   loopback only): profile start/stop/active plus profile and proxy list/create/delete.
+- Cookie Robot (`cookie_robot.rs`, `cookie-robot-dialog.tsx`, "Warm up cookies" in the selection
+  bar's menu) is the local counterpart of Donut's cloud Cookie Bot: it launches each selected
+  profile, walks a site list over CDP or WebDriver BiDi with pauses and scrolling, and closes it.
+  One run at a time; also `GET/POST/DELETE /api/v2/automation/cookie_robot` on the local API.
 - SSH is a proxy type (`ssh://user:password@host:port`, password or keyboard-interactive
   login). `ssh_upstream.rs` runs inside the local proxy worker: one session per upstream, one
   `direct-tcpip` channel per browser connection, TCP only. Host keys are not pinned.
@@ -22,9 +26,9 @@ Fork-specific rules:
   stay easy. Fork modules: `browser_runner/{launch_network,engine_common,camoufox,cloakbrowser}.rs`,
   `api_client/{camoufox,cloakbrowser}.rs`, `camoufox/`, `camoufox_manager.rs`,
   `cloakbrowser_manager.rs`, `profile/{camoufox,cloakbrowser}.rs`, `ssh_upstream.rs`,
-  `octo_compat_api.rs`, and on the frontend
+  `cookie_robot.rs`, `octo_compat_api.rs`, and on the frontend
   `cloakbrowser-config-{form,dialog}.tsx`, `camoufox-config-dialog.tsx`,
-  `shared-camoufox-config-form.tsx`.
+  `shared-camoufox-config-form.tsx`, `cookie-robot-dialog.tsx`.
 - Keep the AGPL license and upstream copyright notices.
 - Commit only when the user asks.
 
@@ -104,6 +108,7 @@ donutbrowser/
 │   │   ├── system_proxy.rs         # The OS proxy Donut's own requests use; named in the error when it is unreachable
 │   │   ├── vault.rs                # Per-install key that seals local secrets; opens legacy build-password seals once
 │   │   ├── cookie_manager.rs       # Cookie import/export
+│   │   ├── cookie_robot.rs         # Local Cookie Robot: warms profiles on a site list (fork)
 │   │   ├── profile_importer.rs     # Bulk profile import (Chromium-family detection, ZIP, batch)
 │   │   ├── fingerprint_consistency.rs # Launch-time proxy exit vs fingerprint timezone/language check
 │   │   ├── dns_blocklist.rs         # Hagezi DNS blocklists + user custom lists/allowlist
