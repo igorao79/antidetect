@@ -1687,6 +1687,8 @@ impl ProxyManager {
       ("socks5", rest) // Default socks to socks5
     } else if let Some(rest) = line.strip_prefix("ss://") {
       ("ss", rest)
+    } else if let Some(rest) = line.strip_prefix("ssh://") {
+      (crate::ssh_upstream::SCHEME, rest)
     } else {
       let rest = line.strip_prefix("shadowsocks://")?;
       ("ss", rest)

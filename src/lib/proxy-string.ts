@@ -33,6 +33,7 @@ const PROXY_SCHEMES = new Map<string, string>([
   ["socks5", "socks5"],
   ["ss", "ss"],
   ["shadowsocks", "ss"],
+  ["ssh", "ssh"],
   ["vless", "vless"],
   ["vmess", "vmess"],
   ["trojan", "trojan"],
@@ -112,6 +113,7 @@ export const DEFAULT_PROXY_TYPE = "http";
  */
 const ENCRYPTED_FIRST_HOP = new Set([
   "httpstls",
+  "ssh",
   "ss",
   // The REST API stores proxy_type verbatim, so a proxy created with
   // "shadowsocks" reaches the UI with that spelling and the backend tunnels it

@@ -49,7 +49,8 @@ pub fn udp_verdict_for_type(proxy_type: &str) -> Option<UdpSupport> {
   match proxy_type.trim().to_ascii_lowercase().as_str() {
     "socks5" | "socks5h" => None,
     // SOCKS4 and SOCKS4a define CONNECT and BIND only.
-    "http" | "https" | "httpstls" | "socks4" | "socks4a" => Some(UdpSupport::No),
+    // SSH forwards TCP channels only.
+    "http" | "https" | "httpstls" | "socks4" | "socks4a" | "ssh" => Some(UdpSupport::No),
     // Shadowsocks and VLESS can carry UDP, but whether this endpoint does is
     // not something a SOCKS handshake can answer.
     _ => Some(UdpSupport::Unknown),
@@ -220,7 +221,9 @@ mod tests {
 
   #[test]
   fn an_http_proxy_is_answered_without_ever_being_dialled() {
-    for proxy_type in ["http", "HTTP", "https", "httpstls", "socks4", "socks4a"] {
+    for proxy_type in [
+      "http", "HTTP", "https", "httpstls", "socks4", "socks4a", "ssh",
+    ] {
       assert_eq!(
         udp_verdict_for_type(proxy_type),
         Some(UdpSupport::No),

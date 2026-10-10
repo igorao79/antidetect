@@ -2176,7 +2176,7 @@ impl WayfernManager {
     let (scheme, rest) = url.split_once("://")?;
     let scheme = scheme.to_ascii_lowercase();
     match scheme.as_str() {
-      "http" | "https" | "httpstls" | "socks4" | "socks5" | "ss" | "shadowsocks" => {
+      "http" | "https" | "httpstls" | "socks4" | "socks5" | "ss" | "shadowsocks" | "ssh" => {
         Some(format!("{scheme}://{rest}"))
       }
       "socks5h" => Some(format!("socks5://{rest}")),
@@ -4124,6 +4124,7 @@ mod tests {
       "socks5://user:pass@gw.example.com:1080",
       "ss://aes-256-gcm:pw@1.2.3.4:8388",
       "shadowsocks://aes-256-gcm:pw@1.2.3.4:8388",
+      "ssh://user:pass@1.2.3.4:22",
     ] {
       assert_eq!(
         WayfernManager::worker_upstream_url(carried).as_deref(),

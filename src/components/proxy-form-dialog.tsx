@@ -81,7 +81,7 @@ const DEFAULT_FORM: ProxyFormData = {
  * below says the link decides. Hysteria2 always runs over QUIC, but under the
  * encrypted heading it met that same note, so it sits here with the others.
  */
-const ALWAYS_ENCRYPTED_FIRST_HOP_TYPES = ["httpstls"] as const;
+const ALWAYS_ENCRYPTED_FIRST_HOP_TYPES = ["httpstls", "ssh"] as const;
 const LINK_DEPENDENT_FIRST_HOP_TYPES = [
   "vless",
   "vmess",

@@ -108,6 +108,9 @@ hyper-util = { version = "0.1", features = ["full"] }
 http-body-util = "0.1"
 clap = { version = "4", features = ["derive"] }
 async-socks5 = "0.6"
+# SSH proxies (ssh_upstream.rs). On `ring` for the reason shadowsocks is held
+# back above: no aws-lc build toolchain.
+russh = { version = "0.63", default-features = false, features = ["ring", "rsa"] }
 
 
 # Wayfern CDP integration

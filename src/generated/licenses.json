@@ -540,6 +540,10 @@
     "license": "MIT"
   },
   {
+    "name": "base16ct",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "base64",
     "license": "Apache-2.0 OR MIT"
   },
@@ -550,6 +554,10 @@
   {
     "name": "baseline-browser-mapping",
     "license": "Apache-2.0"
+  },
+  {
+    "name": "bcrypt-pbkdf",
+    "license": "Apache-2.0 OR MIT"
   },
   {
     "name": "bit-set",
@@ -593,6 +601,10 @@
   },
   {
     "name": "blocking",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "blowfish",
     "license": "Apache-2.0 OR MIT"
   },
   {
@@ -860,7 +872,15 @@
     "license": "MIT"
   },
   {
+    "name": "crypto-bigint",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "crypto-common",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "crypto-primes",
     "license": "Apache-2.0 OR MIT"
   },
   {
@@ -980,6 +1000,10 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "delegate",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "der",
     "license": "Apache-2.0 OR MIT"
   },
@@ -994,6 +1018,10 @@
   {
     "name": "derive_more-impl",
     "license": "MIT"
+  },
+  {
+    "name": "des",
+    "license": "Apache-2.0 OR MIT"
   },
   {
     "name": "detect-node-es",
@@ -1076,11 +1104,23 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "ecdsa",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "ed25519",
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "ed25519-dalek",
+    "license": "BSD-3-Clause"
+  },
+  {
     "name": "either",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "elliptic-curve",
     "license": "Apache-2.0 OR MIT"
   },
   {
@@ -1094,6 +1134,10 @@
   {
     "name": "endi",
     "license": "MIT"
+  },
+  {
+    "name": "enum_dispatch",
+    "license": "Apache-2.0 OR MIT"
   },
   {
     "name": "enumflags2",
@@ -1182,6 +1226,10 @@
   {
     "name": "fern",
     "license": "MIT"
+  },
+  {
+    "name": "ff",
+    "license": "Apache-2.0 OR MIT"
   },
   {
     "name": "field-offset",
@@ -1372,6 +1420,10 @@
     "license": "MIT"
   },
   {
+    "name": "group",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "gtk",
     "license": "MIT"
   },
@@ -1417,6 +1469,10 @@
   },
   {
     "name": "hex",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "hex-literal",
     "license": "Apache-2.0 OR MIT"
   },
   {
@@ -1648,6 +1704,14 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "keccak",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "kem",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "keyboard-types",
     "license": "Apache-2.0 OR MIT"
   },
@@ -1756,6 +1820,10 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "md5",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "memchr",
     "license": "Unlicense OR MIT"
   },
@@ -1782,6 +1850,14 @@
   {
     "name": "mio",
     "license": "MIT"
+  },
+  {
+    "name": "ml-kem",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "module-lattice",
+    "license": "Apache-2.0 OR MIT"
   },
   {
     "name": "motion",
@@ -2016,6 +2092,22 @@
     "license": "MIT"
   },
   {
+    "name": "p256",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "p384",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "p521",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "pageant",
+    "license": "Apache-2.0"
+  },
+  {
     "name": "pango",
     "license": "MIT"
   },
@@ -2045,6 +2137,14 @@
   },
   {
     "name": "pastey",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "pbkdf2",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "pem-rfc7468",
     "license": "Apache-2.0 OR MIT"
   },
   {
@@ -2100,6 +2200,14 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "pkcs1",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "pkcs5",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "pkcs8",
     "license": "Apache-2.0 OR MIT"
   },
@@ -2150,6 +2258,14 @@
   {
     "name": "precomputed-hash",
     "license": "MIT"
+  },
+  {
+    "name": "primefield",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "primeorder",
+    "license": "Apache-2.0 OR MIT"
   },
   {
     "name": "proc-macro-crate",
@@ -2344,6 +2460,10 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "rfc6979",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "rfd",
     "license": "MIT"
   },
@@ -2364,8 +2484,24 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "rsa",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "rusqlite",
     "license": "MIT"
+  },
+  {
+    "name": "russh",
+    "license": "Apache-2.0"
+  },
+  {
+    "name": "russh-cryptovec",
+    "license": "Apache-2.0"
+  },
+  {
+    "name": "russh-util",
+    "license": "Apache-2.0"
   },
   {
     "name": "rust-ini",
@@ -2392,8 +2528,16 @@
     "license": "ISC"
   },
   {
+    "name": "rustversion",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "ryu",
     "license": "Apache-2.0 OR BSL-1.0"
+  },
+  {
+    "name": "salsa20",
+    "license": "Apache-2.0 OR MIT"
   },
   {
     "name": "same-file",
@@ -2424,7 +2568,15 @@
     "license": "MIT"
   },
   {
+    "name": "scrypt",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "sealed",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "sec1",
     "license": "Apache-2.0 OR MIT"
   },
   {
@@ -2504,6 +2656,10 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "serdect",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "serialize-to-javascript",
     "license": "Apache-2.0 OR MIT"
   },
@@ -2521,6 +2677,10 @@
   },
   {
     "name": "sha2",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "sha3",
     "license": "Apache-2.0 OR MIT"
   },
   {
@@ -2621,6 +2781,22 @@
   },
   {
     "name": "spki",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "sponge-cursor",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "ssh-cipher",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "ssh-encoding",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "ssh-key",
     "license": "Apache-2.0 OR MIT"
   },
   {
@@ -3193,6 +3369,10 @@
   },
   {
     "name": "wl-clipboard-rs",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "wnaf",
     "license": "Apache-2.0 OR MIT"
   },
   {

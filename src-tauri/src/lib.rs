@@ -104,6 +104,7 @@ mod remote_handoff;
 mod remote_session;
 mod settings_manager;
 pub mod socks5_local;
+pub mod ssh_upstream;
 pub mod sync;
 mod synchronizer;
 mod system_proxy;
