@@ -200,6 +200,8 @@ export const commandCoverage = {
       "ensure_all_binaries_exist",
       "ensure_active_browsers_downloaded",
       "update_wayfern_config",
+      "update_camoufox_config",
+      "update_cloakbrowser_config",
       "generate_sample_fingerprint",
       "is_geoip_database_available",
       "download_geoip_database",

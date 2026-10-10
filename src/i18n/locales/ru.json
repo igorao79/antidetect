@@ -517,7 +517,8 @@
     "engine": {
       "label": "Движок браузера",
       "camoufoxHint": "Camoufox: антидетект Firefox. Бесплатный, отпечатки генерируются локально.",
-      "wayfernHint": "Wayfern: антидетект Chromium. Нужна подписка Wayfern."
+      "wayfernHint": "Wayfern: антидетект Chromium. Нужна подписка Wayfern.",
+      "cloakbrowserHint": "CloakBrowser: антидетект Chromium, ближе всего к Octo. Бесплатная сборка — Chromium 145."
     }
   },
   "deleteDialog": {
@@ -3700,5 +3701,31 @@
     "unknownError": "Произошла неизвестная ошибка",
     "titleView": "Просмотр настроек отпечатка - {{name}} ({{browser}})",
     "titleConfigure": "Настроить отпечаток - {{name}} ({{browser}})"
+  },
+  "cloakbrowser": {
+    "seed": "Seed отпечатка",
+    "seedPlaceholder": "Создаётся автоматически",
+    "newSeed": "Новый seed",
+    "seedDescription": "Seed — это и есть устройство: один и тот же seed даёт одинаковый отпечаток видеокарты, canvas, аудио и шрифтов при каждом запуске. Новый seed — новое устройство.",
+    "timezone": "Часовой пояс",
+    "locale": "Язык",
+    "followsProxy": "Как у прокси",
+    "webrtc": {
+      "label": "WebRTC",
+      "auto": "Адрес прокси (рекомендуется)",
+      "real": "Реальный адрес",
+      "block": "Заблокирован"
+    },
+    "noise": "Шум canvas, WebGL, аудио и размеров элементов",
+    "overrides": {
+      "title": "Параметры железа",
+      "description": "Оставьте пустым, чтобы использовать значения из seed. Ручные значения могут сделать устройство менее правдоподобным.",
+      "gpuVendor": "Производитель видеокарты",
+      "gpuRenderer": "Модель видеокарты",
+      "cpuCores": "Ядра процессора",
+      "memory": "Память, ГБ",
+      "screenWidth": "Ширина экрана",
+      "screenHeight": "Высота экрана"
+    }
   }
 }

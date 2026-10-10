@@ -27,6 +27,7 @@ export interface BrowserProfile {
   last_launch?: number;
   release_type: string; // "stable" or "nightly"
   camoufox_config?: CamoufoxConfig; // Camoufox configuration
+  cloakbrowser_config?: CloakBrowserConfig;
   wayfern_config?: WayfernConfig; // Wayfern configuration
   group_id?: string; // Reference to profile group
   tags?: string[];
@@ -487,6 +488,29 @@ export interface AppUpdateProgress {
 }
 
 export type CamoufoxOS = "windows" | "macos" | "linux";
+
+/** How a CloakBrowser profile treats WebRTC addresses. */
+export type CloakBrowserWebRtcMode = "auto" | "real" | "block";
+
+/** Mirror of `cloakbrowser_manager::CloakBrowserConfig`. */
+export interface CloakBrowserConfig {
+  /** Fingerprint seed: the same seed is the same device on every launch. */
+  seed?: number | null;
+  os?: CamoufoxOS | null;
+  gpu_vendor?: string | null;
+  gpu_renderer?: string | null;
+  hardware_concurrency?: number | null;
+  device_memory?: number | null;
+  screen_width?: number | null;
+  screen_height?: number | null;
+  /** IANA timezone; unset follows the proxy exit. */
+  timezone?: string | null;
+  /** BCP-47 locale; unset follows the proxy exit. */
+  locale?: string | null;
+  webrtc_mode?: CloakBrowserWebRtcMode | null;
+  noise?: boolean | null;
+  randomize_fingerprint_on_launch?: boolean | null;
+}
 
 export interface CamoufoxConfig {
   proxy?: string;

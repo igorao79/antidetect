@@ -160,6 +160,7 @@ export function useBrowserState(
         const profileOs =
           profile.host_os ||
           profile.camoufox_config?.os ||
+          profile.cloakbrowser_config?.os ||
           profile.wayfern_config?.os;
         if (profileOs) {
           const osName = getOSDisplayName(profileOs);

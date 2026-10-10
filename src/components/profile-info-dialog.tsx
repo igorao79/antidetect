@@ -755,7 +755,11 @@ function ProfileInfoContents({
       proBadge: !crossOsUnlocked,
       runningBadge: isRunning,
       hidden:
-        !(isWayfern || profile.browser === "camoufox") || !onConfigureWayfern,
+        !(
+          isWayfern ||
+          profile.browser === "camoufox" ||
+          profile.browser === "cloakbrowser"
+        ) || !onConfigureWayfern,
     },
     {
       id: "synchronizer",

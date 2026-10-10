@@ -515,7 +515,8 @@
     "engine": {
       "label": "Browser engine",
       "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
-      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
+      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription.",
+      "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
     }
   },
   "deleteDialog": {
@@ -3634,5 +3635,31 @@
     "unknownError": "Unknown error occurred",
     "titleView": "View Fingerprint Settings - {{name}} ({{browser}})",
     "titleConfigure": "Configure Fingerprint Settings - {{name}} ({{browser}})"
+  },
+  "cloakbrowser": {
+    "seed": "Fingerprint seed",
+    "seedPlaceholder": "Generated automatically",
+    "newSeed": "New seed",
+    "seedDescription": "The seed is the device: the same seed gives the same GPU, canvas, audio and font fingerprint on every launch. A new seed is a new device.",
+    "timezone": "Timezone",
+    "locale": "Language",
+    "followsProxy": "Follows the proxy",
+    "webrtc": {
+      "label": "WebRTC",
+      "auto": "Proxy address (recommended)",
+      "real": "Real address",
+      "block": "Blocked"
+    },
+    "noise": "Canvas, WebGL, audio and layout noise",
+    "overrides": {
+      "title": "Hardware overrides",
+      "description": "Leave empty to use the values the seed produces. Overriding them can make the device less coherent.",
+      "gpuVendor": "GPU vendor",
+      "gpuRenderer": "GPU renderer",
+      "cpuCores": "CPU cores",
+      "memory": "Memory, GB",
+      "screenWidth": "Screen width",
+      "screenHeight": "Screen height"
+    }
   }
 }
