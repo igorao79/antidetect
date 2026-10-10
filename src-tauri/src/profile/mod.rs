@@ -1,3 +1,4 @@
+mod camoufox;
 pub mod clear_on_close;
 pub mod cloakbrowser;
 pub mod encryption;

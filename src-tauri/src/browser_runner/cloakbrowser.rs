@@ -1,6 +1,6 @@
 //! CloakBrowser (Chromium) launch, open-URL and stop paths of `BrowserRunner`.
 
-use super::engine_common::{force_kill, process_is_gone};
+use super::engine_common::{exit_ip, force_kill, process_is_gone};
 use super::{emit_launch_stage, BrowserRunner};
 use crate::cloakbrowser_manager::{self, ExitLocation, LaunchRequest};
 use crate::profile::BrowserProfile;
@@ -9,10 +9,6 @@ use std::time::Duration;
 
 type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
-/// How long a launch waits to learn its own exit address before going ahead
-/// with `auto` WebRTC and the profile's pinned timezone, if any.
-const EXIT_PROBE_TIMEOUT: Duration = Duration::from_secs(8);
-
 /// How long a browser gets to exit after `Browser.close` before it is killed.
 const GRACEFUL_EXIT_TIMEOUT: Duration = Duration::from_secs(8);
 
@@ -20,19 +16,11 @@ const GRACEFUL_EXIT_TIMEOUT: Duration = Duration::from_secs(8);
 /// local proxy, geolocated with the bundled database. Every field is best
 /// effort; an unknown exit just leaves those switches to the browser.
 async fn exit_location(profile: &BrowserProfile, local_proxy_url: &str) -> ExitLocation {
-  let ip = match crate::fingerprint_consistency::cached_exit_ip(profile) {
-    Some(ip) => Some(ip),
-    None => tokio::time::timeout(
-      EXIT_PROBE_TIMEOUT,
-      crate::ip_utils::fetch_public_ip(Some(local_proxy_url)),
-    )
-    .await
-    .ok()
-    .and_then(Result::ok),
-  };
+  let ip = exit_ip(profile, local_proxy_url).await;
+  // The profile's own language for the country, the same at every launch.
   let geo = ip
     .as_deref()
-    .and_then(|ip| crate::geolocation::get_geolocation(ip).ok());
+    .and_then(|ip| crate::geolocation::get_geolocation_for(ip, &profile.id.to_string()).ok());
   ExitLocation {
     timezone: geo.as_ref().map(|g| g.timezone.clone()),
     locale: geo.as_ref().map(|g| g.locale.as_string()),

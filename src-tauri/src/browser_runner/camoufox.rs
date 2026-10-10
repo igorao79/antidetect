@@ -3,14 +3,57 @@
 //! Restored from upstream Donut (removed in 23859333c6) and adapted to the
 //! current launch pipeline via [`super::launch_network`].
 
-use super::engine_common::{force_kill, process_is_gone};
+use super::engine_common::{exit_ip, force_kill, process_is_gone};
 use super::{emit_launch_stage, BrowserRunner};
 use crate::camoufox_manager::{CamoufoxConfig, CamoufoxManager};
 use crate::profile::BrowserProfile;
 use crate::proxy_manager::PROXY_MANAGER;
+use std::collections::HashMap;
 use std::time::Duration;
 
 type BoxError = Box<dyn std::error::Error + Send + Sync>;
+
+/// Bring a stored fingerprint's location in line with where this launch comes
+/// out. It was located when it was generated, and the profile's proxy, or the
+/// address behind it, may have changed since. Left as stored when the user
+/// turned automatic location off or named an address, and when the exit
+/// cannot be measured.
+async fn refresh_location(
+  profile: &BrowserProfile,
+  config: &mut CamoufoxConfig,
+  local_proxy_url: &str,
+) {
+  if !matches!(config.geoip, None | Some(serde_json::Value::Bool(true))) {
+    return;
+  }
+  let Some(stored) = config.fingerprint.as_deref() else {
+    return;
+  };
+  let Ok(mut fingerprint) = serde_json::from_str::<HashMap<String, serde_json::Value>>(stored)
+  else {
+    return;
+  };
+  let Some(ip) = exit_ip(profile, local_proxy_url).await else {
+    log::warn!(
+      "Could not measure the exit for Camoufox profile {}; keeping its stored location",
+      profile.name
+    );
+    return;
+  };
+  let block_webrtc = config.block_webrtc.unwrap_or(false);
+  let located = crate::camoufox::geolocation::apply_exit_ip(
+    &mut fingerprint,
+    &ip,
+    block_webrtc,
+    Some(&profile.id.to_string()),
+  );
+  if located.is_none() {
+    return;
+  }
+  if let Ok(located) = serde_json::to_string(&fingerprint) {
+    config.fingerprint = Some(located);
+  }
+}
 
 impl BrowserRunner {
   pub(super) async fn launch_camoufox_internal(
@@ -39,10 +82,11 @@ impl BrowserRunner {
       .prepare_launch_network(&app_handle, profile, gate, "http")
       .await?;
 
-    camoufox_config.proxy = Some(format!(
+    let local_proxy_url = format!(
       "http://{}:{}",
       network.local_proxy.host, network.local_proxy.port
-    ));
+    );
+    camoufox_config.proxy = Some(local_proxy_url.clone());
     // Geolocation spoofing is derived from the proxy exit unless the user set
     // it explicitly.
     if camoufox_config.geoip.is_none() {
@@ -75,6 +119,8 @@ impl BrowserRunner {
         stored.os = camoufox_config.os.clone();
       }
       updated_profile.camoufox_config = Some(stored);
+    } else {
+      refresh_location(profile, &mut camoufox_config, &local_proxy_url).await;
     }
 
     let override_profile_path = if profile.password_protected {

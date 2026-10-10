@@ -236,48 +236,16 @@ impl ProfileManager {
         crate::camoufox_manager::CamoufoxConfig::default()
       });
 
-      // Pass upstream proxy information to config for fingerprint generation
-      if let Some(proxy_id_ref) = &proxy_id {
-        if let Some(proxy_settings) = PROXY_MANAGER.get_proxy_settings_by_id(proxy_id_ref) {
-          // For fingerprint generation, pass upstream proxy directly with credentials if present
-          let proxy_url = if let (Some(username), Some(password)) =
-            (&proxy_settings.username, &proxy_settings.password)
-          {
-            format!(
-              "{}://{}:{}@{}:{}",
-              proxy_settings.proxy_type.to_lowercase(),
-              username,
-              password,
-              proxy_settings.host,
-              proxy_settings.port
-            )
-          } else {
-            format!(
-              "{}://{}:{}",
-              proxy_settings.proxy_type.to_lowercase(),
-              proxy_settings.host,
-              proxy_settings.port
-            )
-          };
-          config.proxy = Some(proxy_url);
-          log::info!(
-            "Using upstream proxy for Camoufox fingerprint generation: {}://{}:{}",
-            proxy_settings.proxy_type.to_lowercase(),
-            proxy_settings.host,
-            proxy_settings.port
-          );
-        }
-      }
-
       // Generate fingerprint if not already provided
       if config.fingerprint.is_none() {
         log::info!("Generating fingerprint for Camoufox profile: {name}");
+        let generation_config =
+          super::camoufox::config_for_generation(&config, proxy_id.as_deref()).await?;
 
-        // Use the camoufox launcher to generate the config
-
-        // Create a temporary profile for fingerprint generation
+        // A stand-in for the profile being created. It carries the real id,
+        // which the fingerprint's language is tied to.
         let temp_profile = BrowserProfile {
-          id: uuid::Uuid::new_v4(),
+          id: profile_id,
           name: name.to_string(),
           browser: browser.to_string(),
           version: version.to_string(),
@@ -313,7 +281,7 @@ impl ProfileManager {
 
         match self
           .camoufox_manager
-          .generate_fingerprint_config(app_handle, &temp_profile, &config)
+          .generate_fingerprint_config(app_handle, &temp_profile, &generation_config)
           .await
         {
           Ok(generated_fingerprint) => {
@@ -330,8 +298,7 @@ impl ProfileManager {
         log::info!("Using provided fingerprint for Camoufox profile: {name}");
       }
 
-      // Clear the proxy from config after fingerprint generation
-      // Browser launch should always use local proxy, never direct to upstream
+      // Browser launch always uses the local proxy, never the upstream itself.
       config.proxy = None;
 
       Some(config)

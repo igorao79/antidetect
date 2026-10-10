@@ -11,7 +11,7 @@ use crate::camoufox::data;
 use crate::camoufox::env_vars;
 use crate::camoufox::fingerprint::types::*;
 use crate::camoufox::fonts;
-use crate::camoufox::geolocation::{self, AsCamoufoxConfig};
+use crate::camoufox::geolocation;
 use crate::camoufox::presets;
 use crate::camoufox::webgl;
 
@@ -187,6 +187,7 @@ pub struct CamoufoxConfigBuilder {
   ff_version: Option<u32>,
   extra_config: HashMap<String, serde_json::Value>,
   geoip: Option<GeoIPOption>,
+  stable_id: Option<String>,
 }
 
 /// Proxy configuration.
@@ -256,6 +257,7 @@ impl CamoufoxConfigBuilder {
       ff_version: None,
       extra_config: HashMap::new(),
       geoip: None,
+      stable_id: None,
     }
   }
 
@@ -329,6 +331,13 @@ impl CamoufoxConfigBuilder {
   /// Use `GeoIPOption::IP(ip_string)` to use a specific IP address.
   pub fn geoip(mut self, option: GeoIPOption) -> Self {
     self.geoip = Some(option);
+    self
+  }
+
+  /// The profile this fingerprint is for. Ties the language chosen for its
+  /// location to the profile, so later launches choose the same one.
+  pub fn stable_id(mut self, id: impl Into<String>) -> Self {
+    self.stable_id = Some(id.into());
     self
   }
 
@@ -532,6 +541,7 @@ impl CamoufoxConfigBuilder {
     });
     let geoip_option = self.geoip.clone();
     let block_webrtc = self.block_webrtc;
+    let stable_id = self.stable_id.clone();
 
     // Build base config first
     let mut launch_config = self.build()?;
@@ -555,39 +565,14 @@ impl CamoufoxConfigBuilder {
         }
       };
 
-      // Get geolocation from IP
-      match geolocation::get_geolocation(&ip) {
-        Ok(geo) => {
-          // Add geolocation config
-          for (key, value) in geo.as_config() {
-            launch_config.fingerprint_config.insert(key, value);
-          }
-
-          // Add WebRTC IP spoofing if not blocked
-          if !block_webrtc {
-            if geolocation::is_ipv4(&ip) {
-              launch_config
-                .fingerprint_config
-                .insert("webrtc:ipv4".to_string(), serde_json::json!(ip));
-            } else if geolocation::is_ipv6(&ip) {
-              launch_config
-                .fingerprint_config
-                .insert("webrtc:ipv6".to_string(), serde_json::json!(ip));
-            }
-          }
-
-          log::info!(
-            "Applied geolocation from IP {}: {} ({})",
-            ip,
-            geo.locale.as_string(),
-            geo.timezone
-          );
-        }
-        Err(e) => {
-          log::warn!("Failed to get geolocation for IP {}: {}", ip, e);
-          // Continue without geolocation rather than failing
-        }
-      }
+      // A location the database cannot place is left out rather than failing
+      // the build.
+      geolocation::apply_exit_ip(
+        &mut launch_config.fingerprint_config,
+        &ip,
+        block_webrtc,
+        stable_id.as_deref(),
+      );
     }
 
     Ok(launch_config)

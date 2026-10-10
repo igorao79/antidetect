@@ -198,6 +198,15 @@ impl LocaleSelector {
 
   #[allow(clippy::wrong_self_convention)]
   pub fn from_region(&self, region: &str) -> Result<Locale, GeolocationError> {
+    self.from_region_at(region, rand::rng().random::<f64>())
+  }
+
+  /// The language found `fraction` (0 to 1) of the way through the region's
+  /// speakers. One fraction always names the same language, so a caller that
+  /// keeps its fraction keeps its language for as long as it stays in one
+  /// country.
+  #[allow(clippy::wrong_self_convention)]
+  pub fn from_region_at(&self, region: &str, fraction: f64) -> Result<Locale, GeolocationError> {
     let region_upper = region.to_uppercase();
 
     let languages = self
@@ -210,8 +219,7 @@ impl LocaleSelector {
     }
 
     let total: f64 = languages.iter().map(|l| l.population_percent).sum();
-    let mut rng = rand::rng();
-    let target = rng.random::<f64>() * total;
+    let target = fraction.clamp(0.0, 1.0) * total;
     let mut cumulative = 0.0;
 
     for lang in languages {
@@ -370,6 +378,29 @@ fn first_non_empty<const N: usize>(candidates: [Option<&str>; N]) -> Option<Stri
 }
 
 pub fn get_geolocation(ip: &str) -> Result<Geolocation, GeolocationError> {
+  locate(ip, None)
+}
+
+/// [`get_geolocation`] with the language tied to `stable_id` instead of drawn
+/// at random: the same id in the same country always speaks the same language.
+/// Used for a profile, whose language must not change from one launch to the
+/// next.
+pub fn get_geolocation_for(ip: &str, stable_id: &str) -> Result<Geolocation, GeolocationError> {
+  locate(ip, Some(stable_fraction(stable_id)))
+}
+
+/// `stable_id` as a point in `[0, 1)`. A digest and not `std`'s hasher, whose
+/// output may change between Rust releases and would then change every
+/// profile's language on an app update.
+fn stable_fraction(stable_id: &str) -> f64 {
+  use sha2::Digest;
+  let digest = sha2::Sha256::digest(stable_id.as_bytes());
+  let mut head = [0u8; 8];
+  head.copy_from_slice(&digest[..8]);
+  (u64::from_be_bytes(head) >> 11) as f64 / (1u64 << 53) as f64
+}
+
+fn locate(ip: &str, language_fraction: Option<f64>) -> Result<Geolocation, GeolocationError> {
   let mmdb_path =
     GeoIPDownloader::get_mmdb_file_path().map_err(|_| GeolocationError::DatabaseNotFound)?;
 
@@ -411,7 +442,10 @@ pub fn get_geolocation(ip: &str) -> Result<Geolocation, GeolocationError> {
     .to_uppercase();
 
   let selector = LocaleSelector::new()?;
-  let locale = selector.from_region(&iso_code)?;
+  let locale = match language_fraction {
+    Some(fraction) => selector.from_region_at(&iso_code, fraction)?,
+    None => selector.from_region(&iso_code)?,
+  };
 
   Ok(Geolocation {
     locale,
@@ -449,6 +483,34 @@ mod tests {
   fn test_locale_selector_creation() {
     let selector = LocaleSelector::new();
     assert!(selector.is_ok());
+  }
+
+  #[test]
+  fn a_fraction_always_names_the_same_language() {
+    let selector = LocaleSelector::new().unwrap();
+    for region in ["DE", "CH", "CA", "IN"] {
+      for fraction in [0.0, 0.31, 0.77, 0.999] {
+        let first = selector.from_region_at(region, fraction).unwrap();
+        let again = selector.from_region_at(region, fraction).unwrap();
+        assert_eq!(
+          first.as_string(),
+          again.as_string(),
+          "{region} at {fraction}"
+        );
+      }
+    }
+    // The start of a country's speakers is its most spoken language.
+    assert_eq!(selector.from_region_at("DE", 0.0).unwrap().language, "de");
+  }
+
+  #[test]
+  fn a_stable_id_maps_to_one_point_below_one() {
+    let a = stable_fraction("5f0c2b1e-profile-a");
+    assert_eq!(a, stable_fraction("5f0c2b1e-profile-a"));
+    assert_ne!(a, stable_fraction("5f0c2b1e-profile-b"));
+    for id in ["", "x", "5f0c2b1e-profile-a", "another id entirely"] {
+      assert!((0.0..1.0).contains(&stable_fraction(id)), "{id}");
+    }
   }
 
   #[test]
