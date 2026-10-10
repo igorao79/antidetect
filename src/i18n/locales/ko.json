@@ -617,7 +617,8 @@
       "vless": "VLESS",
       "vmess": "VMess",
       "trojan": "Trojan",
-      "hysteria2": "Hysteria2"
+      "hysteria2": "Hysteria2",
+      "ssh": "SSH"
     },
     "tabs": {
       "regular": "일반",

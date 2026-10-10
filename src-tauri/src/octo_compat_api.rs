@@ -459,7 +459,10 @@ async fn create_proxy(
   Json(req): Json<CreateProxyRequest>,
 ) -> ApiResult {
   let proxy_type = req.proxy_type.to_ascii_lowercase();
-  if !matches!(proxy_type.as_str(), "http" | "https" | "socks4" | "socks5") {
+  if !matches!(
+    proxy_type.as_str(),
+    "http" | "https" | "socks4" | "socks5" | "ssh"
+  ) {
     return Err(bad_request(format!("unsupported proxy type: {proxy_type}")));
   }
   if req.host.trim().is_empty() || req.port == 0 {

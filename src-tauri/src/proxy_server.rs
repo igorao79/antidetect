@@ -1232,6 +1232,9 @@ async fn handle_http(
             "ss" | "shadowsocks" => {
               return handle_http_via_shadowsocks(req, &url).await;
             }
+            crate::ssh_upstream::SCHEME => {
+              return crate::ssh_upstream::handle_http(req, &url).await;
+            }
             _ => {}
           }
         }
@@ -2461,6 +2464,9 @@ pub(crate) async fn connect_to_target_via_upstream(
           .map_err(|e| format!("Shadowsocks connection failed: {e}"))?;
 
           Box::new(stream)
+        }
+        crate::ssh_upstream::SCHEME => {
+          Box::new(crate::ssh_upstream::connect(&upstream, target_host, target_port).await?)
         }
         _ => {
           return Err(format!("Unsupported upstream proxy scheme: {}", scheme).into());
