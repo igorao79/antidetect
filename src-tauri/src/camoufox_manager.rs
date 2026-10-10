@@ -233,6 +233,7 @@ impl CamoufoxManager {
     // spoofed value, which disables the toolbar back/forward buttons. See
     // the matching note in camoufox/config.rs.
     fingerprint_config.remove("window.history.length");
+    crate::camoufox::config::ensure_noise_seeds(&mut fingerprint_config, &profile.id.to_string());
 
     // Convert to environment variables using CAMOU_CONFIG chunking
     let env_vars = crate::camoufox::env_vars::config_to_env_vars(&fingerprint_config)
@@ -557,7 +558,7 @@ impl CamoufoxManager {
         || exe_name.contains("camoufox")
         || exe_name.contains("firefox-bin");
 
-      if !is_firefox_like {
+      if !is_firefox_like || is_firefox_child_process(cmd) {
         continue;
       }
 
@@ -668,6 +669,19 @@ impl CamoufoxManager {
 
     false
   }
+}
+
+/// Whether a command line belongs to one of Firefox's own child processes
+/// (content, GPU, socket, utility). They carry the profile path too, so only
+/// the absence of these markers identifies the browser's main process, the one
+/// that owns the debug port and that stopping the profile must terminate.
+fn is_firefox_child_process(cmd: &[std::ffi::OsString]) -> bool {
+  cmd.iter().any(|arg| {
+    matches!(
+      arg.to_str(),
+      Some("-contentproc" | "-parentBuildID" | "-parentPid")
+    )
+  })
 }
 
 impl CamoufoxManager {
@@ -839,6 +853,30 @@ static CAMOUFOX_LAUNCHER: std::sync::LazyLock<CamoufoxManager> =
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn firefox_helpers_are_not_mistaken_for_the_browser() {
+    let os = |args: &[&str]| -> Vec<std::ffi::OsString> { args.iter().map(Into::into).collect() };
+    assert!(!is_firefox_child_process(&os(&[
+      "/Apps/Camoufox.app/Contents/MacOS/camoufox",
+      "-profile",
+      "/profiles/p1/profile",
+      "--remote-debugging-port=50007",
+    ])));
+    assert!(is_firefox_child_process(&os(&[
+      "Camoufox GPU Helper",
+      "-parentBuildID",
+      "20261006020952",
+      "-sbAppPath",
+      "/Apps/Camoufox.app",
+    ])));
+    assert!(is_firefox_child_process(&os(&[
+      "plugin-container",
+      "-contentproc",
+      "-profile",
+      "/profiles/p1/profile",
+    ])));
+  }
 
   #[test]
   fn test_default_config() {

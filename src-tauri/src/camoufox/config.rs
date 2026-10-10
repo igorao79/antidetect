@@ -93,6 +93,27 @@ fn cast_to_properties(
 }
 
 /// Replace Firefox version in user agent and related strings.
+/// Config keys seeding Camoufox's canvas and audio noise.
+const NOISE_SEED_KEYS: [&str; 2] = ["canvas:seed", "audio:seed"];
+
+/// Give a stored fingerprint the noise seeds it lacks, derived from `stable_id`
+/// (the profile id), so a profile created before seeds were stored hands the
+/// browser the same seeds on every launch.
+pub fn ensure_noise_seeds(config: &mut HashMap<String, serde_json::Value>, stable_id: &str) {
+  for (stream, key) in NOISE_SEED_KEYS.iter().enumerate() {
+    if config.contains_key(*key) {
+      continue;
+    }
+    // FNV-1a over the id, one stream per key so the two seeds are unrelated.
+    let mut hash: u32 = 0x811c_9dc5 ^ (stream as u32).wrapping_mul(0x9e37_79b9);
+    for byte in stable_id.bytes() {
+      hash ^= u32::from(byte);
+      hash = hash.wrapping_mul(0x0100_0193);
+    }
+    config.insert(key.to_string(), serde_json::json!(hash.max(1)));
+  }
+}
+
 fn replace_ff_version(s: &str, version: u32) -> String {
   // The fingerprint data names the Firefox version it was sampled from in two
   // places (`rv:133.0` and `Firefox/133.0`); both must name the engine that
@@ -452,6 +473,17 @@ impl CamoufoxConfigBuilder {
       serde_json::json!(rng.random_range(-50..=50)),
     );
     config.insert("canvas:aaCapOffset".to_string(), serde_json::json!(true));
+    // Camoufox draws these per launch when they are absent. Fixing them here
+    // makes the seeded noise part of the stored device. Note that 2D canvas
+    // output still changes per session: that is stock Firefox's baseline
+    // fingerprinting protection (per-session randomization), which Camoufox
+    // 156 does not override and which every regular Firefox shows too.
+    for key in NOISE_SEED_KEYS {
+      config.insert(
+        key.to_string(),
+        serde_json::json!(rng.random_range(1..=u32::MAX)),
+      );
+    }
 
     // Add extra config (user-provided)
     for (key, value) in self.extra_config {
@@ -646,6 +678,38 @@ fn parse_major_version(version: &str) -> Option<u32> {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn generated_fingerprints_carry_noise_seeds() {
+    let config = CamoufoxConfigBuilder::new()
+      .operating_system("windows")
+      .build()
+      .unwrap();
+    for key in NOISE_SEED_KEYS {
+      let seed = config.fingerprint_config.get(key).and_then(|v| v.as_u64());
+      assert!(seed.is_some_and(|s| s > 0), "{key}: {seed:?}");
+    }
+  }
+
+  #[test]
+  fn missing_noise_seeds_are_derived_from_the_profile_id() {
+    let mut first = HashMap::new();
+    ensure_noise_seeds(&mut first, "profile-a");
+    let mut again = HashMap::new();
+    ensure_noise_seeds(&mut again, "profile-a");
+    let mut other = HashMap::new();
+    ensure_noise_seeds(&mut other, "profile-b");
+
+    assert_eq!(first, again, "the same profile must get the same seeds");
+    assert_ne!(first["canvas:seed"], other["canvas:seed"]);
+    assert_ne!(first["canvas:seed"], first["audio:seed"]);
+
+    // A stored seed is the profile's own and is never replaced.
+    let mut stored = HashMap::from([("canvas:seed".to_string(), serde_json::json!(7))]);
+    ensure_noise_seeds(&mut stored, "profile-a");
+    assert_eq!(stored["canvas:seed"], serde_json::json!(7));
+    assert_eq!(stored["audio:seed"], first["audio:seed"]);
+  }
 
   #[test]
   fn firefox_version_is_rewritten_in_user_agent() {
