@@ -11,9 +11,10 @@
 //! Profiles are addressed by their id, with or without dashes (Octo uses
 //! 32-character hex ids).
 //!
-//! The profile list/create/delete calls of Octo's cloud automation API
-//! (`/api/v2/automation/profiles`) are served here too, against local
-//! profiles, with Octo's `{success, msg, data, code}` envelope.
+//! The profile and proxy list/create/delete calls of Octo's cloud automation
+//! API (`/api/v2/automation/profiles`, `/api/v2/automation/proxies`) are
+//! served here too, against local data, with Octo's
+//! `{success, msg, data, code}` envelope.
 
 use axum::{
   extract::{Request, State},
@@ -300,7 +301,8 @@ struct CreateProfileRequest {
   /// Stored proxy to attach, as `{ "uuid": "<proxy id>" }`.
   #[serde(default)]
   proxy: Option<UuidRequest>,
-  /// Antidetect extension: the engine, `camoufox` (default) or `wayfern`.
+  /// Antidetect extension: the engine, `camoufox` (default), `cloakbrowser`
+  /// or `wayfern`.
   #[serde(default)]
   browser: Option<String>,
 }
@@ -321,6 +323,7 @@ async fn create_profile(
 ) -> ApiResult {
   let browser = req.browser.as_deref().unwrap_or("camoufox").to_string();
   let os = fingerprint_os(req.fingerprint.os.as_deref())?;
+  let os_for_cloakbrowser = os.clone();
   let (camoufox_config, wayfern_config) = match browser.as_str() {
     "camoufox" => (
       Some(crate::camoufox_manager::CamoufoxConfig {
@@ -336,8 +339,14 @@ async fn create_profile(
         ..Default::default()
       }),
     ),
+    // A CloakBrowser profile is created with its own seed; the requested OS
+    // is applied to that config below.
+    "cloakbrowser" => (None, None),
     other => return Err(bad_request(format!("unsupported browser: {other}"))),
   };
+  let cloakbrowser_os = (browser == "cloakbrowser")
+    .then(|| os_for_cloakbrowser.clone())
+    .flatten();
 
   let mut versions = crate::downloaded_browsers_registry::DownloadedBrowsersRegistry::instance()
     .get_downloaded_versions(&browser);
@@ -366,6 +375,19 @@ async fn create_profile(
     )
     .await
     .map_err(|e| bad_request(e.to_string()))?;
+  let profile = match cloakbrowser_os {
+    Some(os) => {
+      let config = crate::cloakbrowser_manager::CloakBrowserConfig {
+        os: Some(os),
+        ..profile.cloakbrowser_config.clone().unwrap_or_default()
+      };
+      manager
+        .update_cloakbrowser_config(state.app_handle.clone(), &profile.id.to_string(), config)
+        .await
+        .map_err(bad_request)?
+    }
+    None => profile,
+  };
   let profile = if req.tags.is_empty() {
     profile
   } else {
@@ -399,29 +421,138 @@ async fn delete_profiles(
   Ok(envelope(json!({ "deleted": profiles.len() })))
 }
 
+fn proxy_json(proxy: &crate::proxy_manager::StoredProxy) -> serde_json::Value {
+  json!({
+    "uuid": proxy.id,
+    "title": proxy.name,
+    "type": proxy.proxy_settings.proxy_type,
+    "host": proxy.proxy_settings.host,
+    "port": proxy.proxy_settings.port,
+    "login": proxy.proxy_settings.username,
+  })
+}
+
+async fn list_proxies() -> ApiResult {
+  let proxies = crate::proxy_manager::PROXY_MANAGER.get_stored_proxies();
+  Ok(envelope(json!(proxies
+    .iter()
+    .map(proxy_json)
+    .collect::<Vec<_>>())))
+}
+
+/// Octo's proxy shape: `type` is `http`, `https`, `socks5` (or `socks4`).
+#[derive(Deserialize)]
+struct CreateProxyRequest {
+  title: String,
+  #[serde(rename = "type")]
+  proxy_type: String,
+  host: String,
+  port: u16,
+  #[serde(default)]
+  login: Option<String>,
+  #[serde(default)]
+  password: Option<String>,
+}
+
+async fn create_proxy(
+  State(state): State<ApiState>,
+  Json(req): Json<CreateProxyRequest>,
+) -> ApiResult {
+  let proxy_type = req.proxy_type.to_ascii_lowercase();
+  if !matches!(proxy_type.as_str(), "http" | "https" | "socks4" | "socks5") {
+    return Err(bad_request(format!("unsupported proxy type: {proxy_type}")));
+  }
+  if req.host.trim().is_empty() || req.port == 0 {
+    return Err(bad_request("host and port are required"));
+  }
+  let proxy = crate::proxy_manager::PROXY_MANAGER
+    .create_stored_proxy(
+      &state.app_handle,
+      req.title,
+      crate::browser::ProxySettings {
+        proxy_type,
+        host: req.host.trim().to_string(),
+        port: req.port,
+        username: req.login.filter(|v| !v.is_empty()),
+        password: req.password.filter(|v| !v.is_empty()),
+        vless_uri: None,
+      },
+    )
+    .map_err(bad_request)?;
+  Ok(envelope(proxy_json(&proxy)))
+}
+
+async fn delete_proxies(
+  State(state): State<ApiState>,
+  Json(req): Json<DeleteProfilesRequest>,
+) -> ApiResult {
+  for uuid in &req.uuids {
+    crate::proxy_manager::PROXY_MANAGER
+      .delete_stored_proxy(&state.app_handle, uuid)
+      .map_err(bad_request)?;
+  }
+  Ok(envelope(json!({ "deleted": req.uuids.len() })))
+}
+
+/// The debug port of a running profile this API did not start itself (the
+/// app restarted, or the profile was launched from the UI), read back from the
+/// browser process.
+async fn running_debug_port(profile: &BrowserProfile) -> Option<u16> {
+  let profiles_dir = ProfileManager::instance().get_profiles_dir();
+  let path = crate::ephemeral_dirs::get_effective_profile_path(profile, &profiles_dir);
+  let path = path.to_string_lossy();
+  match profile.browser.as_str() {
+    "camoufox" => crate::camoufox_manager::CamoufoxManager::instance()
+      .find_camoufox_by_profile(&path)
+      .await
+      .ok()
+      .flatten()
+      .and_then(|instance| instance.cdp_port),
+    "cloakbrowser" => {
+      crate::cloakbrowser_manager::find_by_profile(&path).and_then(|process| process.cdp_port)
+    }
+    _ => None,
+  }
+}
+
 async fn active_profiles() -> ApiResult {
   let profiles = ProfileManager::instance()
     .list_profiles()
     .map_err(|e| ApiError(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
   let sessions = SESSIONS.lock().map(|s| s.clone()).unwrap_or_default();
-  let active: Vec<ProfileState> = profiles
-    .into_iter()
-    .filter(|p| crate::browser_runner::browser_is_running_for(&p.id.to_string()))
-    .map(|p| {
-      let uuid = octo_uuid(&p);
-      let session = sessions.get(&uuid);
-      ProfileState {
-        state: "STARTED",
-        headless: session.is_some_and(|s| s.headless),
-        start_time: session.map_or(p.last_launch.unwrap_or(0), |s| s.start_time),
-        ws_endpoint: session.map(|s| s.ws_endpoint.clone()).unwrap_or_default(),
-        debug_port: session.map_or(0, |s| s.debug_port),
-        browser_pid: p.process_id,
-        browser: p.browser.clone(),
-        uuid,
+  let mut active = Vec::new();
+  for profile in profiles {
+    if !crate::browser_runner::browser_is_running_for(&profile.id.to_string()) {
+      continue;
+    }
+    let uuid = octo_uuid(&profile);
+    let session = match sessions.get(&uuid) {
+      Some(session) => session.clone(),
+      None => {
+        let debug_port = running_debug_port(&profile).await.unwrap_or(0);
+        Session {
+          headless: false,
+          debug_port,
+          ws_endpoint: if debug_port == 0 {
+            String::new()
+          } else {
+            ws_endpoint(&profile.browser, debug_port).await
+          },
+          start_time: profile.last_launch.unwrap_or(0),
+        }
       }
-    })
-    .collect();
+    };
+    active.push(ProfileState {
+      state: "STARTED",
+      headless: session.headless,
+      start_time: session.start_time,
+      ws_endpoint: session.ws_endpoint,
+      debug_port: session.debug_port,
+      browser_pid: profile.process_id,
+      browser: profile.browser.clone(),
+      uuid,
+    });
+  }
   Ok(Json(active).into_response())
 }
 
@@ -452,6 +583,10 @@ fn router(app_handle: tauri::AppHandle) -> Router {
       get(list_profiles)
         .post(create_profile)
         .delete(delete_profiles),
+    )
+    .route(
+      "/api/v2/automation/proxies",
+      get(list_proxies).post(create_proxy).delete(delete_proxies),
     )
     .layer(middleware::from_fn(require_loopback_host))
     .with_state(ApiState { app_handle })
