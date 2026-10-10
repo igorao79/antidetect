@@ -124,6 +124,7 @@ mod commercial_license;
 mod cookie_bot;
 mod cookie_manager;
 mod cookie_paste;
+mod cookie_robot;
 pub mod events;
 mod mcp_integrations;
 mod mcp_remote;
@@ -3410,6 +3411,9 @@ pub fn run_with_builder(
       update_camoufox_config,
       update_wayfern_config,
       profile::cloakbrowser::update_cloakbrowser_config,
+      cookie_robot::start_cookie_robot,
+      cookie_robot::stop_cookie_robot,
+      cookie_robot::get_cookie_robot_status,
       generate_sample_fingerprint,
       get_profile_groups,
       get_groups_with_profile_counts,

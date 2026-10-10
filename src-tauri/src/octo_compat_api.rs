@@ -497,6 +497,49 @@ async fn delete_proxies(
   Ok(envelope(json!({ "deleted": req.uuids.len() })))
 }
 
+/// The robot's own request, with the profiles named the way this API names
+/// them.
+#[derive(Deserialize)]
+struct CookieRobotBody {
+  uuids: Vec<String>,
+  #[serde(flatten)]
+  request: crate::cookie_robot::CookieRobotRequest,
+}
+
+fn cookie_robot_json() -> serde_json::Value {
+  serde_json::to_value(crate::cookie_robot::status()).unwrap_or_default()
+}
+
+/// Not part of Octo's API: start the Cookie Robot on a set of profiles.
+async fn start_cookie_robot(
+  State(state): State<ApiState>,
+  Json(req): Json<CookieRobotBody>,
+) -> ApiResult {
+  let mut request = req.request;
+  request.profile_ids.clear();
+  for uuid in &req.uuids {
+    request.profile_ids.push(find_profile(uuid)?.id.to_string());
+  }
+  crate::cookie_robot::start(state.app_handle.clone(), request).map_err(|e| {
+    let status = if e.contains("COOKIE_ROBOT_ALREADY_RUNNING") {
+      StatusCode::CONFLICT
+    } else {
+      StatusCode::BAD_REQUEST
+    };
+    ApiError(status, e)
+  })?;
+  Ok(envelope(cookie_robot_json()))
+}
+
+async fn cookie_robot_status() -> ApiResult {
+  Ok(envelope(cookie_robot_json()))
+}
+
+async fn stop_cookie_robot() -> ApiResult {
+  let stopped = crate::cookie_robot::stop();
+  Ok(envelope(json!({ "stopped": stopped })))
+}
+
 /// The debug port of a running profile this API did not start itself (the
 /// app restarted, or the profile was launched from the UI), read back from the
 /// browser process.
@@ -590,6 +633,12 @@ fn router(app_handle: tauri::AppHandle) -> Router {
     .route(
       "/api/v2/automation/proxies",
       get(list_proxies).post(create_proxy).delete(delete_proxies),
+    )
+    .route(
+      "/api/v2/automation/cookie_robot",
+      get(cookie_robot_status)
+        .post(start_cookie_robot)
+        .delete(stop_cookie_robot),
     )
     .layer(middleware::from_fn(require_loopback_host))
     .with_state(ApiState { app_handle })

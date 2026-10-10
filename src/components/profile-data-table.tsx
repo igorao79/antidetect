@@ -25,6 +25,7 @@ import {
   LuArrowDown,
   LuArrowUp,
   LuArrowUpDown,
+  LuBot,
   LuCheck,
   LuChevronDown,
   LuCookie,
@@ -1558,6 +1559,7 @@ interface ProfilesDataTableProps {
   onBulkProxyAssignment?: () => void;
   onBulkProxyDistribution?: () => void;
   onBulkCopyCookies?: () => void;
+  onBulkCookieRobot?: () => void;
   onBulkRun?: () => void;
   onBulkStop?: () => void;
   bulkActionsUnlocked?: boolean;
@@ -1620,6 +1622,7 @@ export function ProfilesDataTable({
   onBulkProxyAssignment,
   onBulkProxyDistribution,
   onBulkCopyCookies,
+  onBulkCookieRobot,
   onBulkRun,
   onBulkStop,
   bulkActionsUnlocked = false,
@@ -4088,6 +4091,12 @@ export function ProfilesDataTable({
               <DropdownMenuItem onSelect={onBulkCopyCookies}>
                 <LuCookie />
                 {t("profiles.actionBar.copyCookies")}
+              </DropdownMenuItem>
+            )}
+            {onBulkCookieRobot && (
+              <DropdownMenuItem onSelect={onBulkCookieRobot}>
+                <LuBot />
+                {t("cookieRobot.actionBar")}
               </DropdownMenuItem>
             )}
             <DropdownMenuItem

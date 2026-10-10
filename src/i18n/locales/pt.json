@@ -2444,7 +2444,14 @@
     "wayfernLaunchArgsLimit": "Use no máximo {{count}} argumentos de inicialização, com até {{length}} caracteres cada.",
     "tablePreferencesInvalid": "Estas configurações da tabela são inválidas.",
     "tablePreferencesLoadFailed": "Não foi possível carregar as configurações da tabela. Tente novamente.",
-    "tablePreferencesSaveFailed": "Não foi possível salvar as configurações da tabela. Tente novamente."
+    "tablePreferencesSaveFailed": "Não foi possível salvar as configurações da tabela. Tente novamente.",
+    "cookieRobotInvalidUrl": "\"{{url}}\" não é um endereço web.",
+    "cookieRobotNoSites": "Adicione pelo menos um site.",
+    "cookieRobotTooManySites": "Sites demais: no máximo {{max}}.",
+    "cookieRobotNoProfiles": "Selecione pelo menos um perfil.",
+    "cookieRobotAlreadyRunning": "O Cookie Robot já está em execução. Aguarde o fim ou interrompa-o.",
+    "cookieRobotProfileRunning": "O perfil está aberto. Feche-o e execute o robô novamente.",
+    "cookieRobotNoControl": "O navegador iniciou, mas não foi possível controlá-lo: {{detail}}"
   },
   "rail": {
     "profiles": "Perfis",
@@ -3694,6 +3701,30 @@
       "memory": "Memory, GB",
       "screenWidth": "Screen width",
       "screenHeight": "Screen height"
+    }
+  },
+  "cookieRobot": {
+    "title": "Cookie Robot",
+    "description": "Abre os perfis selecionados, visita em cada um os sites da lista e fecha-os, para que cada perfil reúna cookies e histórico antes de ser usado.",
+    "actionBar": "Aquecer cookies",
+    "profilesSelected": "Perfis selecionados: {{count}}",
+    "sites": "Sites",
+    "sitesPlaceholder": "example.com\nhttps://news.example.com/world",
+    "sitesHint": "Um por linha. Um endereço sem http:// ou https:// é aberto por HTTPS.",
+    "secondsFrom": "Segundos por site, de",
+    "secondsTo": "até",
+    "parallel": "Perfis ao mesmo tempo",
+    "shuffle": "Uma ordem diferente em cada perfil",
+    "headless": "Executar sem janelas do navegador",
+    "newRun": "Nova execução",
+    "visited": "{{visited}} de {{total}} sites",
+    "unreachable": "não abriram: {{count}}",
+    "state": {
+      "queued": "Na fila",
+      "running": "Em execução",
+      "done": "Concluído",
+      "failed": "Falhou",
+      "cancelled": "Interrompido"
     }
   }
 }

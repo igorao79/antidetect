@@ -2434,7 +2434,14 @@
     "wayfernLaunchArgsLimit": "Dùng tối đa {{count}} tham số khởi chạy, mỗi tham số tối đa {{length}} ký tự.",
     "tablePreferencesInvalid": "Cài đặt bảng không hợp lệ.",
     "tablePreferencesLoadFailed": "Không thể tải cài đặt bảng. Hãy thử lại.",
-    "tablePreferencesSaveFailed": "Không thể lưu cài đặt bảng. Hãy thử lại."
+    "tablePreferencesSaveFailed": "Không thể lưu cài đặt bảng. Hãy thử lại.",
+    "cookieRobotInvalidUrl": "\"{{url}}\" không phải là địa chỉ web.",
+    "cookieRobotNoSites": "Hãy thêm ít nhất một trang.",
+    "cookieRobotTooManySites": "Quá nhiều trang: tối đa {{max}}.",
+    "cookieRobotNoProfiles": "Hãy chọn ít nhất một hồ sơ.",
+    "cookieRobotAlreadyRunning": "Cookie Robot đang chạy. Hãy chờ kết thúc hoặc dừng nó.",
+    "cookieRobotProfileRunning": "Hồ sơ đang mở. Hãy đóng lại rồi chạy robot lần nữa.",
+    "cookieRobotNoControl": "Trình duyệt đã khởi động nhưng không điều khiển được: {{detail}}"
   },
   "rail": {
     "profiles": "Profile",
@@ -3661,6 +3668,30 @@
       "memory": "Memory, GB",
       "screenWidth": "Screen width",
       "screenHeight": "Screen height"
+    }
+  },
+  "cookieRobot": {
+    "title": "Cookie Robot",
+    "description": "Mở các hồ sơ đã chọn, truy cập các trang trong danh sách ở từng hồ sơ rồi đóng lại, để mỗi hồ sơ có cookie và lịch sử trước khi bạn dùng.",
+    "actionBar": "Làm nóng cookie",
+    "profilesSelected": "Số hồ sơ đã chọn: {{count}}",
+    "sites": "Trang web",
+    "sitesPlaceholder": "example.com\nhttps://news.example.com/world",
+    "sitesHint": "Mỗi dòng một trang. Địa chỉ không có http:// hoặc https:// sẽ được mở qua HTTPS.",
+    "secondsFrom": "Số giây mỗi trang, từ",
+    "secondsTo": "đến",
+    "parallel": "Số hồ sơ cùng lúc",
+    "shuffle": "Thứ tự khác nhau ở mỗi hồ sơ",
+    "headless": "Chạy không hiện cửa sổ trình duyệt",
+    "newRun": "Lần chạy mới",
+    "visited": "{{visited}} trên {{total}} trang",
+    "unreachable": "không mở được: {{count}}",
+    "state": {
+      "queued": "Đang chờ",
+      "running": "Đang chạy",
+      "done": "Xong",
+      "failed": "Lỗi",
+      "cancelled": "Đã dừng"
     }
   }
 }

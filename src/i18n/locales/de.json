@@ -2434,7 +2434,14 @@
     "wayfernLaunchArgsLimit": "Verwende höchstens {{count}} Startargumente mit jeweils bis zu {{length}} Zeichen.",
     "tablePreferencesInvalid": "Diese Tabelleneinstellungen sind ungültig.",
     "tablePreferencesLoadFailed": "Die Tabelleneinstellungen konnten nicht geladen werden. Versuchen Sie es erneut.",
-    "tablePreferencesSaveFailed": "Die Tabelleneinstellungen konnten nicht gespeichert werden. Versuchen Sie es erneut."
+    "tablePreferencesSaveFailed": "Die Tabelleneinstellungen konnten nicht gespeichert werden. Versuchen Sie es erneut.",
+    "cookieRobotInvalidUrl": "„{{url}}“ ist keine Webadresse.",
+    "cookieRobotNoSites": "Fügen Sie mindestens eine Seite hinzu.",
+    "cookieRobotTooManySites": "Zu viele Seiten: höchstens {{max}}.",
+    "cookieRobotNoProfiles": "Wählen Sie mindestens ein Profil aus.",
+    "cookieRobotAlreadyRunning": "Cookie Robot läuft bereits. Warten Sie, bis er fertig ist, oder halten Sie ihn an.",
+    "cookieRobotProfileRunning": "Das Profil ist geöffnet. Schließen Sie es und starten Sie den Robot erneut.",
+    "cookieRobotNoControl": "Der Browser wurde gestartet, ließ sich aber nicht steuern: {{detail}}"
   },
   "rail": {
     "profiles": "Profile",
@@ -3661,6 +3668,30 @@
       "memory": "Memory, GB",
       "screenWidth": "Screen width",
       "screenHeight": "Screen height"
+    }
+  },
+  "cookieRobot": {
+    "title": "Cookie Robot",
+    "description": "Öffnet die ausgewählten Profile, besucht in jedem die Seiten aus der Liste und schließt sie wieder, damit jedes Profil Cookies und Verlauf sammelt, bevor Sie damit arbeiten.",
+    "actionBar": "Cookies aufwärmen",
+    "profilesSelected": "Ausgewählte Profile: {{count}}",
+    "sites": "Seiten",
+    "sitesPlaceholder": "example.com\nhttps://news.example.com/world",
+    "sitesHint": "Eine pro Zeile. Eine Adresse ohne http:// oder https:// wird über HTTPS geöffnet.",
+    "secondsFrom": "Sekunden pro Seite, von",
+    "secondsTo": "bis",
+    "parallel": "Profile gleichzeitig",
+    "shuffle": "In jedem Profil eine andere Reihenfolge",
+    "headless": "Ohne Browserfenster ausführen",
+    "newRun": "Neuer Durchlauf",
+    "visited": "{{visited}} von {{total}} Seiten",
+    "unreachable": "nicht geöffnet: {{count}}",
+    "state": {
+      "queued": "Wartet",
+      "running": "Läuft",
+      "done": "Fertig",
+      "failed": "Fehlgeschlagen",
+      "cancelled": "Angehalten"
     }
   }
 }

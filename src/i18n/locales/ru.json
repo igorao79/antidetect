@@ -2454,7 +2454,14 @@
     "wayfernLaunchArgsLimit": "Используйте не более {{count}} аргументов запуска, каждый не длиннее {{length}} символов.",
     "tablePreferencesInvalid": "Недопустимые настройки таблицы.",
     "tablePreferencesLoadFailed": "Не удалось загрузить настройки таблицы. Повторите попытку.",
-    "tablePreferencesSaveFailed": "Не удалось сохранить настройки таблицы. Повторите попытку."
+    "tablePreferencesSaveFailed": "Не удалось сохранить настройки таблицы. Повторите попытку.",
+    "cookieRobotInvalidUrl": "«{{url}}» не является адресом сайта.",
+    "cookieRobotNoSites": "Добавьте хотя бы один сайт.",
+    "cookieRobotTooManySites": "Слишком много сайтов: не больше {{max}}.",
+    "cookieRobotNoProfiles": "Выберите хотя бы один профиль.",
+    "cookieRobotAlreadyRunning": "Cookie Robot уже работает. Дождитесь окончания или остановите его.",
+    "cookieRobotProfileRunning": "Профиль открыт. Закройте его и запустите робота снова.",
+    "cookieRobotNoControl": "Браузер запустился, но управлять им не удалось: {{detail}}"
   },
   "rail": {
     "profiles": "Профили",
@@ -3727,6 +3734,30 @@
       "memory": "Память, ГБ",
       "screenWidth": "Ширина экрана",
       "screenHeight": "Высота экрана"
+    }
+  },
+  "cookieRobot": {
+    "title": "Cookie Robot",
+    "description": "Открывает выбранные профили, обходит в каждом сайты из списка и закрывает их, чтобы профиль набрал cookies и историю до начала работы.",
+    "actionBar": "Прогреть cookies",
+    "profilesSelected": "Выбрано профилей: {{count}}",
+    "sites": "Сайты",
+    "sitesPlaceholder": "example.com\nhttps://news.example.com/world",
+    "sitesHint": "По одному в строке. Адрес без http:// или https:// открывается по HTTPS.",
+    "secondsFrom": "Секунд на сайт, от",
+    "secondsTo": "до",
+    "parallel": "Профилей одновременно",
+    "shuffle": "Свой порядок сайтов в каждом профиле",
+    "headless": "Запускать без окон браузера",
+    "newRun": "Новый запуск",
+    "visited": "{{visited}} из {{total}} сайтов",
+    "unreachable": "не открылось: {{count}}",
+    "state": {
+      "queued": "В очереди",
+      "running": "Выполняется",
+      "done": "Готово",
+      "failed": "Ошибка",
+      "cancelled": "Остановлено"
     }
   }
 }

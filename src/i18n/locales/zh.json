@@ -2434,7 +2434,14 @@
     "wayfernLaunchArgsLimit": "最多使用 {{count}} 个启动参数，每个最多 {{length}} 个字符。",
     "tablePreferencesInvalid": "这些表格设置无效。",
     "tablePreferencesLoadFailed": "无法加载表格设置。请重试。",
-    "tablePreferencesSaveFailed": "无法保存表格设置。请重试。"
+    "tablePreferencesSaveFailed": "无法保存表格设置。请重试。",
+    "cookieRobotInvalidUrl": "“{{url}}”不是网址。",
+    "cookieRobotNoSites": "请至少添加一个网站。",
+    "cookieRobotTooManySites": "网站过多：最多 {{max}} 个。",
+    "cookieRobotNoProfiles": "请至少选择一个配置文件。",
+    "cookieRobotAlreadyRunning": "Cookie Robot 正在运行。请等待结束或将其停止。",
+    "cookieRobotProfileRunning": "配置文件已打开。请关闭后重新运行。",
+    "cookieRobotNoControl": "浏览器已启动，但无法控制：{{detail}}"
   },
   "rail": {
     "profiles": "配置文件",
@@ -3661,6 +3668,30 @@
       "memory": "Memory, GB",
       "screenWidth": "Screen width",
       "screenHeight": "Screen height"
+    }
+  },
+  "cookieRobot": {
+    "title": "Cookie Robot",
+    "description": "打开所选配置文件，在每个配置文件中访问下面的网站后再关闭，让每个配置文件在使用前积累 Cookie 和浏览记录。",
+    "actionBar": "预热 Cookie",
+    "profilesSelected": "已选配置文件：{{count}}",
+    "sites": "网站",
+    "sitesPlaceholder": "example.com\nhttps://news.example.com/world",
+    "sitesHint": "每行一个。没有 http:// 或 https:// 的地址将通过 HTTPS 打开。",
+    "secondsFrom": "每个网站停留秒数，从",
+    "secondsTo": "到",
+    "parallel": "同时运行的配置文件数",
+    "shuffle": "每个配置文件使用不同的顺序",
+    "headless": "不显示浏览器窗口运行",
+    "newRun": "新的运行",
+    "visited": "已访问 {{visited}} / {{total}} 个网站",
+    "unreachable": "未能打开：{{count}}",
+    "state": {
+      "queued": "排队中",
+      "running": "运行中",
+      "done": "完成",
+      "failed": "失败",
+      "cancelled": "已停止"
     }
   }
 }

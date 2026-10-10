@@ -2434,7 +2434,14 @@
     "wayfernLaunchArgsLimit": "Use at most {{count}} launch arguments, each up to {{length}} characters.",
     "tablePreferencesInvalid": "These table settings are invalid.",
     "tablePreferencesLoadFailed": "Could not load the table settings. Try again.",
-    "tablePreferencesSaveFailed": "Could not save the table settings. Try again."
+    "tablePreferencesSaveFailed": "Could not save the table settings. Try again.",
+    "cookieRobotInvalidUrl": "\"{{url}}\" is not a web address.",
+    "cookieRobotNoSites": "Add at least one site.",
+    "cookieRobotTooManySites": "Too many sites: {{max}} at most.",
+    "cookieRobotNoProfiles": "Select at least one profile.",
+    "cookieRobotAlreadyRunning": "Cookie Robot is already running. Wait for it to finish or stop it.",
+    "cookieRobotProfileRunning": "The profile is open. Close it and run the robot again.",
+    "cookieRobotNoControl": "The browser started but could not be controlled: {{detail}}"
   },
   "rail": {
     "profiles": "Profiles",
@@ -3661,6 +3668,30 @@
       "memory": "Memory, GB",
       "screenWidth": "Screen width",
       "screenHeight": "Screen height"
+    }
+  },
+  "cookieRobot": {
+    "title": "Cookie Robot",
+    "description": "Opens the selected profiles, visits the sites below in each of them and closes them again, so every profile collects cookies and history before you work in it.",
+    "actionBar": "Warm up cookies",
+    "profilesSelected": "Profiles selected: {{count}}",
+    "sites": "Sites",
+    "sitesPlaceholder": "example.com\nhttps://news.example.com/world",
+    "sitesHint": "One per line. An address without http:// or https:// is opened over HTTPS.",
+    "secondsFrom": "Seconds per site, from",
+    "secondsTo": "to",
+    "parallel": "Profiles at a time",
+    "shuffle": "A different order in every profile",
+    "headless": "Run without browser windows",
+    "newRun": "New run",
+    "visited": "{{visited}} of {{total}} sites",
+    "unreachable": "did not open: {{count}}",
+    "state": {
+      "queued": "Queued",
+      "running": "Running",
+      "done": "Done",
+      "failed": "Failed",
+      "cancelled": "Stopped"
     }
   }
 }
