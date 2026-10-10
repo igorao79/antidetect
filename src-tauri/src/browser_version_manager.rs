@@ -69,13 +69,14 @@ impl BrowserVersionManager {
           "macos-arm64" | "macos-x64" | "linux-x64" | "linux-arm64" | "windows-x64"
         ))
       }
+      "cloakbrowser" => Ok(ApiClient::cloakbrowser_version().is_some()),
       _ => Err(format!("Unknown browser: {browser}").into()),
     }
   }
 
   /// Get list of browsers supported on the current platform
   pub fn get_supported_browsers(&self) -> Vec<String> {
-    let all_browsers = vec!["camoufox", "wayfern"];
+    let all_browsers = vec!["camoufox", "cloakbrowser", "wayfern"];
 
     all_browsers
       .into_iter()
@@ -121,7 +122,7 @@ impl BrowserVersionManager {
     &self,
     browser: &str,
   ) -> Result<BrowserReleaseTypes, Box<dyn std::error::Error + Send + Sync>> {
-    if browser != "wayfern" && browser != "camoufox" {
+    if !matches!(browser, "wayfern" | "camoufox" | "cloakbrowser") {
       return Err(format!("Unsupported browser: {browser}").into());
     }
 
@@ -180,6 +181,10 @@ impl BrowserVersionManager {
     let fresh_versions = match browser {
       "wayfern" => self.fetch_wayfern_versions(true).await?,
       "camoufox" => self.fetch_camoufox_versions().await?,
+      // One pinned free build per platform; nothing to fetch.
+      "cloakbrowser" => ApiClient::cloakbrowser_version()
+        .map(|v| vec![v.to_string()])
+        .unwrap_or_default(),
       _ => return Err(format!("Unsupported browser: {browser}").into()),
     };
 
@@ -242,7 +247,7 @@ impl BrowserVersionManager {
     // Since we don't have detailed date/prerelease info for cached versions,
     // we'll fetch fresh detailed info and map it to our merged versions
     let detailed_info: Vec<BrowserVersionInfo> = match browser {
-      "wayfern" | "camoufox" => merged_versions
+      "wayfern" | "camoufox" | "cloakbrowser" => merged_versions
         .into_iter()
         .map(|version| BrowserVersionInfo {
           version: version.clone(),
@@ -349,6 +354,18 @@ impl BrowserVersionManager {
         Ok(DownloadInfo {
           url: format!("https://github.com/daijro/camoufox/releases/tag/{version}"),
           filename: format!("camoufox-{version}-{os_name}.{arch_name}.zip"),
+          is_archive: true,
+        })
+      }
+      "cloakbrowser" => {
+        let archive = ApiClient::cloakbrowser_archive_name().ok_or_else(|| {
+          format!("Unsupported platform/architecture for CloakBrowser: {os}/{arch}")
+        })?;
+        let url = ApiClient::cloakbrowser_download_url(version)
+          .ok_or("CloakBrowser has no build for this platform")?;
+        Ok(DownloadInfo {
+          url,
+          filename: archive,
           is_archive: true,
         })
       }

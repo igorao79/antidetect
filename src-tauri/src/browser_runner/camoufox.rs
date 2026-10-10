@@ -3,58 +3,14 @@
 //! Restored from upstream Donut (removed in 23859333c6) and adapted to the
 //! current launch pipeline via [`super::launch_network`].
 
+use super::engine_common::{force_kill, process_is_gone};
 use super::{emit_launch_stage, BrowserRunner};
 use crate::camoufox_manager::{CamoufoxConfig, CamoufoxManager};
-use crate::events;
 use crate::profile::BrowserProfile;
 use crate::proxy_manager::PROXY_MANAGER;
-use serde::Serialize;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 
 type BoxError = Box<dyn std::error::Error + Send + Sync>;
-
-#[derive(Serialize)]
-struct RunningChangedPayload {
-  id: String,
-  is_running: bool,
-}
-
-fn emit_running_changed(profile: &BrowserProfile, is_running: bool) {
-  let payload = RunningChangedPayload {
-    id: profile.id.to_string(),
-    is_running,
-  };
-  if let Err(e) = events::emit("profile-running-changed", &payload) {
-    log::warn!("Warning: Failed to emit profile running changed event: {e}");
-  }
-}
-
-fn process_is_gone(pid: u32) -> bool {
-  let system = sysinfo::System::new_all();
-  system.process(sysinfo::Pid::from(pid as usize)).is_none()
-}
-
-/// Kill `pid` with the platform helper and report whether it is gone.
-async fn force_kill(pid: u32, profile_path: &str) -> bool {
-  #[cfg(target_os = "macos")]
-  let result =
-    crate::platform_browser::macos::kill_browser_process_impl(pid, Some(profile_path)).await;
-  #[cfg(target_os = "linux")]
-  let result =
-    crate::platform_browser::linux::kill_browser_process_impl(pid, Some(profile_path)).await;
-  #[cfg(target_os = "windows")]
-  let result = {
-    let _ = profile_path;
-    crate::platform_browser::windows::kill_browser_process_impl(pid).await
-  };
-
-  if let Err(e) = result {
-    log::error!("Failed to force kill Camoufox process {pid}: {e}");
-    return false;
-  }
-  tokio::time::sleep(Duration::from_millis(500)).await;
-  process_is_gone(pid)
-}
 
 impl BrowserRunner {
   pub(super) async fn launch_camoufox_internal(
@@ -189,21 +145,7 @@ impl BrowserRunner {
       return Err(error);
     }
 
-    updated_profile.process_id = Some(process_id);
-    updated_profile.last_launch = Some(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs());
-    self.save_process_info(&updated_profile)?;
-    let _ = crate::tag_manager::TAG_MANAGER.lock().map(|tm| {
-      let _ = tm.rebuild_from_profiles(&self.profile_manager.list_profiles().unwrap_or_default());
-    });
-
-    if let Err(e) = events::emit_empty("profiles-changed") {
-      log::warn!("Warning: Failed to emit profiles-changed event: {e}");
-    }
-    if let Err(e) = events::emit("profile-updated", &updated_profile) {
-      log::warn!("Warning: Failed to emit profile update event: {e}");
-    }
-    emit_running_changed(&updated_profile, true);
-
+    self.record_launch(&mut updated_profile, process_id)?;
     Ok(updated_profile)
   }
 
@@ -312,67 +254,6 @@ impl BrowserRunner {
       );
     }
 
-    // Saved immediately so a following version update (which re-reads the
-    // profile from disk) sees the cleared PID.
-    let mut updated_profile = profile.clone();
-    updated_profile.process_id = None;
-    self
-      .save_process_info(&updated_profile)
-      .map_err(|e| format!("Failed to update profile: {e}"))?;
-
-    if let Ok(Some(pending_update)) = self
-      .auto_updater
-      .get_pending_update(&profile.browser, &profile.version)
-    {
-      match self.profile_manager.update_profile_version(
-        &app_handle,
-        &profile.id.to_string(),
-        &pending_update.new_version,
-      ) {
-        Ok(after_update) => {
-          updated_profile = after_update;
-          if let Err(e) = self
-            .auto_updater
-            .dismiss_update_notification(&pending_update.id)
-          {
-            log::warn!("Warning: Failed to dismiss pending update notification: {e}");
-          }
-        }
-        Err(e) => log::error!(
-          "Failed to apply pending update for Camoufox profile {}: {e}",
-          profile.name
-        ),
-      }
-    }
-    if updated_profile.version == profile.version {
-      if let Some(p) = self
-        .auto_updater
-        .update_profile_to_latest_installed(&app_handle, &updated_profile)
-      {
-        updated_profile = p;
-      }
-    }
-
-    if let Err(e) = events::emit("profile-updated", &updated_profile) {
-      log::warn!("Warning: Failed to emit profile update event: {e}");
-    }
-    emit_running_changed(&updated_profile, false);
-
-    if profile.password_protected {
-      crate::profile::password::complete_after_quit_and_wait(profile).await;
-    } else if profile.ephemeral {
-      crate::ephemeral_dirs::remove_ephemeral_dir(&profile.id.to_string());
-    }
-
-    if let Ok(consolidated) = self
-      .downloaded_browsers_registry
-      .consolidate_browser_versions(&app_handle)
-    {
-      for action in &consolidated {
-        log::info!("Post-stop version consolidation: {action}");
-      }
-    }
-
-    Ok(())
+    self.finish_stop(&app_handle, profile).await
   }
 }

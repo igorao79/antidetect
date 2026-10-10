@@ -1542,9 +1542,9 @@ pub async fn ensure_active_browsers_downloaded(
   let version_manager = crate::browser_version_manager::BrowserVersionManager::instance();
   let mut downloaded = Vec::new();
 
-  // Only the free engine is fetched up front. Wayfern is a ~1.2 GB download
+  // Only the free engines are fetched up front. Wayfern is a ~1.2 GB download
   // that needs a subscription, so it is fetched when a profile asks for it.
-  for browser in &["camoufox"] {
+  for browser in &["camoufox", "cloakbrowser"] {
     // Check if any version is already downloaded
     let existing = registry.get_downloaded_versions(browser);
     if !existing.is_empty() {

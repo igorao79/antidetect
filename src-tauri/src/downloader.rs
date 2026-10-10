@@ -200,6 +200,14 @@ impl Downloader {
 
         Ok(asset_url)
       }
+      BrowserType::CloakBrowser => {
+        // Only the pinned free build exists; another version has no archive.
+        if crate::api_client::ApiClient::cloakbrowser_version() != Some(version) {
+          return Err(format!("CloakBrowser version {version} is not available").into());
+        }
+        crate::api_client::ApiClient::cloakbrowser_download_url(version)
+          .ok_or_else(|| "CloakBrowser has no build for this platform".into())
+      }
       BrowserType::Wayfern => {
         // For Wayfern, get the download URL from version.json
         let version_info = self
@@ -384,6 +392,21 @@ impl Downloader {
     let expected_sha256 = if browser_type == BrowserType::Camoufox {
       // Camoufox publishes no sidecar; GitHub's own asset digest serves instead.
       self.camoufox_asset_digest(version, &download_url).await?
+    } else if browser_type == BrowserType::CloakBrowser {
+      // CloakBrowser signs its SHA256SUMS; the signature is the trust root.
+      self
+        .api_client
+        .cloakbrowser_archive_digest(version)
+        .await
+        .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> {
+          log::warn!("CloakBrowser {version} could not be authenticated: {e}");
+          serde_json::json!({
+            "code": "BROWSER_CHECKSUM_UNAVAILABLE",
+            "params": { "browser": "CloakBrowser", "version": version }
+          })
+          .to_string()
+          .into()
+        })?
     } else {
       self
         .fetch_expected_archive_checksum(&download_url, browser_type.display_name(), version)

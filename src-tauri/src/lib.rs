@@ -116,6 +116,7 @@ mod wayfern_terms;
 mod window_decorations;
 // mod theme_detector; // removed: theme detection handled in webview via CSS prefers-color-scheme
 mod agent_console;
+mod cloakbrowser_manager;
 pub mod cloud_auth;
 mod cloud_errors;
 mod commercial_license;
@@ -1831,6 +1832,7 @@ async fn generate_sample_fingerprint(
     release_type: "stable".to_string(),
     camoufox_config: None,
     wayfern_config: None,
+    cloakbrowser_config: None,
     group_id: None,
     tags: Vec::new(),
     note: None,
@@ -3406,6 +3408,7 @@ pub fn run_with_builder(
       import_proxies_from_parsed,
       update_camoufox_config,
       update_wayfern_config,
+      profile::cloakbrowser::update_cloakbrowser_config,
       generate_sample_fingerprint,
       get_profile_groups,
       get_groups_with_profile_counts,

@@ -18,6 +18,7 @@ pub struct ProxySettings {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum BrowserType {
   Camoufox,
+  CloakBrowser,
   Wayfern,
 }
 
@@ -25,6 +26,7 @@ impl BrowserType {
   pub fn as_str(&self) -> &'static str {
     match self {
       BrowserType::Camoufox => "camoufox",
+      BrowserType::CloakBrowser => "cloakbrowser",
       BrowserType::Wayfern => "wayfern",
     }
   }
@@ -34,6 +36,7 @@ impl BrowserType {
   pub fn display_name(&self) -> &'static str {
     match self {
       BrowserType::Camoufox => "Camoufox",
+      BrowserType::CloakBrowser => "CloakBrowser",
       BrowserType::Wayfern => "Wayfern",
     }
   }
@@ -41,6 +44,7 @@ impl BrowserType {
   pub fn from_str(s: &str) -> Result<Self, String> {
     match s {
       "camoufox" => Ok(BrowserType::Camoufox),
+      "cloakbrowser" => Ok(BrowserType::CloakBrowser),
       "wayfern" => Ok(BrowserType::Wayfern),
       _ => Err(format!("Unknown browser type: {s}")),
     }
@@ -636,6 +640,49 @@ impl Browser for CamoufoxBrowser {
 }
 
 /// Wayfern is a Chromium-based anti-detect browser with CDP-based fingerprint injection
+/// CloakBrowser (anti-detect Chromium). Its archives unpack to the stock
+/// Chromium layout (`Chromium.app`, `chrome`, `chrome.exe`), which the Wayfern
+/// lookups already cover; the process itself is spawned by
+/// `cloakbrowser_manager`.
+pub struct CloakBrowserBrowser;
+
+impl Browser for CloakBrowserBrowser {
+  fn get_executable_path(&self, install_dir: &Path) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    WayfernBrowser::new().get_executable_path(install_dir)
+  }
+
+  fn create_launch_args(
+    &self,
+    _profile_path: &str,
+    _proxy_settings: Option<&ProxySettings>,
+    _url: Option<String>,
+    _remote_debugging_port: Option<u16>,
+    _headless: bool,
+  ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+    Ok(Vec::new())
+  }
+
+  fn is_version_downloaded(&self, version: &str, binaries_dir: &Path) -> bool {
+    let install_dir = binaries_dir.join("cloakbrowser").join(version);
+
+    #[cfg(target_os = "macos")]
+    return macos::is_wayfern_version_downloaded(&install_dir);
+
+    #[cfg(target_os = "linux")]
+    return linux::is_wayfern_version_downloaded(&install_dir);
+
+    #[cfg(target_os = "windows")]
+    return windows::is_wayfern_version_downloaded(&install_dir);
+
+    #[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
+    false
+  }
+
+  fn prepare_executable(&self, executable_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    WayfernBrowser::new().prepare_executable(executable_path)
+  }
+}
+
 pub struct WayfernBrowser;
 
 impl WayfernBrowser {
@@ -756,6 +803,7 @@ impl BrowserFactory {
   pub fn create_browser(&self, browser_type: BrowserType) -> Box<dyn Browser> {
     match browser_type {
       BrowserType::Camoufox => Box::new(CamoufoxBrowser::new()),
+      BrowserType::CloakBrowser => Box::new(CloakBrowserBrowser),
       BrowserType::Wayfern => Box::new(WayfernBrowser::new()),
     }
   }
@@ -1397,6 +1445,7 @@ mod tests {
       release_type: "stable".to_string(),
       camoufox_config: None,
       wayfern_config: None,
+      cloakbrowser_config: None,
       group_id: None,
       tags: Vec::new(),
       note: None,
