@@ -24,6 +24,7 @@ export { getCurrentOS } from "@/lib/platform";
 export function getBrowserDisplayName(browserType: string): string {
   const browserNames: Record<string, string> = {
     camoufox: "Camoufox",
+    cloakbrowser: "CloakBrowser",
     wayfern: "Wayfern",
   };
 
@@ -40,6 +41,7 @@ export function getBrowserIcon(browserType: string) {
     case "camoufox":
       return FaFirefox; // Firefox-based anti-detect browser
     case "wayfern":
+    case "cloakbrowser":
       return FaChrome; // Chromium-based anti-detect browser
     default:
       // All other browsers get a warning icon
@@ -93,11 +95,13 @@ export function getProfileIcon(profile: {
 export function isCrossOsProfile(profile: {
   host_os?: string;
   camoufox_config?: { os?: string };
+  cloakbrowser_config?: { os?: string | null };
   wayfern_config?: { os?: string };
 }): boolean {
   const profileOs =
     profile.host_os ||
     profile.camoufox_config?.os ||
+    profile.cloakbrowser_config?.os ||
     profile.wayfern_config?.os;
   if (!profileOs) return false;
   return profileOs !== getCurrentOS();

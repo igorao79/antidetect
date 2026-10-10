@@ -20,6 +20,10 @@ import {
   LuShieldCheck,
   LuTriangleAlert,
 } from "react-icons/lu";
+import {
+  CloakBrowserConfigForm,
+  randomCloakBrowserSeed,
+} from "@/components/cloakbrowser-config-form";
 import { LoadingButton } from "@/components/loading-button";
 import { ProfileGlyph } from "@/components/profile-glyph";
 import { ProxyFormDialog } from "@/components/proxy-form-dialog";
@@ -78,6 +82,7 @@ import type {
   BrowserReleaseTypes,
   CamoufoxConfig,
   CamoufoxOS,
+  CloakBrowserConfig,
   WayfernConfig,
   WayfernOS,
 } from "@/types";
@@ -93,12 +98,21 @@ const getCurrentOS = (): WayfernOS => {
 };
 
 /** Anti-detect engines a profile can be created on. */
-export type ProfileEngine = "camoufox" | "wayfern";
+export type ProfileEngine = "camoufox" | "cloakbrowser" | "wayfern";
+
+const ENGINES: ProfileEngine[] = ["camoufox", "cloakbrowser", "wayfern"];
 
 const ENGINE_LABELS: Record<ProfileEngine, string> = {
   camoufox: "Camoufox",
+  cloakbrowser: "CloakBrowser",
   wayfern: "Wayfern",
 };
+
+const defaultCloakBrowserConfig = (): CloakBrowserConfig => ({
+  // getCurrentOS never reports "android"; only desktop OSes are detected.
+  os: getCurrentOS() as CamoufoxOS,
+  seed: randomCloakBrowserSeed(),
+});
 
 const defaultCamoufoxConfig = (): CamoufoxConfig => ({
   // getCurrentOS never reports "android"; only desktop OSes are detected.
@@ -125,6 +139,7 @@ interface CreateProfileDialogProps {
     proxyId?: string;
     vpnId?: string;
     camoufoxConfig?: CamoufoxConfig;
+    cloakbrowserConfig?: CloakBrowserConfig;
     wayfernConfig?: WayfernConfig;
     groupId?: string;
     extensionGroupId?: string;
@@ -164,6 +179,8 @@ export function CreateProfileDialog({
   const [camoufoxConfig, setCamoufoxConfig] = useState<CamoufoxConfig>(
     defaultCamoufoxConfig,
   );
+  const [cloakbrowserConfig, setCloakbrowserConfig] =
+    useState<CloakBrowserConfig>(defaultCloakBrowserConfig);
   const [wayfernConfig, setWayfernConfig] =
     useState<WayfernConfig>(defaultWayfernConfig);
   const [isCreating, setIsCreating] = useState(false);
@@ -323,6 +340,7 @@ export function CreateProfileDialog({
     setReleaseTypesError(false);
     setEngine("camoufox");
     setCamoufoxConfig(defaultCamoufoxConfig());
+    setCloakbrowserConfig(defaultCloakBrowserConfig());
     setWayfernConfig(defaultWayfernConfig());
     setEphemeral(false);
     clearPassword();
@@ -355,6 +373,8 @@ export function CreateProfileDialog({
         proxyId: isVpnSelection ? undefined : selectedProxyId,
         vpnId: isVpnSelection ? selectedProxyId?.slice(4) : undefined,
         camoufoxConfig: engine === "camoufox" ? camoufoxConfig : undefined,
+        cloakbrowserConfig:
+          engine === "cloakbrowser" ? cloakbrowserConfig : undefined,
         wayfernConfig: engine === "wayfern" ? wayfernConfig : undefined,
         groupId:
           selectedGroupId && selectedGroupId !== "__all__"
@@ -495,7 +515,7 @@ export function CreateProfileDialog({
             className="flex flex-wrap items-center gap-1.5"
             {...rise(0.02)}
           >
-            {(["camoufox", "wayfern"] as const).map((option) => (
+            {ENGINES.map((option) => (
               <Tooltip key={option} delayDuration={600}>
                 <TooltipTrigger asChild>
                   <button
@@ -999,6 +1019,18 @@ export function CreateProfileDialog({
                         limitedMode={!crossOsUnlocked}
                         profileVersion={creatableVersion}
                         profileBrowser="camoufox"
+                      />
+                    ) : engine === "cloakbrowser" ? (
+                      <CloakBrowserConfigForm
+                        className="[&_[data-slot=select-trigger]]:w-full"
+                        config={cloakbrowserConfig}
+                        onConfigChange={(key, value) =>
+                          setCloakbrowserConfig((previous) => ({
+                            ...previous,
+                            [key]: value,
+                          }))
+                        }
+                        readOnly={isCreating}
                       />
                     ) : (
                       <WayfernConfigForm
