@@ -15,10 +15,14 @@ Fork-specific rules:
   downloaded on demand. Only Camoufox and CloakBrowser are fetched at startup.
 - `octo_compat_api.rs` serves an Octo Browser compatible API on `127.0.0.1:58888` (no token,
   loopback only): profile start/stop/active plus profile and proxy list/create/delete.
+- SSH is a proxy type (`ssh://user:password@host:port`, password or keyboard-interactive
+  login). `ssh_upstream.rs` runs inside the local proxy worker: one session per upstream, one
+  `direct-tcpip` channel per browser connection, TCP only. Host keys are not pinned.
 - Put fork code in its own modules and keep edits to upstream files small, so upstream merges
   stay easy. Fork modules: `browser_runner/{launch_network,engine_common,camoufox,cloakbrowser}.rs`,
   `api_client/{camoufox,cloakbrowser}.rs`, `camoufox/`, `camoufox_manager.rs`,
-  `cloakbrowser_manager.rs`, `profile/cloakbrowser.rs`, `octo_compat_api.rs`, and on the frontend
+  `cloakbrowser_manager.rs`, `profile/{camoufox,cloakbrowser}.rs`, `ssh_upstream.rs`,
+  `octo_compat_api.rs`, and on the frontend
   `cloakbrowser-config-{form,dialog}.tsx`, `camoufox-config-dialog.tsx`,
   `shared-camoufox-config-form.tsx`.
 - Keep the AGPL license and upstream copyright notices.
@@ -35,6 +39,18 @@ running dev app):
   profiles on one machine share them. Whether newer (paid) builds differ is untested.
 - Launch the dev app without `HTTP(S)_PROXY` in its environment: the app's own lookups honour
   those variables while a profile's traffic does not, so geolocation ends up for the wrong exit.
+- Location follows the exit at every launch, for both engines: the exit address is measured
+  through the launch's local proxy and sets timezone, language, coordinates and the WebRTC
+  address (unless the profile turned automatic location off). A new Camoufox fingerprint is
+  located through a proxy check, never by handing the proxy to reqwest, which looks up this
+  machine's own address for every type it cannot dial (SSH, Shadowsocks, share links).
+- The language for an exit country is drawn from CLDR speaker shares, second languages and
+  dialects included: a German exit gets `de` 37% of the time, `en` 26%, `fr` 7%, `bar` 7%. The
+  draw is tied to the profile id (`geolocation::get_geolocation_for`), so one profile keeps one
+  language; whether to draw only a country's main language is undecided.
+- A debug build with full settings takes 11 GB and more per flavour. `CARGO_INCREMENTAL=0
+  CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0` brings it to about 3.5 GB; with the
+  frontend built (`pnpm build`), `src-tauri/target/debug/donutbrowser` runs without `tauri dev`.
 
 ---
 
@@ -67,6 +83,7 @@ donutbrowser/
 │   │   ├── proxy_manager.rs         # Proxy lifecycle, connection testing, per-proxy check history
 │   │   ├── proxy_udp.rs             # SOCKS5 UDP ASSOCIATE probe (yes/no/unknown UDP verdict)
 │   │   ├── proxy_server.rs          # Local proxy binary (donut-proxy)
+│   │   ├── ssh_upstream.rs          # SSH proxies: shared session, direct-tcpip channels (fork)
 │   │   ├── proxy_storage.rs         # Proxy config persistence (JSON files)
 │   │   ├── api_server.rs            # REST API (utoipa + axum)
 │   │   ├── mcp_server.rs            # MCP tool engine, served over the remote bridge

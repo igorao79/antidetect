@@ -1,4 +1,4 @@
 # State the scenarios write while they run.
 *-ids.json
-proxy.log
+*.log
 __pycache__/
