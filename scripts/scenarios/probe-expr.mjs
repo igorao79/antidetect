@@ -42,5 +42,6 @@ export const PROBE = `(async () => {
     canvasHash,
     webrtc,
     cookie: document.cookie,
+    text: document.body ? document.body.innerText.trim().slice(0, 120) : "",
   });
 })()`;

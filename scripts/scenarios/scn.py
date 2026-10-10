@@ -34,8 +34,12 @@ def create(title, os_name="win", browser="camoufox", proxy=None, tags=None):
     assert status == 200 and r.get("success"), (status, r)
     return r["data"]["uuid"]
 
-def start(uuid, headless=False, url=None, debug_port=True):
-    body = {"uuid": uuid, "headless": headless, "debug_port": debug_port}
+# Browsers start without a window so a run does not take over the screen;
+# SCN_HEADED=1 shows them.
+HEADLESS = os.environ.get("SCN_HEADED", "") != "1"
+
+def start(uuid, headless=None, url=None, debug_port=True):
+    body = {"uuid": uuid, "headless": HEADLESS if headless is None else headless, "debug_port": debug_port}
     if url: body["url"] = url
     return api("POST", "/api/profiles/start", body)
 
@@ -98,6 +102,12 @@ def public_ip():
     """The address this machine reaches the internet from, without any proxy."""
     with _opener.open("https://api.ipify.org", timeout=20) as r:
         return r.read().decode().strip()
+
+# Names the two engines use for one zone: Chromium's ICU keeps the older ones.
+_TZ_ALIASES = {"Asia/Saigon": "Asia/Ho_Chi_Minh", "Asia/Calcutta": "Asia/Kolkata", "Europe/Kiev": "Europe/Kyiv", "Asia/Katmandu": "Asia/Kathmandu", "Asia/Rangoon": "Asia/Yangon"}
+
+def same_tz(a, b):
+    return a is not None and b is not None and _TZ_ALIASES.get(a, a) == _TZ_ALIASES.get(b, b)
 
 def expected(name):
     """Comma-separated expectations from the environment, e.g. EXPECT_TZ."""
