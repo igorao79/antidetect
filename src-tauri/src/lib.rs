@@ -117,6 +117,7 @@ mod wayfern_terms;
 mod window_decorations;
 // mod theme_detector; // removed: theme detection handled in webview via CSS prefers-color-scheme
 mod agent_console;
+mod cloakbrowser_camera;
 mod cloakbrowser_manager;
 pub mod cloud_auth;
 mod cloud_errors;

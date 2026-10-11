@@ -93,6 +93,11 @@ impl BrowserRunner {
       }
     };
 
+    let camera_dir = config
+      .camera_video
+      .is_some()
+      .then(|| crate::cloakbrowser_camera::camera_dir(&profiles_dir, &profile.id.to_string()));
+
     emit_launch_stage(profile, "starting", None);
     let process = cloakbrowser_manager::launch(LaunchRequest {
       executable: &executable,
@@ -105,6 +110,7 @@ impl BrowserRunner {
       headless,
       ephemeral: profile.ephemeral,
       extension_paths: &extension_paths,
+      camera_dir: camera_dir.as_deref(),
     })
     .await
     .map_err(|e| -> BoxError {

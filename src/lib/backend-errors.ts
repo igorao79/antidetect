@@ -244,6 +244,9 @@ export type BackendErrorCode =
   | "SYNC_DISPLAY_UNAVAILABLE"
   | "SYNC_DISPLAY_TOO_SMALL"
   | "SYNC_ARRANGE_FAILED"
+  | "CAMERA_VIDEO_NOT_FOUND"
+  | "CAMERA_VIDEO_NEEDS_FFMPEG"
+  | "CAMERA_VIDEO_CONVERSION_FAILED"
   | "COOKIE_ROBOT_INVALID_URL"
   | "COOKIE_ROBOT_NO_SITES"
   | "COOKIE_ROBOT_TOO_MANY_SITES"
@@ -856,6 +859,14 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       });
     case "SYNC_ARRANGE_FAILED":
       return t("backendErrors.syncArrangeFailed");
+    case "CAMERA_VIDEO_NOT_FOUND":
+      return t("backendErrors.cameraVideoNotFound");
+    case "CAMERA_VIDEO_NEEDS_FFMPEG":
+      return t("backendErrors.cameraVideoNeedsFfmpeg");
+    case "CAMERA_VIDEO_CONVERSION_FAILED":
+      return t("backendErrors.cameraVideoConversionFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
     case "COOKIE_ROBOT_INVALID_URL":
       return t("backendErrors.cookieRobotInvalidUrl", {
         url: parsed.params?.url ?? "",

@@ -54,6 +54,11 @@ pub struct CloakBrowserConfig {
   /// Draw a new seed on every launch.
   #[serde(default)]
   pub randomize_fingerprint_on_launch: Option<bool>,
+  /// The video file the user chose to stand in for the camera. The prepared
+  /// copy the browser reads lives beside the profile; see
+  /// `cloakbrowser_camera`.
+  #[serde(default)]
+  pub camera_video: Option<String>,
 }
 
 pub fn generate_seed() -> u32 {
@@ -165,6 +170,9 @@ pub struct LaunchRequest<'a> {
   pub headless: bool,
   pub ephemeral: bool,
   pub extension_paths: &'a [String],
+  /// Where the profile's camera video is installed, if it has one. The
+  /// browser is started in that directory.
+  pub camera_dir: Option<&'a Path>,
 }
 
 fn launch_args(request: &LaunchRequest) -> Vec<String> {
@@ -204,6 +212,12 @@ fn launch_args(request: &LaunchRequest) -> Vec<String> {
       request.extension_paths.join(",")
     ));
   }
+  if let Some(camera) = request
+    .camera_dir
+    .and_then(crate::cloakbrowser_camera::launch_args)
+  {
+    args.extend(camera);
+  }
   if let Some(url) = request.url {
     args.push(url.to_string());
   }
@@ -230,6 +244,9 @@ pub async fn launch(request: LaunchRequest<'_>) -> Result<CloakBrowserProcess, S
     .args(&args)
     .stdin(Stdio::null())
     .stdout(Stdio::null());
+  if let Some(dir) = request.camera_dir.filter(|dir| dir.is_dir()) {
+    command.current_dir(dir);
+  }
   let stderr_log =
     std::env::temp_dir().join(format!("cloakbrowser-stderr-{}.log", request.profile_id));
   match std::fs::File::create(&stderr_log) {
@@ -479,6 +496,7 @@ mod tests {
       headless: true,
       ephemeral: false,
       extension_paths: &extensions,
+      camera_dir: None,
     });
     assert_eq!(args[0], "--user-data-dir=/profiles/p1");
     assert!(args.contains(&"--remote-debugging-port=9222".to_string()));

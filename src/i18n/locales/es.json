@@ -2453,7 +2453,10 @@
     "cookieRobotNoProfiles": "Selecciona al menos un perfil.",
     "cookieRobotAlreadyRunning": "Cookie Robot ya está en marcha. Espera a que termine o detenlo.",
     "cookieRobotProfileRunning": "El perfil está abierto. Ciérralo y vuelve a ejecutar el robot.",
-    "cookieRobotNoControl": "El navegador se inició, pero no se pudo controlar: {{detail}}"
+    "cookieRobotNoControl": "El navegador se inició, pero no se pudo controlar: {{detail}}",
+    "cameraVideoNotFound": "No se encontró el archivo de vídeo.",
+    "cameraVideoNeedsFfmpeg": "Este vídeo debe convertirse y ffmpeg no está instalado. Instala ffmpeg o elige un archivo .mjpeg.",
+    "cameraVideoConversionFailed": "No se pudo convertir el vídeo: {{detail}}"
   },
   "rail": {
     "profiles": "Perfiles",
@@ -3703,6 +3706,13 @@
       "memory": "Memory, GB",
       "screenWidth": "Screen width",
       "screenHeight": "Screen height"
+    },
+    "camera": {
+      "label": "Vídeo de la cámara",
+      "real": "Cámara real",
+      "choose": "Elegir vídeo…",
+      "remove": "Quitar",
+      "hint": "Los sitios que piden la cámara reciben este vídeo en bucle y el micrófono queda en silencio. Un sitio que liste los dispositivos aún puede notar que no son hardware real."
     }
   },
   "cookieRobot": {

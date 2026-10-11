@@ -305,6 +305,10 @@ struct CreateProfileRequest {
   /// or `wayfern`.
   #[serde(default)]
   browser: Option<String>,
+  /// Antidetect extension, CloakBrowser only: a video file to stand in for
+  /// the camera.
+  #[serde(default)]
+  camera_video: Option<String>,
 }
 
 fn fingerprint_os(os: Option<&str>) -> Result<Option<String>, ApiError> {
@@ -355,6 +359,7 @@ async fn create_from_request(
   let cloakbrowser_os = (browser == "cloakbrowser")
     .then(|| os_for_cloakbrowser.clone())
     .flatten();
+  let camera_video = req.camera_video.filter(|_| browser == "cloakbrowser");
 
   let mut versions = crate::downloaded_browsers_registry::DownloadedBrowsersRegistry::instance()
     .get_downloaded_versions(&browser);
@@ -383,18 +388,20 @@ async fn create_from_request(
     )
     .await
     .map_err(|e| bad_request(e.to_string()))?;
-  let profile = match cloakbrowser_os {
-    Some(os) => {
+  let profile = match (cloakbrowser_os, camera_video) {
+    (None, None) => profile,
+    (os, camera_video) => {
+      let current = profile.cloakbrowser_config.clone().unwrap_or_default();
       let config = crate::cloakbrowser_manager::CloakBrowserConfig {
-        os: Some(os),
-        ..profile.cloakbrowser_config.clone().unwrap_or_default()
+        os: os.or(current.os.clone()),
+        camera_video,
+        ..current
       };
       manager
         .update_cloakbrowser_config(app_handle.clone(), &profile.id.to_string(), config)
         .await
         .map_err(bad_request)?
     }
-    None => profile,
   };
   let profile = if req.tags.is_empty() {
     profile
@@ -447,6 +454,7 @@ async fn start_one_time_profile(
       fingerprint: req.fingerprint,
       proxy: req.proxy,
       browser: req.browser,
+      camera_video: None,
     },
   )
   .await?;

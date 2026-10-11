@@ -2443,7 +2443,10 @@
     "cookieRobotNoProfiles": "请至少选择一个配置文件。",
     "cookieRobotAlreadyRunning": "Cookie Robot 正在运行。请等待结束或将其停止。",
     "cookieRobotProfileRunning": "配置文件已打开。请关闭后重新运行。",
-    "cookieRobotNoControl": "浏览器已启动，但无法控制：{{detail}}"
+    "cookieRobotNoControl": "浏览器已启动，但无法控制：{{detail}}",
+    "cameraVideoNotFound": "未找到视频文件。",
+    "cameraVideoNeedsFfmpeg": "此视频需要转换，但未安装 ffmpeg。请安装 ffmpeg 或选择 .mjpeg 文件。",
+    "cameraVideoConversionFailed": "无法转换视频：{{detail}}"
   },
   "rail": {
     "profiles": "配置文件",
@@ -3670,6 +3673,13 @@
       "memory": "Memory, GB",
       "screenWidth": "Screen width",
       "screenHeight": "Screen height"
+    },
+    "camera": {
+      "label": "摄像头视频",
+      "real": "真实摄像头",
+      "choose": "选择视频…",
+      "remove": "移除",
+      "hint": "请求摄像头的网站会循环收到这段视频，麦克风则保持静音。列出设备的网站仍可能看出它们不是真实硬件。"
     }
   },
   "cookieRobot": {

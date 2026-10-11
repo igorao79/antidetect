@@ -2443,7 +2443,10 @@
     "cookieRobotNoProfiles": "En az bir profil seçin.",
     "cookieRobotAlreadyRunning": "Cookie Robot zaten çalışıyor. Bitmesini bekleyin veya durdurun.",
     "cookieRobotProfileRunning": "Profil açık. Kapatıp robotu yeniden çalıştırın.",
-    "cookieRobotNoControl": "Tarayıcı başladı ama denetlenemedi: {{detail}}"
+    "cookieRobotNoControl": "Tarayıcı başladı ama denetlenemedi: {{detail}}",
+    "cameraVideoNotFound": "Video dosyası bulunamadı.",
+    "cameraVideoNeedsFfmpeg": "Bu videonun dönüştürülmesi gerekiyor ama ffmpeg kurulu değil. ffmpeg kurun veya bir .mjpeg dosyası seçin.",
+    "cameraVideoConversionFailed": "Video dönüştürülemedi: {{detail}}"
   },
   "rail": {
     "profiles": "Profiller",
@@ -3670,6 +3673,13 @@
       "memory": "Memory, GB",
       "screenWidth": "Screen width",
       "screenHeight": "Screen height"
+    },
+    "camera": {
+      "label": "Kamera videosu",
+      "real": "Gerçek kamera",
+      "choose": "Video seç…",
+      "remove": "Kaldır",
+      "hint": "Kamera isteyen siteler bu videoyu döngü halinde alır ve mikrofon sessiz kalır. Aygıtları listeleyen bir site yine de bunların gerçek donanım olmadığını anlayabilir."
     }
   },
   "cookieRobot": {
