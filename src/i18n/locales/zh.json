@@ -2446,7 +2446,8 @@
     "cookieRobotNoControl": "浏览器已启动，但无法控制：{{detail}}",
     "cameraVideoNotFound": "未找到视频文件。",
     "cameraVideoNeedsFfmpeg": "此视频需要转换，但未安装 ffmpeg。请安装 ffmpeg 或选择 .mjpeg 文件。",
-    "cameraVideoConversionFailed": "无法转换视频：{{detail}}"
+    "cameraVideoConversionFailed": "无法转换视频：{{detail}}",
+    "locationDatabaseUnavailable": "位置数据库尚未下载完成，因此暂时无法让配置文件的时区和语言与其地址匹配。请一分钟后重试，或为此配置文件关闭自动定位。"
   },
   "rail": {
     "profiles": "配置文件",

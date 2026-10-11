@@ -2446,7 +2446,8 @@
     "cookieRobotNoControl": "The browser started but could not be controlled: {{detail}}",
     "cameraVideoNotFound": "The video file was not found.",
     "cameraVideoNeedsFfmpeg": "This video has to be converted, and ffmpeg is not installed. Install ffmpeg or choose a .mjpeg file.",
-    "cameraVideoConversionFailed": "The video could not be converted: {{detail}}"
+    "cameraVideoConversionFailed": "The video could not be converted: {{detail}}",
+    "locationDatabaseUnavailable": "The location database has not finished downloading, so the profile's timezone and language cannot be matched to its address yet. Try again in a minute, or turn off automatic location for this profile."
   },
   "rail": {
     "profiles": "Profiles",

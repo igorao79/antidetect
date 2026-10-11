@@ -244,6 +244,7 @@ export type BackendErrorCode =
   | "SYNC_DISPLAY_UNAVAILABLE"
   | "SYNC_DISPLAY_TOO_SMALL"
   | "SYNC_ARRANGE_FAILED"
+  | "LOCATION_DATABASE_UNAVAILABLE"
   | "CAMERA_VIDEO_NOT_FOUND"
   | "CAMERA_VIDEO_NEEDS_FFMPEG"
   | "CAMERA_VIDEO_CONVERSION_FAILED"
@@ -859,6 +860,8 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       });
     case "SYNC_ARRANGE_FAILED":
       return t("backendErrors.syncArrangeFailed");
+    case "LOCATION_DATABASE_UNAVAILABLE":
+      return t("backendErrors.locationDatabaseUnavailable");
     case "CAMERA_VIDEO_NOT_FOUND":
       return t("backendErrors.cameraVideoNotFound");
     case "CAMERA_VIDEO_NEEDS_FFMPEG":

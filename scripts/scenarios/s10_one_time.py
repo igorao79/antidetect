@@ -15,11 +15,12 @@ def wait_gone(uuid, timeout=45):
         time.sleep(3)
     return False
 
-PROFILES_DIR = os.path.expanduser("~/Library/Application Support/AntidetectDev/profiles")
+# A dev build keeps its data in AntidetectDev, a release build in Antidetect.
+PROFILE_DIRS = [os.path.expanduser(f"~/Library/Application Support/{app}/profiles") for app in ("AntidetectDev", "Antidetect")]
 
 def on_disk(uuid):
     dashed = "-".join((uuid[:8], uuid[8:12], uuid[12:16], uuid[16:20], uuid[20:]))
-    return os.path.isdir(os.path.join(PROFILES_DIR, dashed))
+    return any(os.path.isdir(os.path.join(root, dashed)) for root in PROFILE_DIRS)
 
 def wait_gone_untouched(uuid, timeout=90):
     """Like wait_gone, but without asking the app to stop anything."""

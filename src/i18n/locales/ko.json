@@ -2446,7 +2446,8 @@
     "cookieRobotNoControl": "브라우저가 시작되었지만 제어할 수 없습니다: {{detail}}",
     "cameraVideoNotFound": "동영상 파일을 찾을 수 없습니다.",
     "cameraVideoNeedsFfmpeg": "이 동영상은 변환이 필요하지만 ffmpeg가 설치되어 있지 않습니다. ffmpeg를 설치하거나 .mjpeg 파일을 선택하세요.",
-    "cameraVideoConversionFailed": "동영상을 변환할 수 없습니다: {{detail}}"
+    "cameraVideoConversionFailed": "동영상을 변환할 수 없습니다: {{detail}}",
+    "locationDatabaseUnavailable": "위치 데이터베이스 다운로드가 아직 끝나지 않아 프로필의 시간대와 언어를 주소에 맞출 수 없습니다. 1분 뒤에 다시 시도하거나 이 프로필의 자동 위치를 끄세요."
   },
   "rail": {
     "profiles": "프로필",

@@ -24,6 +24,44 @@ fn emit_running_changed(profile: &BrowserProfile, is_running: bool) {
   }
 }
 
+/// How long a launch waits for the location database a fresh install is still
+/// downloading.
+const LOCATION_DATABASE_WAIT: Duration = Duration::from_secs(150);
+
+/// Make sure the database that turns an exit address into a timezone and a
+/// language is there, starting or waiting out its download if it is not.
+///
+/// Without it a profile starts with this machine's own timezone and language
+/// whatever its proxy, and nothing says so. A launch that depends on the
+/// database therefore waits for it, and fails with a code when it does not
+/// arrive, instead of going ahead unlocated.
+pub(super) async fn require_location_database(
+  app_handle: &tauri::AppHandle,
+) -> Result<(), BoxError> {
+  use crate::geoip_downloader::GeoIPDownloader;
+  if GeoIPDownloader::is_geoip_database_available() {
+    return Ok(());
+  }
+  log::info!("Waiting for the location database before launching");
+  let arrived = tokio::time::timeout(LOCATION_DATABASE_WAIT, async {
+    while !GeoIPDownloader::is_geoip_database_available() {
+      // Returns at once when another caller is already downloading.
+      if let Err(e) = GeoIPDownloader::instance()
+        .download_geoip_database(app_handle)
+        .await
+      {
+        log::warn!("Location database download failed: {e}");
+      }
+      tokio::time::sleep(Duration::from_secs(2)).await;
+    }
+  })
+  .await;
+  match arrived {
+    Ok(()) => Ok(()),
+    Err(_) => Err(crate::backend_error("LOCATION_DATABASE_UNAVAILABLE").into()),
+  }
+}
+
 /// How long a launch waits to learn its own exit address before going ahead
 /// with what the profile already says about its location.
 const EXIT_PROBE_TIMEOUT: Duration = Duration::from_secs(8);

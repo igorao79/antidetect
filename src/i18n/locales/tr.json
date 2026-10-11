@@ -2446,7 +2446,8 @@
     "cookieRobotNoControl": "Tarayıcı başladı ama denetlenemedi: {{detail}}",
     "cameraVideoNotFound": "Video dosyası bulunamadı.",
     "cameraVideoNeedsFfmpeg": "Bu videonun dönüştürülmesi gerekiyor ama ffmpeg kurulu değil. ffmpeg kurun veya bir .mjpeg dosyası seçin.",
-    "cameraVideoConversionFailed": "Video dönüştürülemedi: {{detail}}"
+    "cameraVideoConversionFailed": "Video dönüştürülemedi: {{detail}}",
+    "locationDatabaseUnavailable": "Konum veritabanının indirilmesi henüz bitmedi; bu yüzden profilin saat dilimi ve dili adresiyle eşleştirilemiyor. Bir dakika sonra yeniden deneyin veya bu profil için otomatik konumu kapatın."
   },
   "rail": {
     "profiles": "Profiller",

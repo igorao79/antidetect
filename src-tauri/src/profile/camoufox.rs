@@ -5,9 +5,10 @@ use crate::proxy_manager::PROXY_MANAGER;
 use serde_json::Value;
 
 /// How long a successful proxy check answers for the next profile. A series of
-/// profiles on one proxy is created within moments of each other, and one
-/// measurement serves them all.
-const EXIT_REUSE_SECS: u64 = 120;
+/// profiles on one proxy is created seconds apart, so they share a measurement
+/// instead of taking one each. Kept short: a proxy that has just died should
+/// still refuse the next profile.
+const EXIT_REUSE_SECS: u64 = 15;
 
 /// The config a new profile's fingerprint is generated from: the user's own,
 /// located at the exit of the proxy the profile will use.
