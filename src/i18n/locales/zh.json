@@ -2474,7 +2474,8 @@
     "cookieBot": "Cookie Bot",
     "cookieBotRunning": "Cookie Bot — 正在运行",
     "agent": "智能体",
-    "agentWaiting": "智能体，等待处理的请求：{{count}}"
+    "agentWaiting": "智能体，等待处理的请求：{{count}}",
+    "brand": "Antidetect"
   },
   "pageTitle": {
     "proxies": "网络",

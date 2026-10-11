@@ -47,7 +47,7 @@ function assertNoContrastFailures(failures) {
 }
 
 test("every theme declares the intended appearance mode", () => {
-  assert.equal(THEMES.length, 20);
+  assert.equal(THEMES.length, 21);
   assert.equal(new Set(THEMES.map((theme) => theme.id)).size, THEMES.length);
   assert.deepEqual(
     THEMES.filter((theme) => theme.mode === "light")

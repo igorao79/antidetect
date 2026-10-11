@@ -2484,7 +2484,8 @@
     "cookieBot": "Cookie Bot",
     "cookieBotRunning": "Cookie Bot : en cours d'exécution",
     "agent": "Agent",
-    "agentWaiting": "Agent, demandes en attente : {{count}}"
+    "agentWaiting": "Agent, demandes en attente : {{count}}",
+    "brand": "Antidetect"
   },
   "pageTitle": {
     "proxies": "Réseau",

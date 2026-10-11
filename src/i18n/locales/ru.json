@@ -2494,7 +2494,8 @@
     "cookieBot": "Cookie Bot",
     "cookieBotRunning": "Cookie Bot — сейчас работает",
     "agent": "Агент",
-    "agentWaiting": "Агент, ожидающих запросов: {{count}}"
+    "agentWaiting": "Агент, ожидающих запросов: {{count}}",
+    "brand": "Antidetect"
   },
   "pageTitle": {
     "proxies": "Сеть",

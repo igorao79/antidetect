@@ -242,9 +242,22 @@ function ActiveIndicator() {
       initial={false}
       layoutId={animate ? "rail-indicator" : undefined}
       transition={animate ? MOTION_SPRING_POSITION : { duration: 0 }}
-      className="absolute inset-y-1.5 left-[-7px] w-[2px] rounded-full bg-foreground"
+      className="absolute inset-y-1.5 left-[-7px] w-[2px] rounded-full bg-primary lg:inset-y-2 lg:left-[-8px] lg:w-[3px]"
     />
   );
+}
+
+/** One destination: a square icon in the rail, an icon and its name in the
+ *  sidebar. */
+const RAIL_ITEM_CLASS =
+  "relative grid size-7 shrink-0 cursor-pointer place-items-center rounded-md transition-colors duration-100 lg:flex lg:h-8 lg:w-full lg:items-center lg:justify-start lg:gap-2.5 lg:px-2.5";
+
+const RAIL_LABEL_CLASS = "hidden min-w-0 truncate text-[13px] lg:block";
+
+function railItemTone(active: boolean) {
+  return active
+    ? "bg-accent font-medium text-accent-foreground"
+    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground";
 }
 
 interface RailItem {
@@ -327,57 +340,67 @@ export function RailNav({
   }, [moreOpen]);
 
   return (
-    <nav className="relative flex w-10 shrink-0 flex-col items-center gap-1 border-r border-border bg-background py-2">
-      {!isHidden ? (
-        <button
-          ref={logoRef}
-          type="button"
-          aria-label={t("header.donutLogo")}
-          className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-md bg-transparent text-foreground select-none"
-          onClick={handleClick}
-          onPointerDown={() => {
-            setIsPressed(true);
-          }}
-          onPointerUp={() => {
-            setIsPressed(false);
-          }}
-          onPointerLeave={() => {
-            setIsPressed(false);
-          }}
-        >
-          {/* Inner wrapper survives clicks (no `key`) so the scale change
-              animates smoothly across the wiggle layer's remounts. */}
-          <span
-            style={{
-              transform: !playfulMotion
-                ? "none"
-                : isPressed
-                  ? `scale(${(1 + growStep * 0.25) * 0.9})`
-                  : `scale(${1 + growStep * 0.25})`,
+    // A rail of icons in a narrow window; from 1024px it opens into a sidebar
+    // that names every destination.
+    <nav className="relative flex w-10 shrink-0 flex-col items-center gap-1 border-r border-border bg-sidebar py-2 lg:w-52 lg:items-stretch lg:px-2 lg:py-3">
+      <div className="flex shrink-0 items-center gap-2 lg:px-1">
+        {!isHidden ? (
+          <button
+            ref={logoRef}
+            type="button"
+            aria-label={t("header.donutLogo")}
+            className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-md bg-transparent text-primary-text select-none"
+            onClick={handleClick}
+            onPointerDown={() => {
+              setIsPressed(true);
             }}
-            className="inline-grid place-items-center transition-transform duration-300 ease-out motion-reduce:transition-none"
+            onPointerUp={() => {
+              setIsPressed(false);
+            }}
+            onPointerLeave={() => {
+              setIsPressed(false);
+            }}
           >
+            {/* Inner wrapper survives clicks (no `key`) so the scale change
+              animates smoothly across the wiggle layer's remounts. */}
             <span
-              key={`${wobbleKey}:${cheerKey}`}
-              className={cn(
-                "inline-grid place-items-center",
-                !isFalling &&
-                  !isPressed &&
-                  ((playfulMotion && wobbleKey > 0) || cheerKey > 0) &&
-                  "animate-[wiggle_0.3s_ease-in-out]",
-              )}
+              style={{
+                transform: !playfulMotion
+                  ? "none"
+                  : isPressed
+                    ? `scale(${(1 + growStep * 0.25) * 0.9})`
+                    : `scale(${1 + growStep * 0.25})`,
+              }}
+              className="inline-grid place-items-center transition-transform duration-300 ease-out motion-reduce:transition-none"
             >
-              <Logo className="size-5 will-change-transform" />
+              <span
+                key={`${wobbleKey}:${cheerKey}`}
+                className={cn(
+                  "inline-grid place-items-center",
+                  !isFalling &&
+                    !isPressed &&
+                    ((playfulMotion && wobbleKey > 0) || cheerKey > 0) &&
+                    "animate-[wiggle_0.3s_ease-in-out]",
+                )}
+              >
+                <Logo className="size-5 will-change-transform" />
+              </span>
             </span>
-          </span>
-        </button>
-      ) : (
-        <div className="size-7 shrink-0" />
-      )}
+          </button>
+        ) : (
+          <div className="size-7 shrink-0" />
+        )}
+        <span
+          aria-hidden="true"
+          className="hidden min-w-0 truncate text-sm font-semibold tracking-tight text-foreground lg:block"
+        >
+          {t("rail.brand")}
+        </span>
+      </div>
 
-      <div className="my-1 h-px w-5 shrink-0 bg-border" />
+      <div className="my-1 h-px w-5 shrink-0 bg-border lg:my-2 lg:w-auto" />
 
-      <div className="flex min-h-0 w-full scrollbar-none flex-col items-center gap-1 overflow-y-auto [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex min-h-0 w-full scrollbar-none flex-col items-center gap-1 overflow-y-auto [-ms-overflow-style:none] lg:items-stretch lg:overflow-visible [&::-webkit-scrollbar]:hidden">
         {TOP_ITEMS.map(({ page, Icon, labelKey }) => {
           const active = currentPage === page;
           const waiting = page === "agent" ? agentRequests : 0;
@@ -397,26 +420,24 @@ export function RailNav({
                   }}
                   aria-label={label}
                   aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "relative grid size-7 shrink-0 cursor-pointer place-items-center rounded-md transition-colors duration-100",
-                    active
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-                  )}
+                  className={cn(RAIL_ITEM_CLASS, railItemTone(active))}
                 >
                   {active && <ActiveIndicator />}
-                  <Icon className="size-3.5" />
+                  <Icon className="size-3.5 shrink-0 lg:size-4" />
+                  <span aria-hidden="true" className={RAIL_LABEL_CLASS}>
+                    {t(labelKey)}
+                  </span>
                   {page === "cookieBot" && cookieBotRunning && (
                     <span
                       aria-hidden="true"
-                      className="absolute top-1 right-1 size-1.5 rounded-full bg-success"
+                      className="absolute top-1 right-1 size-1.5 rounded-full bg-success lg:static lg:ml-auto"
                     />
                   )}
                   {waiting > 0 && (
                     <span
                       aria-hidden="true"
                       data-testid="agent-rail-badge"
-                      className="absolute -top-1 -right-1 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-warning px-1 text-[9px] leading-none font-semibold tabular-nums text-warning-foreground"
+                      className="absolute -top-1 -right-1 grid h-3.5 min-w-3.5 place-items-center rounded-full bg-warning px-1 text-[9px] leading-none font-semibold tabular-nums text-warning-foreground lg:static lg:ml-auto"
                     >
                       {waiting > 9 ? "9+" : waiting}
                     </span>
@@ -440,14 +461,12 @@ export function RailNav({
             }}
             aria-label={t("rail.more.label")}
             aria-expanded={moreOpen}
-            className={cn(
-              "grid size-7 shrink-0 cursor-pointer place-items-center rounded-md transition-colors duration-100",
-              moreOpen
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-            )}
+            className={cn(RAIL_ITEM_CLASS, railItemTone(moreOpen))}
           >
-            <GoKebabHorizontal className="size-3.5" />
+            <GoKebabHorizontal className="size-3.5 shrink-0 lg:size-4" />
+            <span aria-hidden="true" className={RAIL_LABEL_CLASS}>
+              {t("rail.more.label")}
+            </span>
           </button>
         </TooltipTrigger>
         <TooltipContent side="right">{t("rail.more.label")}</TooltipContent>
@@ -463,14 +482,15 @@ export function RailNav({
             aria-label={t("rail.settings")}
             aria-current={currentPage === "settings" ? "page" : undefined}
             className={cn(
-              "relative grid size-7 shrink-0 cursor-pointer place-items-center rounded-md transition-colors duration-100",
-              currentPage === "settings"
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+              RAIL_ITEM_CLASS,
+              railItemTone(currentPage === "settings"),
             )}
           >
             {currentPage === "settings" && <ActiveIndicator />}
-            <GoGear className="size-3.5" />
+            <GoGear className="size-3.5 shrink-0 lg:size-4" />
+            <span aria-hidden="true" className={RAIL_LABEL_CLASS}>
+              {t("rail.settings")}
+            </span>
           </button>
         </TooltipTrigger>
         <TooltipContent side="right">{t("rail.settings")}</TooltipContent>
@@ -489,7 +509,7 @@ export function RailNav({
           <div
             role="menu"
             aria-label={t("rail.more.label")}
-            className="absolute bottom-14 left-11 z-40 w-56 rounded-lg bg-card p-1 text-card-foreground shadow-sm"
+            className="absolute bottom-14 left-11 z-40 w-56 rounded-lg bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-border lg:left-[13.25rem]"
           >
             {MORE_ITEMS.map(({ page, Icon, labelKey, hintKey }) => (
               <button

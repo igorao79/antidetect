@@ -2486,7 +2486,7 @@ pub fn run_with_builder(
       #[allow(unused_variables)]
       let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
         .title("Antidetect")
-        .inner_size(880.0, 500.0)
+        .inner_size(1200.0, 760.0)
         .min_inner_size(640.0, 400.0)
         .resizable(true)
         .fullscreen(false)
