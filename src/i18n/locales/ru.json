@@ -519,7 +519,9 @@
       "camoufoxHint": "Camoufox: антидетект Firefox. Бесплатный, отпечатки генерируются локально.",
       "wayfernHint": "Wayfern: антидетект Chromium. Нужна подписка Wayfern.",
       "cloakbrowserHint": "CloakBrowser: антидетект Chromium, ближе всего к Octo. Бесплатная сборка — Chromium 145."
-    }
+    },
+    "count": "Количество профилей",
+    "countHint": "Создать сразу несколько профилей. Они получат имена «Имя 1», «Имя 2» и так далее, у каждого будет свой отпечаток."
   },
   "deleteDialog": {
     "title": "Удалить профиль",

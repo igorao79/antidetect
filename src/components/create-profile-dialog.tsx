@@ -100,6 +100,9 @@ const getCurrentOS = (): WayfernOS => {
 /** Anti-detect engines a profile can be created on. */
 export type ProfileEngine = "camoufox" | "cloakbrowser" | "wayfern";
 
+/** The most profiles one submit creates. */
+const MAX_PROFILE_COUNT = 50;
+
 const ENGINES: ProfileEngine[] = ["camoufox", "cloakbrowser", "wayfern"];
 
 const ENGINE_LABELS: Record<ProfileEngine, string> = {
@@ -167,6 +170,7 @@ export function CreateProfileDialog({
   const reduceMotion = useReducedMotion() ?? false;
   const inputModality = useInputModality();
   const [profileName, setProfileName] = useState("");
+  const [profileCount, setProfileCount] = useState(1);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [selectedProxyId, setSelectedProxyId] = useState<string>();
   const [proxyPopoverOpen, setProxyPopoverOpen] = useState(false);
@@ -328,6 +332,7 @@ export function CreateProfileDialog({
   const handleClose = () => {
     versionRequestRef.current += 1;
     setProfileName("");
+    setProfileCount(1);
     setAdvancedOpen(false);
     setSelectedProxyId(undefined);
     setProxyPopoverOpen(false);
@@ -364,28 +369,47 @@ export function CreateProfileDialog({
     setPasswordError(null);
     setIsCreating(true);
     const isVpnSelection = selectedProxyId?.startsWith("vpn-") ?? false;
+    // A series shares every setting except the device: each profile gets a
+    // fingerprint of its own, so a pinned one is dropped.
+    const series = profileCount > 1;
     try {
-      await onCreateProfile({
-        name: profileName.trim(),
-        browserStr: engine,
-        version: creatableVersion,
-        releaseType: "stable",
-        proxyId: isVpnSelection ? undefined : selectedProxyId,
-        vpnId: isVpnSelection ? selectedProxyId?.slice(4) : undefined,
-        camoufoxConfig: engine === "camoufox" ? camoufoxConfig : undefined,
-        cloakbrowserConfig:
-          engine === "cloakbrowser" ? cloakbrowserConfig : undefined,
-        wayfernConfig: engine === "wayfern" ? wayfernConfig : undefined,
-        groupId:
-          selectedGroupId && selectedGroupId !== "__all__"
-            ? selectedGroupId
-            : undefined,
-        extensionGroupId: selectedExtensionGroupId,
-        ephemeral,
-        dnsBlocklist: dnsBlocklist || undefined,
-        launchHook: launchHook.trim() || undefined,
-        password: enablePassword && !ephemeral ? password : undefined,
-      });
+      for (let index = 1; index <= profileCount; index += 1) {
+        await onCreateProfile({
+          name: series ? `${profileName.trim()} ${index}` : profileName.trim(),
+          browserStr: engine,
+          version: creatableVersion,
+          releaseType: "stable",
+          proxyId: isVpnSelection ? undefined : selectedProxyId,
+          vpnId: isVpnSelection ? selectedProxyId?.slice(4) : undefined,
+          camoufoxConfig:
+            engine === "camoufox"
+              ? series
+                ? { ...camoufoxConfig, fingerprint: undefined }
+                : camoufoxConfig
+              : undefined,
+          cloakbrowserConfig:
+            engine === "cloakbrowser"
+              ? series
+                ? { ...cloakbrowserConfig, seed: undefined }
+                : cloakbrowserConfig
+              : undefined,
+          wayfernConfig:
+            engine === "wayfern"
+              ? series
+                ? { ...wayfernConfig, fingerprint: undefined }
+                : wayfernConfig
+              : undefined,
+          groupId:
+            selectedGroupId && selectedGroupId !== "__all__"
+              ? selectedGroupId
+              : undefined,
+          extensionGroupId: selectedExtensionGroupId,
+          ephemeral,
+          dnsBlocklist: dnsBlocklist || undefined,
+          launchHook: launchHook.trim() || undefined,
+          password: enablePassword && !ephemeral ? password : undefined,
+        });
+      }
       handleClose();
     } catch (error) {
       console.error("Failed to create profile:", error);
@@ -507,6 +531,31 @@ export function CreateProfileDialog({
               disabled={isCreating}
               className="h-9 text-base font-medium md:text-base"
             />
+            <Tooltip delayDuration={600}>
+              <TooltipTrigger asChild>
+                <span className="flex shrink-0 items-center gap-1 pr-1 text-sm text-muted-foreground">
+                  <span aria-hidden="true">×</span>
+                  <Input
+                    variant="bare"
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={MAX_PROFILE_COUNT}
+                    aria-label={t("createProfile.count")}
+                    value={profileCount}
+                    onChange={(event) => {
+                      const value = Math.trunc(Number(event.target.value)) || 1;
+                      setProfileCount(
+                        Math.min(MAX_PROFILE_COUNT, Math.max(1, value)),
+                      );
+                    }}
+                    disabled={isCreating}
+                    className="h-9 w-12 text-center tabular-nums"
+                  />
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>{t("createProfile.countHint")}</TooltipContent>
+            </Tooltip>
           </motion.label>
 
           <motion.div

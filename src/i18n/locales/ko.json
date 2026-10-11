@@ -517,7 +517,9 @@
       "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
       "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription.",
       "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
-    }
+    },
+    "count": "프로필 수",
+    "countHint": "여러 프로필을 한 번에 만듭니다. “이름 1”, “이름 2”처럼 이름이 붙고 각각 고유한 지문을 갖습니다."
   },
   "deleteDialog": {
     "title": "프로필 삭제",
