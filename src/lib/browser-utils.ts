@@ -92,6 +92,15 @@ export function getProfileIcon(profile: {
   return getBrowserIcon(profile.browser);
 }
 
+/**
+ * Engines whose profiles can lead or follow in the synchronizer
+ * (`synchronizer_capture.rs::is_supported`): the Chromium ones, which are
+ * replayed over DevTools.
+ */
+export function supportsSynchronizer(browserType: string): boolean {
+  return browserType === "wayfern" || browserType === "cloakbrowser";
+}
+
 export function isCrossOsProfile(profile: {
   host_os?: string;
   camoufox_config?: { os?: string };

@@ -316,6 +316,32 @@ impl SynchronizerManager {
     leader_profile_id: String,
     follower_profile_ids: Vec<String>,
   ) -> Result<SyncSessionInfo, String> {
+    self
+      .start_session_with(app_handle, leader_profile_id, follower_profile_ids, false)
+      .await
+  }
+
+  /// [`Self::start_session`], optionally without browser windows: a headless
+  /// session is how the local API mirrors input on a machine nobody watches.
+  pub async fn start_session_with(
+    &self,
+    app_handle: tauri::AppHandle,
+    leader_profile_id: String,
+    follower_profile_ids: Vec<String>,
+    headless: bool,
+  ) -> Result<SyncSessionInfo, String> {
+    let launch = move |app_handle: tauri::AppHandle, profile: BrowserProfile| {
+      crate::browser_runner::launch_browser_profile_impl(
+        app_handle,
+        profile,
+        None,
+        crate::browser_runner::LaunchOptions {
+          headless,
+          gate: crate::launch_gate::FingerprintGate::Enforce,
+          ..Default::default()
+        },
+      )
+    };
     // Validate: leader must be wayfern
     let profiles = ProfileManager::instance()
       .list_profiles()
@@ -327,9 +353,9 @@ impl SynchronizerManager {
       .ok_or("Leader profile not found")?
       .clone();
 
-    if leader.browser != "wayfern" {
+    if !crate::synchronizer_capture::is_supported(&leader.browser) {
       return Err(
-        "Synchronizer only supports Wayfern profiles. Camoufox profiles cannot be used."
+        "Synchronizer only supports Wayfern and CloakBrowser profiles. Camoufox profiles cannot be used."
           .to_string(),
       );
     }
@@ -353,9 +379,9 @@ impl SynchronizerManager {
         .find(|p| p.id.to_string() == *fid)
         .ok_or(format!("Follower profile '{fid}' not found"))?
         .clone();
-      if fp.browser != "wayfern" {
+      if !crate::synchronizer_capture::is_supported(&fp.browser) {
         return Err(format!(
-          "Profile '{}' is not a Wayfern profile. Only Wayfern profiles can be synchronized.",
+          "Profile '{}' cannot be synchronized. Only Wayfern and CloakBrowser profiles can.",
           fp.name
         ));
       }
@@ -388,7 +414,7 @@ impl SynchronizerManager {
     );
 
     // Launch leader first so it gets focus
-    crate::browser_runner::launch_browser_profile(app_handle.clone(), leader.clone(), None, None)
+    launch(app_handle.clone(), leader.clone())
       .await
       .map_err(|e| format!("Failed to launch leader: {e}"))?;
 
@@ -399,7 +425,7 @@ impl SynchronizerManager {
         let ah = app_handle.clone();
         let fp = fp.clone();
         set.spawn(async move {
-          crate::browser_runner::launch_browser_profile(ah, fp.clone(), None, None)
+          launch(ah, fp.clone())
             .await
             .map_err(|e| (fp.name.clone(), e.to_string()))
         });
@@ -635,12 +661,40 @@ impl SynchronizerManager {
       }
     }
 
-    // Use Wayfern's native input capture — no JS injection needed.
-    // Captures all real user input at the browser process level.
-    let setup_commands: Vec<(&str, serde_json::Value)> = vec![
-      ("Page.enable", serde_json::json!({})),
-      ("Wayfern.enableInputCapture", serde_json::json!({})),
-    ];
+    // Wayfern captures all real user input natively, at the browser process
+    // level. Any other engine is watched from an isolated world of the page
+    // (see `synchronizer_capture`).
+    let mut script_capture = crate::synchronizer_capture::uses_script(&leader_profile.browser)
+      .then(crate::synchronizer_capture::ScriptCapture::default);
+    let mut setup_commands: Vec<(&str, serde_json::Value)> =
+      vec![("Page.enable", serde_json::json!({}))];
+    if script_capture.is_some() {
+      let tree = send_cmd(
+        &mut ws_stream,
+        &mut cmd_id,
+        &mut pending_events,
+        "Page.getFrameTree",
+        serde_json::json!({}),
+      )
+      .await?;
+      let frame_id = tree["frameTree"]["frame"]["id"]
+        .as_str()
+        .ok_or("The leader page has no frame to watch")?;
+      let world = send_cmd(
+        &mut ws_stream,
+        &mut cmd_id,
+        &mut pending_events,
+        "Page.createIsolatedWorld",
+        crate::synchronizer_capture::world_params(frame_id),
+      )
+      .await?;
+      setup_commands.extend(
+        crate::synchronizer_capture::arm_commands(&world)
+          .ok_or("The leader page did not open a world to watch from")?,
+      );
+    } else {
+      setup_commands.push(("Wayfern.enableInputCapture", serde_json::json!({})));
+    }
 
     for (method, params) in setup_commands {
       match send_cmd(
@@ -772,7 +826,12 @@ impl SynchronizerManager {
     let _ = ready_tx.send(Ok(()));
 
     // Process any events that were buffered during setup
-    for event in pending_events.drain(..) {
+    for mut event in pending_events.drain(..) {
+      if let Some(capture) = script_capture.as_mut() {
+        for command in capture.on_message(&mut event) {
+          let _ = ws_stream.send(Message::Text(command.into())).await;
+        }
+      }
       Self::handle_cdp_event(&event, &gate, &follower_senders, false).await;
     }
 
@@ -788,10 +847,15 @@ impl SynchronizerManager {
           msg = ws_stream.next() => {
               match msg {
                   Some(Ok(Message::Text(text))) => {
-                      let value: serde_json::Value = match serde_json::from_str(text.as_str()) {
+                      let mut value: serde_json::Value = match serde_json::from_str(text.as_str()) {
                           Ok(v) => v,
                           Err(_) => continue,
                       };
+                      if let Some(capture) = script_capture.as_mut() {
+                          for command in capture.on_message(&mut value) {
+                              let _ = ws_stream.send(Message::Text(command.into())).await;
+                          }
+                      }
 
                       let method = value.get("method").and_then(|m| m.as_str()).unwrap_or("");
 
@@ -1365,9 +1429,14 @@ impl SynchronizerManager {
       if attempt > 0 {
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
       }
-      let port = crate::wayfern_manager::WayfernManager::instance()
-        .get_cdp_port(&profile_path_str)
-        .await;
+      let port = if profile.browser == "cloakbrowser" {
+        crate::cloakbrowser_manager::find_by_profile(&profile_path_str)
+          .and_then(|process| process.cdp_port)
+      } else {
+        crate::wayfern_manager::WayfernManager::instance()
+          .get_cdp_port(&profile_path_str)
+          .await
+      };
       if let Some(p) = port {
         return Ok(p);
       }
