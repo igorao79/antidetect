@@ -2447,7 +2447,12 @@
     "cameraVideoNotFound": "Không tìm thấy tệp video.",
     "cameraVideoNeedsFfmpeg": "Video này cần được chuyển đổi nhưng chưa cài ffmpeg. Hãy cài ffmpeg hoặc chọn tệp .mjpeg.",
     "cameraVideoConversionFailed": "Không thể chuyển đổi video: {{detail}}",
-    "locationDatabaseUnavailable": "Cơ sở dữ liệu vị trí chưa tải xong nên múi giờ và ngôn ngữ của hồ sơ chưa thể khớp với địa chỉ của nó. Hãy thử lại sau một phút hoặc tắt vị trí tự động cho hồ sơ này."
+    "locationDatabaseUnavailable": "Cơ sở dữ liệu vị trí chưa tải xong nên múi giờ và ngôn ngữ của hồ sơ chưa thể khớp với địa chỉ của nó. Hãy thử lại sau một phút hoặc tắt vị trí tự động cho hồ sơ này.",
+    "cloakbrowserLicenseRequired": "Hồ sơ này chạy trên bản CloakBrowser Pro nhưng chưa có khóa bản quyền. Hãy lưu khóa vào ~/.cloakbrowser/license.key rồi thử lại.",
+    "cloakbrowserLicenseInvalid": "CloakBrowser Pro từ chối khóa bản quyền: khóa không hợp lệ hoặc đã hết hạn.",
+    "cloakbrowserLicenseUnreachable": "CloakBrowser Pro không kiểm tra được bản quyền: máy chủ không phản hồi. Hãy kiểm tra kết nối rồi thử lại.",
+    "cloakbrowserLicenseSetup": "CloakBrowser Pro không khởi động được: không ghi được vào thư mục ~/.cloakbrowser.",
+    "cloakbrowserSessionLimit": "CloakBrowser Pro: đã đạt giới hạn số trình duyệt chạy cùng lúc của gói. Hãy đóng một trình duyệt rồi thử lại."
   },
   "rail": {
     "profiles": "Profile",

@@ -181,10 +181,9 @@ impl BrowserVersionManager {
     let fresh_versions = match browser {
       "wayfern" => self.fetch_wayfern_versions(true).await?,
       "camoufox" => self.fetch_camoufox_versions().await?,
-      // One pinned free build per platform; nothing to fetch.
-      "cloakbrowser" => ApiClient::cloakbrowser_version()
-        .map(|v| vec![v.to_string()])
-        .unwrap_or_default(),
+      // The pinned free build, and the current Pro build when a licence
+      // key is set.
+      "cloakbrowser" => self.api_client.cloakbrowser_versions().await,
       _ => return Err(format!("Unsupported browser: {browser}").into()),
     };
 

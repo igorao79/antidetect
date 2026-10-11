@@ -2457,7 +2457,12 @@
     "cameraVideoNotFound": "O arquivo de vídeo não foi encontrado.",
     "cameraVideoNeedsFfmpeg": "Este vídeo precisa ser convertido e o ffmpeg não está instalado. Instale o ffmpeg ou escolha um arquivo .mjpeg.",
     "cameraVideoConversionFailed": "Não foi possível converter o vídeo: {{detail}}",
-    "locationDatabaseUnavailable": "A base de dados de localização ainda não terminou de baixar, por isso o fuso horário e o idioma do perfil ainda não podem ser ajustados ao seu endereço. Tente novamente em um minuto ou desative a localização automática para este perfil."
+    "locationDatabaseUnavailable": "A base de dados de localização ainda não terminou de baixar, por isso o fuso horário e o idioma do perfil ainda não podem ser ajustados ao seu endereço. Tente novamente em um minuto ou desative a localização automática para este perfil.",
+    "cloakbrowserLicenseRequired": "Este perfil usa uma compilação do CloakBrowser Pro e não há chave de licença definida. Salve a chave em ~/.cloakbrowser/license.key e tente novamente.",
+    "cloakbrowserLicenseInvalid": "O CloakBrowser Pro recusou a chave de licença: ela é inválida ou expirou.",
+    "cloakbrowserLicenseUnreachable": "O CloakBrowser Pro não conseguiu verificar a licença: o servidor não respondeu. Verifique a conexão e tente novamente.",
+    "cloakbrowserLicenseSetup": "O CloakBrowser Pro não conseguiu iniciar: a pasta ~/.cloakbrowser não permite gravação.",
+    "cloakbrowserSessionLimit": "CloakBrowser Pro: o limite de navegadores abertos ao mesmo tempo do seu plano foi atingido. Feche um e tente novamente."
   },
   "rail": {
     "profiles": "Perfis",

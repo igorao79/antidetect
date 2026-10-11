@@ -201,9 +201,12 @@ impl Downloader {
         Ok(asset_url)
       }
       BrowserType::CloakBrowser => {
-        // Only the pinned free build exists; another version has no archive.
-        if crate::api_client::ApiClient::cloakbrowser_version() != Some(version) {
-          return Err(format!("CloakBrowser version {version} is not available").into());
+        // The free build is one pinned version; anything else is a Pro
+        // build, which only a licence key can download.
+        if crate::api_client::ApiClient::cloakbrowser_is_pro(version)
+          && crate::api_client::ApiClient::cloakbrowser_license_key().is_none()
+        {
+          return Err(crate::backend_error("CLOAKBROWSER_LICENSE_REQUIRED").into());
         }
         crate::api_client::ApiClient::cloakbrowser_download_url(version)
           .ok_or_else(|| "CloakBrowser has no build for this platform".into())
@@ -577,6 +580,11 @@ impl Downloader {
           .client
           .get(download_url)
           .header("User-Agent", DOWNLOAD_USER_AGENT);
+        for (name, value) in
+          crate::api_client::ApiClient::cloakbrowser_download_headers(download_url)
+        {
+          request = request.header(name, value);
+        }
 
         if existing_size > 0 {
           request = request.header("Range", format!("bytes={existing_size}-"));

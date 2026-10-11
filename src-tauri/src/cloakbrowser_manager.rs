@@ -61,6 +61,20 @@ pub struct CloakBrowserConfig {
   pub camera_video: Option<String>,
 }
 
+/// How long a Pro build is watched for a licence refusal after it starts.
+const LICENSE_VERDICT_WAIT: std::time::Duration = std::time::Duration::from_millis(2500);
+
+/// The error a Pro build's exit code stands for, as CloakHQ documents them.
+fn license_refusal(exit_code: i32) -> Option<&'static str> {
+  match exit_code {
+    76 => Some("CLOAKBROWSER_SESSION_LIMIT"),
+    77 => Some("CLOAKBROWSER_LICENSE_INVALID"),
+    78 => Some("CLOAKBROWSER_LICENSE_UNREACHABLE"),
+    79 => Some("CLOAKBROWSER_LICENSE_SETUP"),
+    _ => None,
+  }
+}
+
 pub fn generate_seed() -> u32 {
   use rand::RngExt;
   rand::rng().random_range(SEED_MIN..=SEED_MAX)
@@ -173,6 +187,9 @@ pub struct LaunchRequest<'a> {
   /// Where the profile's camera video is installed, if it has one. The
   /// browser is started in that directory.
   pub camera_dir: Option<&'a Path>,
+  /// A Pro build: it is given the licence key and watched for the exit codes
+  /// it reports a licence problem with.
+  pub pro: bool,
 }
 
 fn launch_args(request: &LaunchRequest) -> Vec<String> {
@@ -258,12 +275,32 @@ pub async fn launch(request: LaunchRequest<'_>) -> Result<CloakBrowserProcess, S
     }
   }
 
+  if request.pro {
+    // The binary reads the key from its own environment; handing it over
+    // covers a key that came from the file under a HOME the child cannot see.
+    if let Some(key) = crate::api_client::ApiClient::cloakbrowser_license_key() {
+      command.env("CLOAKBROWSER_LICENSE_KEY", key);
+    }
+  }
+
   let mut child = command
     .spawn()
     .map_err(|e| format!("Failed to spawn CloakBrowser: {e}"))?;
   let pid = child
     .id()
     .ok_or("CloakBrowser did not report a process identifier")?;
+
+  if request.pro {
+    // A Pro build that is refused a licence exits within moments, saying why
+    // only through its exit code. Caught here, the launch fails with that
+    // reason instead of leaving a profile that "started" and is gone.
+    if let Ok(Ok(status)) = tokio::time::timeout(LICENSE_VERDICT_WAIT, child.wait()).await {
+      return Err(match status.code().and_then(license_refusal) {
+        Some(code) => crate::backend_error(code),
+        None => format!("CloakBrowser exited as soon as it started: {status}"),
+      });
+    }
+  }
 
   // Reap the child and log how it ended; without this an early crash is only
   // ever seen as "process is gone".
@@ -497,6 +534,7 @@ mod tests {
       ephemeral: false,
       extension_paths: &extensions,
       camera_dir: None,
+      pro: false,
     });
     assert_eq!(args[0], "--user-data-dir=/profiles/p1");
     assert!(args.contains(&"--remote-debugging-port=9222".to_string()));
@@ -505,6 +543,21 @@ mod tests {
     assert!(args.contains(&"--headless=new".to_string()));
     assert!(args.contains(&"--load-extension=/ext/a,/ext/b".to_string()));
     assert_eq!(args.last().map(String::as_str), Some("https://example.com"));
+  }
+
+  #[test]
+  fn a_pro_build_names_its_licence_problem_by_exit_code() {
+    assert_eq!(license_refusal(76), Some("CLOAKBROWSER_SESSION_LIMIT"));
+    assert_eq!(license_refusal(77), Some("CLOAKBROWSER_LICENSE_INVALID"));
+    assert_eq!(
+      license_refusal(78),
+      Some("CLOAKBROWSER_LICENSE_UNREACHABLE")
+    );
+    assert_eq!(license_refusal(79), Some("CLOAKBROWSER_LICENSE_SETUP"));
+    // An ordinary crash is not a licence verdict.
+    for code in [0, 1, 75, 80, 139] {
+      assert_eq!(license_refusal(code), None, "{code}");
+    }
   }
 
   #[test]

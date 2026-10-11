@@ -2467,7 +2467,12 @@
     "cameraVideoNotFound": "Видеофайл не найден.",
     "cameraVideoNeedsFfmpeg": "Это видео нужно сконвертировать, а ffmpeg не установлен. Установите ffmpeg или выберите файл .mjpeg.",
     "cameraVideoConversionFailed": "Не удалось сконвертировать видео: {{detail}}",
-    "locationDatabaseUnavailable": "База геолокации ещё не скачалась, поэтому таймзону и язык профиля пока нельзя сопоставить с его адресом. Повторите через минуту или отключите автоматическое определение местоположения для этого профиля."
+    "locationDatabaseUnavailable": "База геолокации ещё не скачалась, поэтому таймзону и язык профиля пока нельзя сопоставить с его адресом. Повторите через минуту или отключите автоматическое определение местоположения для этого профиля.",
+    "cloakbrowserLicenseRequired": "Этот профиль работает на сборке CloakBrowser Pro, а лицензионный ключ не задан. Сохраните ключ в ~/.cloakbrowser/license.key и повторите.",
+    "cloakbrowserLicenseInvalid": "CloakBrowser Pro отклонил лицензионный ключ: он недействителен или срок его действия истёк.",
+    "cloakbrowserLicenseUnreachable": "CloakBrowser Pro не смог проверить лицензию: сервер не ответил. Проверьте соединение и повторите.",
+    "cloakbrowserLicenseSetup": "CloakBrowser Pro не смог запуститься: папка ~/.cloakbrowser недоступна для записи.",
+    "cloakbrowserSessionLimit": "CloakBrowser Pro: достигнут лимит одновременно запущенных браузеров по вашему тарифу. Закройте один и повторите."
   },
   "rail": {
     "profiles": "Профили",

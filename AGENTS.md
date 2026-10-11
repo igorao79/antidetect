@@ -32,6 +32,18 @@ Fork-specific rules:
   a binding the page's own scripts cannot see, re-armed after every top-level navigation, no
   `Runtime.enable`). Input inside frames is not mirrored. Also on the local API as
   `POST/DELETE /api/v2/automation/synchronizer`, where `headless` runs a session without windows.
+- CloakBrowser Pro. With a licence key (`CLOAKBROWSER_LICENSE_KEY`, or
+  `~/.cloakbrowser/license.key`, where the binary itself looks) the current Pro build is
+  listed, downloaded with the key, verified by the same signed manifest and kept beside the
+  free one; new CloakBrowser profiles are created on it. A profile never moves between the
+  free and a Pro build by itself (`stays_in_tier`): Chromium cannot reopen a profile a newer
+  build has used, and a Pro build stops when its licence does. A Pro build refuses to start by
+  exit code (76 session limit, 77 key, 78 server, 79 setup), turned into backend error codes.
+  It calls CloakHQ's licence server at every start, directly, not through the profile's proxy.
+- What a Pro build changes, measured (`s13_fingerprint_surfaces.py`): Chromium 154 instead of
+  145, and `toDataURL`, `toBlob` and the WebGL image are each profile's own and hold across
+  restarts. The audio fingerprint and text metrics are the host machine's on every profile, by
+  design: that is right for a macOS persona on a Mac and a mismatch for a Windows one.
 - SSH is a proxy type (`ssh://user:password@host:port`, password or keyboard-interactive
   login). `ssh_upstream.rs` runs inside the local proxy worker: one session per upstream, one
   `direct-tcpip` channel per browser connection, TCP only. Host keys are not pinned.

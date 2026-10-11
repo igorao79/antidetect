@@ -2447,7 +2447,12 @@
     "cameraVideoNotFound": "Die Videodatei wurde nicht gefunden.",
     "cameraVideoNeedsFfmpeg": "Dieses Video muss konvertiert werden, aber ffmpeg ist nicht installiert. Installieren Sie ffmpeg oder wählen Sie eine .mjpeg-Datei.",
     "cameraVideoConversionFailed": "Das Video konnte nicht konvertiert werden: {{detail}}",
-    "locationDatabaseUnavailable": "Die Standortdatenbank ist noch nicht fertig heruntergeladen, daher lassen sich Zeitzone und Sprache des Profils noch nicht an seine Adresse anpassen. Versuchen Sie es in einer Minute erneut oder schalten Sie den automatischen Standort für dieses Profil aus."
+    "locationDatabaseUnavailable": "Die Standortdatenbank ist noch nicht fertig heruntergeladen, daher lassen sich Zeitzone und Sprache des Profils noch nicht an seine Adresse anpassen. Versuchen Sie es in einer Minute erneut oder schalten Sie den automatischen Standort für dieses Profil aus.",
+    "cloakbrowserLicenseRequired": "Dieses Profil läuft auf einem CloakBrowser-Pro-Build, aber es ist kein Lizenzschlüssel hinterlegt. Legen Sie den Schlüssel in ~/.cloakbrowser/license.key ab und versuchen Sie es erneut.",
+    "cloakbrowserLicenseInvalid": "CloakBrowser Pro hat den Lizenzschlüssel abgelehnt: Er ist ungültig oder abgelaufen.",
+    "cloakbrowserLicenseUnreachable": "CloakBrowser Pro konnte die Lizenz nicht prüfen: Der Server hat nicht geantwortet. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
+    "cloakbrowserLicenseSetup": "CloakBrowser Pro konnte nicht starten: Der Ordner ~/.cloakbrowser ist nicht beschreibbar.",
+    "cloakbrowserSessionLimit": "CloakBrowser Pro: Das Limit gleichzeitig laufender Browser Ihres Tarifs ist erreicht. Schließen Sie einen und versuchen Sie es erneut."
   },
   "rail": {
     "profiles": "Profile",

@@ -244,6 +244,11 @@ export type BackendErrorCode =
   | "SYNC_DISPLAY_UNAVAILABLE"
   | "SYNC_DISPLAY_TOO_SMALL"
   | "SYNC_ARRANGE_FAILED"
+  | "CLOAKBROWSER_LICENSE_REQUIRED"
+  | "CLOAKBROWSER_LICENSE_INVALID"
+  | "CLOAKBROWSER_LICENSE_UNREACHABLE"
+  | "CLOAKBROWSER_LICENSE_SETUP"
+  | "CLOAKBROWSER_SESSION_LIMIT"
   | "LOCATION_DATABASE_UNAVAILABLE"
   | "CAMERA_VIDEO_NOT_FOUND"
   | "CAMERA_VIDEO_NEEDS_FFMPEG"
@@ -860,6 +865,16 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       });
     case "SYNC_ARRANGE_FAILED":
       return t("backendErrors.syncArrangeFailed");
+    case "CLOAKBROWSER_LICENSE_REQUIRED":
+      return t("backendErrors.cloakbrowserLicenseRequired");
+    case "CLOAKBROWSER_LICENSE_INVALID":
+      return t("backendErrors.cloakbrowserLicenseInvalid");
+    case "CLOAKBROWSER_LICENSE_UNREACHABLE":
+      return t("backendErrors.cloakbrowserLicenseUnreachable");
+    case "CLOAKBROWSER_LICENSE_SETUP":
+      return t("backendErrors.cloakbrowserLicenseSetup");
+    case "CLOAKBROWSER_SESSION_LIMIT":
+      return t("backendErrors.cloakbrowserSessionLimit");
     case "LOCATION_DATABASE_UNAVAILABLE":
       return t("backendErrors.locationDatabaseUnavailable");
     case "CAMERA_VIDEO_NOT_FOUND":
