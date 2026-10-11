@@ -79,6 +79,9 @@ async function openProfileCreation(app) {
       app.execute(`return Boolean(document.querySelector('#profile-name'));`),
     { description: "profile name field" },
   );
+  // The dialog opens on Camoufox, which this suite has no binary for. Wayfern
+  // is the engine the harness registers as downloaded.
+  await app.clickText("Wayfern", { roles: ["radio"] });
 }
 
 async function submitProfileCreation(app, name) {
@@ -150,7 +153,7 @@ test("profile creation stays compact and saves basic, protected, and ephemeral p
         JSON.stringify(basic),
       );
       assert.equal(basic.tabs, 0);
-      assert.deepEqual(basic.fields, ["profile-name"]);
+      assert.deepEqual(basic.fields, ["profile-name", "profile-count"]);
       assert.deepEqual(basic.checkboxes, ["enable-password", "ephemeral"]);
       assert.equal(basic.advancedVisible, false);
       assert.ok(!basic.text.includes(en.profiles.ephemeralDescription));
@@ -432,6 +435,71 @@ test("profile creation stays compact and saves basic, protected, and ephemeral p
       assert.equal(ephemeralRequest.proxyId, undefined);
       assert.equal(ephemeralRequest.vpnId, vpn.id);
       assert.equal(ephemeral.launch_hook, null);
+    },
+    { seedDownloadedBrowser: true },
+  );
+});
+
+test("a count beside the name creates a numbered series, each profile with a device of its own", async () => {
+  await withApp(
+    "ui-profile-series",
+    async (app) => {
+      await stubCommand(app, "is_geoip_database_available", true);
+      // No browser binary here, so each request is recorded as the dialog sent
+      // it and then given a fixed device for the backend to store.
+      await app.execute(`
+        const originalFetch = window.fetch;
+        window.__seriesRequests = [];
+        window.fetch = function(input, init) {
+          const url = typeof input === 'string' ? input : input?.url ?? '';
+          if (url.endsWith('/create_browser_profile_new')) {
+            const payload = JSON.parse(init.body);
+            window.__seriesRequests.push(structuredClone(payload));
+            payload.wayfernConfig = { ...payload.wayfernConfig, fingerprint: '{}' };
+            return originalFetch.call(window, input, { ...init, body: JSON.stringify(payload) });
+          }
+          return originalFetch.apply(window, arguments);
+        };
+      `);
+      await openProfileCreation(app);
+      await app.fillSelector("#profile-name", "Series");
+
+      // The field can be emptied and retyped, and settles on a number in range.
+      await app.fillSelector("#profile-count", "");
+      assert.equal(
+        await app.execute(
+          `return document.querySelector('#profile-count').value;`,
+        ),
+        "",
+      );
+      await app.fillSelector("#profile-count", "3");
+      assert.equal(
+        await app.execute(
+          `return document.querySelector('#profile-count').value;`,
+        ),
+        "3",
+      );
+
+      await app.clickTextIn('[role="dialog"]', en.common.buttons.create, {
+        roles: ["button"],
+      });
+      await app.waitFor(
+        () => app.execute(`return !document.querySelector('#profile-name');`),
+        { description: "the series to be created" },
+      );
+      const names = (await app.invoke("list_browser_profiles"))
+        .map((profile) => profile.name)
+        .sort();
+      assert.deepEqual(names, ["Series 1", "Series 2", "Series 3"]);
+      const requests = await app.execute(`return window.__seriesRequests;`);
+      assert.deepEqual(
+        requests.map((request) => request.name),
+        ["Series 1", "Series 2", "Series 3"],
+      );
+      // A series never shares one pinned device.
+      for (const request of requests) {
+        assert.equal(request.wayfernConfig?.fingerprint ?? null, null);
+      }
     },
     { seedDownloadedBrowser: true },
   );
@@ -1868,6 +1936,74 @@ test("pasting a proxy string into the form fills every field", async () => {
   });
 });
 
+test("an SSH proxy string fills the form, reads as an encrypted first hop, and is saved as SSH", async () => {
+  await withApp("ui-proxy-form-ssh", async (app) => {
+    const paste = (selector, text) =>
+      app.execute(
+        `const field = document.querySelector(arguments[0]);
+         const data = new DataTransfer();
+         data.setData("text/plain", arguments[1]);
+         field.focus();
+         return field.dispatchEvent(
+           new ClipboardEvent("paste", {
+             bubbles: true,
+             cancelable: true,
+             clipboardData: data,
+           }),
+         );`,
+        [selector, text],
+      );
+    const fieldValues = () =>
+      app.execute(
+        `return ["#proxy-host", "#proxy-port", "#proxy-username", "#proxy-password"]
+           .map((selector) => document.querySelector(selector)?.value ?? null);`,
+      );
+
+    await app.clickSelector('[aria-label="Network"]');
+    await app.waitForText("New proxy");
+    await app.clickSelector('[aria-label="New proxy"]');
+    await app.waitForText("Add Proxy");
+
+    await paste("#proxy-host", "ssh://carol:s3cret@203.0.113.9:2222");
+    await app.waitFor(async () => (await fieldValues())[0] === "203.0.113.9", {
+      description: "host filled from the pasted SSH proxy",
+    });
+    assert.deepEqual(await fieldValues(), [
+      "203.0.113.9",
+      "2222",
+      "carol",
+      "s3cret",
+    ]);
+    assert.equal(
+      await app.execute(
+        `return document.querySelector("#proxy-type")?.textContent?.trim();`,
+      ),
+      en.proxies.types.ssh,
+    );
+    // SSH encrypts the hop to the proxy, and the form has to say so instead
+    // of warning that the credentials travel in the clear.
+    await app.waitForText(en.proxies.form.firstHopEncryptedNote);
+    assert.equal(
+      await app.visibleTextIncludes(en.proxies.form.firstHopPlaintextNote),
+      false,
+    );
+
+    await app.clickTextIn('[role="dialog"]', en.proxies.add, {
+      roles: ["button"],
+    });
+    const saved = await app.waitFor(
+      async () =>
+        (await app.invoke("get_stored_proxies")).find(
+          (proxy) => proxy.proxy_settings.host === "203.0.113.9",
+        ) ?? null,
+      { description: "the SSH proxy to be stored" },
+    );
+    assert.equal(saved.proxy_settings.proxy_type, "ssh");
+    assert.equal(saved.proxy_settings.port, 2222);
+    assert.equal(saved.proxy_settings.username, "carol");
+  });
+});
+
 test("About exposes a searchable, responsive third-party license inventory", async () => {
   await withApp("ui-about-licenses", async (app) => {
     await app.clickSelector('[aria-label="More"]');
@@ -1876,7 +2012,7 @@ test("About exposes a searchable, responsive third-party license inventory", asy
         app.execute(`return Boolean(document.querySelector("[role='menu']"));`),
       { description: "More menu" },
     );
-    await app.clickText("About Donut Browser", {
+    await app.clickText(en.rail.more.about, {
       exact: false,
       roles: ["menuitem"],
     });
@@ -1885,7 +2021,10 @@ test("About exposes a searchable, responsive third-party license inventory", asy
     const aboutText = await app.execute(
       `return document.querySelector("[role='dialog']")?.textContent ?? "";`,
     );
-    assert.doesNotMatch(aboutText, /AGPL-3\.0|licensed under/i);
+    // The fork credits the project it is built on in one line; the licence
+    // text itself still belongs to the inventory, not to this summary.
+    assert.ok(aboutText.includes(en.about.basedOn));
+    assert.doesNotMatch(aboutText, /licensed under/i);
 
     await app.clickText("Licenses", { roles: ["button"] });
     await app.waitFor(
@@ -2048,7 +2187,7 @@ test("first-run onboarding stays recoverable, responsive, and platform-aware", a
   await withApp(
     "ui-onboarding",
     async (app) => {
-      await app.waitForText("Welcome to Donut Browser");
+      await app.waitForText(en.welcome.title);
       assert.equal(await app.invoke("get_onboarding_completed"), false);
 
       await app.session.command("POST", "/window/rect", {
@@ -3107,6 +3246,79 @@ test("the distribute-proxies dialog opens from the action bar, counts the pairin
   );
 });
 
+test("the Cookie Robot dialog opens from the action bar, names a bad site, and reports a run to its end", async () => {
+  await withApp("ui-cookie-robot", async (app) => {
+    for (const name of ["Warm One", "Warm Two"]) {
+      await createUiProfile(app, name);
+    }
+    await app.waitForText("Warm Two");
+    const dialogText = () =>
+      app.execute(
+        `return document.querySelector('[role="dialog"]')?.innerText ?? "";`,
+      );
+    const startDisabled = () =>
+      app.execute(
+        `const dialog = document.querySelector('[role="dialog"]');
+         const button = [...(dialog?.querySelectorAll('button') ?? [])]
+           .find((node) => node.textContent.trim() === arguments[0]);
+         return button ? button.disabled : null;`,
+        [en.common.buttons.start],
+      );
+
+    await app.clickSelector(`[aria-label="${en.common.aria.selectAll}"]`);
+    await app.clickText(en.tables.moreActions, { roles: ["button"] });
+    await app.clickText(en.cookieRobot.actionBar, { roles: ["menuitem"] });
+    await app.waitForText(en.cookieRobot.description);
+    assert.ok(
+      (await dialogText()).includes(
+        en.cookieRobot.profilesSelected.replace("{{count}}", "2"),
+      ),
+    );
+    await app.capture("cookie-robot-setup");
+
+    // Nothing to visit, nothing to start.
+    assert.equal(await startDisabled(), true);
+    await app.fillSelector('[role="dialog"] textarea', "ftp://files.example");
+    assert.equal(await startDisabled(), false);
+    await app.clickTextIn('[role="dialog"]', en.common.buttons.start, {
+      roles: ["button"],
+    });
+    // The refusal is the translated sentence naming the line, not a code.
+    await app.waitForText(
+      en.backendErrors.cookieRobotInvalidUrl.replace(
+        "{{url}}",
+        "ftp://files.example",
+      ),
+    );
+    assert.ok(!(await dialogText()).includes("COOKIE_ROBOT_INVALID_URL"));
+
+    // This suite has no browser binary, so both profiles fail to start; the
+    // dialog still has to walk the run to its end and say what happened.
+    await app.fillSelector('[role="dialog"] textarea', "example.com");
+    await app.clickTextIn('[role="dialog"]', en.common.buttons.start, {
+      roles: ["button"],
+    });
+    await app.waitForText(en.cookieRobot.newRun);
+    const finished = await dialogText();
+    assert.match(finished, /Warm One/);
+    assert.match(finished, /Warm Two/);
+    assert.ok(finished.includes(en.cookieRobot.state.failed));
+    await app.capture("cookie-robot-finished");
+
+    // A new run starts from the list that was just used.
+    await app.clickTextIn('[role="dialog"]', en.cookieRobot.newRun, {
+      roles: ["button"],
+    });
+    await app.waitFor(
+      () =>
+        app.execute(
+          `return document.querySelector('[role="dialog"] textarea')?.value === "example.com";`,
+        ),
+      { description: "the site list to be remembered" },
+    );
+  });
+});
+
 test("the group bookmark editor adds, reorders and removes a row", async () => {
   await withApp("ui-group-bookmarks", async (app) => {
     const group = await app.invoke("create_profile_group", { name: "Client" });
@@ -4010,11 +4222,13 @@ test("Pro users can edit and save launch arguments in each profile", async () =>
         await app.waitForText(en.fingerprint.launchArgs);
       };
       await openEditor();
+      // Upstream keeps this field disabled without a paid plan; the fork
+      // gates nothing that runs locally.
       assert.equal(
         await app.execute(
           'return document.querySelector("#wayfern-launch-args").disabled;',
         ),
-        true,
+        false,
       );
       await app.clickSelector('[data-slot="profile-info-close"]');
       try {
@@ -4088,12 +4302,13 @@ test("Pro users can edit and save launch arguments in each profile", async () =>
           payload: null,
         });
         await openEditor();
-        await app.waitFor(
-          () =>
-            app.execute(
-              'return document.querySelector("#wayfern-launch-args").disabled;',
-            ),
-          { description: "launch arguments locked after sign out" },
+        // Signing out locks this field upstream. Here it stays editable, and
+        // clearing it still works.
+        assert.equal(
+          await app.execute(
+            'return document.querySelector("#wayfern-launch-args").disabled;',
+          ),
+          false,
         );
         await app.clickText(en.common.buttons.clear, { exact: true });
         await app.clickText(en.common.buttons.save, { exact: true });

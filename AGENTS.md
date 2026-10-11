@@ -72,6 +72,12 @@ running dev app):
 - The first emoji a Camoufox session draws on a canvas uses a fallback glyph while Firefox
   loads the emoji font; that one reading differs from every later one. Shapes and Latin text
   are stable from the start, so this is font loading and not canvas noise.
+- The native E2E suites run on this fork: smoke, entities, integrations and ui pass without
+  credentials. Their expectations follow the fork (rebranded strings, no paid gates, Wayfern
+  picked in the create dialog because it is the engine the harness registers), and the fork's
+  own surfaces have tests there (Cookie Robot, SSH proxy form, profile series, command
+  contracts). Three ui tests ask for a 900 px tall window and cannot pass on a 1280x832
+  display; `browser` needs `WAYFERN_TEST_TOKEN`, `network` and `sync` need Docker.
 - After a browser exits, `profile/after_exit.rs` drops an ephemeral profile's data, applies
   clear-on-close and deletes a temporary profile, on a stop and when the user closes the
   window. Wayfern has the same steps inline in `browser_runner.rs`.

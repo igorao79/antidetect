@@ -1253,7 +1253,14 @@ test("offline cloud, update, team-lock, trial, and synchronizer contracts are de
     async (app) => {
       assert.equal(await app.invoke("cloud_get_user"), null);
       assert.equal(await app.invoke("cloud_get_proxy_usage"), null);
-      assert.ok(await app.invoke("cloud_get_wayfern_token"));
+      // The harness hands the app the Wayfern test token when one is
+      // configured; a machine without that credential has none to return.
+      const wayfernToken = await app.invoke("cloud_get_wayfern_token");
+      if (process.env.WAYFERN_TEST_TOKEN) {
+        assert.ok(wayfernToken);
+      } else {
+        assert.equal(wayfernToken, null);
+      }
       assert.deepEqual(await app.invoke("get_team_locks"), []);
       assert.equal(
         await app.invoke("get_team_lock_status", {
@@ -1347,20 +1354,24 @@ test("offline cloud, update, team-lock, trial, and synchronizer contracts are de
           isp: null,
         },
       );
-      await assertContract(app, "cloud_refresh_wayfern_token", {
-        // Compared against the value the harness injected, NOT matched against
-        // a hex shape. Under the `e2e` feature this command returns
-        // WAYFERN_TEST_TOKEN, so a /^[0-9a-f]{32,}$/ assertion only proved the
-        // harness's own env var looks like a token: it validated the fixture
-        // and would have passed with the command's body deleted. Equality
-        // proves the command actually reached the token and returned it.
-        answers: (token) =>
-          assert.equal(
-            String(token),
-            process.env.WAYFERN_TEST_TOKEN,
-            "the command must return the token it was given, not a different value",
-          ),
-      });
+      // Only where the Wayfern test token is configured: without that
+      // credential there is no token for the command to hand back.
+      if (process.env.WAYFERN_TEST_TOKEN) {
+        await assertContract(app, "cloud_refresh_wayfern_token", {
+          // Compared against the value the harness injected, NOT matched against
+          // a hex shape. Under the `e2e` feature this command returns
+          // WAYFERN_TEST_TOKEN, so a /^[0-9a-f]{32,}$/ assertion only proved the
+          // harness's own env var looks like a token: it validated the fixture
+          // and would have passed with the command's body deleted. Equality
+          // proves the command actually reached the token and returned it.
+          answers: (token) =>
+            assert.equal(
+              String(token),
+              process.env.WAYFERN_TEST_TOKEN,
+              "the command must return the token it was given, not a different value",
+            ),
+        });
+      }
 
       await assertContract(app, "trigger_manual_version_update", {
         answers: (report) => {

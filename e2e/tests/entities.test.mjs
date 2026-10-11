@@ -1609,7 +1609,7 @@ test("proxies distribute one to one, and group bookmarks reach the profile's Boo
     let document = await readBookmarks();
     let managed = managedFolderOf(document);
     assert.equal(managed.length, 1);
-    assert.equal(managed[0].name, "Donut Group Bookmarks");
+    assert.equal(managed[0].name, "Antidetect Group Bookmarks");
     assert.deepEqual(
       managed[0].children.map((child) => child.name),
       ["Support", "Ops"],
@@ -1692,66 +1692,134 @@ test("proxies distribute one to one, and group bookmarks reach the profile's Boo
   });
 });
 
-test("custom launch arguments require Pro and can be cleared after access ends", async () => {
+// Upstream refuses launch arguments and a custom fingerprint without a paid
+// plan. This fork runs everything locally and gates neither.
+test("launch arguments and a custom fingerprint need no plan", async () => {
   await withApp(
     "entities-launch-args-free",
     async (app) => {
       const profile = await createProfile(app, "Free Launch Arguments");
-      const error = await app.invokeError("update_wayfern_config", {
+      await app.invoke("update_wayfern_config", {
         profileId: profile.id,
         config: { ...profile.wayfern_config, launch_args: ["--disable-gpu"] },
       });
-      assert.match(error, /"code":"WAYFERN_LAUNCH_ARGS_REQUIRES_PRO"/);
-      assert.deepEqual(
-        (await app.invoke("list_browser_profiles"))[0].wayfern_config
-          .launch_args ?? [],
-        [],
-      );
-      const createError = await app.invokeError("create_browser_profile_new", {
-        name: "Refused Launch Arguments",
+      const stored = (await app.invoke("list_browser_profiles"))[0];
+      assert.deepEqual(stored.wayfern_config.launch_args, ["--disable-gpu"]);
+
+      const created = await app.invoke("create_browser_profile_new", {
+        name: "Created With Launch Arguments",
         browserStr: "wayfern",
         version: profile.version,
         releaseType: "stable",
         wayfernConfig: { fingerprint: "{}", launch_args: ["--disable-gpu"] },
       });
-      assert.match(createError, /"code":"WAYFERN_LAUNCH_ARGS_REQUIRES_PRO"/);
-      assert.equal((await app.invoke("list_browser_profiles")).length, 1);
+      assert.deepEqual(created.wayfern_config.launch_args, ["--disable-gpu"]);
 
-      const metadata = path.join(
-        app.dataRoot,
-        "data",
-        "profiles",
-        profile.id,
-        "metadata.json",
-      );
-      const stored = JSON.parse(await readFile(metadata, "utf8"));
-      stored.wayfern_config.launch_args = ["--disable-gpu"];
-      stored.updated_at = 1;
-      await writeFile(metadata, JSON.stringify(stored));
       await app.invoke("update_wayfern_config", {
         profileId: profile.id,
-        config: { ...stored.wayfern_config, launch_args: [] },
+        config: {
+          ...stored.wayfern_config,
+          launch_args: [],
+          fingerprint: '{"userAgent":"changed"}',
+        },
       });
-      const cleared = (await app.invoke("list_browser_profiles"))[0];
+      const cleared = (await app.invoke("list_browser_profiles")).find(
+        (candidate) => candidate.id === profile.id,
+      );
       assert.deepEqual(cleared.wayfern_config.launch_args ?? [], []);
-      assert.ok(cleared.updated_at > 1);
-      assert.equal(
-        cleared.wayfern_config.fingerprint,
-        profile.wayfern_config.fingerprint,
-      );
-      assert.match(
-        await app.invokeError("update_wayfern_config", {
-          profileId: profile.id,
-          config: {
-            ...cleared.wayfern_config,
-            fingerprint: '{"userAgent":"changed"}',
-          },
-        }),
-        /"code":"FINGERPRINT_REQUIRES_PRO"/,
-      );
+      assert.match(cleared.wayfern_config.fingerprint, /changed/);
     },
     { extraEnv: { WAYFERN_TEST_TOKEN: "" } },
   );
+});
+
+test("the fork's engine settings and Cookie Robot answer with their contract", async () => {
+  await withApp("entities-fork-contracts", async (app) => {
+    const missing = "00000000-0000-4000-8000-000000000000";
+    // Spelled out per command: the coverage gate looks for each literal call.
+    assert.match(
+      await app.invokeError("update_camoufox_config", {
+        profileId: missing,
+        config: {},
+      }),
+      /"code":"PROFILE_NOT_FOUND"/,
+    );
+    assert.match(
+      await app.invokeError("update_camoufox_config", {
+        profileId: "not-an-id",
+        config: {},
+      }),
+      /"code":"INVALID_PROFILE_ID"/,
+    );
+    assert.match(
+      await app.invokeError("update_cloakbrowser_config", {
+        profileId: missing,
+        config: {},
+      }),
+      /"code":"PROFILE_NOT_FOUND"/,
+    );
+    assert.match(
+      await app.invokeError("update_cloakbrowser_config", {
+        profileId: "not-an-id",
+        config: {},
+      }),
+      /"code":"INVALID_PROFILE_ID"/,
+    );
+
+    const idle = { running: false, profiles: [] };
+    assert.deepEqual(await app.invoke("get_cookie_robot_status"), idle);
+    assert.equal(await app.invoke("stop_cookie_robot"), false);
+
+    const profile = await createProfile(app, "Robot Target");
+    const refused = async (request) =>
+      app.invokeError("start_cookie_robot", {
+        request: {
+          profile_ids: [profile.id],
+          urls: ["example.com"],
+          ...request,
+        },
+      });
+    assert.match(await refused({ urls: ["  "] }), /COOKIE_ROBOT_NO_SITES/);
+    assert.match(
+      await refused({ urls: ["ftp://files.example"] }),
+      /COOKIE_ROBOT_INVALID_URL/,
+    );
+    assert.match(
+      await refused({ profile_ids: [] }),
+      /COOKIE_ROBOT_NO_PROFILES/,
+    );
+    assert.match(
+      await refused({ profile_ids: [missing] }),
+      /PROFILE_NOT_FOUND/,
+    );
+    assert.deepEqual(await app.invoke("get_cookie_robot_status"), idle);
+
+    // This suite has no browser binary, so the one profile cannot start. The
+    // run still has to go through its states and end, naming the failure.
+    const started = await app.invoke("start_cookie_robot", {
+      request: {
+        profile_ids: [profile.id],
+        urls: ["example.com", "https://example.org/a"],
+        headless: true,
+      },
+    });
+    assert.equal(started.running, true);
+    assert.deepEqual(
+      started.profiles.map(({ name, state, total }) => [name, state, total]),
+      [["Robot Target", "queued", 2]],
+    );
+    const finished = await app.waitFor(
+      async () => {
+        const status = await app.invoke("get_cookie_robot_status");
+        return status.running ? null : status;
+      },
+      { description: "the Cookie Robot run to end" },
+    );
+    assert.equal(finished.profiles[0].state, "failed");
+    assert.ok(finished.profiles[0].error);
+    assert.equal(finished.profiles[0].visited, 0);
+    assert.equal(await app.invoke("stop_cookie_robot"), false);
+  });
 });
 
 test("Pro launch arguments persist, clone, validate, and update the edit time", async () => {

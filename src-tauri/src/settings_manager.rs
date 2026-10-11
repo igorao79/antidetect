@@ -1144,7 +1144,17 @@ pub async fn observe_cloud_plan(
 
 #[tauri::command]
 pub fn get_system_language() -> String {
-  sys_locale::get_locale()
+  // The E2E harness pins the interface language with LANG. macOS answers from
+  // the user's system preferences and ignores it, so a suite written against
+  // the English strings failed on any machine set to another language.
+  #[cfg(feature = "e2e")]
+  let locale = std::env::var("LANG")
+    .ok()
+    .filter(|lang| !lang.is_empty())
+    .or_else(sys_locale::get_locale);
+  #[cfg(not(feature = "e2e"))]
+  let locale = sys_locale::get_locale();
+  locale
     .map(|locale| {
       // Extract just the language code (e.g., "en" from "en-US")
       locale
