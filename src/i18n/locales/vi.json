@@ -2443,7 +2443,10 @@
     "cookieRobotNoProfiles": "Hãy chọn ít nhất một hồ sơ.",
     "cookieRobotAlreadyRunning": "Cookie Robot đang chạy. Hãy chờ kết thúc hoặc dừng nó.",
     "cookieRobotProfileRunning": "Hồ sơ đang mở. Hãy đóng lại rồi chạy robot lần nữa.",
-    "cookieRobotNoControl": "Trình duyệt đã khởi động nhưng không điều khiển được: {{detail}}"
+    "cookieRobotNoControl": "Trình duyệt đã khởi động nhưng không điều khiển được: {{detail}}",
+    "cameraVideoNotFound": "Không tìm thấy tệp video.",
+    "cameraVideoNeedsFfmpeg": "Video này cần được chuyển đổi nhưng chưa cài ffmpeg. Hãy cài ffmpeg hoặc chọn tệp .mjpeg.",
+    "cameraVideoConversionFailed": "Không thể chuyển đổi video: {{detail}}"
   },
   "rail": {
     "profiles": "Profile",
@@ -3670,6 +3673,13 @@
       "memory": "Memory, GB",
       "screenWidth": "Screen width",
       "screenHeight": "Screen height"
+    },
+    "camera": {
+      "label": "Video thay camera",
+      "real": "Camera thật",
+      "choose": "Chọn video…",
+      "remove": "Gỡ bỏ",
+      "hint": "Trang web yêu cầu camera sẽ nhận video này lặp lại, còn micro thì im lặng. Trang nào liệt kê thiết bị vẫn có thể nhận ra chúng không phải phần cứng thật."
     }
   },
   "cookieRobot": {

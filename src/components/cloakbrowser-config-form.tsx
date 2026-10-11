@@ -1,5 +1,6 @@
 "use client";
 
+import { open } from "@tauri-apps/plugin-dialog";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { LuRefreshCw } from "react-icons/lu";
@@ -54,6 +55,25 @@ export function CloakBrowserConfigForm({
 }: CloakBrowserConfigFormProps) {
   const { t } = useTranslation();
   const id = useId();
+  const chooseCameraVideo = async () => {
+    try {
+      const selected = await open({
+        multiple: false,
+        title: t("cloakbrowser.camera.choose"),
+        filters: [
+          {
+            name: t("cloakbrowser.camera.label"),
+            extensions: ["mp4", "mov", "m4v", "webm", "mkv", "avi", "mjpeg"],
+          },
+        ],
+      });
+      if (typeof selected === "string") {
+        onConfigChange("camera_video", selected);
+      }
+    } catch (err) {
+      console.error("Failed to open the video picker:", err);
+    }
+  };
   const text = (key: keyof CloakBrowserConfig) => ({
     value: (config[key] as string | null | undefined) ?? "",
     onChange: (event: React.ChangeEvent<HTMLInputElement>) =>
@@ -197,6 +217,41 @@ export function CloakBrowserConfigForm({
             {t("config.wayfern.fingerprint.randomize")}
           </Label>
         </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <p className={FIELD_LABEL_CLASS}>{t("cloakbrowser.camera.label")}</p>
+        <div className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate text-sm">
+            {config.camera_video
+              ? (config.camera_video.split(/[\\/]/).pop() ??
+                config.camera_video)
+              : t("cloakbrowser.camera.real")}
+          </span>
+          <Button
+            type="button"
+            variant="soft"
+            size="sm"
+            disabled={readOnly}
+            onClick={() => void chooseCameraVideo()}
+          >
+            {t("cloakbrowser.camera.choose")}
+          </Button>
+          {config.camera_video && (
+            <Button
+              type="button"
+              variant="subtle"
+              size="sm"
+              disabled={readOnly}
+              onClick={() => onConfigChange("camera_video", null)}
+            >
+              {t("cloakbrowser.camera.remove")}
+            </Button>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {t("cloakbrowser.camera.hint")}
+        </p>
       </div>
 
       <div className="space-y-3">

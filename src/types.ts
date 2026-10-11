@@ -510,6 +510,8 @@ export interface CloakBrowserConfig {
   webrtc_mode?: CloakBrowserWebRtcMode | null;
   noise?: boolean | null;
   randomize_fingerprint_on_launch?: boolean | null;
+  /** The video file that stands in for the camera; unset is the real camera. */
+  camera_video?: string | null;
 }
 
 export interface CamoufoxConfig {

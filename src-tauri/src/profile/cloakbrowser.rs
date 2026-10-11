@@ -50,6 +50,24 @@ impl ProfileManager {
         .and_then(|c| c.seed)
         .or_else(|| Some(cloakbrowser_manager::generate_seed()));
     }
+
+    // A changed camera video is prepared before the config that names it is
+    // saved, so a file that cannot be used leaves the profile as it was.
+    let previous_video = profile
+      .cloakbrowser_config
+      .as_ref()
+      .and_then(|c| c.camera_video.clone());
+    config.camera_video = config.camera_video.filter(|path| !path.trim().is_empty());
+    if config.camera_video != previous_video {
+      let camera_dir =
+        crate::cloakbrowser_camera::camera_dir(&self.get_profiles_dir(), &profile.id.to_string());
+      match config.camera_video.as_deref() {
+        Some(source) => {
+          crate::cloakbrowser_camera::install(&camera_dir, std::path::Path::new(source)).await?
+        }
+        None => crate::cloakbrowser_camera::remove(&camera_dir),
+      }
+    }
     profile.cloakbrowser_config = Some(config);
     profile.updated_at = Some(crate::proxy_manager::now_secs());
     self

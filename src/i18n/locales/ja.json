@@ -2443,7 +2443,10 @@
     "cookieRobotNoProfiles": "プロファイルを 1 つ以上選択してください。",
     "cookieRobotAlreadyRunning": "Cookie Robot はすでに実行中です。終了を待つか停止してください。",
     "cookieRobotProfileRunning": "プロファイルが開いています。閉じてからもう一度実行してください。",
-    "cookieRobotNoControl": "ブラウザは起動しましたが、制御できませんでした: {{detail}}"
+    "cookieRobotNoControl": "ブラウザは起動しましたが、制御できませんでした: {{detail}}",
+    "cameraVideoNotFound": "動画ファイルが見つかりません。",
+    "cameraVideoNeedsFfmpeg": "この動画は変換が必要ですが、ffmpeg がインストールされていません。ffmpeg をインストールするか、.mjpeg ファイルを選択してください。",
+    "cameraVideoConversionFailed": "動画を変換できませんでした: {{detail}}"
   },
   "rail": {
     "profiles": "プロファイル",
@@ -3670,6 +3673,13 @@
       "memory": "Memory, GB",
       "screenWidth": "Screen width",
       "screenHeight": "Screen height"
+    },
+    "camera": {
+      "label": "カメラ映像",
+      "real": "実際のカメラ",
+      "choose": "動画を選択…",
+      "remove": "削除",
+      "hint": "カメラを要求するサイトにはこの動画が繰り返し流れ、マイクは無音になります。デバイス一覧を取得するサイトには、実機ではないことが分かる場合があります。"
     }
   },
   "cookieRobot": {
