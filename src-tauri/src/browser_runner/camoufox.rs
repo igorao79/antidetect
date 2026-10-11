@@ -41,13 +41,7 @@ async fn refresh_location(
     return;
   };
   let block_webrtc = config.block_webrtc.unwrap_or(false);
-  let located = crate::camoufox::geolocation::apply_exit_ip(
-    &mut fingerprint,
-    &ip,
-    block_webrtc,
-    Some(&profile.id.to_string()),
-  );
-  if located.is_none() {
+  if crate::camoufox::geolocation::apply_exit_ip(&mut fingerprint, &ip, block_webrtc).is_none() {
     return;
   }
   if let Ok(located) = serde_json::to_string(&fingerprint) {
