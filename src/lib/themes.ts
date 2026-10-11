@@ -36,6 +36,41 @@ export interface Theme {
 
 export const THEMES: Theme[] = [
   {
+    // The app's own look; `.dark` in globals.css carries the same values for
+    // an install that has never picked a theme.
+    id: "antidetect-graphite",
+    name: "Antidetect Graphite",
+    mode: "dark",
+    colors: {
+      "--background": "#0a0c11",
+      "--foreground": "#e9edf5",
+      "--card": "#10131a",
+      "--card-foreground": "#dde3ee",
+      "--popover": "#131720",
+      "--popover-foreground": "#dde3ee",
+      "--primary": "#8f7fff",
+      "--primary-foreground": "#0a0c11",
+      "--secondary": "#171b25",
+      "--secondary-foreground": "#dde3ee",
+      "--muted": "#171b25",
+      "--muted-foreground": "#8b95a8",
+      "--accent": "#1b2130",
+      "--accent-foreground": "#ffffff",
+      "--destructive": "#ff6b6b",
+      "--destructive-foreground": "#0a0c11",
+      "--success": "#2fd69c",
+      "--success-foreground": "#0a0c11",
+      "--warning": "#ffc24d",
+      "--warning-foreground": "#0a0c11",
+      "--border": "rgba(150,172,214,0.1)",
+      "--chart-1": "#8f7fff",
+      "--chart-2": "#2fd69c",
+      "--chart-3": "#ffc24d",
+      "--chart-4": "#4db8ff",
+      "--chart-5": "#ff7ab8",
+    },
+  },
+  {
     id: "donut-mono",
     name: "Donut Mono",
     mode: "dark",

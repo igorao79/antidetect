@@ -4,8 +4,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-app-sans);
+  --font-mono: var(--font-app-mono);
   --animate-progress-indeterminate: progress-indeterminate 1.4s ease-in-out
     infinite;
 
@@ -67,102 +67,95 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.141 0.005 285.823);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.141 0.005 285.823);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.141 0.005 285.823);
-  --primary: oklch(0.21 0.006 285.885);
-  --primary-foreground: oklch(0.985 0 0);
-  --primary-text: oklch(0.21 0.006 285.885);
-  --secondary: oklch(0.967 0.001 286.375);
-  --secondary-foreground: oklch(0.21 0.006 285.885);
-  --muted: oklch(0.967 0.001 286.375);
-  --muted-foreground: oklch(0.552 0.016 285.938);
-  --accent: oklch(0.967 0.001 286.375);
-  --accent-foreground: oklch(0.21 0.006 285.885);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.985 0 0);
-  --destructive-text: #b91c1c;
-  --success: oklch(0.6 0.2 145);
-  --success-foreground: oklch(0.985 0 0);
-  --success-text: #15753a;
-  --warning: oklch(0.75 0.15 75);
-  --warning-foreground: oklch(0.141 0.005 285.823);
-  --warning-text: #854d0e;
-  --border: oklch(0.92 0.004 286.32);
-  --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.705 0.015 286.067);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.141 0.005 285.823);
-  --sidebar-primary: oklch(0.21 0.006 285.885);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.967 0.001 286.375);
-  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
-  --sidebar-border: oklch(0.92 0.004 286.32);
-  --sidebar-ring: oklch(0.705 0.015 286.067);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
+  /* Antidetect Daylight: the light counterpart of Graphite below. Cool paper,
+     ink with a blue cast, the same violet for everything that acts. */
+  --background: #f3f5f9;
+  --foreground: #11141b;
+  --card: #ffffff;
+  --card-foreground: #11141b;
+  --popover: #ffffff;
+  --popover-foreground: #11141b;
+  --primary: #5b46e5;
+  --primary-foreground: #ffffff;
+  --primary-text: #4b37d1;
+  --secondary: #e8ecf3;
+  --secondary-foreground: #1b2030;
+  --muted: #e8ecf3;
+  --muted-foreground: #5b6474;
+  --accent: #e1e6f0;
+  --accent-foreground: #11141b;
+  --destructive: #d9364a;
+  --destructive-foreground: #ffffff;
+  --destructive-text: #b3202f;
+  --success: #12a474;
+  --success-foreground: #ffffff;
+  --success-text: #0b7a55;
+  --warning: #e0a019;
+  --warning-foreground: #11141b;
+  --warning-text: #875a00;
+  --border: #dce1eb;
+  --input: #d3d9e5;
+  --ring: #8f84ee;
+  --chart-1: #5b46e5;
+  --chart-2: #12a474;
+  --chart-3: #e0a019;
+  --chart-4: #1c8fd6;
+  --chart-5: #d6468f;
+  --sidebar: #eceff5;
+  --sidebar-foreground: #11141b;
+  --sidebar-primary: #5b46e5;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #e1e6f0;
+  --sidebar-accent-foreground: #11141b;
+  --sidebar-border: #dce1eb;
+  --sidebar-ring: #8f84ee;
 }
 
 .dark {
-  /* Donut Mono — redesign monochrome palette */
-  --background: #070707;
-  --foreground: #ffffff;
-  --card: #0e0e0e;
-  --card-foreground: #e4e4e4;
-  --popover: #0e0e0e;
-  --popover-foreground: #e4e4e4;
-  --primary: #ffffff;
-  --primary-foreground: #070707;
-  --primary-text: #ffffff;
-  --secondary: #161616;
-  --secondary-foreground: #e4e4e4;
-  --muted: #161616;
-  --muted-foreground: #a0a0a0;
-  --accent: #1f1f1f;
+  /* Antidetect Graphite: blue-black graphite surfaces, one violet for
+     everything that acts, mint for what is running. */
+  --background: #0a0c11;
+  --foreground: #e9edf5;
+  --card: #10131a;
+  --card-foreground: #dde3ee;
+  --popover: #131720;
+  --popover-foreground: #dde3ee;
+  --primary: #8f7fff;
+  --primary-foreground: #0a0c11;
+  --primary-text: #a99dff;
+  --secondary: #171b25;
+  --secondary-foreground: #dde3ee;
+  --muted: #171b25;
+  --muted-foreground: #8b95a8;
+  --accent: #1b2130;
   --accent-foreground: #ffffff;
-  --destructive: #ec6a5e;
-  --destructive-foreground: #070707;
-  --destructive-text: #ec6a5e;
-  --success: #61c554;
-  --success-foreground: #070707;
-  --success-text: #61c554;
-  --warning: #f4be4f;
-  --warning-foreground: #070707;
-  --warning-text: #f4be4f;
-  --border: rgba(255, 255, 255, 0.06);
-  --input: rgba(255, 255, 255, 0.1);
-  --ring: #6b6b6b;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.21 0.006 285.885);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.274 0.006 286.033);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.552 0.016 285.938);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
+  --destructive: #ff6b6b;
+  --destructive-foreground: #0a0c11;
+  --destructive-text: #ff7d7d;
+  --success: #2fd69c;
+  --success-foreground: #0a0c11;
+  --success-text: #45e0aa;
+  --warning: #ffc24d;
+  --warning-foreground: #0a0c11;
+  --warning-text: #ffc24d;
+  --border: rgba(150, 172, 214, 0.1);
+  --input: rgba(150, 172, 214, 0.16);
+  --ring: #6f64c9;
+  --chart-1: #8f7fff;
+  --chart-2: #2fd69c;
+  --chart-3: #ffc24d;
+  --chart-4: #4db8ff;
+  --chart-5: #ff7ab8;
+  --sidebar: #0d1016;
+  --sidebar-foreground: #e9edf5;
+  --sidebar-primary: #8f7fff;
+  --sidebar-primary-foreground: #0a0c11;
+  --sidebar-accent: #1b2130;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(150, 172, 214, 0.1);
+  --sidebar-ring: #6f64c9;
 }
 
 @layer base {
@@ -192,6 +185,30 @@
   [role="switch"] {
     cursor: pointer;
   }
+}
+
+/* The app's backdrop: a faint wash of the theme's primary from the corner the
+   navigation starts in, over the plain background. Every theme gets it in its
+   own colour; none of it is strong enough to carry text contrast. */
+.app-surface {
+  background-image:
+    radial-gradient(
+      56rem 28rem at 0% 0%,
+      color-mix(in oklab, var(--primary) 7%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      40rem 24rem at 100% 100%,
+      color-mix(in oklab, var(--primary) 4%, transparent),
+      transparent 70%
+    );
+}
+
+/* Figures that are read digit by digit (ports, addresses, ids, counts) are set
+   in the monospace face wherever a component asks for tabular numbers. */
+.tabular-nums {
+  font-family: var(--font-mono);
+  letter-spacing: -0.01em;
 }
 
 /* Data tables (profiles and the management tables). No rules between rows:

@@ -3319,6 +3319,59 @@ test("the Cookie Robot dialog opens from the action bar, names a bad site, and r
   });
 });
 
+test("the navigation names every destination in a wide window and folds to icons in a narrow one", async () => {
+  await withApp("ui-sidebar", async (app) => {
+    for (const name of ["Alpha", "Beta", "Gamma"]) {
+      await createUiProfile(app, name);
+    }
+    await app.waitForText("Gamma");
+    const navigation = () =>
+      app.execute(
+        `const nav = document.querySelector("nav");
+         const item = nav.querySelector('[aria-label="' + arguments[0] + '"]');
+         const label = [...item.querySelectorAll("span")]
+           .find((span) => span.textContent.trim() === arguments[0]);
+         return {
+           width: Math.round(nav.getBoundingClientRect().width),
+           labelShown: Boolean(label) && getComputedStyle(label).display !== "none",
+           itemWidth: Math.round(item.getBoundingClientRect().width),
+         };`,
+        [en.rail.profiles],
+      );
+    const resizeTo = async (width, height) => {
+      const before = await app.session.command("GET", "/window/rect");
+      const viewport = await app.execute(
+        "return { width: innerWidth, height: innerHeight };",
+      );
+      const contentWidth = width - Math.max(0, before.width - viewport.width);
+      await app.session.command("POST", "/window/rect", { width, height });
+      await app.waitFor(
+        () =>
+          app.execute("return innerWidth === arguments[0];", [contentWidth]),
+        { description: `window ${width} wide` },
+      );
+    };
+
+    await resizeTo(1200, 760);
+    const wide = await navigation();
+    assert.equal(wide.labelShown, true, JSON.stringify(wide));
+    assert.ok(wide.width >= 200, JSON.stringify(wide));
+    assert.ok(wide.itemWidth > 150, JSON.stringify(wide));
+    // The destination is still reachable by its name, as it is from the rail.
+    await app.clickSelector(`[aria-label="${en.rail.network}"]`);
+    await app.waitForText("New proxy");
+    await app.clickSelector(`[aria-label="${en.rail.profiles}"]`);
+    await app.waitForText("Gamma");
+    await app.capture("main-wide");
+
+    await resizeTo(900, 600);
+    const narrow = await navigation();
+    assert.equal(narrow.labelShown, false, JSON.stringify(narrow));
+    assert.equal(narrow.width, 40, JSON.stringify(narrow));
+    await app.capture("main-narrow");
+  });
+});
+
 test("the group bookmark editor adds, reorders and removes a row", async () => {
   await withApp("ui-group-bookmarks", async (app) => {
     const group = await app.invoke("create_profile_group", { name: "Client" });

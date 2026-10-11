@@ -2733,11 +2733,13 @@ export function ProfilesDataTable({
                         : meta.t("profiles.actions.launch")
                     }
                     className={cn(
-                      "grid size-7 place-items-center rounded-full p-0 transition-[background-color,color,transform] duration-150",
+                      "grid size-7 place-items-center rounded-md p-0 transition-[background-color,color,transform] duration-150",
                       !canLaunch && "cursor-not-allowed opacity-50",
                       canLaunch && "cursor-pointer",
+                      // Launching is the one thing every row is for, so the
+                      // control carries the accent before it is hovered.
                       !isRunning &&
-                        "hover:bg-primary hover:text-primary-foreground",
+                        "bg-primary/12 text-primary-text hover:bg-primary hover:text-primary-foreground",
                       isRunning &&
                         !isFollower &&
                         "bg-destructive/12 text-destructive-text hover:bg-destructive/20",

@@ -1,16 +1,19 @@
-import { Geist, Geist_Mono } from "next/font/google";
+import { JetBrains_Mono, Onest } from "next/font/google";
 import "@/styles/globals.css";
 import "flag-icons/css/flag-icons.min.css";
 import { ClientProviders } from "@/components/client-providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+// The interface is used in Russian as much as in English, so both faces are
+// loaded with their Cyrillic: a Latin-only face leaves Cyrillic to the system
+// font and the two never match.
+const appSans = Onest({
+  variable: "--font-app-sans",
+  subsets: ["latin", "cyrillic"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const appMono = JetBrains_Mono({
+  variable: "--font-app-mono",
+  subsets: ["latin", "cyrillic"],
 });
 
 export default function RootLayout({
@@ -21,7 +24,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden bg-background`}
+        className={`${appSans.variable} ${appMono.variable} antialiased overflow-hidden bg-background`}
       >
         <ClientProviders>{children}</ClientProviders>
       </body>

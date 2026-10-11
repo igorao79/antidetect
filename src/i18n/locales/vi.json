@@ -2474,7 +2474,8 @@
     "cookieBot": "Cookie Bot",
     "cookieBotRunning": "Cookie Bot — đang chạy",
     "agent": "Tác nhân",
-    "agentWaiting": "Tác nhân, yêu cầu đang chờ: {{count}}"
+    "agentWaiting": "Tác nhân, yêu cầu đang chờ: {{count}}",
+    "brand": "Antidetect"
   },
   "pageTitle": {
     "proxies": "Mạng",

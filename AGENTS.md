@@ -421,6 +421,15 @@ The command palette (Mod+K) is built on the shadcn `Command` primitive with a to
 
 ## UI Theming
 
+The fork has its own look, Antidetect Graphite: blue-black graphite surfaces, one violet
+(`--primary`) for everything that acts, mint (`--success`) for what is running. It lives in the
+`.dark` block of `src/styles/globals.css` (the light counterpart is `:root`) and, with the same
+values, as the first entry of `THEMES`, so `pnpm test:themes` holds it to the same contrast
+rules as every preset. The faces are Onest and JetBrains Mono, both loaded with Cyrillic in
+`src/app/layout.tsx`; anything marked `tabular-nums` is set in the monospace face. The
+navigation (`rail-nav.tsx`) is an icon rail below 1024px and a sidebar that names every
+destination above it, and the window opens at 1200x760.
+
 - Never use hardcoded Tailwind color classes (e.g., `text-red-500`, `bg-green-600`, `border-yellow-400`). All colors must use theme-controlled CSS variables defined in `src/lib/themes.ts`
 - Available semantic color classes:
   - `background`, `foreground`: page/container background and text
