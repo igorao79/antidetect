@@ -133,7 +133,6 @@ impl CamoufoxManager {
 
     // Build the config using CamoufoxConfigBuilder
     let mut builder = CamoufoxConfigBuilder::new()
-      .stable_id(profile.id.to_string())
       .block_images(config.block_images.unwrap_or(false))
       .block_webrtc(config.block_webrtc.unwrap_or(false))
       .block_webgl(config.block_webgl.unwrap_or(false));

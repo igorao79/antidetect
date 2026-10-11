@@ -187,7 +187,6 @@ pub struct CamoufoxConfigBuilder {
   ff_version: Option<u32>,
   extra_config: HashMap<String, serde_json::Value>,
   geoip: Option<GeoIPOption>,
-  stable_id: Option<String>,
 }
 
 /// Proxy configuration.
@@ -257,7 +256,6 @@ impl CamoufoxConfigBuilder {
       ff_version: None,
       extra_config: HashMap::new(),
       geoip: None,
-      stable_id: None,
     }
   }
 
@@ -331,13 +329,6 @@ impl CamoufoxConfigBuilder {
   /// Use `GeoIPOption::IP(ip_string)` to use a specific IP address.
   pub fn geoip(mut self, option: GeoIPOption) -> Self {
     self.geoip = Some(option);
-    self
-  }
-
-  /// The profile this fingerprint is for. Ties the language chosen for its
-  /// location to the profile, so later launches choose the same one.
-  pub fn stable_id(mut self, id: impl Into<String>) -> Self {
-    self.stable_id = Some(id.into());
     self
   }
 
@@ -541,7 +532,6 @@ impl CamoufoxConfigBuilder {
     });
     let geoip_option = self.geoip.clone();
     let block_webrtc = self.block_webrtc;
-    let stable_id = self.stable_id.clone();
 
     // Build base config first
     let mut launch_config = self.build()?;
@@ -567,12 +557,7 @@ impl CamoufoxConfigBuilder {
 
       // A location the database cannot place is left out rather than failing
       // the build.
-      geolocation::apply_exit_ip(
-        &mut launch_config.fingerprint_config,
-        &ip,
-        block_webrtc,
-        stable_id.as_deref(),
-      );
+      geolocation::apply_exit_ip(&mut launch_config.fingerprint_config, &ip, block_webrtc);
     }
 
     Ok(launch_config)

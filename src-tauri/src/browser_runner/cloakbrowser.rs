@@ -17,10 +17,9 @@ const GRACEFUL_EXIT_TIMEOUT: Duration = Duration::from_secs(8);
 /// effort; an unknown exit just leaves those switches to the browser.
 async fn exit_location(profile: &BrowserProfile, local_proxy_url: &str) -> ExitLocation {
   let ip = exit_ip(profile, local_proxy_url).await;
-  // The profile's own language for the country, the same at every launch.
   let geo = ip
     .as_deref()
-    .and_then(|ip| crate::geolocation::get_geolocation_for(ip, &profile.id.to_string()).ok());
+    .and_then(|ip| crate::geolocation::get_profile_geolocation(ip).ok());
   ExitLocation {
     timezone: geo.as_ref().map(|g| g.timezone.clone()),
     locale: geo.as_ref().map(|g| g.locale.as_string()),
