@@ -252,6 +252,34 @@ test("fresh app renders, completes onboarding, persists settings, and never touc
   );
 });
 
+test("the camera and microphone prompt is offered once, not at every launch", async (t) => {
+  await withApp("smoke-permission-prompt", async (app) => {
+    const [microphone, camera] =
+      process.platform === "darwin"
+        ? await Promise.all([
+            app.invoke("plugin:macos-permissions|check_microphone_permission"),
+            app.invoke("plugin:macos-permissions|check_camera_permission"),
+          ])
+        : [true, true];
+    if (microphone && camera) {
+      t.skip("nothing to ask for: both permissions are granted");
+      return;
+    }
+    assert.equal(
+      await app.startupPermissionPromptDismissed(),
+      true,
+      "closing the prompt was not remembered",
+    );
+    await app.restart();
+    await new Promise((resolve) => setTimeout(resolve, 4_000));
+    assert.equal(
+      await app.startupPermissionDialogOpen(),
+      false,
+      "the prompt came back at the next launch",
+    );
+  });
+});
+
 test("two isolated sessions run concurrently and do not share frontend or backend state", async () => {
   const first = appFromEnvironment("smoke-isolation-a");
   const second = appFromEnvironment("smoke-isolation-b");

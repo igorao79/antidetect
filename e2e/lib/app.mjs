@@ -305,10 +305,27 @@ export class AppSession {
     return this;
   }
 
+  /// The prompt is offered once per install; closing it is remembered.
+  async startupPermissionPromptDismissed() {
+    return this.execute(
+      "return localStorage.getItem('permissions.startupPromptDismissed') === '1';",
+    );
+  }
+
+  async startupPermissionDialogOpen() {
+    return this.execute(
+      `return [...document.querySelectorAll("[role='dialog'] h2")].some(
+        (node) => arguments[0].includes(node.textContent)
+      );`,
+      [[en.permissionDialog.titleMicrophone, en.permissionDialog.titleCamera]],
+    );
+  }
+
   async dismissStartupPermissions() {
     if (
       process.platform !== "darwin" ||
-      !(await this.invoke("get_onboarding_completed"))
+      !(await this.invoke("get_onboarding_completed")) ||
+      (await this.startupPermissionPromptDismissed())
     ) {
       return;
     }
