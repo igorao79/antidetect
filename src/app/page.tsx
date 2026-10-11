@@ -94,6 +94,10 @@ import {
   ONBOARDING_TOUR_FINISHED_EVENT,
   setOnboardingActive,
 } from "@/lib/onboarding-signal";
+import {
+  dismissStartupPermissionPrompt,
+  startupPermissionPromptDismissed,
+} from "@/lib/permission-prompt";
 import { type ProfileSearchContext } from "@/lib/profile-search";
 import {
   matchesGroupDigit,
@@ -2285,9 +2289,14 @@ export default function Home() {
 
   // Check permissions when they are initialized. During first-run onboarding
   // the welcome flow requests permissions, so the standalone dialog is deferred
-  // until we know this isn't a first-run onboarding.
+  // until we know this isn't a first-run onboarding. It is offered once: after
+  // it has been closed, Settings is where the permissions are requested.
   useEffect(() => {
-    if (isInitialized && firstRunOnboarding === false) {
+    if (
+      isInitialized &&
+      firstRunOnboarding === false &&
+      !startupPermissionPromptDismissed()
+    ) {
       checkAllPermissions();
     }
   }, [isInitialized, firstRunOnboarding, checkAllPermissions]);
@@ -2684,6 +2693,7 @@ export default function Home() {
         <PermissionDialog
           isOpen={permissionDialogOpen}
           onClose={() => {
+            dismissStartupPermissionPrompt();
             setPermissionDialogOpen(false);
           }}
           permissionType={currentPermissionType}
