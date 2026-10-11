@@ -617,6 +617,49 @@ async fn start_cookie_robot(
   Ok(envelope(cookie_robot_json()))
 }
 
+#[derive(Deserialize)]
+struct SynchronizerStartRequest {
+  /// The profile whose input is mirrored.
+  leader: String,
+  followers: Vec<String>,
+  #[serde(default)]
+  headless: bool,
+}
+
+#[derive(Deserialize)]
+struct SynchronizerStopRequest {
+  session_id: String,
+}
+
+/// Not part of Octo's API: start the profiles and mirror the leader's input
+/// in the followers.
+async fn start_synchronizer(
+  State(state): State<ApiState>,
+  Json(req): Json<SynchronizerStartRequest>,
+) -> ApiResult {
+  let leader = find_profile(&req.leader)?.id.to_string();
+  let mut followers = Vec::new();
+  for uuid in &req.followers {
+    followers.push(find_profile(uuid)?.id.to_string());
+  }
+  let session = crate::synchronizer::SynchronizerManager::instance()
+    .start_session_with(state.app_handle.clone(), leader, followers, req.headless)
+    .await
+    .map_err(bad_request)?;
+  Ok(envelope(json!(session)))
+}
+
+async fn stop_synchronizer(
+  State(state): State<ApiState>,
+  Json(req): Json<SynchronizerStopRequest>,
+) -> ApiResult {
+  crate::synchronizer::SynchronizerManager::instance()
+    .stop_session(state.app_handle.clone(), &req.session_id)
+    .await
+    .map_err(|e| ApiError(StatusCode::NOT_FOUND, e))?;
+  Ok(envelope(json!({ "stopped": true })))
+}
+
 async fn cookie_robot_status() -> ApiResult {
   Ok(envelope(cookie_robot_json()))
 }
@@ -720,6 +763,10 @@ fn router(app_handle: tauri::AppHandle) -> Router {
     .route(
       "/api/v2/automation/proxies",
       get(list_proxies).post(create_proxy).delete(delete_proxies),
+    )
+    .route(
+      "/api/v2/automation/synchronizer",
+      post(start_synchronizer).delete(stop_synchronizer),
     )
     .route(
       "/api/v2/automation/cookie_robot",

@@ -26,13 +26,19 @@ Fork-specific rules:
   profile and passed with Chromium's fake-capture switches. A page gets the video; one that
   lists devices sees "Fake Audio Input" microphones and a camera named after the file, which
   the free build cannot rename.
+- The synchronizer takes CloakBrowser profiles as well as Wayfern ones. Followers are replayed
+  over DevTools as before; a CloakBrowser leader has no native input capture, so
+  `synchronizer_capture.rs` watches it from an isolated world of the page (a listener script and
+  a binding the page's own scripts cannot see, re-armed after every top-level navigation, no
+  `Runtime.enable`). Input inside frames is not mirrored. Also on the local API as
+  `POST/DELETE /api/v2/automation/synchronizer`, where `headless` runs a session without windows.
 - SSH is a proxy type (`ssh://user:password@host:port`, password or keyboard-interactive
   login). `ssh_upstream.rs` runs inside the local proxy worker: one session per upstream, one
   `direct-tcpip` channel per browser connection, TCP only. Host keys are not pinned.
 - Put fork code in its own modules and keep edits to upstream files small, so upstream merges
   stay easy. Fork modules: `browser_runner/{launch_network,engine_common,camoufox,cloakbrowser}.rs`,
   `api_client/{camoufox,cloakbrowser}.rs`, `camoufox/`, `camoufox_manager.rs`,
-  `cloakbrowser_manager.rs`, `cloakbrowser_camera.rs`,
+  `cloakbrowser_manager.rs`, `cloakbrowser_camera.rs`, `synchronizer_capture.rs`,
   `profile/{after_exit,camoufox,cloakbrowser}.rs`, `ssh_upstream.rs`,
   `cookie_robot.rs`, `octo_compat_api.rs`, and on the frontend
   `cloakbrowser-config-{form,dialog}.tsx`, `camoufox-config-dialog.tsx`,
@@ -128,6 +134,7 @@ donutbrowser/
 │   │   ├── extension_fetch.rs      # Web Store link/id and direct .crx/.zip import, CRX3 unwrapping
 │   │   ├── group_manager.rs        # Profile group management
 │   │   ├── synchronizer.rs         # Real-time profile synchronizer (pause/resume, hold a follower out, window layouts)
+│   │   ├── synchronizer_capture.rs # Leader input capture for engines without Wayfern's own (fork)
 │   │   ├── daemon/                 # Background daemon + tray icon (currently disabled)
 │   │   └── cloud_auth.rs           # Cloud authentication
 │   ├── tests/                      # Integration tests

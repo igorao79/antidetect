@@ -86,7 +86,7 @@ import { LaunchArgumentsEditor } from "@/components/wayfern-config-form";
 import { WindowDragArea } from "@/components/window-drag-area";
 import { useInputModality } from "@/hooks/use-input-modality";
 import { translateBackendError } from "@/lib/backend-errors";
-import { getProfileIcon } from "@/lib/browser-utils";
+import { getProfileIcon, supportsSynchronizer } from "@/lib/browser-utils";
 import { DNS_BLOCKLIST_LEVELS } from "@/lib/dns-blocklist-levels";
 import { formatRelativeTime } from "@/lib/flag-utils";
 import { MOTION_EASE_OUT } from "@/lib/motion";
@@ -770,7 +770,7 @@ function ProfileInfoContents({
       },
       disabled: isDisabled || isRunning || !crossOsUnlocked,
       proBadge: !crossOsUnlocked,
-      hidden: profile.browser !== "wayfern" || !onLaunchWithSync,
+      hidden: !supportsSynchronizer(profile.browser) || !onLaunchWithSync,
     },
     {
       id: "cookiesCopy",

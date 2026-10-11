@@ -30,7 +30,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { parseBackendError, translateBackendError } from "@/lib/backend-errors";
-import { isCrossOsProfile } from "@/lib/browser-utils";
+import { isCrossOsProfile, supportsSynchronizer } from "@/lib/browser-utils";
 import type {
   BrowserProfile,
   SyncSessionInfo,
@@ -90,7 +90,7 @@ export function SyncFollowerDialog({
       allProfiles.filter(
         (p) =>
           p.id !== leaderProfile?.id &&
-          p.browser === "wayfern" &&
+          supportsSynchronizer(p.browser) &&
           !runningProfiles.has(p.id) &&
           !isCrossOsProfile(p),
       ),

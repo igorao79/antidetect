@@ -107,6 +107,7 @@ pub mod socks5_local;
 pub mod ssh_upstream;
 pub mod sync;
 mod synchronizer;
+mod synchronizer_capture;
 mod system_proxy;
 pub mod traffic_stats;
 mod wayfern_cdp;
