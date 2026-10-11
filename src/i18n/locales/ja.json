@@ -2446,7 +2446,8 @@
     "cookieRobotNoControl": "ブラウザは起動しましたが、制御できませんでした: {{detail}}",
     "cameraVideoNotFound": "動画ファイルが見つかりません。",
     "cameraVideoNeedsFfmpeg": "この動画は変換が必要ですが、ffmpeg がインストールされていません。ffmpeg をインストールするか、.mjpeg ファイルを選択してください。",
-    "cameraVideoConversionFailed": "動画を変換できませんでした: {{detail}}"
+    "cameraVideoConversionFailed": "動画を変換できませんでした: {{detail}}",
+    "locationDatabaseUnavailable": "位置情報データベースのダウンロードがまだ完了していないため、プロファイルのタイムゾーンと言語をアドレスに合わせられません。1 分後にもう一度試すか、このプロファイルの自動位置設定をオフにしてください。"
   },
   "rail": {
     "profiles": "プロファイル",

@@ -2446,7 +2446,8 @@
     "cookieRobotNoControl": "Trình duyệt đã khởi động nhưng không điều khiển được: {{detail}}",
     "cameraVideoNotFound": "Không tìm thấy tệp video.",
     "cameraVideoNeedsFfmpeg": "Video này cần được chuyển đổi nhưng chưa cài ffmpeg. Hãy cài ffmpeg hoặc chọn tệp .mjpeg.",
-    "cameraVideoConversionFailed": "Không thể chuyển đổi video: {{detail}}"
+    "cameraVideoConversionFailed": "Không thể chuyển đổi video: {{detail}}",
+    "locationDatabaseUnavailable": "Cơ sở dữ liệu vị trí chưa tải xong nên múi giờ và ngôn ngữ của hồ sơ chưa thể khớp với địa chỉ của nó. Hãy thử lại sau một phút hoặc tắt vị trí tự động cho hồ sơ này."
   },
   "rail": {
     "profiles": "Profile",

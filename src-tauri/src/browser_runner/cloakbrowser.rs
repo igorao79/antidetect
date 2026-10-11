@@ -1,6 +1,6 @@
 //! CloakBrowser (Chromium) launch, open-URL and stop paths of `BrowserRunner`.
 
-use super::engine_common::{exit_ip, force_kill, process_is_gone};
+use super::engine_common::{exit_ip, force_kill, process_is_gone, require_location_database};
 use super::{emit_launch_stage, BrowserRunner};
 use crate::cloakbrowser_manager::{self, ExitLocation, LaunchRequest};
 use crate::profile::BrowserProfile;
@@ -45,6 +45,11 @@ impl BrowserRunner {
     }
 
     let executable = self.get_browser_executable_path(profile)?;
+
+    // A timezone or language left to follow the exit comes from the database.
+    if config.timezone.is_none() || config.locale.is_none() {
+      require_location_database(&app_handle).await?;
+    }
 
     emit_launch_stage(profile, "network", None);
     // SOCKS5 lets Chromium send UDP (QUIC, WebRTC) and name lookups through

@@ -3,7 +3,7 @@
 //! Restored from upstream Donut (removed in 23859333c6) and adapted to the
 //! current launch pipeline via [`super::launch_network`].
 
-use super::engine_common::{exit_ip, force_kill, process_is_gone};
+use super::engine_common::{exit_ip, force_kill, process_is_gone, require_location_database};
 use super::{emit_launch_stage, BrowserRunner};
 use crate::camoufox_manager::{CamoufoxConfig, CamoufoxManager};
 use crate::profile::BrowserProfile;
@@ -67,6 +67,12 @@ impl BrowserRunner {
       );
       CamoufoxConfig::default()
     });
+
+    // Automatic location needs the database; an explicit address needs it
+    // too, to be turned into a place.
+    if !matches!(camoufox_config.geoip, Some(serde_json::Value::Bool(false))) {
+      require_location_database(&app_handle).await?;
+    }
 
     emit_launch_stage(profile, "network", None);
     // Firefox's QUIC stack bypasses a configured proxy, so Camoufox keeps the

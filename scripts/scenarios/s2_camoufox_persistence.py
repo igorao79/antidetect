@@ -12,7 +12,12 @@ check("recovered ws_endpoint is usable", running[uuid]["ws_endpoint"].endswith("
 stop(uuid); time.sleep(3)
 
 status, started = start(uuid)
+# The first emoji drawn in a session uses a fallback glyph and makes Firefox
+# load the emoji font in the background; every later drawing uses that font.
+# Shapes and Latin text do not change. So the first reading is thrown away:
+# it differs once, and not because of canvas noise.
 check("start", status == 200, str(started)[:160]); time.sleep(4)
+probe(started, url="https://example.com"); time.sleep(6)
 before = probe(started, url="https://example.com", set_cookie="antidetect_session=abc123")
 again = probe(started, url="https://example.com")
 check("canvas stable within a session", before["canvasHash"] == again["canvasHash"])

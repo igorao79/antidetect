@@ -66,6 +66,12 @@ running dev app):
   languages (`geolocation::get_profile_geolocation`). Upstream's draw across CLDR speaker
   shares counts second languages and dialects (a German exit came out `de` 37% of the time,
   `en` 26%, `bar` 7%) and is kept only for Wayfern.
+- A launch whose location follows the exit waits for the GeoIP database (a fresh install is
+  still downloading it) and fails with `LOCATION_DATABASE_UNAVAILABLE` after 150 s. Without the
+  database the browser came up with this machine's own timezone and a default language.
+- The first emoji a Camoufox session draws on a canvas uses a fallback glyph while Firefox
+  loads the emoji font; that one reading differs from every later one. Shapes and Latin text
+  are stable from the start, so this is font loading and not canvas noise.
 - After a browser exits, `profile/after_exit.rs` drops an ephemeral profile's data, applies
   clear-on-close and deletes a temporary profile, on a stop and when the user closes the
   window. Wayfern has the same steps inline in `browser_runner.rs`.
