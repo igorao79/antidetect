@@ -90,8 +90,9 @@ impl ProfileManager {
           let _ = crate::proxy_manager::PROXY_MANAGER.update_proxy_pid(prev, new);
         }
         (Some(_), None) => {
-          if profile.ephemeral {
-            crate::ephemeral_dirs::remove_ephemeral_dir(&profile.id.to_string());
+          super::after_exit::settle(app_handle, profile).await;
+          if profile.temporary {
+            return Ok(false);
           }
           if let Some(updated) = crate::auto_updater::AutoUpdater::instance()
             .update_profile_to_latest_installed(app_handle, &latest)

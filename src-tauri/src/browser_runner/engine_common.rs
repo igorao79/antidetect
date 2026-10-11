@@ -150,9 +150,8 @@ impl BrowserRunner {
 
     if profile.password_protected {
       crate::profile::password::complete_after_quit_and_wait(profile).await;
-    } else if profile.ephemeral {
-      crate::ephemeral_dirs::remove_ephemeral_dir(&profile.id.to_string());
     }
+    crate::profile::after_exit::settle(app_handle, profile).await;
 
     if let Ok(consolidated) = self
       .downloaded_browsers_registry

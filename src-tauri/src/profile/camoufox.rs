@@ -4,6 +4,11 @@ use crate::camoufox_manager::CamoufoxConfig;
 use crate::proxy_manager::PROXY_MANAGER;
 use serde_json::Value;
 
+/// How long a successful proxy check answers for the next profile. A series of
+/// profiles on one proxy is created within moments of each other, and one
+/// measurement serves them all.
+const EXIT_REUSE_SECS: u64 = 120;
+
 /// The config a new profile's fingerprint is generated from: the user's own,
 /// located at the exit of the proxy the profile will use.
 ///
@@ -28,9 +33,22 @@ pub(super) async fn config_for_generation(
   let Some(settings) = PROXY_MANAGER.get_proxy_settings_by_id(proxy_id) else {
     return Ok(generation);
   };
-  let exit = PROXY_MANAGER
-    .check_proxy_validity(proxy_id, &settings)
-    .await?;
-  generation.geoip = Some(Value::String(exit.ip));
+  let recent = PROXY_MANAGER
+    .get_cached_proxy_check(proxy_id)
+    .filter(|check| {
+      check.is_valid
+        && !check.ip.is_empty()
+        && crate::proxy_manager::now_secs().saturating_sub(check.timestamp) <= EXIT_REUSE_SECS
+    });
+  let exit_ip = match recent {
+    Some(check) => check.ip,
+    None => {
+      PROXY_MANAGER
+        .check_proxy_validity(proxy_id, &settings)
+        .await?
+        .ip
+    }
+  };
+  generation.geoip = Some(Value::String(exit_ip));
   Ok(generation)
 }

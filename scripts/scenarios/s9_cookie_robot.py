@@ -32,6 +32,11 @@ def wait_finished(timeout=240):
     raise RuntimeError("the robot did not finish")
 
 created = []
+
+def still_open():
+    """Which of this scenario's profiles are running (others may be, from s1)."""
+    return [p["uuid"] for p in api("GET", "/api/profiles/active")[1] if p["uuid"] in created]
+
 try:
     for browser in ("camoufox", "cloakbrowser"):
         created.append(create(f"S9 {browser}", "win", browser=browser))
@@ -52,8 +57,7 @@ try:
         check(f"{p['name']}: finished", p["state"] == "done", f"{p['state']} {p.get('error')}")
         check(f"{p['name']}: two sites opened, one did not", (p["visited"], p["unreachable"]) == (2, 1), f"visited {p['visited']}, unreachable {p['unreachable']}")
     check("each profile reached both pages", sum("/first" in h for h in hits) >= 2 and sum("/second" in h for h in hits) >= 2, f"{len(hits)} requests")
-    status, active = api("GET", "/api/profiles/active")
-    check("the robot closed the profiles it opened", active == [], str(active)[:120])
+    check("the robot closed the profiles it opened", not still_open(), str(still_open()))
 
     for u in created:
         status, st = start(u)
@@ -71,8 +75,7 @@ try:
     check("the run can be stopped", status == 200 and r["data"]["stopped"], str(r)[:120])
     stopped = wait_finished(90)
     check("stopped profiles are reported as stopped", all(p["state"] == "cancelled" for p in stopped["profiles"]), str([p["state"] for p in stopped["profiles"]]))
-    status, active = api("GET", "/api/profiles/active")
-    check("nothing is left running after a stop", active == [], str(active)[:120])
+    check("nothing of the run is left open after a stop", not still_open(), str(still_open()))
 finally:
     api("DELETE", ROBOT)
     for u in created: stop(u)
