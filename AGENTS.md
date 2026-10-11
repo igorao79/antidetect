@@ -14,7 +14,8 @@ Fork-specific rules:
   145) is the Chromium option; Wayfern stays available for a paid subscription and is only
   downloaded on demand. Only Camoufox and CloakBrowser are fetched at startup.
 - `octo_compat_api.rs` serves an Octo Browser compatible API on `127.0.0.1:58888` (no token,
-  loopback only): profile start/stop/active plus profile and proxy list/create/delete.
+  loopback only): profile start/stop/active, one-time profiles (`/api/profiles/one_time/start`,
+  deleted when their browser stops) plus profile and proxy list/create/delete.
 - Cookie Robot (`cookie_robot.rs`, `cookie-robot-dialog.tsx`, "Warm up cookies" in the selection
   bar's menu) is the local counterpart of Donut's cloud Cookie Bot: it launches each selected
   profile, walks a site list over CDP or WebDriver BiDi with pauses and scrolling, and closes it.
@@ -25,7 +26,7 @@ Fork-specific rules:
 - Put fork code in its own modules and keep edits to upstream files small, so upstream merges
   stay easy. Fork modules: `browser_runner/{launch_network,engine_common,camoufox,cloakbrowser}.rs`,
   `api_client/{camoufox,cloakbrowser}.rs`, `camoufox/`, `camoufox_manager.rs`,
-  `cloakbrowser_manager.rs`, `profile/{camoufox,cloakbrowser}.rs`, `ssh_upstream.rs`,
+  `cloakbrowser_manager.rs`, `profile/{after_exit,camoufox,cloakbrowser}.rs`, `ssh_upstream.rs`,
   `cookie_robot.rs`, `octo_compat_api.rs`, and on the frontend
   `cloakbrowser-config-{form,dialog}.tsx`, `camoufox-config-dialog.tsx`,
   `shared-camoufox-config-form.tsx`, `cookie-robot-dialog.tsx`.
@@ -48,10 +49,13 @@ running dev app):
   address (unless the profile turned automatic location off). A new Camoufox fingerprint is
   located through a proxy check, never by handing the proxy to reqwest, which looks up this
   machine's own address for every type it cannot dial (SSH, Shadowsocks, share links).
-- The language for an exit country is drawn from CLDR speaker shares, second languages and
-  dialects included: a German exit gets `de` 37% of the time, `en` 26%, `fr` 7%, `bar` 7%. The
-  draw is tied to the profile id (`geolocation::get_geolocation_for`), so one profile keeps one
-  language; whether to draw only a country's main language is undecided.
+- A profile speaks the main language of its exit country: the most spoken of its official
+  languages (`geolocation::get_profile_geolocation`). Upstream's draw across CLDR speaker
+  shares counts second languages and dialects (a German exit came out `de` 37% of the time,
+  `en` 26%, `bar` 7%) and is kept only for Wayfern.
+- After a browser exits, `profile/after_exit.rs` drops an ephemeral profile's data, applies
+  clear-on-close and deletes a temporary profile, on a stop and when the user closes the
+  window. Wayfern has the same steps inline in `browser_runner.rs`.
 - A debug build with full settings takes 11 GB and more per flavour. `CARGO_INCREMENTAL=0
   CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0` brings it to about 3.5 GB; with the
   frontend built (`pnpm build`), `src-tauri/target/debug/donutbrowser` runs without `tauri dev`.

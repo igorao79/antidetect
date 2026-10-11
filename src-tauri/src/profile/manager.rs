@@ -242,10 +242,9 @@ impl ProfileManager {
         let generation_config =
           super::camoufox::config_for_generation(&config, proxy_id.as_deref()).await?;
 
-        // A stand-in for the profile being created. It carries the real id,
-        // which the fingerprint's language is tied to.
+        // Create a temporary profile for fingerprint generation
         let temp_profile = BrowserProfile {
-          id: profile_id,
+          id: uuid::Uuid::new_v4(),
           name: name.to_string(),
           browser: browser.to_string(),
           version: version.to_string(),
@@ -2285,6 +2284,8 @@ impl ProfileManager {
             if let Err(e) = events::emit("profile-updated", &latest) {
               log::warn!("Warning: Failed to emit profile update event: {e}");
             }
+            // The user closed the window; the app never ran its stop path.
+            super::after_exit::settle(app_handle, &latest).await;
           }
         }
         Ok(false)

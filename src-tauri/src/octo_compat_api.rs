@@ -321,6 +321,14 @@ async fn create_profile(
   State(state): State<ApiState>,
   Json(req): Json<CreateProfileRequest>,
 ) -> ApiResult {
+  let profile = create_from_request(&state.app_handle, req).await?;
+  Ok(envelope(profile_json(&profile)))
+}
+
+async fn create_from_request(
+  app_handle: &tauri::AppHandle,
+  req: CreateProfileRequest,
+) -> Result<BrowserProfile, ApiError> {
   let browser = req.browser.as_deref().unwrap_or("camoufox").to_string();
   let os = fingerprint_os(req.fingerprint.os.as_deref())?;
   let os_for_cloakbrowser = os.clone();
@@ -359,7 +367,7 @@ async fn create_profile(
   let manager = ProfileManager::instance();
   let profile = manager
     .create_profile_with_group(
-      &state.app_handle,
+      app_handle,
       &req.title,
       &browser,
       &version,
@@ -382,7 +390,7 @@ async fn create_profile(
         ..profile.cloakbrowser_config.clone().unwrap_or_default()
       };
       manager
-        .update_cloakbrowser_config(state.app_handle.clone(), &profile.id.to_string(), config)
+        .update_cloakbrowser_config(app_handle.clone(), &profile.id.to_string(), config)
         .await
         .map_err(bad_request)?
     }
@@ -392,10 +400,80 @@ async fn create_profile(
     profile
   } else {
     manager
-      .update_profile_tags(&state.app_handle, &profile.id.to_string(), req.tags)
+      .update_profile_tags(app_handle, &profile.id.to_string(), req.tags)
       .map_err(|e| bad_request(e.to_string()))?
   };
-  Ok(envelope(profile_json(&profile)))
+  Ok(profile)
+}
+
+/// A `start` request and a `create` request in one body: Octo's one-time
+/// profile takes the profile's settings beside the launch options.
+#[derive(Deserialize)]
+struct OneTimeStartRequest {
+  #[serde(default)]
+  title: Option<String>,
+  #[serde(default)]
+  tags: Vec<String>,
+  #[serde(default)]
+  fingerprint: OctoFingerprint,
+  #[serde(default)]
+  proxy: Option<UuidRequest>,
+  #[serde(default)]
+  browser: Option<String>,
+  #[serde(default)]
+  headless: bool,
+  #[serde(default)]
+  debug_port: DebugPort,
+  #[serde(default)]
+  flags: Vec<String>,
+  #[serde(default)]
+  url: Option<String>,
+}
+
+/// Create a profile that lives for one session and start it. Its data stays
+/// in memory, and the profile is deleted when its browser stops.
+async fn start_one_time_profile(
+  State(state): State<ApiState>,
+  Json(req): Json<OneTimeStartRequest>,
+) -> ApiResult {
+  let title = req
+    .title
+    .unwrap_or_else(|| format!("One-time {}", now_secs()));
+  let created = create_from_request(
+    &state.app_handle,
+    CreateProfileRequest {
+      title,
+      tags: req.tags,
+      fingerprint: req.fingerprint,
+      proxy: req.proxy,
+      browser: req.browser,
+    },
+  )
+  .await?;
+  let manager = ProfileManager::instance();
+  let profile = manager
+    .mark_profile_temporary(&created.id.to_string())
+    .map_err(|e| ApiError(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+
+  let started = start_profile(
+    State(state.clone()),
+    Json(StartRequest {
+      uuid: octo_uuid(&profile),
+      headless: req.headless,
+      debug_port: req.debug_port,
+      flags: req.flags,
+      url: req.url,
+    }),
+  )
+  .await;
+  if started.is_err() {
+    // Nothing will ever stop a browser that did not start, so nothing else
+    // would delete the profile.
+    if let Err(e) = manager.delete_profile_permanently(&state.app_handle, &profile.id.to_string()) {
+      log::warn!("Could not delete one-time profile {}: {e}", profile.name);
+    }
+  }
+  started
 }
 
 #[derive(Deserialize)]
@@ -624,6 +702,7 @@ fn router(app_handle: tauri::AppHandle) -> Router {
     .route("/api/profiles/stop", post(stop_profile))
     .route("/api/profiles/force_stop", post(stop_profile))
     .route("/api/profiles/active", get(active_profiles))
+    .route("/api/profiles/one_time/start", post(start_one_time_profile))
     .route(
       "/api/v2/automation/profiles",
       get(list_profiles)
