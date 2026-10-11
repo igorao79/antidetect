@@ -170,7 +170,13 @@ export function CreateProfileDialog({
   const reduceMotion = useReducedMotion() ?? false;
   const inputModality = useInputModality();
   const [profileName, setProfileName] = useState("");
-  const [profileCount, setProfileCount] = useState(1);
+  // Kept as typed, so the field can be emptied and retyped; the number it
+  // stands for is clamped where it is used.
+  const [profileCountText, setProfileCountText] = useState("1");
+  const profileCount = Math.min(
+    MAX_PROFILE_COUNT,
+    Math.max(1, Number.parseInt(profileCountText, 10) || 1),
+  );
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [selectedProxyId, setSelectedProxyId] = useState<string>();
   const [proxyPopoverOpen, setProxyPopoverOpen] = useState(false);
@@ -332,7 +338,7 @@ export function CreateProfileDialog({
   const handleClose = () => {
     versionRequestRef.current += 1;
     setProfileName("");
-    setProfileCount(1);
+    setProfileCountText("1");
     setAdvancedOpen(false);
     setSelectedProxyId(undefined);
     setProxyPopoverOpen(false);
@@ -536,21 +542,21 @@ export function CreateProfileDialog({
                 <span className="flex shrink-0 items-center gap-1 pr-1 text-sm text-muted-foreground">
                   <span aria-hidden="true">×</span>
                   <Input
+                    id="profile-count"
                     variant="bare"
-                    type="number"
                     inputMode="numeric"
-                    min={1}
-                    max={MAX_PROFILE_COUNT}
                     aria-label={t("createProfile.count")}
-                    value={profileCount}
+                    value={profileCountText}
                     onChange={(event) => {
-                      const value = Math.trunc(Number(event.target.value)) || 1;
-                      setProfileCount(
-                        Math.min(MAX_PROFILE_COUNT, Math.max(1, value)),
+                      setProfileCountText(
+                        event.target.value.replace(/\D/g, "").slice(0, 2),
                       );
                     }}
+                    onBlur={() => {
+                      setProfileCountText(String(profileCount));
+                    }}
                     disabled={isCreating}
-                    className="h-9 w-12 text-center tabular-nums"
+                    className="h-9 w-10 text-center tabular-nums"
                   />
                 </span>
               </TooltipTrigger>

@@ -151,14 +151,14 @@ export function CookieRobotDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="flex max-h-[calc(100vh-2rem)] max-w-lg flex-col">
         <DialogHeader>
           <DialogTitle>{t("cookieRobot.title")}</DialogTitle>
           <DialogDescription>{t("cookieRobot.description")}</DialogDescription>
         </DialogHeader>
 
         {showSetup ? (
-          <div className="space-y-4">
+          <div className="-mx-1 min-h-0 flex-1 space-y-4 overflow-y-auto px-1">
             <p className="text-sm text-muted-foreground">
               {t("cookieRobot.profilesSelected", {
                 count: selectedProfiles.length,
@@ -180,7 +180,7 @@ export function CookieRobotDialog({
                 autoCapitalize="none"
                 autoComplete="off"
                 spellCheck={false}
-                className="min-h-32 resize-y font-mono text-xs leading-relaxed"
+                className="min-h-24 resize-y font-mono text-xs leading-relaxed"
               />
               <p
                 id={`${fieldId}-sites-hint`}
@@ -190,7 +190,7 @@ export function CookieRobotDialog({
               </p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 items-end gap-3">
               <div className="grid gap-2">
                 <Label htmlFor={`${fieldId}-min`}>
                   {t("cookieRobot.secondsFrom")}
@@ -273,7 +273,7 @@ export function CookieRobotDialog({
             )}
           </div>
         ) : (
-          <ul className="max-h-[min(22rem,50vh)] space-y-3 overflow-y-auto pr-1">
+          <ul className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
             {(status?.profiles ?? []).map((profile) => (
               <li key={profile.profile_id} className="space-y-1.5">
                 <div className="flex items-center justify-between gap-2">

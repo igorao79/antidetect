@@ -1647,24 +1647,16 @@ impl ProfileManager {
     profile_id: &str,
     config: CamoufoxConfig,
   ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    // Find the profile by ID
-    let profile_uuid = uuid::Uuid::parse_str(profile_id).map_err(
-      |_| -> Box<dyn std::error::Error + Send + Sync> {
-        format!("Invalid profile ID: {profile_id}").into()
-      },
-    )?;
-    let profiles =
-      self
-        .list_profiles()
-        .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> {
-          format!("Failed to list profiles: {e}").into()
-        })?;
+    type BoxError = Box<dyn std::error::Error + Send + Sync>;
+    let profile_uuid = uuid::Uuid::parse_str(profile_id)
+      .map_err(|_| -> BoxError { crate::backend_error("INVALID_PROFILE_ID").into() })?;
+    let profiles = self
+      .list_profiles()
+      .map_err(|e| -> BoxError { crate::backend_error_with_detail("INTERNAL_ERROR", e).into() })?;
     let mut profile = profiles
       .into_iter()
       .find(|p| p.id == profile_uuid)
-      .ok_or_else(|| -> Box<dyn std::error::Error + Send + Sync> {
-        format!("Profile with ID '{profile_id}' not found").into()
-      })?;
+      .ok_or_else(|| -> BoxError { crate::backend_error("PROFILE_NOT_FOUND").into() })?;
 
     // Check if the browser is currently running using the comprehensive status check
     let is_running = self
@@ -1672,13 +1664,12 @@ impl ProfileManager {
       .await?;
 
     if is_running {
-      return Err(
-        "Cannot update Camoufox configuration while browser is running. Please stop the browser first.".into(),
-      );
+      return Err(crate::backend_error("PROFILE_RUNNING").into());
     }
 
     // Update the Camoufox configuration
     profile.camoufox_config = Some(config);
+    profile.updated_at = Some(crate::proxy_manager::now_secs());
 
     // Save the updated profile
     self
@@ -3234,7 +3225,7 @@ pub async fn update_camoufox_config(
   profile_manager
     .update_camoufox_config(app_handle, &profile_id, config)
     .await
-    .map_err(|e| format!("Failed to update Camoufox config: {e}"))
+    .map_err(|e| crate::wrap_backend_error(e, "Failed to update Camoufox config"))
 }
 
 #[tauri::command]
