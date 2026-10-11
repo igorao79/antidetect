@@ -275,6 +275,25 @@ impl DownloadedBrowsersRegistry {
         for version in versions.keys() {
           let browser_version = (browser.clone(), version.clone());
 
+          // CloakBrowser keeps two builds whatever uses them. The free one is
+          // what new profiles fall back to when a Pro licence ends; the
+          // newest Pro one, while a licence key is set, is what new profiles
+          // are created on.
+          if browser == "cloakbrowser" {
+            use crate::api_client::ApiClient;
+            if ApiClient::cloakbrowser_version() == Some(version.as_str()) {
+              log::info!("Keeping: {browser} {version} (the free build)");
+              continue;
+            }
+            let newest = versions
+              .keys()
+              .max_by(|a, b| crate::api_client::compare_versions(a, b));
+            if newest == Some(version) && ApiClient::cloakbrowser_license_key().is_some() {
+              log::info!("Keeping: {browser} {version} (the licensed Pro build)");
+              continue;
+            }
+          }
+
           // Don't remove if it's used by any active profile
           if active_set.contains(&browser_version) {
             log::info!("Keeping: {browser} {version} (in use by profile)");
@@ -1547,14 +1566,21 @@ pub async fn ensure_active_browsers_downloaded(
   for browser in &["camoufox", "cloakbrowser"] {
     // Check if any version is already downloaded
     let existing = registry.get_downloaded_versions(browser);
-    if !existing.is_empty() {
+    // A CloakBrowser Pro licence with no Pro build on disk yet is a reason to
+    // fetch one, even though the free build is there.
+    let missing_pro = *browser == "cloakbrowser"
+      && crate::api_client::ApiClient::cloakbrowser_license_key().is_some()
+      && !existing
+        .iter()
+        .any(|version| crate::api_client::ApiClient::cloakbrowser_is_pro(version));
+    if !existing.is_empty() && !missing_pro {
       log::info!(
         "ensure_active: Skipping {browser}: already have {} version(s) downloaded",
         existing.len()
       );
       continue;
     }
-    log::info!("ensure_active: No {browser} versions found, will download");
+    log::info!("ensure_active: {browser} needs a download");
 
     // Resolve the version to download. For wayfern, only the currently
     // published version is downloadable, so ask the API fresh — the release-type

@@ -5,6 +5,8 @@ if os.path.exists("s3-ids.json"):
     for u in old.values(): stop(u)
     time.sleep(2); delete(*old.values())
 ids = {os_name: create(f"S3 cloak {os_name}", os_name, browser="cloakbrowser") for os_name in ("win", "mac")}
+# The build each profile runs on: the free one, or a Pro one when a licence key is set.
+versions = {p["uuid"]: p["version"] for p in api("GET", "/api/v2/automation/profiles")[1]["data"]}
 json.dump(ids, open("s3-ids.json", "w"))
 def deep(started, script="canvas-reads.js"):
     out = subprocess.run(["node", "cdp-eval.mjs", str(started["debug_port"]), script], cwd=HERE, capture_output=True, text=True, timeout=90)
@@ -26,7 +28,8 @@ for os_name, fp in fps.items():
     check(f"{os_name}: platform matches OS", fp["platform"] == plat, fp["platform"])
     check(f"{os_name}: UA matches OS", ua in fp["userAgent"])
     check(f"{os_name}: client hints platform matches OS", fp.get("uaDataPlatform") == uad, str(fp.get("uaDataPlatform")))
-    check(f"{os_name}: UA names the real engine (Chrome/145)", "Chrome/145." in fp["userAgent"])
+    major = versions[ids[os_name]].split(".")[0]
+    check(f"{os_name}: UA names the real engine (Chrome/{major})", f"Chrome/{major}." in fp["userAgent"], fp["userAgent"])
     check(f"{os_name}: navigator.webdriver is false", fp["webdriver"] is False)
     if expected("EXPECT_TZ"):
         check(f"{os_name}: timezone follows the exit address", fp["timezone"] in expected("EXPECT_TZ"), fp["timezone"])
@@ -35,7 +38,7 @@ for os_name, fp in fps.items():
 check("getImageData noise differs between seeds", canv["win"]["getImageData"][0] != canv["mac"]["getImageData"][0], f'{canv["win"]["getImageData"][0]} vs {canv["mac"]["getImageData"][0]}')
 check("getImageData noise is stable within a profile", canv["win"]["getImageData"][0] == canv["win"]["getImageData"][1])
 if canv["win"]["toDataURL"] == canv["mac"]["toDataURL"]:
-    note("toDataURL is identical across seeds: this build only noises getImageData/readPixels (known limit of the free v145 macOS build)")
+    note("toDataURL is identical across seeds: the free build only noises getImageData/readPixels (a Pro build closes this, see s13)")
 else:
     note("toDataURL differs between seeds")
 uuid = ids["win"]

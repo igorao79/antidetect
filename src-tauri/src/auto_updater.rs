@@ -506,6 +506,9 @@ impl AutoUpdater {
     if !self.is_version_newer(&latest, &profile.version) {
       return None;
     }
+    if !crate::browser_runner::stays_in_tier(profile, &latest) {
+      return None;
+    }
 
     match self
       .profile_manager

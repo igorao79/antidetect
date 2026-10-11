@@ -24,6 +24,16 @@ fn emit_running_changed(profile: &BrowserProfile, is_running: bool) {
   }
 }
 
+/// Whether moving `profile` to `version` keeps it on the kind of build it is
+/// on. A CloakBrowser profile never crosses between the free build and a Pro
+/// one by itself: a profile a newer Chromium has opened cannot go back, and
+/// the Pro build stops working when its licence does.
+pub(crate) fn stays_in_tier(profile: &BrowserProfile, version: &str) -> bool {
+  use crate::api_client::ApiClient;
+  profile.browser != "cloakbrowser"
+    || ApiClient::cloakbrowser_is_pro(version) == ApiClient::cloakbrowser_is_pro(&profile.version)
+}
+
 /// How long a launch waits for the location database a fresh install is still
 /// downloading.
 const LOCATION_DATABASE_WAIT: Duration = Duration::from_secs(150);
@@ -148,9 +158,12 @@ impl BrowserRunner {
       .save_process_info(&updated_profile)
       .map_err(|e| format!("Failed to update profile: {e}"))?;
 
-    if let Ok(Some(pending_update)) = self
+    if let Some(pending_update) = self
       .auto_updater
       .get_pending_update(&profile.browser, &profile.version)
+      .ok()
+      .flatten()
+      .filter(|update| stays_in_tier(profile, &update.new_version))
     {
       match self.profile_manager.update_profile_version(
         app_handle,
@@ -200,5 +213,35 @@ impl BrowserRunner {
       }
     }
     Ok(())
+  }
+}
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  fn profile(browser: &str, version: &str) -> BrowserProfile {
+    BrowserProfile {
+      browser: browser.to_string(),
+      version: version.to_string(),
+      ..Default::default()
+    }
+  }
+
+  #[test]
+  fn a_cloakbrowser_profile_never_crosses_between_the_free_and_a_pro_build() {
+    let Some(free) = crate::api_client::ApiClient::cloakbrowser_version() else {
+      return;
+    };
+    let pro = "154.0.8037.57.1";
+    assert!(!stays_in_tier(&profile("cloakbrowser", free), pro));
+    assert!(!stays_in_tier(&profile("cloakbrowser", pro), free));
+    // Within a tier, and for every other engine, an update goes ahead.
+    assert!(stays_in_tier(&profile("cloakbrowser", pro), "155.0.1.1"));
+    assert!(stays_in_tier(&profile("cloakbrowser", free), free));
+    assert!(stays_in_tier(
+      &profile("camoufox", "v156.0.1-beta.36"),
+      "v157.0-beta.1"
+    ));
   }
 }

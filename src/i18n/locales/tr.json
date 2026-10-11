@@ -2447,7 +2447,12 @@
     "cameraVideoNotFound": "Video dosyası bulunamadı.",
     "cameraVideoNeedsFfmpeg": "Bu videonun dönüştürülmesi gerekiyor ama ffmpeg kurulu değil. ffmpeg kurun veya bir .mjpeg dosyası seçin.",
     "cameraVideoConversionFailed": "Video dönüştürülemedi: {{detail}}",
-    "locationDatabaseUnavailable": "Konum veritabanının indirilmesi henüz bitmedi; bu yüzden profilin saat dilimi ve dili adresiyle eşleştirilemiyor. Bir dakika sonra yeniden deneyin veya bu profil için otomatik konumu kapatın."
+    "locationDatabaseUnavailable": "Konum veritabanının indirilmesi henüz bitmedi; bu yüzden profilin saat dilimi ve dili adresiyle eşleştirilemiyor. Bir dakika sonra yeniden deneyin veya bu profil için otomatik konumu kapatın.",
+    "cloakbrowserLicenseRequired": "Bu profil bir CloakBrowser Pro derlemesiyle çalışıyor ve lisans anahtarı ayarlanmamış. Anahtarı ~/.cloakbrowser/license.key dosyasına kaydedip yeniden deneyin.",
+    "cloakbrowserLicenseInvalid": "CloakBrowser Pro lisans anahtarını reddetti: anahtar geçersiz veya süresi dolmuş.",
+    "cloakbrowserLicenseUnreachable": "CloakBrowser Pro lisansı doğrulayamadı: sunucusu yanıt vermedi. Bağlantıyı kontrol edip yeniden deneyin.",
+    "cloakbrowserLicenseSetup": "CloakBrowser Pro başlatılamadı: ~/.cloakbrowser klasörüne yazılamıyor.",
+    "cloakbrowserSessionLimit": "CloakBrowser Pro: planınızın aynı anda çalışan tarayıcı sınırına ulaşıldı. Birini kapatıp yeniden deneyin."
   },
   "rail": {
     "profiles": "Profiller",

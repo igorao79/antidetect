@@ -363,6 +363,11 @@ async fn create_from_request(
 
   let mut versions = crate::downloaded_browsers_registry::DownloadedBrowsersRegistry::instance()
     .get_downloaded_versions(&browser);
+  if browser == "cloakbrowser" && crate::api_client::ApiClient::cloakbrowser_license_key().is_none()
+  {
+    // Without a licence key a Pro build on disk cannot start.
+    versions.retain(|version| !crate::api_client::ApiClient::cloakbrowser_is_pro(version));
+  }
   versions.sort_by(|a, b| crate::api_client::compare_versions(b, a));
   let version = versions
     .into_iter()

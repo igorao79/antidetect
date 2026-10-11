@@ -45,6 +45,10 @@ impl BrowserRunner {
     }
 
     let executable = self.get_browser_executable_path(profile)?;
+    let pro = crate::api_client::ApiClient::cloakbrowser_is_pro(&profile.version);
+    if pro && crate::api_client::ApiClient::cloakbrowser_license_key().is_none() {
+      return Err(crate::backend_error("CLOAKBROWSER_LICENSE_REQUIRED").into());
+    }
 
     // A timezone or language left to follow the exit comes from the database.
     if config.timezone.is_none() || config.locale.is_none() {
@@ -116,6 +120,7 @@ impl BrowserRunner {
       ephemeral: profile.ephemeral,
       extension_paths: &extension_paths,
       camera_dir: camera_dir.as_deref(),
+      pro,
     })
     .await
     .map_err(|e| -> BoxError {

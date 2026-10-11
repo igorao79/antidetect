@@ -1,7 +1,10 @@
 //! CloakBrowser (anti-detect Chromium) builds from cloakbrowser.dev.
 //!
-//! Only the builds CloakHQ offers without a subscription are listed. Newer
-//! majors need a paid CloakBrowser Pro key and are not downloadable here.
+//! Two tiers. The free build is one pinned version per platform. With a
+//! CloakBrowser Pro licence key (`CLOAKBROWSER_LICENSE_KEY`, or
+//! `~/.cloakbrowser/license.key`, where the binary itself looks) the current
+//! Pro build is offered as well: its version is asked of CloakHQ's server and
+//! its archive is downloaded with the key.
 //!
 //! Every release publishes `SHA256SUMS` and a detached Ed25519 signature
 //! `SHA256SUMS.sig`. The signature is checked against CloakHQ's published key
@@ -16,9 +19,103 @@ const DOWNLOAD_BASE_URL: &str = "https://cloakbrowser.dev";
 /// pinned by their own wrapper. More than one entry allows key rotation.
 const SIGNING_PUBKEYS: &[&str] = &["MKFKwIhUcKWq5xTuNA0Ovg99njcDEcEJvmWYYhApvaU="];
 
+/// Sent with every Pro request so the server answers for this machine's build.
+const PLATFORM_HEADER: &str = "X-Platform";
+
 type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
+/// A licence key as it is used: trimmed, and nothing at all when blank.
+fn clean_key(raw: &str) -> Option<String> {
+  let key = raw.trim();
+  (!key.is_empty()).then(|| key.to_string())
+}
+
 impl ApiClient {
+  /// Where the Pro binary reads its key from when the environment has none.
+  pub fn cloakbrowser_license_file() -> Option<std::path::PathBuf> {
+    dirs::home_dir().map(|home| home.join(".cloakbrowser").join("license.key"))
+  }
+
+  /// The CloakBrowser Pro licence key in effect, if there is one.
+  pub fn cloakbrowser_license_key() -> Option<String> {
+    std::env::var("CLOAKBROWSER_LICENSE_KEY")
+      .ok()
+      .and_then(|key| clean_key(&key))
+      .or_else(|| {
+        let file = Self::cloakbrowser_license_file()?;
+        clean_key(&std::fs::read_to_string(file).ok()?)
+      })
+  }
+
+  /// Whether `version` is a Pro build: any CloakBrowser version other than
+  /// this platform's free one.
+  pub fn cloakbrowser_is_pro(version: &str) -> bool {
+    Self::cloakbrowser_version().is_some_and(|free| free != version)
+  }
+
+  /// The current Pro build for this machine, as CloakHQ's server names it.
+  pub async fn fetch_cloakbrowser_pro_version(&self) -> Result<String, BoxError> {
+    let (tag, _) =
+      Self::cloakbrowser_platform().ok_or("CloakBrowser has no build for this platform")?;
+    let response = self
+      .client
+      .get(format!("{DOWNLOAD_BASE_URL}/api/download/version"))
+      .header("User-Agent", "antidetect-browser")
+      .header(PLATFORM_HEADER, tag)
+      .timeout(std::time::Duration::from_secs(15))
+      .send()
+      .await?;
+    if !response.status().is_success() {
+      return Err(
+        format!(
+          "CloakBrowser Pro version: HTTP {}",
+          response.status().as_u16()
+        )
+        .into(),
+      );
+    }
+    let body: serde_json::Value = response.json().await?;
+    body["version"]
+      .as_str()
+      .filter(|version| !version.is_empty())
+      .map(str::to_string)
+      .ok_or_else(|| "CloakBrowser Pro version: the server named none".into())
+  }
+
+  /// Every build this machine can install, newest first: the Pro build when a
+  /// key is set and the server can be asked, then the free one.
+  pub async fn cloakbrowser_versions(&self) -> Vec<String> {
+    let mut versions = Vec::new();
+    if Self::cloakbrowser_license_key().is_some() {
+      match self.fetch_cloakbrowser_pro_version().await {
+        Ok(version) => versions.push(version),
+        Err(e) => log::warn!("Could not learn the CloakBrowser Pro version: {e}"),
+      }
+    }
+    if let Some(free) = Self::cloakbrowser_version() {
+      if !versions.iter().any(|version| version == free) {
+        versions.push(free.to_string());
+      }
+    }
+    versions
+  }
+
+  /// The headers a download of `url` needs beyond the usual ones: the licence
+  /// key and platform for a Pro archive, nothing for anything else.
+  pub fn cloakbrowser_download_headers(url: &str) -> Vec<(&'static str, String)> {
+    if !url.starts_with(&format!("{DOWNLOAD_BASE_URL}/api/download/")) {
+      return Vec::new();
+    }
+    let mut headers = Vec::new();
+    if let Some(key) = Self::cloakbrowser_license_key() {
+      headers.push(("Authorization", format!("Bearer {key}")));
+    }
+    if let Some((tag, _)) = Self::cloakbrowser_platform() {
+      headers.push((PLATFORM_HEADER, tag.to_string()));
+    }
+    headers
+  }
+
   /// `(platform tag, free Chromium build)` for this machine.
   fn cloakbrowser_platform() -> Option<(&'static str, &'static str)> {
     let (os, arch) = Self::get_platform_info();
@@ -50,7 +147,12 @@ impl ApiClient {
 
   pub fn cloakbrowser_download_url(version: &str) -> Option<String> {
     let archive = Self::cloakbrowser_archive_name()?;
-    Some(format!("{DOWNLOAD_BASE_URL}/chromium-v{version}/{archive}"))
+    Some(if Self::cloakbrowser_is_pro(version) {
+      // The server picks the archive from the platform header.
+      format!("{DOWNLOAD_BASE_URL}/api/download/{version}")
+    } else {
+      format!("{DOWNLOAD_BASE_URL}/chromium-v{version}/{archive}")
+    })
   }
 
   /// The SHA-256 the signed manifest of `version` lists for this machine's
@@ -58,7 +160,13 @@ impl ApiClient {
   pub async fn cloakbrowser_archive_digest(&self, version: &str) -> Result<String, BoxError> {
     let archive =
       Self::cloakbrowser_archive_name().ok_or("CloakBrowser has no build for this platform")?;
-    let base = format!("{DOWNLOAD_BASE_URL}/chromium-v{version}");
+    // Pro releases are signed with the same keys and published beside the
+    // free ones.
+    let base = if Self::cloakbrowser_is_pro(version) {
+      format!("{DOWNLOAD_BASE_URL}/releases/pro/chromium-v{version}")
+    } else {
+      format!("{DOWNLOAD_BASE_URL}/chromium-v{version}")
+    };
     let manifest = self.fetch_bytes(&format!("{base}/SHA256SUMS")).await?;
     let signature = self.fetch_bytes(&format!("{base}/SHA256SUMS.sig")).await?;
     digest_from_signed_manifest(&manifest, &signature, version, &archive, SIGNING_PUBKEYS)
@@ -129,6 +237,45 @@ fn digest_from_signed_manifest(
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn a_key_is_trimmed_and_a_blank_one_is_no_key() {
+    assert_eq!(clean_key("  cb_abc\n"), Some("cb_abc".to_string()));
+    assert_eq!(clean_key(" \n"), None);
+  }
+
+  #[test]
+  fn any_version_but_the_pinned_free_one_is_a_pro_build() {
+    let Some(free) = ApiClient::cloakbrowser_version() else {
+      return;
+    };
+    assert!(!ApiClient::cloakbrowser_is_pro(free));
+    assert!(ApiClient::cloakbrowser_is_pro("154.0.8037.57.1"));
+  }
+
+  #[test]
+  fn a_pro_build_is_downloaded_from_the_licensed_endpoint_and_verified_beside_it() {
+    let Some(free) = ApiClient::cloakbrowser_version() else {
+      return;
+    };
+    let free_url = ApiClient::cloakbrowser_download_url(free).unwrap();
+    assert!(free_url.starts_with(&format!("{DOWNLOAD_BASE_URL}/chromium-v{free}/")));
+    // The free archive is public: nothing identifying goes with the request.
+    assert!(ApiClient::cloakbrowser_download_headers(&free_url).is_empty());
+
+    let pro_url = ApiClient::cloakbrowser_download_url("154.0.8037.57.1").unwrap();
+    assert_eq!(
+      pro_url,
+      format!("{DOWNLOAD_BASE_URL}/api/download/154.0.8037.57.1")
+    );
+    let headers = ApiClient::cloakbrowser_download_headers(&pro_url);
+    assert!(headers.iter().any(|(name, _)| *name == PLATFORM_HEADER));
+    // Another host never gets the key, whatever its path looks like.
+    assert!(ApiClient::cloakbrowser_download_headers(
+      "https://example.com/api/download/154.0.8037.57.1"
+    )
+    .is_empty());
+  }
   use base64::{engine::general_purpose::STANDARD, Engine as _};
   use ring::signature::KeyPair;
 

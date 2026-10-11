@@ -15,6 +15,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 mod camoufox;
 mod cloakbrowser;
 mod engine_common;
+pub(crate) use engine_common::stays_in_tier;
 mod launch_network;
 
 static PROFILE_LAUNCH_LOCKS: LazyLock<

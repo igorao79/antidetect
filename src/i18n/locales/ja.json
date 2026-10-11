@@ -2447,7 +2447,12 @@
     "cameraVideoNotFound": "動画ファイルが見つかりません。",
     "cameraVideoNeedsFfmpeg": "この動画は変換が必要ですが、ffmpeg がインストールされていません。ffmpeg をインストールするか、.mjpeg ファイルを選択してください。",
     "cameraVideoConversionFailed": "動画を変換できませんでした: {{detail}}",
-    "locationDatabaseUnavailable": "位置情報データベースのダウンロードがまだ完了していないため、プロファイルのタイムゾーンと言語をアドレスに合わせられません。1 分後にもう一度試すか、このプロファイルの自動位置設定をオフにしてください。"
+    "locationDatabaseUnavailable": "位置情報データベースのダウンロードがまだ完了していないため、プロファイルのタイムゾーンと言語をアドレスに合わせられません。1 分後にもう一度試すか、このプロファイルの自動位置設定をオフにしてください。",
+    "cloakbrowserLicenseRequired": "このプロファイルは CloakBrowser Pro ビルドで動作しますが、ライセンスキーが設定されていません。キーを ~/.cloakbrowser/license.key に保存してからもう一度お試しください。",
+    "cloakbrowserLicenseInvalid": "CloakBrowser Pro がライセンスキーを拒否しました。キーが無効か、期限が切れています。",
+    "cloakbrowserLicenseUnreachable": "CloakBrowser Pro がライセンスを確認できませんでした。サーバーから応答がありません。接続を確認してもう一度お試しください。",
+    "cloakbrowserLicenseSetup": "CloakBrowser Pro を起動できませんでした。フォルダー ~/.cloakbrowser に書き込めません。",
+    "cloakbrowserSessionLimit": "CloakBrowser Pro: プランの同時起動数の上限に達しました。1 つ閉じてからもう一度お試しください。"
   },
   "rail": {
     "profiles": "プロファイル",

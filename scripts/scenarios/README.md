@@ -33,6 +33,7 @@ python3 s1_camoufox_fingerprints.py
 | `s10_one_time.py` | One-time profiles: started in one call, absent from the profile list, deleted when stopped and when their browser exits on its own. |
 | `s11_camera.py` | A CloakBrowser profile with a camera video: a page granted the camera gets the clip, moving and at 1280x720. Needs ffmpeg. |
 | `s12_synchronizer.py` | Synchronizer on CloakBrowser: navigation, clicks, typing and scrolling in the leader are repeated in the follower; Camoufox is refused. |
+| `s13_fingerprint_surfaces.py` | Two CloakBrowser profiles side by side: which canvas, WebGL, audio and layout surfaces are each profile's own and whether they hold across a restart. Judged on a Pro build, reported on the free one. |
 | `s8_remote_exit.py` | Through a real remote proxy (`SCN_REMOTE_PROXY=http://user:password@host:port`): sites see the proxy's address and timezone, WebRTC shows nothing of this machine, the language is the same at every launch, and a profile whose exit moves follows it at the next launch. Skipped without the variable. |
 
 `EXPECT_TZ` and `EXPECT_LANG` (comma-separated) add geolocation assertions to
