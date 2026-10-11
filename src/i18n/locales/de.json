@@ -517,7 +517,9 @@
       "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
       "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription.",
       "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
-    }
+    },
+    "count": "Anzahl der Profile",
+    "countHint": "Mehrere Profile auf einmal erstellen. Sie heißen „Name 1“, „Name 2“ usw., und jedes erhält einen eigenen Fingerabdruck."
   },
   "deleteDialog": {
     "title": "Profil löschen",

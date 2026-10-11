@@ -517,7 +517,9 @@
       "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
       "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription.",
       "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
-    }
+    },
+    "count": "配置文件数量",
+    "countHint": "一次创建多个配置文件。它们将命名为“名称 1”“名称 2”等，每个都有自己的指纹。"
   },
   "deleteDialog": {
     "title": "删除配置文件",

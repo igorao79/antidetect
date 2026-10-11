@@ -517,7 +517,9 @@
       "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
       "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription.",
       "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
-    }
+    },
+    "count": "Số lượng hồ sơ",
+    "countHint": "Tạo nhiều hồ sơ cùng lúc. Chúng được đặt tên “Tên 1”, “Tên 2”… và mỗi hồ sơ có dấu vân tay riêng."
   },
   "deleteDialog": {
     "title": "Xóa hồ sơ",
