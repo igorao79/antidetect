@@ -3738,5 +3738,11 @@
       "failed": "Başarısız",
       "cancelled": "Durduruldu"
     }
+  },
+  "interfaceLanguage": {
+    "label": "Tarayıcı arayüz dili",
+    "profile": "Profille aynı",
+    "profileHint": "Menüler profilin ülkesinin dilinde görünür; oradaki gerçek bir cihazda olduğu gibi. Siteler her yerde tek bir dil görür.",
+    "otherHint": "Okuması daha kolaydır ama siteler fark edebilir: form mesajlarının metninden, Camoufox'ta ve ücretsiz CloakBrowser derlemesinde ayrıca tarih ve sayı biçimlerinden. Önemli hesaplar için profilin dilini koruyun."
   }
 }

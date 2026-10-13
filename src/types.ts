@@ -512,6 +512,8 @@ export interface CloakBrowserConfig {
   randomize_fingerprint_on_launch?: boolean | null;
   /** The video file that stands in for the camera; unset is the real camera. */
   camera_video?: string | null;
+  /** Language of the browser's own menus; unset follows the profile's locale. */
+  interface_language?: string | null;
 }
 
 export interface CamoufoxConfig {
@@ -528,6 +530,8 @@ export interface CamoufoxConfig {
   fingerprint?: string; // JSON string of the complete fingerprint config
   randomize_fingerprint_on_launch?: boolean; // Generate new fingerprint on every launch
   os?: CamoufoxOS; // Operating system for fingerprint generation
+  /** Language of the browser's own menus; unset follows the profile's locale. */
+  interface_language?: string | null;
 }
 
 // Extended interface for the advanced fingerprint configuration

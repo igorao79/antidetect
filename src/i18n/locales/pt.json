@@ -3771,5 +3771,11 @@
       "failed": "Falhou",
       "cancelled": "Interrompido"
     }
+  },
+  "interfaceLanguage": {
+    "label": "Idioma da interface do navegador",
+    "profile": "O do perfil",
+    "profileHint": "Os menus aparecem no idioma do país do perfil, como num dispositivo real de lá. Os sites veem um único idioma em toda parte.",
+    "otherHint": "Mais fácil de ler, mas os sites podem perceber: pelas mensagens dos formulários e, no Camoufox e na compilação gratuita do CloakBrowser, também pelos formatos de data e número. Mantenha o idioma do perfil nas contas importantes."
   }
 }

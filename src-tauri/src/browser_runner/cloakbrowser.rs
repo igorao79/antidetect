@@ -107,6 +107,11 @@ impl BrowserRunner {
       .is_some()
       .then(|| crate::cloakbrowser_camera::camera_dir(&profiles_dir, &profile.id.to_string()));
 
+    let interface_language = config
+      .interface_language
+      .clone()
+      .or_else(|| cloakbrowser_manager::profile_locale(&config, &exit));
+
     emit_launch_stage(profile, "starting", None);
     let process = cloakbrowser_manager::launch(LaunchRequest {
       executable: &executable,
@@ -121,6 +126,7 @@ impl BrowserRunner {
       extension_paths: &extension_paths,
       camera_dir: camera_dir.as_deref(),
       pro,
+      interface_language: interface_language.as_deref(),
     })
     .await
     .map_err(|e| -> BoxError {

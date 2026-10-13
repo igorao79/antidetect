@@ -3738,5 +3738,11 @@
       "failed": "Failed",
       "cancelled": "Stopped"
     }
+  },
+  "interfaceLanguage": {
+    "label": "Browser interface language",
+    "profile": "Same as the profile",
+    "profileHint": "Menus are in the language of the profile's country, as on a real device there. Sites see one language everywhere.",
+    "otherHint": "Easier to read, but sites can notice it: by the wording of form messages, and in Camoufox and the free CloakBrowser build also by date and number formats. Keep the profile's language for accounts that matter."
   }
 }

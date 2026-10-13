@@ -3738,5 +3738,11 @@
       "failed": "Lỗi",
       "cancelled": "Đã dừng"
     }
+  },
+  "interfaceLanguage": {
+    "label": "Ngôn ngữ giao diện trình duyệt",
+    "profile": "Giống hồ sơ",
+    "profileHint": "Menu hiển thị bằng ngôn ngữ của quốc gia hồ sơ, như trên một thiết bị thật ở đó. Trang web thấy cùng một ngôn ngữ ở mọi nơi.",
+    "otherHint": "Dễ đọc hơn, nhưng trang web có thể nhận ra: qua lời nhắc trong biểu mẫu, và trong Camoufox cùng bản dựng CloakBrowser miễn phí còn qua định dạng ngày và số. Hãy giữ ngôn ngữ của hồ sơ cho các tài khoản quan trọng."
   }
 }

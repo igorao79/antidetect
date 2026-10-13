@@ -26,10 +26,11 @@ def api(method, path, body=None, headers=None, raw=False):
     except ValueError:
         return status, text
 
-def create(title, os_name="win", browser="camoufox", proxy=None, tags=None):
+def create(title, os_name="win", browser="camoufox", proxy=None, tags=None, interface_language=None):
     body = {"title": title, "fingerprint": {"os": os_name}, "browser": browser}
     if proxy: body["proxy"] = {"uuid": proxy}
     if tags: body["tags"] = tags
+    if interface_language: body["interface_language"] = interface_language
     status, r = api("POST", "/api/v2/automation/profiles", body)
     assert status == 200 and r.get("success"), (status, r)
     return r["data"]["uuid"]

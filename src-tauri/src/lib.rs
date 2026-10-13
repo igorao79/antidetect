@@ -130,6 +130,7 @@ mod cookie_manager;
 mod cookie_paste;
 mod cookie_robot;
 pub mod events;
+mod interface_language;
 mod mcp_integrations;
 mod mcp_remote;
 mod mcp_server;

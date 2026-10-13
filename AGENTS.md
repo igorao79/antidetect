@@ -59,6 +59,18 @@ Fork-specific rules:
 - The camera and microphone prompt at launch is offered once (`src/lib/permission-prompt.ts`);
   Settings requests them afterwards. An ad-hoc signed build is a new app to macOS after every
   rebuild, so a grant given to an earlier build does not carry over.
+- Interface language (`interface_language.rs`, `interface-language-field.tsx`, the
+  `interface_language` profile setting of Camoufox and CloakBrowser, also on the local API's
+  profile creation). Neither engine keeps the language of its menus apart from what a page
+  reads, so by default the interface follows the profile's language. Camoufox takes menus,
+  `Intl`, date formats and form messages from `intl.locale.requested`, handed over as
+  `CAMOU_PREFS_1`; its translations are inside the build. Chromium on macOS ignores `--lang`
+  and reads the system's `AppleLanguages`, so the launch writes that key into the engine's
+  own preferences domain for the second and a half the browser takes to start, one launch at
+  a time, and puts back what was there. A profile may ask for another interface language
+  (the app's): `navigator.languages` stay the profile's, form messages turn to that language
+  on every engine, and `Intl` with them on Camoufox and the free CloakBrowser build (a Pro
+  build pins `Intl` with `--fingerprint-locale`).
 - SSH is a proxy type (`ssh://user:password@host:port`, password or keyboard-interactive
   login). `ssh_upstream.rs` runs inside the local proxy worker: one session per upstream, one
   `direct-tcpip` channel per browser connection, TCP only. Host keys are not pinned.
@@ -66,12 +78,13 @@ Fork-specific rules:
   stay easy. Fork modules: `browser_runner/{launch_network,engine_common,camoufox,cloakbrowser}.rs`,
   `api_client/{camoufox,cloakbrowser}.rs`, `camoufox/`, `camoufox_manager.rs`,
   `cloakbrowser_manager.rs`, `cloakbrowser_camera.rs`, `cloakbrowser_license.rs`,
-  `profile_templates.rs`, `synchronizer_capture.rs`,
+  `profile_templates.rs`, `interface_language.rs`, `synchronizer_capture.rs`,
   `profile/{after_exit,camoufox,cloakbrowser}.rs`, `ssh_upstream.rs`,
   `cookie_robot.rs`, `octo_compat_api.rs`, and on the frontend
   `cloakbrowser-config-{form,dialog}.tsx`, `camoufox-config-dialog.tsx`,
   `shared-camoufox-config-form.tsx`, `cookie-robot-dialog.tsx`,
-  `cloakbrowser-license-section.tsx`, `profile-template-menu.tsx`.
+  `cloakbrowser-license-section.tsx`, `profile-template-menu.tsx`,
+  `interface-language-field.tsx`.
 - Keep the AGPL license and upstream copyright notices.
 - Commit only when the user asks.
 
@@ -98,6 +111,14 @@ running dev app):
 - A launch whose location follows the exit waits for the GeoIP database (a fresh install is
   still downloading it) and fails with `LOCATION_DATABASE_UNAVAILABLE` after 150 s. Without the
   database the browser came up with this machine's own timezone and a default language.
+- Before the interface language was set at launch, a page could read a language the profile
+  did not speak: Camoufox reported `Intl` as `en-US` under any `navigator.language`, and
+  CloakBrowser reported this Mac's system language in `Intl` (free build) and in form
+  messages (both builds). `s14_interface_language.py` holds the fix; the earlier scenarios
+  only compared `navigator.languages` and the timezone.
+- A Pro build that cannot reach the licence server may give up later than the 2.5 s it is
+  watched for (seen once, 18 s, exit 78, on a remote proxy): the launch has already
+  succeeded and the profile simply closes.
 - The first emoji a Camoufox session draws on a canvas uses a fallback glyph while Firefox
   loads the emoji font; that one reading differs from every later one. Shapes and Latin text
   are stable from the start, so this is font loading and not canvas noise.
@@ -169,6 +190,7 @@ donutbrowser/
 │   │   ├── cookie_robot.rs         # Local Cookie Robot: warms profiles on a site list (fork)
 │   │   ├── cloakbrowser_license.rs # CloakBrowser Pro licence key: check, save, remove (fork)
 │   │   ├── profile_templates.rs    # Named sets of the create dialog's choices (fork)
+│   │   ├── interface_language.rs   # Language of a profile browser's own menus, per engine (fork)
 │   │   ├── profile_importer.rs     # Bulk profile import (Chromium-family detection, ZIP, batch)
 │   │   ├── fingerprint_consistency.rs # Launch-time proxy exit vs fingerprint timezone/language check
 │   │   ├── dns_blocklist.rs         # Hagezi DNS blocklists + user custom lists/allowlist

@@ -54,6 +54,10 @@ pub struct CloakBrowserConfig {
   /// Draw a new seed on every launch.
   #[serde(default)]
   pub randomize_fingerprint_on_launch: Option<bool>,
+  /// The language of the browser's own interface. Unset follows the profile's
+  /// locale, so a page cannot tell the two apart; see `interface_language`.
+  #[serde(default)]
+  pub interface_language: Option<String>,
   /// The video file the user chose to stand in for the camera. The prepared
   /// copy the browser reads lives beside the profile; see
   /// `cloakbrowser_camera`.
@@ -86,6 +90,15 @@ pub struct ExitLocation {
   pub ip: Option<String>,
   pub timezone: Option<String>,
   pub locale: Option<String>,
+}
+
+/// The language the profile speaks: its own setting, else its exit's.
+pub fn profile_locale(config: &CloakBrowserConfig, exit: &ExitLocation) -> Option<String> {
+  config
+    .locale
+    .clone()
+    .or_else(|| exit.locale.clone())
+    .filter(|locale| !locale.is_empty())
 }
 
 /// The fingerprint switches for `config`. `exit` fills timezone, locale and
@@ -134,12 +147,7 @@ pub fn fingerprint_args(
   // language, and the accept list behind navigator.languages and the
   // Accept-Language header. Setting only the first leaves the host's languages
   // visible next to a foreign timezone.
-  if let Some(locale) = config
-    .locale
-    .clone()
-    .or_else(|| exit.locale.clone())
-    .filter(|l| !l.is_empty())
-  {
+  if let Some(locale) = profile_locale(config, exit) {
     let language = locale.split(['-', '_']).next().unwrap_or(&locale);
     let accept = if language == locale {
       locale.clone()
@@ -190,6 +198,8 @@ pub struct LaunchRequest<'a> {
   /// A Pro build: it is given the licence key and watched for the exit codes
   /// it reports a licence problem with.
   pub pro: bool,
+  /// The language the browser's interface is shown in, when one is known.
+  pub interface_language: Option<&'a str>,
 }
 
 fn launch_args(request: &LaunchRequest) -> Vec<String> {
@@ -283,9 +293,16 @@ pub async fn launch(request: LaunchRequest<'_>) -> Result<CloakBrowserProcess, S
     }
   }
 
-  let mut child = command
-    .spawn()
-    .map_err(|e| format!("Failed to spawn CloakBrowser: {e}"))?;
+  let mut child = crate::interface_language::spawn_chromium_in(
+    request.executable,
+    request.interface_language,
+    || {
+      command
+        .spawn()
+        .map_err(|e| format!("Failed to spawn CloakBrowser: {e}"))
+    },
+  )
+  .await?;
   let pid = child
     .id()
     .ok_or("CloakBrowser did not report a process identifier")?;
@@ -535,6 +552,7 @@ mod tests {
       extension_paths: &extensions,
       camera_dir: None,
       pro: false,
+      interface_language: None,
     });
     assert_eq!(args[0], "--user-data-dir=/profiles/p1");
     assert!(args.contains(&"--remote-debugging-port=9222".to_string()));

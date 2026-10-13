@@ -24,6 +24,10 @@ pub struct CamoufoxConfig {
   pub fingerprint: Option<String>, // JSON string of the complete fingerprint config
   pub randomize_fingerprint_on_launch: Option<bool>, // Generate new fingerprint on every launch
   pub os: Option<String>, // Operating system for fingerprint generation: "windows", "macos", or "linux"
+  /// The language of the browser's own interface (fork). Unset follows the
+  /// profile's locale; see `interface_language`.
+  #[serde(default)]
+  pub interface_language: Option<String>,
 }
 
 impl Default for CamoufoxConfig {
@@ -41,6 +45,7 @@ impl Default for CamoufoxConfig {
       fingerprint: None,
       randomize_fingerprint_on_launch: None,
       os: None,
+      interface_language: None,
     }
   }
 }
@@ -236,8 +241,12 @@ impl CamoufoxManager {
     crate::camoufox::config::ensure_noise_seeds(&mut fingerprint_config, &profile.id.to_string());
 
     // Convert to environment variables using CAMOU_CONFIG chunking
-    let env_vars = crate::camoufox::env_vars::config_to_env_vars(&fingerprint_config)
+    let mut env_vars = crate::camoufox::env_vars::config_to_env_vars(&fingerprint_config)
       .map_err(|e| format!("Failed to convert config to env vars: {e}"))?;
+    env_vars.extend(crate::interface_language::camoufox_env(
+      &fingerprint_config,
+      config.interface_language.as_deref(),
+    ));
 
     // Build command arguments
     // Note: We intentionally do NOT use -no-remote to allow opening URLs in existing instances
