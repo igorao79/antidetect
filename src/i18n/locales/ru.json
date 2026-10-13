@@ -250,7 +250,22 @@
     },
     "trashRetentionOff": "Удалять сразу",
     "scrollSectionsLeft": "Прокрутить разделы влево",
-    "scrollSectionsRight": "Прокрутить разделы вправо"
+    "scrollSectionsRight": "Прокрутить разделы вправо",
+    "cloakbrowserLicense": {
+      "title": "Лицензия CloakBrowser Pro",
+      "description": "С ключом новые профили CloakBrowser создаются на актуальной Pro-сборке Chromium. Без ключа используется бесплатная сборка.",
+      "keyLabel": "Ключ лицензии",
+      "placeholder": "Вставьте ключ",
+      "endsWith": "Ключ, оканчивающийся на {{hint}}",
+      "activeUntil": "Действует до {{date}}",
+      "refused": "Отклонён",
+      "notChecked": "Не проверен",
+      "fromEnvironment": "Задан переменной окружения CLOAKBROWSER_LICENSE_KEY; здесь его изменить нельзя.",
+      "removeNote": "Профили, созданные на Pro-сборке, без ключа не запускаются.",
+      "replace": "Заменить",
+      "saved": "Ключ сохранён. Pro-сборка загружается в фоне.",
+      "removed": "Ключ удалён."
+    }
   },
   "header": {
     "searchPlaceholder": "Поиск профилей...",
@@ -521,7 +536,15 @@
       "cloakbrowserHint": "CloakBrowser: антидетект Chromium, ближе всего к Octo. Бесплатная сборка — Chromium 145."
     },
     "count": "Количество профилей",
-    "countHint": "Создать сразу несколько профилей. Они получат имена «Имя 1», «Имя 2» и так далее, у каждого будет свой отпечаток."
+    "countHint": "Создать сразу несколько профилей. Они получат имена «Имя 1», «Имя 2» и так далее, у каждого будет свой отпечаток.",
+    "templates": {
+      "label": "Шаблон",
+      "none": "Шаблонов пока нет. Настройте профиль и сохраните его под именем.",
+      "namePlaceholder": "Название шаблона",
+      "hint": "Шаблон хранит движок, прокси и настройки отпечатка. Устройство у каждого профиля всё равно своё.",
+      "saved": "Шаблон «{{name}}» сохранён",
+      "deleteAria": "Удалить шаблон {{name}}"
+    }
   },
   "deleteDialog": {
     "title": "Удалить профиль",
@@ -2468,11 +2491,14 @@
     "cameraVideoNeedsFfmpeg": "Это видео нужно сконвертировать, а ffmpeg не установлен. Установите ffmpeg или выберите файл .mjpeg.",
     "cameraVideoConversionFailed": "Не удалось сконвертировать видео: {{detail}}",
     "locationDatabaseUnavailable": "База геолокации ещё не скачалась, поэтому таймзону и язык профиля пока нельзя сопоставить с его адресом. Повторите через минуту или отключите автоматическое определение местоположения для этого профиля.",
-    "cloakbrowserLicenseRequired": "Этот профиль работает на сборке CloakBrowser Pro, а лицензионный ключ не задан. Сохраните ключ в ~/.cloakbrowser/license.key и повторите.",
+    "cloakbrowserLicenseRequired": "Этот профиль работает на Pro-сборке CloakBrowser, а ключ лицензии не задан. Добавьте ключ в настройках и повторите.",
     "cloakbrowserLicenseInvalid": "CloakBrowser Pro отклонил лицензионный ключ: он недействителен или срок его действия истёк.",
     "cloakbrowserLicenseUnreachable": "CloakBrowser Pro не смог проверить лицензию: сервер не ответил. Проверьте соединение и повторите.",
     "cloakbrowserLicenseSetup": "CloakBrowser Pro не смог запуститься: папка ~/.cloakbrowser недоступна для записи.",
-    "cloakbrowserSessionLimit": "CloakBrowser Pro: достигнут лимит одновременно запущенных браузеров по вашему тарифу. Закройте один и повторите."
+    "cloakbrowserSessionLimit": "CloakBrowser Pro: достигнут лимит одновременно запущенных браузеров по вашему тарифу. Закройте один и повторите.",
+    "profileTemplateInvalid": "Шаблон нельзя сохранить: слишком длинное название или повреждены настройки.",
+    "profileTemplateLimit": "Шаблонов слишком много. Удалите один, чтобы сохранить новый.",
+    "profileTemplateNotFound": "Этого шаблона больше нет."
   },
   "rail": {
     "profiles": "Профили",

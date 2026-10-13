@@ -249,7 +249,22 @@
     },
     "trashRetentionOff": "Supprimer aussitôt",
     "scrollSectionsLeft": "Faire défiler les sections vers la gauche",
-    "scrollSectionsRight": "Faire défiler les sections vers la droite"
+    "scrollSectionsRight": "Faire défiler les sections vers la droite",
+    "cloakbrowserLicense": {
+      "title": "Licence CloakBrowser Pro",
+      "description": "Avec une clé de licence, les nouveaux profils CloakBrowser sont créés sur la version Pro actuelle de Chromium. Sans clé, ils utilisent la version gratuite.",
+      "keyLabel": "Clé de licence",
+      "placeholder": "Collez la clé",
+      "endsWith": "Clé se terminant par {{hint}}",
+      "activeUntil": "Active jusqu’au {{date}}",
+      "refused": "Refusée",
+      "notChecked": "Non vérifiée",
+      "fromEnvironment": "Définie par la variable d’environnement CLOAKBROWSER_LICENSE_KEY ; elle ne peut pas être modifiée ici.",
+      "removeNote": "Les profils créés sur une version Pro ne démarrent pas sans clé.",
+      "replace": "Remplacer",
+      "saved": "Clé de licence enregistrée. La version Pro se télécharge en arrière-plan.",
+      "removed": "Clé de licence supprimée."
+    }
   },
   "header": {
     "searchPlaceholder": "Rechercher des profils...",
@@ -520,7 +535,15 @@
       "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
     },
     "count": "Nombre de profils",
-    "countHint": "Créer plusieurs profils à la fois. Ils s'appelleront « Nom 1 », « Nom 2 », etc., et chacun aura sa propre empreinte."
+    "countHint": "Créer plusieurs profils à la fois. Ils s'appelleront « Nom 1 », « Nom 2 », etc., et chacun aura sa propre empreinte.",
+    "templates": {
+      "label": "Modèle",
+      "none": "Aucun modèle pour l’instant. Configurez le profil, puis enregistrez-le sous un nom.",
+      "namePlaceholder": "Nom du modèle",
+      "hint": "Un modèle conserve le moteur, le proxy et les réglages d’empreinte. Chaque profil reçoit quand même son propre appareil.",
+      "saved": "Modèle « {{name}} » enregistré",
+      "deleteAria": "Supprimer le modèle {{name}}"
+    }
   },
   "deleteDialog": {
     "title": "Supprimer le profil",
@@ -2458,11 +2481,14 @@
     "cameraVideoNeedsFfmpeg": "Cette vidéo doit être convertie et ffmpeg n'est pas installé. Installez ffmpeg ou choisissez un fichier .mjpeg.",
     "cameraVideoConversionFailed": "La vidéo n'a pas pu être convertie : {{detail}}",
     "locationDatabaseUnavailable": "La base de données de localisation n'a pas fini de se télécharger : le fuseau horaire et la langue du profil ne peuvent pas encore être accordés à son adresse. Réessayez dans une minute ou désactivez la localisation automatique pour ce profil.",
-    "cloakbrowserLicenseRequired": "Ce profil utilise une version CloakBrowser Pro et aucune clé de licence n'est définie. Enregistrez la clé dans ~/.cloakbrowser/license.key puis réessayez.",
+    "cloakbrowserLicenseRequired": "Ce profil fonctionne sur une version Pro de CloakBrowser et aucune clé de licence n’est définie. Ajoutez la clé dans les réglages et réessayez.",
     "cloakbrowserLicenseInvalid": "CloakBrowser Pro a refusé la clé de licence : elle est invalide ou a expiré.",
     "cloakbrowserLicenseUnreachable": "CloakBrowser Pro n'a pas pu vérifier la licence : son serveur n'a pas répondu. Vérifiez la connexion puis réessayez.",
     "cloakbrowserLicenseSetup": "CloakBrowser Pro n'a pas pu démarrer : le dossier ~/.cloakbrowser n'est pas accessible en écriture.",
-    "cloakbrowserSessionLimit": "CloakBrowser Pro : la limite de navigateurs ouverts en même temps de votre offre est atteinte. Fermez-en un puis réessayez."
+    "cloakbrowserSessionLimit": "CloakBrowser Pro : la limite de navigateurs ouverts en même temps de votre offre est atteinte. Fermez-en un puis réessayez.",
+    "profileTemplateInvalid": "Ce modèle ne peut pas être enregistré : son nom est trop long ou ses réglages sont endommagés.",
+    "profileTemplateLimit": "Il y a trop de modèles. Supprimez-en un avant d’en enregistrer un autre.",
+    "profileTemplateNotFound": "Ce modèle n’existe plus."
   },
   "rail": {
     "profiles": "Profils",

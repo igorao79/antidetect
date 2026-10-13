@@ -1733,6 +1733,85 @@ test("launch arguments and a custom fingerprint need no plan", async () => {
   );
 });
 
+test("profile templates are kept by name, replaced, and deleted", async () => {
+  await withApp("entities-profile-templates", async (app) => {
+    assert.deepEqual(await app.invoke("list_profile_templates"), []);
+    assert.match(
+      await app.invokeError("save_profile_template", {
+        name: "  ",
+        settings: {},
+      }),
+      /"code":"NAME_CANNOT_BE_EMPTY"/,
+    );
+    assert.match(
+      await app.invokeError("save_profile_template", {
+        name: "Shop",
+        settings: "not settings",
+      }),
+      /"code":"PROFILE_TEMPLATE_INVALID"/,
+    );
+
+    const [first] = await app.invoke("save_profile_template", {
+      name: "Shop",
+      settings: { engine: "camoufox", ephemeral: false },
+    });
+    const replaced = await app.invoke("save_profile_template", {
+      name: "Shop",
+      settings: { engine: "cloakbrowser", ephemeral: true },
+    });
+    assert.equal(replaced.length, 1);
+    assert.equal(replaced[0].id, first.id);
+    assert.deepEqual(replaced[0].settings, {
+      engine: "cloakbrowser",
+      ephemeral: true,
+    });
+
+    await app.restart();
+    assert.deepEqual(await app.invoke("list_profile_templates"), replaced);
+    assert.deepEqual(
+      await app.invoke("delete_profile_template", { id: first.id }),
+      [],
+    );
+    assert.match(
+      await app.invokeError("delete_profile_template", { id: first.id }),
+      /"code":"PROFILE_TEMPLATE_NOT_FOUND"/,
+    );
+  });
+});
+
+test("a CloakBrowser licence key is checked before it is kept", async () => {
+  await withApp("entities-cloakbrowser-licence", async (app) => {
+    const none = {
+      source: null,
+      hint: null,
+      valid: null,
+      plan: null,
+      expires: null,
+    };
+    assert.deepEqual(
+      await app.invoke("get_cloakbrowser_license", { check: false }),
+      none,
+    );
+    assert.match(
+      await app.invokeError("set_cloakbrowser_license_key", { key: "  " }),
+      /"code":"CLOAKBROWSER_LICENSE_INVALID"/,
+    );
+    // The licence server refuses a made-up key; offline, it cannot be asked.
+    assert.match(
+      await app.invokeError("set_cloakbrowser_license_key", {
+        key: "not-a-key",
+      }),
+      /"code":"CLOAKBROWSER_LICENSE_(INVALID|UNREACHABLE)"/,
+    );
+    assert.deepEqual(await app.invoke("remove_cloakbrowser_license_key"), none);
+    assert.deepEqual(
+      await app.invoke("get_cloakbrowser_license", { check: true }),
+      none,
+      "a refused key was kept",
+    );
+  });
+});
+
 test("the fork's engine settings and Cookie Robot answer with their contract", async () => {
   await withApp("entities-fork-contracts", async (app) => {
     const missing = "00000000-0000-4000-8000-000000000000";

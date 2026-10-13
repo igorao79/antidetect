@@ -248,7 +248,22 @@
     },
     "trashRetentionOff": "立即删除",
     "scrollSectionsLeft": "向左滚动分区",
-    "scrollSectionsRight": "向右滚动分区"
+    "scrollSectionsRight": "向右滚动分区",
+    "cloakbrowserLicense": {
+      "title": "CloakBrowser Pro 许可证",
+      "description": "有许可证密钥时，新的 CloakBrowser 配置文件会在当前的 Chromium Pro 版本上创建。没有密钥则使用免费版本。",
+      "keyLabel": "许可证密钥",
+      "placeholder": "粘贴密钥",
+      "endsWith": "以 {{hint}} 结尾的密钥",
+      "activeUntil": "有效期至 {{date}}",
+      "refused": "已被拒绝",
+      "notChecked": "未检查",
+      "fromEnvironment": "由环境变量 CLOAKBROWSER_LICENSE_KEY 设置，无法在此更改。",
+      "removeNote": "在 Pro 版本上创建的配置文件没有密钥将无法启动。",
+      "replace": "替换",
+      "saved": "许可证密钥已保存。Pro 版本正在后台下载。",
+      "removed": "许可证密钥已删除。"
+    }
   },
   "header": {
     "searchPlaceholder": "搜索配置文件...",
@@ -519,7 +534,15 @@
       "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
     },
     "count": "配置文件数量",
-    "countHint": "一次创建多个配置文件。它们将命名为“名称 1”“名称 2”等，每个都有自己的指纹。"
+    "countHint": "一次创建多个配置文件。它们将命名为“名称 1”“名称 2”等，每个都有自己的指纹。",
+    "templates": {
+      "label": "模板",
+      "none": "还没有模板。先设置好配置文件，再起个名字保存。",
+      "namePlaceholder": "模板名称",
+      "hint": "模板会保存引擎、代理和指纹设置。每个配置文件仍会得到自己的设备。",
+      "saved": "模板“{{name}}”已保存",
+      "deleteAria": "删除模板 {{name}}"
+    }
   },
   "deleteDialog": {
     "title": "删除配置文件",
@@ -2448,11 +2471,14 @@
     "cameraVideoNeedsFfmpeg": "此视频需要转换，但未安装 ffmpeg。请安装 ffmpeg 或选择 .mjpeg 文件。",
     "cameraVideoConversionFailed": "无法转换视频：{{detail}}",
     "locationDatabaseUnavailable": "位置数据库尚未下载完成，因此暂时无法让配置文件的时区和语言与其地址匹配。请一分钟后重试，或为此配置文件关闭自动定位。",
-    "cloakbrowserLicenseRequired": "此配置文件使用 CloakBrowser Pro 版本，但未设置许可证密钥。请将密钥保存到 ~/.cloakbrowser/license.key 后重试。",
+    "cloakbrowserLicenseRequired": "此配置文件运行在 CloakBrowser Pro 版本上，但尚未设置许可证密钥。请在设置中添加密钥后重试。",
     "cloakbrowserLicenseInvalid": "CloakBrowser Pro 拒绝了许可证密钥：密钥无效或已过期。",
     "cloakbrowserLicenseUnreachable": "CloakBrowser Pro 无法验证许可证：服务器没有响应。请检查网络连接后重试。",
     "cloakbrowserLicenseSetup": "CloakBrowser Pro 无法启动：文件夹 ~/.cloakbrowser 不可写。",
-    "cloakbrowserSessionLimit": "CloakBrowser Pro：已达到当前套餐同时运行浏览器的上限。请关闭一个后重试。"
+    "cloakbrowserSessionLimit": "CloakBrowser Pro：已达到当前套餐同时运行浏览器的上限。请关闭一个后重试。",
+    "profileTemplateInvalid": "无法保存此模板：名称过长或设置已损坏。",
+    "profileTemplateLimit": "模板太多了。请先删除一个再保存。",
+    "profileTemplateNotFound": "此模板已不存在。"
   },
   "rail": {
     "profiles": "配置文件",

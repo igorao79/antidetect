@@ -24,6 +24,16 @@ const PLATFORM_HEADER: &str = "X-Platform";
 
 type BoxError = Box<dyn std::error::Error + Send + Sync>;
 
+/// The licence server's answer about one key.
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+pub struct CloakBrowserLicenseVerdict {
+  pub valid: bool,
+  #[serde(default)]
+  pub plan: Option<String>,
+  #[serde(default)]
+  pub expires: Option<String>,
+}
+
 /// A licence key as it is used: trimmed, and nothing at all when blank.
 fn clean_key(raw: &str) -> Option<String> {
   let key = raw.trim();
@@ -45,6 +55,31 @@ impl ApiClient {
         let file = Self::cloakbrowser_license_file()?;
         clean_key(&std::fs::read_to_string(file).ok()?)
       })
+  }
+
+  /// What CloakHQ's licence server says about `key`.
+  pub async fn validate_cloakbrowser_license(
+    &self,
+    key: &str,
+  ) -> Result<CloakBrowserLicenseVerdict, BoxError> {
+    let response = self
+      .client
+      .post(format!("{DOWNLOAD_BASE_URL}/api/license/validate"))
+      .header("User-Agent", "antidetect-browser")
+      .json(&serde_json::json!({ "license_key": key }))
+      .timeout(std::time::Duration::from_secs(15))
+      .send()
+      .await?;
+    if !response.status().is_success() {
+      return Err(
+        format!(
+          "CloakBrowser licence check: HTTP {}",
+          response.status().as_u16()
+        )
+        .into(),
+      );
+    }
+    Ok(response.json().await?)
   }
 
   /// Whether `version` is a Pro build: any CloakBrowser version other than
@@ -237,6 +272,20 @@ fn digest_from_signed_manifest(
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn a_refused_key_is_read_as_invalid_with_no_expiry() {
+    let verdict: CloakBrowserLicenseVerdict =
+      serde_json::from_str(r#"{"valid":false,"plan":"unknown","expires":null}"#).unwrap();
+    assert!(!verdict.valid);
+    assert_eq!(verdict.expires, None);
+    let verdict: CloakBrowserLicenseVerdict = serde_json::from_str(
+      r#"{"valid":true,"plan":"trial","expires":"2026-10-14T03:04:12+00:00"}"#,
+    )
+    .unwrap();
+    assert!(verdict.valid);
+    assert_eq!(verdict.plan.as_deref(), Some("trial"));
+  }
 
   #[test]
   fn a_key_is_trimmed_and_a_blank_one_is_no_key() {

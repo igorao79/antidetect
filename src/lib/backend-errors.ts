@@ -249,6 +249,9 @@ export type BackendErrorCode =
   | "CLOAKBROWSER_LICENSE_UNREACHABLE"
   | "CLOAKBROWSER_LICENSE_SETUP"
   | "CLOAKBROWSER_SESSION_LIMIT"
+  | "PROFILE_TEMPLATE_INVALID"
+  | "PROFILE_TEMPLATE_LIMIT"
+  | "PROFILE_TEMPLATE_NOT_FOUND"
   | "LOCATION_DATABASE_UNAVAILABLE"
   | "CAMERA_VIDEO_NOT_FOUND"
   | "CAMERA_VIDEO_NEEDS_FFMPEG"
@@ -875,6 +878,12 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       return t("backendErrors.cloakbrowserLicenseSetup");
     case "CLOAKBROWSER_SESSION_LIMIT":
       return t("backendErrors.cloakbrowserSessionLimit");
+    case "PROFILE_TEMPLATE_INVALID":
+      return t("backendErrors.profileTemplateInvalid");
+    case "PROFILE_TEMPLATE_LIMIT":
+      return t("backendErrors.profileTemplateLimit");
+    case "PROFILE_TEMPLATE_NOT_FOUND":
+      return t("backendErrors.profileTemplateNotFound");
     case "LOCATION_DATABASE_UNAVAILABLE":
       return t("backendErrors.locationDatabaseUnavailable");
     case "CAMERA_VIDEO_NOT_FOUND":

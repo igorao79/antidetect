@@ -26,6 +26,10 @@ import {
 } from "@/components/cloakbrowser-config-form";
 import { LoadingButton } from "@/components/loading-button";
 import { ProfileGlyph } from "@/components/profile-glyph";
+import {
+  ProfileTemplateMenu,
+  type ProfileTemplateSettings,
+} from "@/components/profile-template-menu";
 import { ProxyFormDialog } from "@/components/proxy-form-dialog";
 import { SharedCamoufoxConfigForm } from "@/components/shared-camoufox-config-form";
 import {
@@ -425,6 +429,64 @@ export function CreateProfileDialog({
     }
   };
 
+  const captureTemplate = useCallback(
+    (): ProfileTemplateSettings => ({
+      engine,
+      proxyId: selectedProxyId,
+      extensionGroupId: selectedExtensionGroupId,
+      ephemeral,
+      dnsBlocklist,
+      launchHook,
+      camoufoxConfig: { ...camoufoxConfig, fingerprint: undefined },
+      cloakbrowserConfig: { ...cloakbrowserConfig, seed: undefined },
+      wayfernConfig: { ...wayfernConfig, fingerprint: undefined },
+    }),
+    [
+      engine,
+      selectedProxyId,
+      selectedExtensionGroupId,
+      ephemeral,
+      dnsBlocklist,
+      launchHook,
+      camoufoxConfig,
+      cloakbrowserConfig,
+      wayfernConfig,
+    ],
+  );
+
+  // A template names a proxy and an extension group by id; one that has been
+  // deleted since is left out instead of failing the create.
+  const applyTemplate = (settings: ProfileTemplateSettings) => {
+    if (settings.engine !== engine) {
+      setEngine(settings.engine);
+      setReleaseTypes({});
+    }
+    const route = settings.proxyId;
+    const routeExists = route?.startsWith("vpn-")
+      ? vpnConfigs.some((vpn) => vpn.id === route.slice(4))
+      : storedProxies.some((proxy) => proxy.id === route);
+    setSelectedProxyId(routeExists ? route : undefined);
+    setSelectedExtensionGroupId(
+      extensionGroups.some((group) => group.id === settings.extensionGroupId)
+        ? settings.extensionGroupId
+        : undefined,
+    );
+    setEphemeral(settings.ephemeral);
+    if (settings.ephemeral) clearPassword();
+    setDnsBlocklist(settings.dnsBlocklist);
+    setLaunchHook(settings.launchHook);
+    setCamoufoxConfig({
+      ...defaultCamoufoxConfig(),
+      ...settings.camoufoxConfig,
+    });
+    setCloakbrowserConfig({
+      ...defaultCloakBrowserConfig(),
+      ...settings.cloakbrowserConfig,
+      seed: randomCloakBrowserSeed(),
+    });
+    setWayfernConfig({ ...defaultWayfernConfig(), ...settings.wayfernConfig });
+  };
+
   const handleDownload = async () => {
     if (!latestVersion) return;
     try {
@@ -771,6 +833,13 @@ export function CreateProfileDialog({
               icon={<LuFlame className={cn(ephemeral && "fill-current")} />}
               label={t("profiles.ephemeral")}
               hint={t("profiles.ephemeralDescription")}
+            />
+            <ProfileTemplateMenu
+              isOpen={isOpen}
+              disabled={isCreating}
+              pillClassName={optionPill}
+              capture={captureTemplate}
+              onApply={applyTemplate}
             />
           </motion.div>
 

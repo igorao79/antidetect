@@ -20,6 +20,7 @@ import {
   LuUsers,
 } from "react-icons/lu";
 import { useInputModality } from "@/hooks/use-input-modality";
+import { CLOUD_ONLY_PAGES } from "@/lib/cloud-only-pages";
 import { launchDonutClone } from "@/lib/donut-physics";
 import { MOTION_SPRING_POSITION } from "@/lib/motion";
 import { cn } from "@/lib/utils";
@@ -266,7 +267,7 @@ interface RailItem {
   labelKey: string;
 }
 
-const TOP_ITEMS: RailItem[] = [
+const ALL_TOP_ITEMS: RailItem[] = [
   { page: "profiles", Icon: LuUser, labelKey: "rail.profiles" },
   { page: "proxies", Icon: FiWifi, labelKey: "rail.network" },
   { page: "extensions", Icon: LuPuzzle, labelKey: "rail.extensions" },
@@ -276,6 +277,10 @@ const TOP_ITEMS: RailItem[] = [
   { page: "integrations", Icon: LuPlug, labelKey: "rail.integrations" },
   { page: "account", Icon: LuCloud, labelKey: "rail.account" },
 ];
+
+const TOP_ITEMS = ALL_TOP_ITEMS.filter(
+  (item) => !CLOUD_ONLY_PAGES.has(item.page),
+);
 
 interface MoreMenuItem {
   page: AppPage;

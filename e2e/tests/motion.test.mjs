@@ -1577,37 +1577,46 @@ test("profile notes save through the inspector and real launch failures retain a
   });
 });
 
-test("schedule displays every timezone and slot, and skipped run details work by keyboard", async () => {
-  await withApp("motion-schedule-feedback", async (app) => {
-    await resize(app, 1200, 800);
-    const profile = await createProfile(app, "Two daily slots");
-    const other = await createProfile(app, "Separate timezone");
-    const schedule = (item, timezone, slots) => ({
-      profile_id: item.id,
-      profile_name: item.name,
-      owner_user_id: "motion-ui-fixture",
-      enabled: true,
-      timezone,
-      slots,
-      run_at_minute: slots[0].run_at_minute,
-      days_mask: slots[0].days_mask,
-      max_minutes: 30,
-      platform: "linux",
-      preset: "light",
-      sites: [],
-      template_id: null,
-      next_run_at: "2026-09-09T02:00:00Z",
-      last_run_at: null,
-    });
-    const schedules = [
-      schedule(profile, "UTC", [
-        { days_mask: 127, run_at_minute: 120 },
-        { days_mask: 127, run_at_minute: 720 },
-      ]),
-      schedule(other, "Asia/Yerevan", [{ days_mask: 127, run_at_minute: 120 }]),
-    ];
-    await app.execute(
-      `
+const CLOUD_ONLY = {
+  skip: "the fork leaves this page out: it only works against Donut's cloud",
+};
+
+test(
+  "schedule displays every timezone and slot, and skipped run details work by keyboard",
+  CLOUD_ONLY,
+  async () => {
+    await withApp("motion-schedule-feedback", async (app) => {
+      await resize(app, 1200, 800);
+      const profile = await createProfile(app, "Two daily slots");
+      const other = await createProfile(app, "Separate timezone");
+      const schedule = (item, timezone, slots) => ({
+        profile_id: item.id,
+        profile_name: item.name,
+        owner_user_id: "motion-ui-fixture",
+        enabled: true,
+        timezone,
+        slots,
+        run_at_minute: slots[0].run_at_minute,
+        days_mask: slots[0].days_mask,
+        max_minutes: 30,
+        platform: "linux",
+        preset: "light",
+        sites: [],
+        template_id: null,
+        next_run_at: "2026-09-09T02:00:00Z",
+        last_run_at: null,
+      });
+      const schedules = [
+        schedule(profile, "UTC", [
+          { days_mask: 127, run_at_minute: 120 },
+          { days_mask: 127, run_at_minute: 720 },
+        ]),
+        schedule(other, "Asia/Yerevan", [
+          { days_mask: 127, run_at_minute: 120 },
+        ]),
+      ];
+      await app.execute(
+        `
       const schedules = arguments[0], id = arguments[1];
       const previous = window.fetch;
       window.__donutScheduleCalls = [];
@@ -1623,59 +1632,62 @@ test("schedule displays every timezone and slot, and skipped run details work by
         return previous.apply(window, arguments);
       };
     `,
-      [schedules, profile.id],
-    );
-    // After the schedule stubs, not before: the fixture signs in a paid user,
-    // and the app fetches the schedules the moment it sees one. On a slow
-    // start that fetch reached the backend before the stubs were in place.
-    await installSynchronizerFixture(app);
-    await app.pressShortcut({ ...modifier, key: "b" });
-    await app.clickText(en.cookieBot.tabs.schedule, { roles: ["tab"] });
-    await waitForSelector(app, slot("schedule-lane"));
-    assert.deepEqual(
-      await app.execute(
-        `return [...document.querySelectorAll('[data-slot="schedule-lane"]')].map(node => Number(node.dataset.minute)).sort((a, b) => a - b);`,
-      ),
-      [120, 120, 720],
-    );
-    assert.equal(await app.visibleTextIncludes("Asia/Yerevan"), true);
-    assert.equal(await app.visibleTextIncludes("199.8"), true);
-    await app.execute("window.__donutRemainingHours = 199.7;");
-    await emit(app, "remote-session-snapshot", { sessions: [] });
-    await app.waitForText("199.7");
-    const connections = await app.execute(
-      "return window.__donutScheduleCalls.length;",
-    );
-    await app.execute(`
+        [schedules, profile.id],
+      );
+      // After the schedule stubs, not before: the fixture signs in a paid user,
+      // and the app fetches the schedules the moment it sees one. On a slow
+      // start that fetch reached the backend before the stubs were in place.
+      await installSynchronizerFixture(app);
+      await app.pressShortcut({ ...modifier, key: "b" });
+      await app.clickText(en.cookieBot.tabs.schedule, { roles: ["tab"] });
+      await waitForSelector(app, slot("schedule-lane"));
+      assert.deepEqual(
+        await app.execute(
+          `return [...document.querySelectorAll('[data-slot="schedule-lane"]')].map(node => Number(node.dataset.minute)).sort((a, b) => a - b);`,
+        ),
+        [120, 120, 720],
+      );
+      assert.equal(await app.visibleTextIncludes("Asia/Yerevan"), true);
+      assert.equal(await app.visibleTextIncludes("199.8"), true);
+      await app.execute("window.__donutRemainingHours = 199.7;");
+      await emit(app, "remote-session-snapshot", { sessions: [] });
+      await app.waitForText("199.7");
+      const connections = await app.execute(
+        "return window.__donutScheduleCalls.length;",
+      );
+      await app.execute(`
       window.__donutRemainingHours = 199.6;
       window.dispatchEvent(new Event("online"));
     `);
-    await app.waitForText("199.6");
-    assert.ok(
-      (await app.execute("return window.__donutScheduleCalls.length;")) >
-        connections,
-      "network recovery wakes the remote session connection",
-    );
-    await app.capture("every-schedule-slot");
-    await app.clickText(en.cookieBot.tabs.activity, { roles: ["tab"] });
-    await app.clickSelector('[role="combobox"]');
-    await app.clickText(en.cookieBot.runStatus.skipped, { roles: ["option"] });
-    await waitForSelector(app, slot("run-details-toggle"));
-    await app.execute(`document.querySelector(arguments[0]).focus();`, [
-      slot("run-details-toggle"),
-    ]);
-    await activateFocusedByKeyboard(app);
-    assert.equal(
-      await app.execute(
-        `return document.querySelector(arguments[0]).getAttribute("aria-expanded");`,
-        [slot("run-details-toggle")],
-      ),
-      "true",
-    );
-    await app.capture("skipped-run-details");
-    await restoreSynchronizerFixture(app);
-  });
-});
+      await app.waitForText("199.6");
+      assert.ok(
+        (await app.execute("return window.__donutScheduleCalls.length;")) >
+          connections,
+        "network recovery wakes the remote session connection",
+      );
+      await app.capture("every-schedule-slot");
+      await app.clickText(en.cookieBot.tabs.activity, { roles: ["tab"] });
+      await app.clickSelector('[role="combobox"]');
+      await app.clickText(en.cookieBot.runStatus.skipped, {
+        roles: ["option"],
+      });
+      await waitForSelector(app, slot("run-details-toggle"));
+      await app.execute(`document.querySelector(arguments[0]).focus();`, [
+        slot("run-details-toggle"),
+      ]);
+      await activateFocusedByKeyboard(app);
+      assert.equal(
+        await app.execute(
+          `return document.querySelector(arguments[0]).getAttribute("aria-expanded");`,
+          [slot("run-details-toggle")],
+        ),
+        "true",
+      );
+      await app.capture("skipped-run-details");
+      await restoreSynchronizerFixture(app);
+    });
+  },
+);
 
 test("connection diagnostics and extension impact expose real assigned profiles", async () => {
   await withApp("motion-connection-impact", async (app) => {

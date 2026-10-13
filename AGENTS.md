@@ -15,7 +15,10 @@ Fork-specific rules:
   downloaded on demand. Only Camoufox and CloakBrowser are fetched at startup.
 - `octo_compat_api.rs` serves an Octo Browser compatible API on `127.0.0.1:58888` (no token,
   loopback only): profile start/stop/active, one-time profiles (`/api/profiles/one_time/start`,
-  deleted when their browser stops) plus profile and proxy list/create/delete.
+  deleted when their browser stops) plus Octo's automation calls against local data: profiles
+  (list with `search`, `search_tags`, `page`/`page_len`; read; create; `PATCH` of title,
+  description, tags and proxy; delete; `import_cookies`, and `GET .../cookies` as an extension),
+  proxies (list, create, `PATCH`, delete) and `GET /tags`.
 - Cookie Robot (`cookie_robot.rs`, `cookie-robot-dialog.tsx`, "Warm up cookies" in the selection
   bar's menu) is the local counterpart of Donut's cloud Cookie Bot: it launches each selected
   profile, walks a site list over CDP or WebDriver BiDi with pauses and scrolling, and closes it.
@@ -33,7 +36,9 @@ Fork-specific rules:
   `Runtime.enable`). Input inside frames is not mirrored. Also on the local API as
   `POST/DELETE /api/v2/automation/synchronizer`, where `headless` runs a session without windows.
 - CloakBrowser Pro. With a licence key (`CLOAKBROWSER_LICENSE_KEY`, or
-  `~/.cloakbrowser/license.key`, where the binary itself looks) the current Pro build is
+  `~/.cloakbrowser/license.key`, where the binary itself looks; Settings writes that file
+  through `cloakbrowser_license.rs` once CloakHQ's server has accepted the key, and shows only
+  the key's last characters) the current Pro build is
   listed, downloaded with the key, verified by the same signed manifest and kept beside the
   free one; new CloakBrowser profiles are created on it. A profile never moves between the
   free and a Pro build by itself (`stays_in_tier`): Chromium cannot reopen a profile a newer
@@ -44,17 +49,29 @@ Fork-specific rules:
   145, and `toDataURL`, `toBlob` and the WebGL image are each profile's own and hold across
   restarts. The audio fingerprint and text metrics are the host machine's on every profile, by
   design: that is right for a macOS persona on a Mac and a mismatch for a Windows one.
+- Profile templates (`profile_templates.rs`, `profile-template-menu.tsx`, the "Template" pill
+  of the create dialog) keep the dialog's choices under a name in
+  `data/profile_templates.json`: engine, proxy, extension group and fingerprint settings, never
+  a pinned fingerprint or seed, so every profile made from one is still its own device.
+- Pages that only work against Donut's cloud (the cloud Cookie Bot, the Agent console) are
+  left out of the rail, the shortcuts and the command palette by `src/lib/cloud-only-pages.ts`;
+  their code and upstream tests stay (the two E2E tests are skipped).
+- The camera and microphone prompt at launch is offered once (`src/lib/permission-prompt.ts`);
+  Settings requests them afterwards. An ad-hoc signed build is a new app to macOS after every
+  rebuild, so a grant given to an earlier build does not carry over.
 - SSH is a proxy type (`ssh://user:password@host:port`, password or keyboard-interactive
   login). `ssh_upstream.rs` runs inside the local proxy worker: one session per upstream, one
   `direct-tcpip` channel per browser connection, TCP only. Host keys are not pinned.
 - Put fork code in its own modules and keep edits to upstream files small, so upstream merges
   stay easy. Fork modules: `browser_runner/{launch_network,engine_common,camoufox,cloakbrowser}.rs`,
   `api_client/{camoufox,cloakbrowser}.rs`, `camoufox/`, `camoufox_manager.rs`,
-  `cloakbrowser_manager.rs`, `cloakbrowser_camera.rs`, `synchronizer_capture.rs`,
+  `cloakbrowser_manager.rs`, `cloakbrowser_camera.rs`, `cloakbrowser_license.rs`,
+  `profile_templates.rs`, `synchronizer_capture.rs`,
   `profile/{after_exit,camoufox,cloakbrowser}.rs`, `ssh_upstream.rs`,
   `cookie_robot.rs`, `octo_compat_api.rs`, and on the frontend
   `cloakbrowser-config-{form,dialog}.tsx`, `camoufox-config-dialog.tsx`,
-  `shared-camoufox-config-form.tsx`, `cookie-robot-dialog.tsx`.
+  `shared-camoufox-config-form.tsx`, `cookie-robot-dialog.tsx`,
+  `cloakbrowser-license-section.tsx`, `profile-template-menu.tsx`.
 - Keep the AGPL license and upstream copyright notices.
 - Commit only when the user asks.
 
@@ -150,6 +167,8 @@ donutbrowser/
 │   │   ├── vault.rs                # Per-install key that seals local secrets; opens legacy build-password seals once
 │   │   ├── cookie_manager.rs       # Cookie import/export
 │   │   ├── cookie_robot.rs         # Local Cookie Robot: warms profiles on a site list (fork)
+│   │   ├── cloakbrowser_license.rs # CloakBrowser Pro licence key: check, save, remove (fork)
+│   │   ├── profile_templates.rs    # Named sets of the create dialog's choices (fork)
 │   │   ├── profile_importer.rs     # Bulk profile import (Chromium-family detection, ZIP, batch)
 │   │   ├── fingerprint_consistency.rs # Launch-time proxy exit vs fingerprint timezone/language check
 │   │   ├── dns_blocklist.rs         # Hagezi DNS blocklists + user custom lists/allowlist

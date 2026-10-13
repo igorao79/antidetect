@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { createServer } from "node:net";
 import path from "node:path";
 import test from "node:test";
 import { withApp } from "../lib/app.mjs";
@@ -38,6 +39,14 @@ async function jsonRequest(
     }
   }
   return { response, value };
+}
+
+async function freeLocalPort() {
+  const server = createServer();
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const { port } = server.address();
+  await new Promise((resolve) => server.close(resolve));
+  return port;
 }
 
 async function seedTerms(app) {
@@ -1639,5 +1648,217 @@ test("offline cloud, update, team-lock, trial, and synchronizer contracts are de
       assert.equal(await app.invoke("cloud_get_user"), null);
     },
     { wayfernTermsAccepted: false },
+  );
+});
+
+test("the Octo-compatible API reads, edits and filters profiles, moves cookies, and edits proxies", async () => {
+  const port = await freeLocalPort();
+  await withApp(
+    "integrations-octo-api",
+    async (app) => {
+      const octo = (method, route, body) =>
+        jsonRequest(`http://127.0.0.1:${port}${route}`, { method, body });
+      await app.waitFor(
+        async () =>
+          (await octo("GET", "/api/profiles/active")).response.status === 200,
+        { description: "the Octo-compatible API to listen" },
+      );
+      const created = [];
+      for (const name of ["Shop One", "Shop Two", "Ads"]) {
+        created.push(
+          await app.invoke("create_browser_profile_new", {
+            name,
+            browserStr: "wayfern",
+            version: "150.0.7871.100",
+            releaseType: "stable",
+            proxyId: null,
+            vpnId: null,
+            wayfernConfig: { fingerprint: "{}" },
+            groupId: null,
+            ephemeral: false,
+            dnsBlocklist: null,
+            launchHook: null,
+          }),
+        );
+      }
+      const uuid = created[0].id.replaceAll("-", "");
+      const profiles = "/api/v2/automation/profiles";
+
+      const whole = await octo("GET", profiles);
+      assert.equal(whole.value.success, true);
+      assert.equal(whole.value.total_count, 3);
+      assert.equal(whole.value.data.length, 3);
+
+      // Octo addresses a profile by a 32-character id; dashes are accepted too.
+      const one = await octo("GET", `${profiles}/${uuid}`);
+      assert.equal(one.value.data.title, "Shop One");
+      assert.equal(
+        (await octo("GET", `${profiles}/${created[0].id}`)).value.data.uuid,
+        uuid,
+      );
+      assert.equal(
+        (await octo("GET", `${profiles}/${"0".repeat(32)}`)).response.status,
+        404,
+      );
+
+      const proxy = await octo("POST", "/api/v2/automation/proxies", {
+        title: "Edge",
+        type: "socks5",
+        host: "127.0.0.1",
+        port: 1080,
+        login: "user",
+        password: "secret",
+      });
+      assert.equal(proxy.value.success, true);
+      const proxyId = proxy.value.data.uuid;
+
+      const edited = await octo("PATCH", `${profiles}/${uuid}`, {
+        title: "Shop Main",
+        description: "warmed",
+        tags: ["shop", "eu"],
+        proxy: { uuid: proxyId },
+      });
+      assert.equal(edited.response.status, 200, JSON.stringify(edited.value));
+      assert.deepEqual(
+        {
+          title: edited.value.data.title,
+          description: edited.value.data.description,
+          tags: edited.value.data.tags,
+          proxy: edited.value.data.proxy,
+        },
+        {
+          title: "Shop Main",
+          description: "warmed",
+          tags: ["shop", "eu"],
+          proxy: { uuid: proxyId },
+        },
+      );
+      // Only what is sent changes; `proxy: null` detaches.
+      const detached = await octo("PATCH", `${profiles}/${uuid}`, {
+        proxy: null,
+      });
+      assert.equal(detached.value.data.proxy, null);
+      assert.equal(detached.value.data.title, "Shop Main");
+      assert.deepEqual(detached.value.data.tags, ["shop", "eu"]);
+      const stored = (await app.invoke("list_browser_profiles")).find(
+        (profile) => profile.id === created[0].id,
+      );
+      assert.equal(stored.name, "Shop Main");
+      assert.equal(stored.note, "warmed");
+      assert.equal(stored.proxy_id, null);
+
+      const tags = await octo("GET", "/api/v2/automation/tags");
+      assert.deepEqual(tags.value.data.map((tag) => tag.name).sort(), [
+        "eu",
+        "shop",
+      ]);
+
+      const search = await octo("GET", `${profiles}?search=shop`);
+      assert.deepEqual(search.value.data.map((p) => p.title).sort(), [
+        "Shop Main",
+        "Shop Two",
+      ]);
+      const tagged = await octo("GET", `${profiles}?search_tags=shop,eu`);
+      assert.deepEqual(
+        tagged.value.data.map((p) => p.title),
+        ["Shop Main"],
+      );
+      const paged = await octo("GET", `${profiles}?page_len=2&page=1`);
+      assert.equal(paged.value.total_count, 3);
+      assert.equal(paged.value.page, 1);
+      assert.equal(paged.value.data.length, 1);
+
+      const cookies = [
+        {
+          domain: ".example.com",
+          name: "sid",
+          value: "session-token",
+          path: "/",
+          secure: true,
+          httpOnly: true,
+          expirationDate: 2000000000,
+        },
+        {
+          domain: "shop.example.org",
+          name: "cart",
+          value: "3",
+          path: "/",
+          secure: false,
+          httpOnly: false,
+          expirationDate: 2000000000,
+        },
+      ];
+      const imported = await octo(
+        "POST",
+        `${profiles}/${uuid}/import_cookies`,
+        { cookies },
+      );
+      assert.equal(
+        imported.response.status,
+        200,
+        JSON.stringify(imported.value),
+      );
+      assert.equal(imported.value.data.imported, 2);
+      const exported = await octo("GET", `${profiles}/${uuid}/cookies`);
+      assert.deepEqual(
+        exported.value.data
+          .map((cookie) => `${cookie.name}=${cookie.value}`)
+          .sort(),
+        ["cart=3", "sid=session-token"],
+      );
+
+      const proxyEdit = await octo(
+        "PATCH",
+        `/api/v2/automation/proxies/${proxyId}`,
+        { title: "Edge 2", port: 1081 },
+      );
+      assert.equal(
+        proxyEdit.response.status,
+        200,
+        JSON.stringify(proxyEdit.value),
+      );
+      assert.deepEqual(
+        {
+          title: proxyEdit.value.data.title,
+          type: proxyEdit.value.data.type,
+          host: proxyEdit.value.data.host,
+          port: proxyEdit.value.data.port,
+          login: proxyEdit.value.data.login,
+        },
+        {
+          title: "Edge 2",
+          type: "socks5",
+          host: "127.0.0.1",
+          port: 1081,
+          login: "user",
+        },
+      );
+      assert.equal(
+        (
+          await octo("PATCH", `/api/v2/automation/proxies/${proxyId}`, {
+            type: "vless",
+          })
+        ).response.status,
+        400,
+      );
+      assert.equal(
+        (await octo("PATCH", "/api/v2/automation/proxies/none", { port: 1 }))
+          .response.status,
+        404,
+      );
+      const removed = await octo(
+        "DELETE",
+        `/api/v2/automation/proxies/${proxyId}`,
+      );
+      assert.equal(removed.value.data.deleted, 1);
+      assert.deepEqual(
+        (await octo("GET", "/api/v2/automation/proxies")).value.data,
+        [],
+      );
+    },
+    {
+      seedDownloadedBrowser: true,
+      extraEnv: { ANTIDETECT_LOCAL_API_PORT: String(port) },
+    },
   );
 });

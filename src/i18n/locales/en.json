@@ -248,7 +248,22 @@
     },
     "trashRetentionOff": "Delete at once",
     "scrollSectionsLeft": "Scroll sections left",
-    "scrollSectionsRight": "Scroll sections right"
+    "scrollSectionsRight": "Scroll sections right",
+    "cloakbrowserLicense": {
+      "title": "CloakBrowser Pro licence",
+      "description": "With a licence key, new CloakBrowser profiles are created on the current Pro build of Chromium. Without one they use the free build.",
+      "keyLabel": "Licence key",
+      "placeholder": "Paste the key",
+      "endsWith": "Key ending in {{hint}}",
+      "activeUntil": "Active until {{date}}",
+      "refused": "Refused",
+      "notChecked": "Not checked",
+      "fromEnvironment": "Set by the CLOAKBROWSER_LICENSE_KEY environment variable; it cannot be changed here.",
+      "removeNote": "Profiles created on a Pro build do not start without a key.",
+      "replace": "Replace",
+      "saved": "Licence key saved. The Pro build is downloading in the background.",
+      "removed": "Licence key removed."
+    }
   },
   "header": {
     "searchPlaceholder": "Search profiles...",
@@ -519,7 +534,15 @@
       "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
     },
     "count": "Number of profiles",
-    "countHint": "Create several profiles at once. They are named “Name 1”, “Name 2” and so on, and each gets its own fingerprint."
+    "countHint": "Create several profiles at once. They are named “Name 1”, “Name 2” and so on, and each gets its own fingerprint.",
+    "templates": {
+      "label": "Template",
+      "none": "No templates yet. Set the profile up, then save it under a name.",
+      "namePlaceholder": "Template name",
+      "hint": "A template keeps the engine, proxy and fingerprint settings. Every profile still gets a device of its own.",
+      "saved": "Template “{{name}}” saved",
+      "deleteAria": "Delete template {{name}}"
+    }
   },
   "deleteDialog": {
     "title": "Delete Profile",
@@ -2448,11 +2471,14 @@
     "cameraVideoNeedsFfmpeg": "This video has to be converted, and ffmpeg is not installed. Install ffmpeg or choose a .mjpeg file.",
     "cameraVideoConversionFailed": "The video could not be converted: {{detail}}",
     "locationDatabaseUnavailable": "The location database has not finished downloading, so the profile's timezone and language cannot be matched to its address yet. Try again in a minute, or turn off automatic location for this profile.",
-    "cloakbrowserLicenseRequired": "This profile runs on a CloakBrowser Pro build, and no licence key is set. Put the key in ~/.cloakbrowser/license.key and try again.",
+    "cloakbrowserLicenseRequired": "This profile runs on a CloakBrowser Pro build, and no licence key is set. Add the key in Settings and try again.",
     "cloakbrowserLicenseInvalid": "CloakBrowser Pro refused the licence key: it is invalid or has expired.",
     "cloakbrowserLicenseUnreachable": "CloakBrowser Pro could not check the licence: its server did not answer. Check the connection and try again.",
     "cloakbrowserLicenseSetup": "CloakBrowser Pro could not start: the folder ~/.cloakbrowser is not writable.",
-    "cloakbrowserSessionLimit": "CloakBrowser Pro: your plan's limit of browsers running at once is reached. Close one and try again."
+    "cloakbrowserSessionLimit": "CloakBrowser Pro: your plan's limit of browsers running at once is reached. Close one and try again.",
+    "profileTemplateInvalid": "This template cannot be saved: its name is too long or its settings are damaged.",
+    "profileTemplateLimit": "There are too many templates. Delete one before saving another.",
+    "profileTemplateNotFound": "This template no longer exists."
   },
   "rail": {
     "profiles": "Profiles",

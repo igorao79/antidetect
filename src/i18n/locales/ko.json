@@ -248,7 +248,22 @@
     },
     "trashRetentionOff": "즉시 삭제",
     "scrollSectionsLeft": "섹션 왼쪽으로 스크롤",
-    "scrollSectionsRight": "섹션 오른쪽으로 스크롤"
+    "scrollSectionsRight": "섹션 오른쪽으로 스크롤",
+    "cloakbrowserLicense": {
+      "title": "CloakBrowser Pro 라이선스",
+      "description": "라이선스 키가 있으면 새 CloakBrowser 프로필이 최신 Pro 빌드의 Chromium으로 만들어집니다. 키가 없으면 무료 빌드를 사용합니다.",
+      "keyLabel": "라이선스 키",
+      "placeholder": "키 붙여넣기",
+      "endsWith": "{{hint}}(으)로 끝나는 키",
+      "activeUntil": "{{date}}까지 유효",
+      "refused": "거부됨",
+      "notChecked": "확인 안 됨",
+      "fromEnvironment": "환경 변수 CLOAKBROWSER_LICENSE_KEY로 설정되어 있어 여기서 변경할 수 없습니다.",
+      "removeNote": "Pro 빌드에서 만든 프로필은 키 없이 시작되지 않습니다.",
+      "replace": "교체",
+      "saved": "라이선스 키를 저장했습니다. Pro 빌드를 백그라운드에서 다운로드합니다.",
+      "removed": "라이선스 키를 삭제했습니다."
+    }
   },
   "header": {
     "searchPlaceholder": "프로필 검색...",
@@ -519,7 +534,15 @@
       "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
     },
     "count": "프로필 수",
-    "countHint": "여러 프로필을 한 번에 만듭니다. “이름 1”, “이름 2”처럼 이름이 붙고 각각 고유한 지문을 갖습니다."
+    "countHint": "여러 프로필을 한 번에 만듭니다. “이름 1”, “이름 2”처럼 이름이 붙고 각각 고유한 지문을 갖습니다.",
+    "templates": {
+      "label": "템플릿",
+      "none": "아직 템플릿이 없습니다. 프로필을 설정한 뒤 이름을 붙여 저장하세요.",
+      "namePlaceholder": "템플릿 이름",
+      "hint": "템플릿에는 엔진, 프록시, 핑거프린트 설정이 저장됩니다. 기기는 프로필마다 따로 만들어집니다.",
+      "saved": "템플릿 “{{name}}”을(를) 저장했습니다",
+      "deleteAria": "템플릿 {{name}} 삭제"
+    }
   },
   "deleteDialog": {
     "title": "프로필 삭제",
@@ -2448,11 +2471,14 @@
     "cameraVideoNeedsFfmpeg": "이 동영상은 변환이 필요하지만 ffmpeg가 설치되어 있지 않습니다. ffmpeg를 설치하거나 .mjpeg 파일을 선택하세요.",
     "cameraVideoConversionFailed": "동영상을 변환할 수 없습니다: {{detail}}",
     "locationDatabaseUnavailable": "위치 데이터베이스 다운로드가 아직 끝나지 않아 프로필의 시간대와 언어를 주소에 맞출 수 없습니다. 1분 뒤에 다시 시도하거나 이 프로필의 자동 위치를 끄세요.",
-    "cloakbrowserLicenseRequired": "이 프로필은 CloakBrowser Pro 빌드에서 실행되는데 라이선스 키가 설정되어 있지 않습니다. 키를 ~/.cloakbrowser/license.key에 저장한 뒤 다시 시도하세요.",
+    "cloakbrowserLicenseRequired": "이 프로필은 CloakBrowser Pro 빌드에서 실행되는데 라이선스 키가 설정되어 있지 않습니다. 설정에서 키를 추가한 뒤 다시 시도하세요.",
     "cloakbrowserLicenseInvalid": "CloakBrowser Pro가 라이선스 키를 거부했습니다. 키가 잘못되었거나 만료되었습니다.",
     "cloakbrowserLicenseUnreachable": "CloakBrowser Pro가 라이선스를 확인하지 못했습니다. 서버가 응답하지 않습니다. 연결을 확인한 뒤 다시 시도하세요.",
     "cloakbrowserLicenseSetup": "CloakBrowser Pro를 시작하지 못했습니다. ~/.cloakbrowser 폴더에 쓸 수 없습니다.",
-    "cloakbrowserSessionLimit": "CloakBrowser Pro: 요금제의 동시 실행 브라우저 한도에 도달했습니다. 하나를 닫은 뒤 다시 시도하세요."
+    "cloakbrowserSessionLimit": "CloakBrowser Pro: 요금제의 동시 실행 브라우저 한도에 도달했습니다. 하나를 닫은 뒤 다시 시도하세요.",
+    "profileTemplateInvalid": "이 템플릿을 저장할 수 없습니다. 이름이 너무 길거나 설정이 손상되었습니다.",
+    "profileTemplateLimit": "템플릿이 너무 많습니다. 하나를 삭제한 뒤 저장하세요.",
+    "profileTemplateNotFound": "이 템플릿은 더 이상 없습니다."
   },
   "rail": {
     "profiles": "프로필",
