@@ -63,6 +63,7 @@ import { useProfileReferences } from "@/hooks/use-profile-references";
 import { useProxyEvents } from "@/hooks/use-proxy-events";
 import { useVpnEvents } from "@/hooks/use-vpn-events";
 import { parseBackendError, translateBackendError } from "@/lib/backend-errors";
+import { DONUT_CLOUD } from "@/lib/cloud-only-pages";
 import { isFirstHopEncrypted, proxyProtocolToken } from "@/lib/proxy-string";
 import { canonicalProxyType } from "@/lib/proxy-type";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
@@ -1380,12 +1381,14 @@ export function ProxyManagementDialog({
       {isOpen && activeTab === "proxies" && (
         <DataTableActionBar table={proxiesTable}>
           <DataTableActionBarSelection table={proxiesTable} />
-          <DataTableActionBarAction
-            tooltip={t("syncTooltips.bulkToggle")}
-            onClick={() => void handleBulkToggleProxiesSync()}
-          >
-            <LuRefreshCw />
-          </DataTableActionBarAction>
+          {DONUT_CLOUD && (
+            <DataTableActionBarAction
+              tooltip={t("syncTooltips.bulkToggle")}
+              onClick={() => void handleBulkToggleProxiesSync()}
+            >
+              <LuRefreshCw />
+            </DataTableActionBarAction>
+          )}
           <DataTableActionBarAction
             tooltip={t("common.buttons.delete")}
             onClick={() => {
@@ -1409,12 +1412,14 @@ export function ProxyManagementDialog({
       {isOpen && activeTab === "vpns" && (
         <DataTableActionBar table={vpnsTable}>
           <DataTableActionBarSelection table={vpnsTable} />
-          <DataTableActionBarAction
-            tooltip={t("syncTooltips.bulkToggle")}
-            onClick={() => void handleBulkToggleVpnsSync()}
-          >
-            <LuRefreshCw />
-          </DataTableActionBarAction>
+          {DONUT_CLOUD && (
+            <DataTableActionBarAction
+              tooltip={t("syncTooltips.bulkToggle")}
+              onClick={() => void handleBulkToggleVpnsSync()}
+            >
+              <LuRefreshCw />
+            </DataTableActionBarAction>
+          )}
           <DataTableActionBarAction
             tooltip={t("common.buttons.delete")}
             onClick={() => {

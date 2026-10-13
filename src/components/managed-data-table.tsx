@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/table";
 import { useTablePreferences } from "@/hooks/use-table-preferences";
 import { useTableFilters, useTableKeyboard } from "@/hooks/use-table-tools";
+import { CLOUD_ONLY_COLUMNS, DONUT_CLOUD } from "@/lib/cloud-only-pages";
 import {
   resolveTableVisibility,
   type TableFilter,
@@ -56,6 +57,8 @@ type Entity =
   | StoredProxy
   | VpnConfig;
 type EntityTableId = Exclude<TableId, "profiles">;
+const UNAVAILABLE_COLUMNS = DONUT_CLOUD ? [] : CLOUD_ONLY_COLUMNS;
+
 const LABELS: Record<EntityTableId, Record<string, string>> = {
   proxies: {
     name: "common.labels.name",
@@ -167,25 +170,29 @@ export function useEntityTableTools<T extends Entity>(
   const [width, setWidth] = useState(1024);
   const labels = useMemo(
     () =>
-      Object.entries(LABELS[id]).map(([columnId, key]) => ({
-        id: columnId,
-        label: t(key),
-        hideable: columnId !== "name",
-      })),
+      Object.entries(LABELS[id])
+        .filter(([columnId]) => !UNAVAILABLE_COLUMNS.includes(columnId))
+        .map(([columnId, key]) => ({
+          id: columnId,
+          label: t(key),
+          hideable: columnId !== "name",
+        })),
     [id, t],
   );
   const definitions = useMemo<TableFilter<T>[]>(() => {
-    const result: TableFilter<T>[] = [
-      {
-        id: "sync",
-        label: t("proxies.management.syncCol"),
-        value: (row) => (row.sync_enabled ? "enabled" : "disabled"),
-        options: [
-          { value: "enabled", label: t("tables.enabled") },
-          { value: "disabled", label: t("tables.disabled") },
-        ],
-      },
-    ];
+    const result: TableFilter<T>[] = UNAVAILABLE_COLUMNS.includes("sync")
+      ? []
+      : [
+          {
+            id: "sync",
+            label: t("proxies.management.syncCol"),
+            value: (row) => (row.sync_enabled ? "enabled" : "disabled"),
+            options: [
+              { value: "enabled", label: t("tables.enabled") },
+              { value: "disabled", label: t("tables.disabled") },
+            ],
+          },
+        ];
     const extra =
       id === "proxies"
         ? "protocol"
@@ -245,6 +252,7 @@ export function useEntityTableTools<T extends Entity>(
         : {},
     view.preferences.visibility,
     ["name", "select", "actions", "icon"],
+    [...UNAVAILABLE_COLUMNS],
   );
   return { view, labels, filters, visibility, setWidth };
 }

@@ -197,6 +197,19 @@ export function CreateProfileDialog({
     useState<CloakBrowserConfig>(defaultCloakBrowserConfig);
   const [wayfernConfig, setWayfernConfig] =
     useState<WayfernConfig>(defaultWayfernConfig);
+  // Wayfern takes its fingerprints from a Donut account, which this fork does
+  // not have, so it is offered only where a build is already installed.
+  const [wayfernOffered, setWayfernOffered] = useState(false);
+  useEffect(() => {
+    if (!isOpen) return;
+    void invoke<string[]>("get_supported_browsers")
+      .then((browsers) => {
+        setWayfernOffered(browsers.includes("wayfern"));
+      })
+      .catch((err: unknown) => {
+        console.error("Failed to read the supported engines:", err);
+      });
+  }, [isOpen]);
   const [isCreating, setIsCreating] = useState(false);
   const [ephemeral, setEphemeral] = useState(false);
   const [allowance, setAllowance] = useState<ProfileCreationAllowance | null>(
@@ -632,7 +645,9 @@ export function CreateProfileDialog({
             className="flex flex-wrap items-center gap-1.5"
             {...rise(0.02)}
           >
-            {ENGINES.map((option) => (
+            {ENGINES.filter(
+              (option) => option !== "wayfern" || wayfernOffered,
+            ).map((option) => (
               <Tooltip key={option} delayDuration={600}>
                 <TooltipTrigger asChild>
                   <button

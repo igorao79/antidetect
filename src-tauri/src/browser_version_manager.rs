@@ -81,6 +81,7 @@ impl BrowserVersionManager {
     all_browsers
       .into_iter()
       .filter(|browser| self.is_browser_supported(browser).unwrap_or(false))
+      .filter(|browser| *browser != "wayfern" || crate::donut_cloud::wayfern_offered())
       .map(|s| s.to_string())
       .collect()
   }

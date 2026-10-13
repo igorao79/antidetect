@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useProfileReferences } from "@/hooks/use-profile-references";
 import { parseBackendError, translateBackendError } from "@/lib/backend-errors";
+import { DONUT_CLOUD } from "@/lib/cloud-only-pages";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
 import type { GroupWithCount, ProfileGroup } from "@/types";
 import { RippleButton } from "./ui/ripple";
@@ -659,14 +660,16 @@ export function GroupManagementDialog({
       {isOpen && (
         <DataTableActionBar table={table}>
           <DataTableActionBarSelection table={table} />
-          <DataTableActionBarAction
-            tooltip={t("syncTooltips.bulkToggle")}
-            onClick={() => {
-              void handleBulkToggleSync();
-            }}
-          >
-            <LuRefreshCw />
-          </DataTableActionBarAction>
+          {DONUT_CLOUD && (
+            <DataTableActionBarAction
+              tooltip={t("syncTooltips.bulkToggle")}
+              onClick={() => {
+                void handleBulkToggleSync();
+              }}
+            >
+              <LuRefreshCw />
+            </DataTableActionBarAction>
+          )}
           <DataTableActionBarAction
             tooltip={t("common.buttons.delete")}
             onClick={() => setBulkDeleteOpen(true)}
