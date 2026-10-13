@@ -53,9 +53,19 @@ Fork-specific rules:
   of the create dialog) keep the dialog's choices under a name in
   `data/profile_templates.json`: engine, proxy, extension group and fingerprint settings, never
   a pinned fingerprint or seed, so every profile made from one is still its own device.
-- Pages that only work against Donut's cloud (the cloud Cookie Bot, the Agent console) are
-  left out of the rail, the shortcuts and the command palette by `src/lib/cloud-only-pages.ts`;
-  their code and upstream tests stay (the two E2E tests are skipped).
+- Donut's cloud is switched off in the interface by one flag, `DONUT_CLOUD` in
+  `src/lib/cloud-only-pages.ts`, with the lists beside it: the Account page (signing in, sync
+  setup), the cloud Cookie Bot and the Agent console are out of the rail, the shortcuts and
+  the command palette; Settings has no Donut licence and no sync encryption section; the
+  welcome has no licence step; the trial-expired and paid-welcome dialogs never open; no table
+  shows a sync column, filter or bulk sync button, and a profile's details have no sync
+  section; tips that lead to those pages are not listed. Upstream's code and tests stay for
+  merges (the E2E tests of those surfaces are skipped with `CLOUD_ONLY`).
+- Wayfern takes its fingerprints and launch token from a Donut account, so it is offered only
+  where a build is already installed (`donut_cloud.rs::wayfern_offered`, applied in
+  `get_supported_browsers`; the create dialog asks that command). With none installed the
+  app no longer asks donutbrowser.com for the Wayfern version at every start. Signed out,
+  nothing else in the backend calls Donut's servers.
 - The camera and microphone prompt at launch is offered once (`src/lib/permission-prompt.ts`);
   Settings requests them afterwards. An ad-hoc signed build is a new app to macOS after every
   rebuild, so a grant given to an earlier build does not carry over.
@@ -78,7 +88,7 @@ Fork-specific rules:
   stay easy. Fork modules: `browser_runner/{launch_network,engine_common,camoufox,cloakbrowser}.rs`,
   `api_client/{camoufox,cloakbrowser}.rs`, `camoufox/`, `camoufox_manager.rs`,
   `cloakbrowser_manager.rs`, `cloakbrowser_camera.rs`, `cloakbrowser_license.rs`,
-  `profile_templates.rs`, `interface_language.rs`, `synchronizer_capture.rs`,
+  `profile_templates.rs`, `interface_language.rs`, `donut_cloud.rs`, `synchronizer_capture.rs`,
   `profile/{after_exit,camoufox,cloakbrowser}.rs`, `ssh_upstream.rs`,
   `cookie_robot.rs`, `octo_compat_api.rs`, and on the frontend
   `cloakbrowser-config-{form,dialog}.tsx`, `camoufox-config-dialog.tsx`,
@@ -191,6 +201,7 @@ donutbrowser/
 │   │   ├── cloakbrowser_license.rs # CloakBrowser Pro licence key: check, save, remove (fork)
 │   │   ├── profile_templates.rs    # Named sets of the create dialog's choices (fork)
 │   │   ├── interface_language.rs   # Language of a profile browser's own menus, per engine (fork)
+│   │   ├── donut_cloud.rs          # What the backend still treats as available without Donut's cloud (fork)
 │   │   ├── profile_importer.rs     # Bulk profile import (Chromium-family detection, ZIP, batch)
 │   │   ├── fingerprint_consistency.rs # Launch-time proxy exit vs fingerprint timezone/language check
 │   │   ├── dns_blocklist.rs         # Hagezi DNS blocklists + user custom lists/allowlist

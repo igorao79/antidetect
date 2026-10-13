@@ -74,6 +74,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useProfileReferences } from "@/hooks/use-profile-references";
 import { parseBackendError, translateBackendError } from "@/lib/backend-errors";
+import { DONUT_CLOUD } from "@/lib/cloud-only-pages";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
 import type { Extension, ExtensionGroup, FetchedExtension } from "@/types";
 import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
@@ -2210,14 +2211,16 @@ export function ExtensionManagementDialog({
       {isOpen && activeTab === "extensions" && (
         <DataTableActionBar table={extTable}>
           <DataTableActionBarSelection table={extTable} />
-          <DataTableActionBarAction
-            tooltip={t("syncTooltips.bulkToggle")}
-            onClick={() => {
-              void handleBulkToggleExtSync();
-            }}
-          >
-            <LuRefreshCw />
-          </DataTableActionBarAction>
+          {DONUT_CLOUD && (
+            <DataTableActionBarAction
+              tooltip={t("syncTooltips.bulkToggle")}
+              onClick={() => {
+                void handleBulkToggleExtSync();
+              }}
+            >
+              <LuRefreshCw />
+            </DataTableActionBarAction>
+          )}
           <DataTableActionBarAction
             tooltip={t("common.buttons.delete")}
             variant="destructive"
@@ -2234,14 +2237,16 @@ export function ExtensionManagementDialog({
       {isOpen && activeTab === "groups" && (
         <DataTableActionBar table={groupTable}>
           <DataTableActionBarSelection table={groupTable} />
-          <DataTableActionBarAction
-            tooltip={t("syncTooltips.bulkToggle")}
-            onClick={() => {
-              void handleBulkToggleGroupSync();
-            }}
-          >
-            <LuRefreshCw />
-          </DataTableActionBarAction>
+          {DONUT_CLOUD && (
+            <DataTableActionBarAction
+              tooltip={t("syncTooltips.bulkToggle")}
+              onClick={() => {
+                void handleBulkToggleGroupSync();
+              }}
+            >
+              <LuRefreshCw />
+            </DataTableActionBarAction>
+          )}
           <DataTableActionBarAction
             tooltip={t("common.buttons.delete")}
             variant="destructive"

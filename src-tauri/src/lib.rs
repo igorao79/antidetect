@@ -129,6 +129,7 @@ mod cookie_bot;
 mod cookie_manager;
 mod cookie_paste;
 mod cookie_robot;
+mod donut_cloud;
 pub mod events;
 mod interface_language;
 mod mcp_integrations;

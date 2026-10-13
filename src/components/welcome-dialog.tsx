@@ -30,6 +30,7 @@ import { useInputModality } from "@/hooks/use-input-modality";
 import { usePermissions } from "@/hooks/use-permissions";
 import { translateBackendError } from "@/lib/backend-errors";
 import { getBrowserDisplayName } from "@/lib/browser-utils";
+import { DONUT_CLOUD } from "@/lib/cloud-only-pages";
 import { getCurrentOS } from "@/lib/platform";
 
 type WelcomeStep = "intro" | "license" | "permissions" | "setup";
@@ -169,7 +170,7 @@ export function WelcomeDialog({
     (step === "permissions" || !isInitialized || !permissionsGranted);
   const visibleSteps: WelcomeStep[] = [
     "intro",
-    "license",
+    ...(DONUT_CLOUD ? (["license"] as const) : []),
     ...(showPermissionsStep ? (["permissions"] as const) : []),
     ...(needsSetup ? (["setup"] as const) : []),
   ];
@@ -179,6 +180,19 @@ export function WelcomeDialog({
     : ({ duration: 0 } as const);
   // Where the "skip" / "continue" affordances go: into the setup flow when a
   // browser/profile is still needed, otherwise straight to completion.
+  // What follows the licence step, and the intro when there is no such step.
+  const leaveLicense = () => {
+    if (!needsSetup) {
+      onComplete();
+    } else if (
+      getCurrentOS() === "macos" &&
+      !(isInitialized && permissionsGranted)
+    ) {
+      setStep("permissions");
+    } else {
+      setStep("setup");
+    }
+  };
   const advanceToSetup = () => {
     if (needsSetup) setStep("setup");
     else onComplete();
@@ -290,7 +304,9 @@ export function WelcomeDialog({
                 <Button
                   size="sm"
                   className="gap-1.5"
-                  onClick={() => setStep("license")}
+                  onClick={
+                    DONUT_CLOUD ? () => setStep("license") : leaveLicense
+                  }
                 >
                   {t("welcome.next")}
                   <LuArrowRight className="size-4 shrink-0" />
@@ -354,22 +370,7 @@ export function WelcomeDialog({
                 >
                   {t("welcome.skip")}
                 </Button>
-                <Button
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={() => {
-                    if (!needsSetup) {
-                      onComplete();
-                    } else if (
-                      getCurrentOS() === "macos" &&
-                      !(isInitialized && permissionsGranted)
-                    ) {
-                      setStep("permissions");
-                    } else {
-                      setStep("setup");
-                    }
-                  }}
-                >
+                <Button size="sm" className="gap-1.5" onClick={leaveLicense}>
                   {t("welcome.license.agree")}
                   <LuArrowRight className="size-4 shrink-0" />
                 </Button>

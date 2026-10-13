@@ -71,6 +71,10 @@ async function tableShiftClick(app, selector) {
   );
 }
 
+const CLOUD_ONLY = {
+  skip: "the fork leaves this page out: it only works against Donut's cloud",
+};
+
 async function openProfileCreation(app) {
   await app.clickText("New", { roles: ["button"] });
   await app.waitForText(en.createProfile.title);
@@ -1724,11 +1728,6 @@ test("the local API page shows a one-line example and opens runnable examples in
     await app.capture("integrations-local-api-examples");
     await dismissSurface(app);
     await dismissSurface(app);
-
-    await app.clickSelector(`[aria-label="${en.rail.account}"]`);
-    await app.waitForText(en.account.signedOutDescription);
-    await app.capture("account-signed-out");
-    await dismissSurface(app);
   });
 });
 
@@ -1739,7 +1738,6 @@ test("all primary navigation buttons and sub-page tabs render and remain interac
       ["Network", /Proxies|VPNs|DNS/i],
       ["Extensions", /Extensions|Groups/i],
       ["Integrations", /API|MCP/i],
-      ["Account", /Account|Sign in/i],
     ];
     for (const [label, expected] of surfaces) {
       await app.clickSelector(`[aria-label="${label}"]`);
@@ -2379,9 +2377,8 @@ test("first-run onboarding stays recoverable, responsive, and platform-aware", a
       assert.ok(layout.top >= 0 && layout.bottom <= layout.viewportHeight);
       assert.equal(layout.progressNow, "1");
 
+      // The fork has no Donut licence step: the intro leads straight on.
       await app.clickText("Next", { roles: ["button"] });
-      await app.waitForText("Licensing");
-      await app.clickText("I understand", { roles: ["button"] });
 
       await app.waitFor(
         async () =>
@@ -2858,13 +2855,7 @@ test("linking a folder says what it costs, records the path, and locks that row'
 
     const linkedRow = await extensionRow(app, "Donut UI Linked Folder");
     assert.equal(linkedRow?.source, EXTENSION_STRINGS.source.linked);
-    assert.equal(linkedRow.syncChecked, false);
-    assert.equal(linkedRow.syncDisabled, true);
-    assert.equal(
-      (await extensionRow(app, "Donut E2E Fixture"))?.syncDisabled,
-      false,
-      "only the linked row loses its sync control",
-    );
+    // The fork shows no sync control in the table; the stored row says the same.
 
     const linked = (await app.invoke("list_extensions")).find(
       (extension) => extension.name === "Donut UI Linked Folder",
@@ -2981,10 +2972,6 @@ test("a folder with no manifest fails with the translated reason, not a raw code
     assert.equal((await restoreFolderPicker(app)).length, 1);
   });
 });
-
-const CLOUD_ONLY = {
-  skip: "the fork leaves this page out: it only works against Donut's cloud",
-};
 
 test(
   "the agent page guides setup, then shows agents, requests, notes, take-overs and the pause live",
@@ -3506,6 +3493,10 @@ test("Settings shows the CloakBrowser licence by its last characters and refuses
     const section = '[data-settings-section="cloakbrowserLicense"]';
     await app.clickSelector(`[aria-label="${en.rail.settings}"]`);
     await app.waitForText(en.settings.cloakbrowserLicense.title);
+    // Nothing of Donut's licence or of sync is offered in Settings.
+    const settingsText = await app.bodyText();
+    assert.ok(!settingsText.includes(en.settings.commercial.title));
+    assert.ok(!settingsText.includes(en.settings.encryption.title));
     await app.execute(
       `document.querySelector(arguments[0]).scrollIntoView({ block: "center" });`,
       [section],
@@ -3602,6 +3593,7 @@ test("the navigation names every destination in a wide window and folds to icons
     assert.ok(destinations.includes(en.rail.integrations), `${destinations}`);
     assert.ok(!destinations.includes(en.rail.cookieBot), `${destinations}`);
     assert.ok(!destinations.includes(en.rail.agent), `${destinations}`);
+    assert.ok(!destinations.includes(en.rail.account), `${destinations}`);
     const modifier =
       process.platform === "darwin" ? { meta: true } : { ctrl: true };
     await app.pressShortcut({ ...modifier, key: "b" });
@@ -4396,118 +4388,122 @@ test("one tip for an unused feature opens by itself as a single card, then waits
   );
 });
 
-test("a freshly paid account is welcomed once and walked to its plan tips", async () => {
-  await withApp("ui-paid-welcome", async (app) => {
-    await app.waitForText("No profiles yet");
-    try {
-      // A pro account that signed in a moment ago, as the desktop would hold
-      // it after a device-code login. Only the IPC read of the cached user is
-      // stubbed; the plan observation and the tips state run for real.
-      await stubCommand(app, "cloud_get_user", {
-        logged_in_at: new Date().toISOString(),
-        user: {
-          id: "ui-paid-welcome",
-          email: "paid@example.test",
-          plan: "pro",
-          planPeriod: "monthly",
-          subscriptionStatus: "active",
-          profileLimit: 50,
-          cloudProfilesUsed: 0,
-          proxyBandwidthLimitMb: 0,
-          proxyBandwidthUsedMb: 0,
-          proxyBandwidthExtraMb: 0,
-          isPrimaryDevice: true,
-        },
-      });
-      await app.invoke("plugin:event|emit", {
-        event: "cloud-auth-changed",
-        payload: null,
-      });
-      await app.waitFor(
-        () =>
-          app.execute(
+test(
+  "a freshly paid account is welcomed once and walked to its plan tips",
+  CLOUD_ONLY,
+  async () => {
+    await withApp("ui-paid-welcome", async (app) => {
+      await app.waitForText("No profiles yet");
+      try {
+        // A pro account that signed in a moment ago, as the desktop would hold
+        // it after a device-code login. Only the IPC read of the cached user is
+        // stubbed; the plan observation and the tips state run for real.
+        await stubCommand(app, "cloud_get_user", {
+          logged_in_at: new Date().toISOString(),
+          user: {
+            id: "ui-paid-welcome",
+            email: "paid@example.test",
+            plan: "pro",
+            planPeriod: "monthly",
+            subscriptionStatus: "active",
+            profileLimit: 50,
+            cloudProfilesUsed: 0,
+            proxyBandwidthLimitMb: 0,
+            proxyBandwidthUsedMb: 0,
+            proxyBandwidthExtraMb: 0,
+            isPrimaryDevice: true,
+          },
+        });
+        await app.invoke("plugin:event|emit", {
+          event: "cloud-auth-changed",
+          payload: null,
+        });
+        await app.waitFor(
+          () =>
+            app.execute(
+              `return Boolean(document.querySelector('[data-slot="paid-welcome"]'));`,
+            ),
+          { description: "the paid welcome" },
+        );
+        assert.ok(
+          await app.visibleTextIncludes(
+            en.paidWelcome.title.replace("{{plan}}", "Pro"),
+          ),
+        );
+        assert.deepEqual(
+          await app.execute(
+            `return [...document.querySelectorAll('[data-slot="paid-welcome-item"]')].map((node) => node.dataset.tipId);`,
+          ),
+          [
+            "cloudBackup",
+            "cookieBot",
+            "crossOs",
+            "automation",
+            "agent",
+            "remoteControl",
+          ],
+          "every capability the plan grants, in catalog order, and nothing it lacks",
+        );
+        await app.capture("paid-welcome");
+
+        // A row opens the catalog on that tip, with the plan tips now listed.
+        await app.clickSelector(
+          '[data-slot="paid-welcome-item"][data-tip-id="cookieBot"]',
+        );
+        await app.waitFor(
+          () =>
+            app.execute(
+              `return document.querySelector('[data-slot="tip-detail"]')?.dataset.tipId === "cookieBot";`,
+            ),
+          { description: "the Cookie Bot tip" },
+        );
+        assert.equal(
+          await app.execute(
             `return Boolean(document.querySelector('[data-slot="paid-welcome"]'));`,
           ),
-        { description: "the paid welcome" },
-      );
-      assert.ok(
-        await app.visibleTextIncludes(
-          en.paidWelcome.title.replace("{{plan}}", "Pro"),
-        ),
-      );
-      assert.deepEqual(
-        await app.execute(
-          `return [...document.querySelectorAll('[data-slot="paid-welcome-item"]')].map((node) => node.dataset.tipId);`,
-        ),
-        [
-          "cloudBackup",
-          "cookieBot",
-          "crossOs",
-          "automation",
-          "agent",
-          "remoteControl",
-        ],
-        "every capability the plan grants, in catalog order, and nothing it lacks",
-      );
-      await app.capture("paid-welcome");
+          false,
+        );
+        const listed = await app.execute(
+          `return [...document.querySelectorAll('[data-slot="tips-list-item"]')].map((node) => node.dataset.tipId);`,
+        );
+        assert.ok(listed.includes("cookieBot") && listed.includes("agent"));
+        assert.ok(listed.includes("dnsBlocklist"));
+        await app.capture("tips-plan-catalog");
+        await dismissSurface(app);
+        await app.waitFor(
+          () =>
+            app.execute(`return !document.querySelector(arguments[0]);`, [
+              TIPS_DIALOG,
+            ]),
+          { description: "the catalog closed" },
+        );
 
-      // A row opens the catalog on that tip, with the plan tips now listed.
-      await app.clickSelector(
-        '[data-slot="paid-welcome-item"][data-tip-id="cookieBot"]',
-      );
-      await app.waitFor(
-        () =>
-          app.execute(
-            `return document.querySelector('[data-slot="tip-detail"]')?.dataset.tipId === "cookieBot";`,
+        // Greeted once: the same account signing in again is not welcomed twice.
+        await app.invoke("plugin:event|emit", {
+          event: "cloud-auth-changed",
+          payload: null,
+        });
+        await new Promise((resolve) => setTimeout(resolve, 1_500));
+        assert.equal(
+          await app.execute(
+            `return Boolean(document.querySelector('[data-slot="paid-welcome"]'));`,
           ),
-        { description: "the Cookie Bot tip" },
-      );
-      assert.equal(
-        await app.execute(
-          `return Boolean(document.querySelector('[data-slot="paid-welcome"]'));`,
-        ),
-        false,
-      );
-      const listed = await app.execute(
-        `return [...document.querySelectorAll('[data-slot="tips-list-item"]')].map((node) => node.dataset.tipId);`,
-      );
-      assert.ok(listed.includes("cookieBot") && listed.includes("agent"));
-      assert.ok(listed.includes("dnsBlocklist"));
-      await app.capture("tips-plan-catalog");
-      await dismissSurface(app);
-      await app.waitFor(
-        () =>
-          app.execute(`return !document.querySelector(arguments[0]);`, [
-            TIPS_DIALOG,
-          ]),
-        { description: "the catalog closed" },
-      );
-
-      // Greeted once: the same account signing in again is not welcomed twice.
-      await app.invoke("plugin:event|emit", {
-        event: "cloud-auth-changed",
-        payload: null,
-      });
-      await new Promise((resolve) => setTimeout(resolve, 1_500));
-      assert.equal(
-        await app.execute(
-          `return Boolean(document.querySelector('[data-slot="paid-welcome"]'));`,
-        ),
-        false,
-      );
-      assert.equal(
-        await app.invoke("observe_cloud_plan", {
-          userId: "ui-paid-welcome",
-          paid: true,
-          freshLogin: true,
-        }),
-        false,
-      );
-    } finally {
-      await restoreStubs(app);
-    }
-  });
-});
+          false,
+        );
+        assert.equal(
+          await app.invoke("observe_cloud_plan", {
+            userId: "ui-paid-welcome",
+            paid: true,
+            freshLogin: true,
+          }),
+          false,
+        );
+      } finally {
+        await restoreStubs(app);
+      }
+    });
+  },
+);
 
 test("Pro users can edit and save launch arguments in each profile", async () => {
   await withApp(

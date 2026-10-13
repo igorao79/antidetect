@@ -83,6 +83,7 @@ import { useVersionUpdater } from "@/hooks/use-version-updater";
 import { useVpnEvents } from "@/hooks/use-vpn-events";
 import { useWayfernTerms } from "@/hooks/use-wayfern-terms";
 import { parseBackendError, translateBackendError } from "@/lib/backend-errors";
+import { DONUT_CLOUD } from "@/lib/cloud-only-pages";
 import { fireSprinkleConfetti } from "@/lib/confetti";
 import {
   canUseCookieBot,
@@ -356,6 +357,7 @@ export default function Home() {
   const crossOsUnlocked = getEntitlements(cloudUser).crossOsFingerprints;
   // Shown once when the commercial trial runs out; modal, so it goes first.
   const commercialTrialModalOpen =
+    DONUT_CLOUD &&
     !termsLoading &&
     termsAccepted === true &&
     trialStatus?.type === "Expired" &&
@@ -2448,8 +2450,12 @@ export default function Home() {
                     handleBulkExtensionGroupAssignment
                   }
                   onAssignExtensionGroup={handleAssignExtensionGroup}
-                  onOpenProfileSyncDialog={handleOpenProfileSyncDialog}
-                  onToggleProfileSync={handleToggleProfileSync}
+                  onOpenProfileSyncDialog={
+                    DONUT_CLOUD ? handleOpenProfileSyncDialog : undefined
+                  }
+                  onToggleProfileSync={
+                    DONUT_CLOUD ? handleToggleProfileSync : undefined
+                  }
                   crossOsUnlocked={crossOsUnlocked}
                   syncUnlocked={syncUnlocked}
                   getProfileSyncInfo={getProfileSyncInfo}
@@ -2726,7 +2732,7 @@ export default function Home() {
           onAction={runTipAction}
         />
         <PaidWelcomeDialog
-          open={tipsFlow.paidWelcome.open}
+          open={DONUT_CLOUD && tipsFlow.paidWelcome.open}
           plan={tipsFlow.paidWelcome.plan}
           tips={tipsFlow.planTips}
           onOpenChange={(open) => {

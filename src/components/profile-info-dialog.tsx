@@ -87,6 +87,7 @@ import { WindowDragArea } from "@/components/window-drag-area";
 import { useInputModality } from "@/hooks/use-input-modality";
 import { translateBackendError } from "@/lib/backend-errors";
 import { getProfileIcon, supportsSynchronizer } from "@/lib/browser-utils";
+import { DONUT_CLOUD } from "@/lib/cloud-only-pages";
 import { DNS_BLOCKLIST_LEVELS } from "@/lib/dns-blocklist-levels";
 import { formatRelativeTime } from "@/lib/flag-utils";
 import { MOTION_EASE_OUT } from "@/lib/motion";
@@ -731,7 +732,7 @@ function ProfileInfoContents({
         handleAction(() => onOpenProfileSyncDialog?.(profile));
       },
       disabled: isCrossOs,
-      hidden: profile.ephemeral === true,
+      hidden: profile.ephemeral === true || !onOpenProfileSyncDialog,
     },
     {
       id: "group",
@@ -1104,7 +1105,7 @@ function ProfileInfoLayout({
       id: "sync",
       icon: <LuRefreshCw className="size-3.5" />,
       label: t("profileInfo.sections.sync"),
-      hidden: !syncAction && !isEphemeral,
+      hidden: !DONUT_CLOUD || (!syncAction && !isEphemeral),
     },
     {
       id: "automation",

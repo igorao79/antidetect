@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TipsDialogMode } from "@/components/tips-dialog";
 import { getAgentConsole } from "@/lib/agent-console";
+import { CLOUD_ONLY_PAGES } from "@/lib/cloud-only-pages";
 import { effectivePlanOf, getEntitlements } from "@/lib/entitlements";
 import { getCurrentOS } from "@/lib/platform";
 import {
@@ -183,7 +184,14 @@ export function useTips({
   const [paidWelcome, setPaidWelcome] = useState<PaidWelcomeState | null>(null);
 
   const entitlements = useMemo(() => getEntitlements(cloudUser), [cloudUser]);
-  const tips = useMemo(() => tipsFor(entitlements), [entitlements]);
+  const tips = useMemo(
+    () =>
+      tipsFor(entitlements).filter(
+        (tip) =>
+          tip.action.kind !== "page" || !CLOUD_ONLY_PAGES.has(tip.action.page),
+      ),
+    [entitlements],
+  );
   const planTips = useMemo(() => tips.filter(isPlanTip), [tips]);
 
   useEffect(() => {

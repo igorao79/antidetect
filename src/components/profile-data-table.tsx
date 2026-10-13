@@ -132,6 +132,7 @@ import {
   getProfileIcon,
   isCrossOsProfile,
 } from "@/lib/browser-utils";
+import { CLOUD_ONLY_COLUMNS, DONUT_CLOUD } from "@/lib/cloud-only-pages";
 import {
   type CookieBotSchedule,
   cancelCookieBotRun,
@@ -3493,7 +3494,11 @@ export function ProfilesDataTable({
         columnVisibility,
         view.preferences.visibility,
         ["select", "actions", "name", "settings"],
-        cookieBotUnlocked ? ["created_at"] : ["created_at", "bot"],
+        [
+          "created_at",
+          ...(cookieBotUnlocked ? [] : ["bot"]),
+          ...(DONUT_CLOUD ? [] : CLOUD_ONLY_COLUMNS),
+        ],
       ),
       columnSizing: view.preferences.sizing,
     },
@@ -4101,16 +4106,18 @@ export function ProfilesDataTable({
                 {t("cookieRobot.actionBar")}
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem
-              disabled={!cookieBotUnlocked}
-              onSelect={() => {
-                if (cookieBotUnlocked) handleBulkCookieBotEnrol();
-              }}
-            >
-              <LuMoon />
-              {t("cookieBot.actionBar.enrol")}
-              {!cookieBotUnlocked && <ProBadge />}
-            </DropdownMenuItem>
+            {DONUT_CLOUD && (
+              <DropdownMenuItem
+                disabled={!cookieBotUnlocked}
+                onSelect={() => {
+                  if (cookieBotUnlocked) handleBulkCookieBotEnrol();
+                }}
+              >
+                <LuMoon />
+                {t("cookieBot.actionBar.enrol")}
+                {!cookieBotUnlocked && <ProBadge />}
+              </DropdownMenuItem>
+            )}
             {onBulkDelete && (
               <>
                 <DropdownMenuSeparator />

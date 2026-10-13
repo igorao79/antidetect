@@ -56,6 +56,7 @@ import { useLanguage } from "@/hooks/use-language";
 import type { PermissionType } from "@/hooks/use-permissions";
 import { usePermissions } from "@/hooks/use-permissions";
 import { translateBackendError } from "@/lib/backend-errors";
+import { CLOUD_ONLY_SETTINGS, DONUT_CLOUD } from "@/lib/cloud-only-pages";
 import { effectivePlanOf } from "@/lib/entitlements";
 import { MOTION_SPRING_POSITION } from "@/lib/motion";
 import {
@@ -904,7 +905,9 @@ export function SettingsDialog({
         "settings.keepDecryptedProfilesInRamDescription",
       ],
     ],
-  ] as Array<[string, string, string[]]>;
+  ].filter(
+    ([id]) => DONUT_CLOUD || !CLOUD_ONLY_SETTINGS.has(id as string),
+  ) as Array<[string, string, string[]]>;
   const needle = search.trim().toLocaleLowerCase();
   const matchingSections = sections.filter(([, , keys]) => {
     const text = keys
