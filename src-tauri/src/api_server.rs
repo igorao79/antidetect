@@ -1034,8 +1034,11 @@ async fn terms_check_middleware(
   request: axum::extract::Request,
   next: Next,
 ) -> Result<Response, StatusCode> {
-  // Check if Wayfern terms have been accepted
-  if !crate::wayfern_terms::WayfernTermsManager::instance().is_terms_accepted() {
+  // The terms are Wayfern's: they gate the API only where Wayfern is
+  // installed, the rule the interface asks for them by. Asked for on every
+  // install, they shut the API on one that has no Wayfern to accept them for.
+  let terms = crate::wayfern_terms::WayfernTermsManager::instance();
+  if terms.is_wayfern_downloaded() && !terms.is_terms_accepted() {
     return Err(StatusCode::FORBIDDEN);
   }
 

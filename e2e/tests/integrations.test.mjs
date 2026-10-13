@@ -792,6 +792,63 @@ test("authenticated REST API serves its complete OpenAPI contract and CRUD lifec
   });
 });
 
+test("the REST API asks for the Wayfern terms only where Wayfern is installed", async () => {
+  const check = async (app) => {
+    const settings = await app.invoke("get_app_settings");
+    const saved = await app.invoke("save_app_settings", {
+      settings: {
+        ...settings,
+        api_enabled: true,
+        api_port: 0,
+        api_token: null,
+        onboarding_completed: true,
+      },
+    });
+    const port = await app.invoke("start_api_server", { port: 0 });
+    const diagnostic = await app.invoke("check_integration_connection", {
+      target: "api",
+    });
+    const unauthenticated = await jsonRequest(
+      `http://127.0.0.1:${port}/v1/profiles`,
+    );
+    const authenticated = await jsonRequest(
+      `http://127.0.0.1:${port}/v1/profiles`,
+      { token: saved.api_token },
+    );
+    return {
+      diagnostic: [diagnostic.authorized, diagnostic.http_status],
+      unauthenticated: unauthenticated.response.status,
+      authenticated: authenticated.response.status,
+    };
+  };
+
+  // An install with no Wayfern has no terms to accept: the key is what counts.
+  await withApp(
+    "integrations-rest-no-wayfern",
+    async (app) => {
+      assert.deepEqual(await check(app), {
+        diagnostic: [true, 200],
+        unauthenticated: 401,
+        authenticated: 200,
+      });
+    },
+    { wayfernTermsAccepted: false },
+  );
+
+  // With Wayfern installed and its terms not accepted, the API stays shut.
+  await withApp(
+    "integrations-rest-wayfern-terms",
+    async (app) => {
+      assert.deepEqual(await check(app), {
+        diagnostic: [false, 403],
+        unauthenticated: 403,
+        authenticated: 403,
+      });
+    },
+    { wayfernTermsAccepted: false, seedDownloadedBrowser: true },
+  );
+});
+
 test("MCP clients are installed only against the remote endpoint", async () => {
   await withApp("integrations-mcp", async (app) => {
     // The client roster resolves, so the Integrations page can offer the

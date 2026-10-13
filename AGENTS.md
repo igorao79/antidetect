@@ -129,6 +129,11 @@ running dev app):
 - A Pro build that cannot reach the licence server may give up later than the 2.5 s it is
   watched for (seen once, 18 s, exit 78, on a remote proxy): the launch has already
   succeeded and the profile simply closes.
+- The REST API (`api_server.rs`) asked for the Wayfern terms on every install and answered
+  403 before it looked at the key, so on an install without Wayfern (every fork install) the
+  API on port 10108 refused everything and "Check connection" read "key not accepted". The
+  terms now gate the API only where Wayfern is installed, the rule the interface already
+  used. The E2E harness seeds accepted terms, which is why no suite saw it.
 - The first emoji a Camoufox session draws on a canvas uses a fallback glyph while Firefox
   loads the emoji font; that one reading differs from every later one. Shapes and Latin text
   are stable from the start, so this is font loading and not canvas noise.
