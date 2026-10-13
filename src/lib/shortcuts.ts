@@ -5,6 +5,7 @@
  * the ⌘ glyph while everyone else sees `Ctrl`.
  */
 
+import { CLOUD_ONLY_SHORTCUTS } from "@/lib/cloud-only-pages";
 import { isMacOS } from "@/lib/platform";
 
 export type ShortcutGroup =
@@ -44,7 +45,7 @@ export type ShortcutId =
   | "goSettings"
   | "goTrash";
 
-export const SHORTCUTS: ShortcutDef[] = [
+const ALL_SHORTCUTS: ShortcutDef[] = [
   // Actions
   {
     id: "openPalette",
@@ -158,6 +159,10 @@ export const SHORTCUTS: ShortcutDef[] = [
     shift: true,
   },
 ];
+
+export const SHORTCUTS: ShortcutDef[] = ALL_SHORTCUTS.filter(
+  (shortcut) => !CLOUD_ONLY_SHORTCUTS.has(shortcut.id),
+);
 
 /**
  * Match Mod+1..9 to the group at that index (1-based). Returns the digit

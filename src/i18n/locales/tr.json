@@ -248,7 +248,22 @@
     },
     "trashRetentionOff": "Hemen sil",
     "scrollSectionsLeft": "Bölümleri sola kaydır",
-    "scrollSectionsRight": "Bölümleri sağa kaydır"
+    "scrollSectionsRight": "Bölümleri sağa kaydır",
+    "cloakbrowserLicense": {
+      "title": "CloakBrowser Pro lisansı",
+      "description": "Lisans anahtarıyla yeni CloakBrowser profilleri Chromium'un güncel Pro derlemesinde oluşturulur. Anahtar yoksa ücretsiz derleme kullanılır.",
+      "keyLabel": "Lisans anahtarı",
+      "placeholder": "Anahtarı yapıştırın",
+      "endsWith": "{{hint}} ile biten anahtar",
+      "activeUntil": "{{date}} tarihine kadar geçerli",
+      "refused": "Reddedildi",
+      "notChecked": "Denetlenmedi",
+      "fromEnvironment": "CLOAKBROWSER_LICENSE_KEY ortam değişkeniyle ayarlanmış; buradan değiştirilemez.",
+      "removeNote": "Pro derlemede oluşturulan profiller anahtar olmadan başlamaz.",
+      "replace": "Değiştir",
+      "saved": "Lisans anahtarı kaydedildi. Pro derleme arka planda indiriliyor.",
+      "removed": "Lisans anahtarı kaldırıldı."
+    }
   },
   "header": {
     "searchPlaceholder": "Profillerde ara...",
@@ -519,7 +534,15 @@
       "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
     },
     "count": "Profil sayısı",
-    "countHint": "Aynı anda birkaç profil oluşturur. “Ad 1”, “Ad 2” şeklinde adlandırılırlar ve her birinin kendi parmak izi olur."
+    "countHint": "Aynı anda birkaç profil oluşturur. “Ad 1”, “Ad 2” şeklinde adlandırılırlar ve her birinin kendi parmak izi olur.",
+    "templates": {
+      "label": "Şablon",
+      "none": "Henüz şablon yok. Profili ayarlayın ve bir adla kaydedin.",
+      "namePlaceholder": "Şablon adı",
+      "hint": "Şablon motoru, proxy'yi ve parmak izi ayarlarını saklar. Her profil yine de kendi cihazını alır.",
+      "saved": "“{{name}}” şablonu kaydedildi",
+      "deleteAria": "{{name}} şablonunu sil"
+    }
   },
   "deleteDialog": {
     "title": "Profili Sil",
@@ -2448,11 +2471,14 @@
     "cameraVideoNeedsFfmpeg": "Bu videonun dönüştürülmesi gerekiyor ama ffmpeg kurulu değil. ffmpeg kurun veya bir .mjpeg dosyası seçin.",
     "cameraVideoConversionFailed": "Video dönüştürülemedi: {{detail}}",
     "locationDatabaseUnavailable": "Konum veritabanının indirilmesi henüz bitmedi; bu yüzden profilin saat dilimi ve dili adresiyle eşleştirilemiyor. Bir dakika sonra yeniden deneyin veya bu profil için otomatik konumu kapatın.",
-    "cloakbrowserLicenseRequired": "Bu profil bir CloakBrowser Pro derlemesiyle çalışıyor ve lisans anahtarı ayarlanmamış. Anahtarı ~/.cloakbrowser/license.key dosyasına kaydedip yeniden deneyin.",
+    "cloakbrowserLicenseRequired": "Bu profil bir CloakBrowser Pro derlemesinde çalışıyor ve lisans anahtarı ayarlanmamış. Anahtarı Ayarlar'dan ekleyip yeniden deneyin.",
     "cloakbrowserLicenseInvalid": "CloakBrowser Pro lisans anahtarını reddetti: anahtar geçersiz veya süresi dolmuş.",
     "cloakbrowserLicenseUnreachable": "CloakBrowser Pro lisansı doğrulayamadı: sunucusu yanıt vermedi. Bağlantıyı kontrol edip yeniden deneyin.",
     "cloakbrowserLicenseSetup": "CloakBrowser Pro başlatılamadı: ~/.cloakbrowser klasörüne yazılamıyor.",
-    "cloakbrowserSessionLimit": "CloakBrowser Pro: planınızın aynı anda çalışan tarayıcı sınırına ulaşıldı. Birini kapatıp yeniden deneyin."
+    "cloakbrowserSessionLimit": "CloakBrowser Pro: planınızın aynı anda çalışan tarayıcı sınırına ulaşıldı. Birini kapatıp yeniden deneyin.",
+    "profileTemplateInvalid": "Bu şablon kaydedilemiyor: adı çok uzun veya ayarları bozuk.",
+    "profileTemplateLimit": "Çok fazla şablon var. Yenisini kaydetmeden önce birini silin.",
+    "profileTemplateNotFound": "Bu şablon artık yok."
   },
   "rail": {
     "profiles": "Profiller",

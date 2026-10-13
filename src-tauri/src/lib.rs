@@ -91,6 +91,7 @@ mod profile;
 mod profile_generation_limiter;
 mod profile_import;
 mod profile_importer;
+mod profile_templates;
 mod proxy_distribution;
 mod proxy_manager;
 pub mod proxy_runner;
@@ -119,6 +120,7 @@ mod window_decorations;
 // mod theme_detector; // removed: theme detection handled in webview via CSS prefers-color-scheme
 mod agent_console;
 mod cloakbrowser_camera;
+mod cloakbrowser_license;
 mod cloakbrowser_manager;
 pub mod cloud_auth;
 mod cloud_errors;
@@ -3413,6 +3415,12 @@ pub fn run_with_builder(
       update_camoufox_config,
       update_wayfern_config,
       profile::cloakbrowser::update_cloakbrowser_config,
+      cloakbrowser_license::get_cloakbrowser_license,
+      cloakbrowser_license::set_cloakbrowser_license_key,
+      cloakbrowser_license::remove_cloakbrowser_license_key,
+      profile_templates::list_profile_templates,
+      profile_templates::save_profile_template,
+      profile_templates::delete_profile_template,
       cookie_robot::start_cookie_robot,
       cookie_robot::stop_cookie_robot,
       cookie_robot::get_cookie_robot_status,

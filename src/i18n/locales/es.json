@@ -249,7 +249,22 @@
     },
     "trashRetentionOff": "Eliminar al instante",
     "scrollSectionsLeft": "Desplazar secciones a la izquierda",
-    "scrollSectionsRight": "Desplazar secciones a la derecha"
+    "scrollSectionsRight": "Desplazar secciones a la derecha",
+    "cloakbrowserLicense": {
+      "title": "Licencia de CloakBrowser Pro",
+      "description": "Con una clave de licencia, los perfiles nuevos de CloakBrowser se crean sobre la compilación Pro actual de Chromium. Sin ella usan la compilación gratuita.",
+      "keyLabel": "Clave de licencia",
+      "placeholder": "Pega la clave",
+      "endsWith": "Clave terminada en {{hint}}",
+      "activeUntil": "Activa hasta el {{date}}",
+      "refused": "Rechazada",
+      "notChecked": "Sin comprobar",
+      "fromEnvironment": "Definida por la variable de entorno CLOAKBROWSER_LICENSE_KEY; no se puede cambiar aquí.",
+      "removeNote": "Los perfiles creados sobre una compilación Pro no se inician sin clave.",
+      "replace": "Reemplazar",
+      "saved": "Clave de licencia guardada. La compilación Pro se descarga en segundo plano.",
+      "removed": "Clave de licencia eliminada."
+    }
   },
   "header": {
     "searchPlaceholder": "Buscar perfiles...",
@@ -520,7 +535,15 @@
       "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
     },
     "count": "Número de perfiles",
-    "countHint": "Crea varios perfiles a la vez. Se llamarán «Nombre 1», «Nombre 2», etc., y cada uno tendrá su propia huella."
+    "countHint": "Crea varios perfiles a la vez. Se llamarán «Nombre 1», «Nombre 2», etc., y cada uno tendrá su propia huella.",
+    "templates": {
+      "label": "Plantilla",
+      "none": "Aún no hay plantillas. Configura el perfil y guárdalo con un nombre.",
+      "namePlaceholder": "Nombre de la plantilla",
+      "hint": "Una plantilla guarda el motor, el proxy y los ajustes de huella. Cada perfil sigue teniendo su propio dispositivo.",
+      "saved": "Plantilla «{{name}}» guardada",
+      "deleteAria": "Eliminar la plantilla {{name}}"
+    }
   },
   "deleteDialog": {
     "title": "Eliminar Perfil",
@@ -2458,11 +2481,14 @@
     "cameraVideoNeedsFfmpeg": "Este vídeo debe convertirse y ffmpeg no está instalado. Instala ffmpeg o elige un archivo .mjpeg.",
     "cameraVideoConversionFailed": "No se pudo convertir el vídeo: {{detail}}",
     "locationDatabaseUnavailable": "La base de datos de ubicación aún no ha terminado de descargarse, así que la zona horaria y el idioma del perfil todavía no pueden ajustarse a su dirección. Inténtalo de nuevo en un minuto o desactiva la ubicación automática para este perfil.",
-    "cloakbrowserLicenseRequired": "Este perfil usa una compilación de CloakBrowser Pro y no hay clave de licencia. Guarda la clave en ~/.cloakbrowser/license.key e inténtalo de nuevo.",
+    "cloakbrowserLicenseRequired": "Este perfil funciona con una compilación Pro de CloakBrowser y no hay clave de licencia. Añade la clave en Ajustes e inténtalo de nuevo.",
     "cloakbrowserLicenseInvalid": "CloakBrowser Pro rechazó la clave de licencia: no es válida o ha caducado.",
     "cloakbrowserLicenseUnreachable": "CloakBrowser Pro no pudo comprobar la licencia: su servidor no respondió. Revisa la conexión e inténtalo de nuevo.",
     "cloakbrowserLicenseSetup": "CloakBrowser Pro no pudo iniciarse: no se puede escribir en la carpeta ~/.cloakbrowser.",
-    "cloakbrowserSessionLimit": "CloakBrowser Pro: se alcanzó el límite de navegadores abiertos a la vez de tu plan. Cierra uno e inténtalo de nuevo."
+    "cloakbrowserSessionLimit": "CloakBrowser Pro: se alcanzó el límite de navegadores abiertos a la vez de tu plan. Cierra uno e inténtalo de nuevo.",
+    "profileTemplateInvalid": "No se puede guardar esta plantilla: el nombre es demasiado largo o los ajustes están dañados.",
+    "profileTemplateLimit": "Hay demasiadas plantillas. Elimina una antes de guardar otra.",
+    "profileTemplateNotFound": "Esta plantilla ya no existe."
   },
   "rail": {
     "profiles": "Perfiles",

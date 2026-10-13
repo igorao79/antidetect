@@ -505,6 +505,100 @@ test("a count beside the name creates a numbered series, each profile with a dev
   );
 });
 
+test("a template keeps the create dialog's choices and brings them back", async () => {
+  await withApp(
+    "ui-profile-template",
+    async (app) => {
+      await stubCommand(app, "is_geoip_database_available", true);
+      // No browser binary here: the request is given a fixed device, as in
+      // the other creation tests.
+      await app.execute(`
+        const originalFetch = window.fetch;
+        window.fetch = function(input, init) {
+          const url = typeof input === 'string' ? input : input?.url ?? '';
+          if (url.endsWith('/create_browser_profile_new')) {
+            const payload = JSON.parse(init.body);
+            payload.wayfernConfig = { ...payload.wayfernConfig, fingerprint: '{}' };
+            return originalFetch.call(window, input, { ...init, body: JSON.stringify(payload) });
+          }
+          return originalFetch.apply(window, arguments);
+        };
+      `);
+      const checked = (selector) =>
+        app.execute(
+          `return document.querySelector(arguments[0])?.getAttribute('aria-checked');`,
+          [selector],
+        );
+      const nameField = `input[placeholder="${en.createProfile.templates.namePlaceholder}"]`;
+
+      await openProfileCreation(app);
+      await app.clickSelector("#ephemeral");
+      await app.clickSelector("#profile-template");
+      await app.waitForText(en.createProfile.templates.none);
+      await app.fillSelector(nameField, "Burner");
+      await app.pressShortcut({ key: "Enter" });
+      const [saved] = await app.waitFor(
+        async () => {
+          const templates = await app.invoke("list_profile_templates");
+          return templates.length > 0 ? templates : null;
+        },
+        { description: "the template to be saved" },
+      );
+      assert.equal(saved.name, "Burner");
+      assert.equal(saved.settings.engine, "wayfern");
+      assert.equal(saved.settings.ephemeral, true);
+      // A template is not one device.
+      assert.equal(saved.settings.wayfernConfig.fingerprint ?? null, null);
+      assert.equal(saved.settings.cloakbrowserConfig.seed ?? null, null);
+
+      // Enter in the name field saved the template; it did not create a profile.
+      assert.deepEqual(await app.invoke("list_browser_profiles"), []);
+      assert.equal(
+        await app.execute(
+          `return document.querySelector('#profile-template').textContent.trim();`,
+        ),
+        "Burner",
+      );
+
+      await app.pressShortcut({ key: "Escape" });
+      await app.pressShortcut({ key: "Escape" });
+      await app.waitFor(
+        () => app.execute(`return !document.querySelector('#profile-name');`),
+        { description: "the create dialog to close" },
+      );
+
+      // A fresh dialog starts from the defaults; the template restores the rest.
+      await app.clickText("New", { roles: ["button"] });
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return Boolean(document.querySelector('#profile-name'));`,
+          ),
+        { description: "profile name field" },
+      );
+      assert.equal(await checked("#ephemeral"), "false");
+      await app.clickSelector("#profile-template");
+      await app.clickSelector('[data-template-name="Burner"]');
+      await app.waitFor(async () => (await checked("#ephemeral")) === "true", {
+        description: "the template to be applied",
+      });
+      assert.equal(
+        await app.execute(
+          `return [...document.querySelectorAll('[role="radio"]')].find((radio) => radio.getAttribute('aria-checked') === 'true')?.textContent.trim();`,
+        ),
+        "Wayfern",
+      );
+
+      await app.fillSelector("#profile-name", "From template");
+      const created = await submitProfileCreation(app, "From template");
+      assert.ok(created);
+      assert.equal(created.ephemeral, true);
+      assert.equal(created.browser, "wayfern");
+    },
+    { seedDownloadedBrowser: true },
+  );
+});
+
 test("profile table filters, range selection, view settings, and keyboard edits work together", async () => {
   await withApp(
     "ui-table-controls",
@@ -2817,315 +2911,323 @@ test("a folder with no manifest fails with the translated reason, not a raw code
   });
 });
 
-test("the agent page guides setup, then shows agents, requests, notes, take-overs and the pause live", async () => {
-  await withApp(
-    "ui-agent",
-    async (app) => {
-      await app.waitForText("No profiles yet");
-      const painted = (testId) =>
-        app.execute(
-          `const el = document.querySelector('[data-testid="' + arguments[0] + '"]');
+const CLOUD_ONLY = {
+  skip: "the fork leaves this page out: it only works against Donut's cloud",
+};
+
+test(
+  "the agent page guides setup, then shows agents, requests, notes, take-overs and the pause live",
+  CLOUD_ONLY,
+  async () => {
+    await withApp(
+      "ui-agent",
+      async (app) => {
+        await app.waitForText("No profiles yet");
+        const painted = (testId) =>
+          app.execute(
+            `const el = document.querySelector('[data-testid="' + arguments[0] + '"]');
          if (!el) return null;
          const rect = el.getBoundingClientRect();
          const style = getComputedStyle(el);
          return rect.width > 0 && rect.height > 0 && Number(style.opacity) === 1 && style.visibility === "visible"
            ? el.innerText.trim()
            : null;`,
-          [testId],
-        );
-      const waitPainted = (testId) =>
-        app.waitFor(() => painted(testId), { description: testId });
-      const absent = (testId) =>
-        app.waitFor(
-          () =>
-            app.execute(
-              `return !document.querySelector('[data-testid="' + arguments[0] + '"]');`,
-              [testId],
-            ),
-          { description: `${testId} gone` },
-        );
+            [testId],
+          );
+        const waitPainted = (testId) =>
+          app.waitFor(() => painted(testId), { description: testId });
+        const absent = (testId) =>
+          app.waitFor(
+            () =>
+              app.execute(
+                `return !document.querySelector('[data-testid="' + arguments[0] + '"]');`,
+                [testId],
+              ),
+            { description: `${testId} gone` },
+          );
 
-      // Signed out, the page says what is missing instead of showing controls.
-      await app.clickSelector(`[aria-label="${en.rail.agent}"]`);
-      const signedOut = await waitPainted("agent-setup-signed-out");
-      assert.match(signedOut, new RegExp(en.agent.setup.signedOutTitle));
-      assert.equal(await painted("agent-pause-switch"), null);
-      // Leaving the page unmounts it, so the next visit reads the stubs below.
-      await app.clickSelector(`[aria-label="${en.rail.profiles}"]`);
-      await absent("agent-page");
+        // Signed out, the page says what is missing instead of showing controls.
+        await app.clickSelector(`[aria-label="${en.rail.agent}"]`);
+        const signedOut = await waitPainted("agent-setup-signed-out");
+        assert.match(signedOut, new RegExp(en.agent.setup.signedOutTitle));
+        assert.equal(await painted("agent-pause-switch"), null);
+        // Leaving the page unmounts it, so the next visit reads the stubs below.
+        await app.clickSelector(`[aria-label="${en.rail.profiles}"]`);
+        await absent("agent-page");
 
-      const profile = await createUiProfile(app, "Agent UI Profile");
-      const now = Date.now();
-      try {
-        await stubCommand(app, "cloud_get_user", {
-          logged_in_at: new Date().toISOString(),
-          user: {
-            id: "ui-agent",
-            email: "agent@example.test",
-            plan: "pro",
-            planPeriod: "monthly",
-            subscriptionStatus: "active",
-            profileLimit: 50,
-            cloudProfilesUsed: 0,
-            proxyBandwidthLimitMb: 0,
-            proxyBandwidthUsedMb: 0,
-            proxyBandwidthExtraMb: 0,
-            isPrimaryDevice: true,
-          },
-        });
-        await stubCommand(app, "get_mcp_remote_status", {
-          enabled: true,
-          connected: true,
-          instanceId: "ui-agent-instance",
-          lastError: null,
-        });
-        const base = {
-          session_id: "ui-s1",
-          profile_id: null,
-          choices: [],
-          answer: null,
-          answered_at: null,
-          delivered_to: [],
-          done: null,
-          total: null,
-        };
-        const question = {
-          ...base,
-          id: 9001,
-          at: now - 5000,
-          kind: "question",
-          text: "Which shipping address should I use?",
-          choices: ["Home", "Office"],
-          state: "open",
-        };
-        const help = {
-          ...base,
-          id: 9002,
-          at: now - 4000,
-          kind: "help",
-          text: "Solve the verification on the sign-in page",
-          profile_id: profile.id,
-          state: "open",
-        };
-        await stubCommand(app, "get_agent_console", {
-          sessions: [
-            {
-              session_id: "ui-s1",
-              client_name: "Claude Code",
-              client_version: "2.1.0",
-              connected_at: now - 60_000,
-              last_seen_at: now - 1000,
-              calls: 3,
-              errors: 1,
-              ended: false,
-              status: {
-                message: "Checking orders",
-                done: 2,
-                total: 5,
-                profile_id: null,
-                updated_at: now - 2000,
+        const profile = await createUiProfile(app, "Agent UI Profile");
+        const now = Date.now();
+        try {
+          await stubCommand(app, "cloud_get_user", {
+            logged_in_at: new Date().toISOString(),
+            user: {
+              id: "ui-agent",
+              email: "agent@example.test",
+              plan: "pro",
+              planPeriod: "monthly",
+              subscriptionStatus: "active",
+              profileLimit: 50,
+              cloudProfilesUsed: 0,
+              proxyBandwidthLimitMb: 0,
+              proxyBandwidthUsedMb: 0,
+              proxyBandwidthExtraMb: 0,
+              isPrimaryDevice: true,
+            },
+          });
+          await stubCommand(app, "get_mcp_remote_status", {
+            enabled: true,
+            connected: true,
+            instanceId: "ui-agent-instance",
+            lastError: null,
+          });
+          const base = {
+            session_id: "ui-s1",
+            profile_id: null,
+            choices: [],
+            answer: null,
+            answered_at: null,
+            delivered_to: [],
+            done: null,
+            total: null,
+          };
+          const question = {
+            ...base,
+            id: 9001,
+            at: now - 5000,
+            kind: "question",
+            text: "Which shipping address should I use?",
+            choices: ["Home", "Office"],
+            state: "open",
+          };
+          const help = {
+            ...base,
+            id: 9002,
+            at: now - 4000,
+            kind: "help",
+            text: "Solve the verification on the sign-in page",
+            profile_id: profile.id,
+            state: "open",
+          };
+          await stubCommand(app, "get_agent_console", {
+            sessions: [
+              {
+                session_id: "ui-s1",
+                client_name: "Claude Code",
+                client_version: "2.1.0",
+                connected_at: now - 60_000,
+                last_seen_at: now - 1000,
+                calls: 3,
+                errors: 1,
+                ended: false,
+                status: {
+                  message: "Checking orders",
+                  done: 2,
+                  total: 5,
+                  profile_id: null,
+                  updated_at: now - 2000,
+                },
               },
-            },
-          ],
-          activity: [
-            {
-              id: 9100,
-              at: now - 3000,
-              session_id: "ui-s1",
-              tool: "navigate",
-              profile_id: profile.id,
-              profile_count: null,
-              ok: true,
-              error_code: null,
-              duration_ms: 420,
-              detail: "shop.example.com",
-            },
-            {
-              id: 9101,
-              at: now - 2500,
-              session_id: "ui-s1",
-              tool: "click_locator",
-              profile_id: profile.id,
-              profile_count: null,
-              ok: false,
-              error_code: "LOCATOR_NO_MATCH",
-              duration_ms: 90,
-              detail: null,
-            },
-          ],
-          thread: [question, help],
-          holds: [
-            {
-              profile_id: profile.id,
-              since: now - 4000,
-              note: null,
-              request_id: 9002,
-            },
-          ],
-          paused: null,
-          quota: { limit: 2000, used: 240, resets_in_secs: 1200 },
-        });
-        await stubCommand(app, "answer_agent_request", {
-          ...question,
-          state: "answered",
-          answer: "Office",
-          answered_at: now,
-        });
-        await app.invoke("plugin:event|emit", {
-          event: "cloud-auth-changed",
-          payload: null,
-        });
-        await app.invoke("plugin:event|emit", {
-          event: "agent-console-cleared",
-          payload: null,
-        });
+            ],
+            activity: [
+              {
+                id: 9100,
+                at: now - 3000,
+                session_id: "ui-s1",
+                tool: "navigate",
+                profile_id: profile.id,
+                profile_count: null,
+                ok: true,
+                error_code: null,
+                duration_ms: 420,
+                detail: "shop.example.com",
+              },
+              {
+                id: 9101,
+                at: now - 2500,
+                session_id: "ui-s1",
+                tool: "click_locator",
+                profile_id: profile.id,
+                profile_count: null,
+                ok: false,
+                error_code: "LOCATOR_NO_MATCH",
+                duration_ms: 90,
+                detail: null,
+              },
+            ],
+            thread: [question, help],
+            holds: [
+              {
+                profile_id: profile.id,
+                since: now - 4000,
+                note: null,
+                request_id: 9002,
+              },
+            ],
+            paused: null,
+            quota: { limit: 2000, used: 240, resets_in_secs: 1200 },
+          });
+          await stubCommand(app, "answer_agent_request", {
+            ...question,
+            state: "answered",
+            answer: "Office",
+            answered_at: now,
+          });
+          await app.invoke("plugin:event|emit", {
+            event: "cloud-auth-changed",
+            payload: null,
+          });
+          await app.invoke("plugin:event|emit", {
+            event: "agent-console-cleared",
+            payload: null,
+          });
 
-        // Two open requests reach the rail before the page is opened.
-        await app.waitFor(
-          async () => (await painted("agent-rail-badge")) === "2",
-          { description: "the rail badge counts open requests" },
-        );
-        const waitingLabel = en.rail.agentWaiting.replace("{{count}}", "2");
-        await app.clickSelector(`[aria-label="${waitingLabel}"]`);
-        await waitPainted("agent-needs-you");
-        // The page holds the seeded snapshot now; later reads go to the backend.
-        await app.execute(`delete window.__donutStubs.get_agent_console;`);
-        await app.capture("agent-conversation");
-        // The Conversation tab carries the open-request count after its label.
-        assert.deepEqual(
-          await app.execute(
-            `return [...document.querySelectorAll('[role="tab"]')].map((node) => node.textContent.trim().replace(/\\d+$/, ""));`,
-          ),
-          [
-            en.agent.tabs.conversation,
-            en.agent.tabs.profiles,
-            en.agent.tabs.activity,
-            en.agent.tabs.recipes,
-          ],
-        );
-        assert.match(await painted("agent-quota"), /1[,.\s ]?760/);
-        assert.match(await painted("agent-session-ui-s1"), /Claude Code/);
-        assert.match(await painted("agent-session-ui-s1"), /Checking orders/);
-        assert.match(
-          await painted("agent-request-9001"),
-          /Which shipping address should I use\?/,
-        );
-        assert.match(
-          await painted("agent-request-9002"),
-          /Solve the verification on the sign-in page/,
-        );
-        assert.equal(
-          await app.execute(
-            `return document.querySelectorAll('[data-testid="agent-request-9001"] [data-testid="agent-choice"]').length;`,
-          ),
-          2,
-        );
-
-        // A suggested answer is one click, and the card leaves the list.
-        await app.clickText("Office", { roles: ["button"] });
-        await absent("agent-request-9001");
-        const answered = await app.execute(
-          `return (window.__donutStubbedCalls ?? []).filter((c) => c.command === "answer_agent_request").map((c) => c.payload);`,
-        );
-        assert.deepEqual(answered, [{ requestId: 9001, answer: "Office" }]);
-
-        // Real backend events update the open page: a note, then the pause.
-        await app.invoke("send_agent_note", {
-          text: "Use the EU shipping profile today",
-        });
-        await app.waitFor(
-          async () =>
-            ((await painted("agent-thread")) ?? "").includes(
-              "Use the EU shipping profile today",
+          // Two open requests reach the rail before the page is opened.
+          await app.waitFor(
+            async () => (await painted("agent-rail-badge")) === "2",
+            { description: "the rail badge counts open requests" },
+          );
+          const waitingLabel = en.rail.agentWaiting.replace("{{count}}", "2");
+          await app.clickSelector(`[aria-label="${waitingLabel}"]`);
+          await waitPainted("agent-needs-you");
+          // The page holds the seeded snapshot now; later reads go to the backend.
+          await app.execute(`delete window.__donutStubs.get_agent_console;`);
+          await app.capture("agent-conversation");
+          // The Conversation tab carries the open-request count after its label.
+          assert.deepEqual(
+            await app.execute(
+              `return [...document.querySelectorAll('[role="tab"]')].map((node) => node.textContent.trim().replace(/\\d+$/, ""));`,
             ),
-          { description: "the note in the thread" },
-        );
-        await app.invoke("set_agents_paused", {
-          paused: true,
-          note: "Changing proxies",
-        });
-        assert.match(
-          await waitPainted("agent-paused-banner"),
-          /Changing proxies/,
-        );
-        await app.clickSelector('[data-testid="agent-resume"]');
-        await absent("agent-paused-banner");
-        assert.equal((await app.invoke("get_agent_console")).paused, null);
-
-        // Profiles: the agent's profile is listed with its last error, and the
-        // person can take it over and hand it back.
-        await app.clickSelector('[data-testid="agent-tab-profiles"]');
-        const row = await waitPainted(`agent-profile-${profile.id}`);
-        assert.match(row, /Agent UI Profile/);
-        assert.match(row, /LOCATOR_NO_MATCH/);
-        await app.clickSelector(
-          `[data-testid="agent-profile-${profile.id}"] [data-testid="agent-take-over"]`,
-        );
-        await app.fillSelector(
-          '[data-testid="agent-take-over-note"]',
-          "Fixing the address",
-        );
-        await app.clickSelector('[data-testid="agent-take-over-confirm"]');
-        await app.waitFor(
-          async () =>
-            (await app.invoke("get_agent_console")).holds.some(
-              (hold) =>
-                hold.profile_id === profile.id &&
-                hold.note === "Fixing the address",
+            [
+              en.agent.tabs.conversation,
+              en.agent.tabs.profiles,
+              en.agent.tabs.activity,
+              en.agent.tabs.recipes,
+            ],
+          );
+          assert.match(await painted("agent-quota"), /1[,.\s ]?760/);
+          assert.match(await painted("agent-session-ui-s1"), /Claude Code/);
+          assert.match(await painted("agent-session-ui-s1"), /Checking orders/);
+          assert.match(
+            await painted("agent-request-9001"),
+            /Which shipping address should I use\?/,
+          );
+          assert.match(
+            await painted("agent-request-9002"),
+            /Solve the verification on the sign-in page/,
+          );
+          assert.equal(
+            await app.execute(
+              `return document.querySelectorAll('[data-testid="agent-request-9001"] [data-testid="agent-choice"]').length;`,
             ),
-          { description: "the take-over reached the backend" },
-        );
-        await app.waitFor(
-          () =>
-            app.execute(
-              `return Boolean(document.querySelector('[data-testid="agent-profile-' + arguments[0] + '"] [data-testid="agent-hand-back"]'));`,
-              [profile.id],
-            ),
-          { description: "the row offers hand back" },
-        );
-        await app.clickSelector(
-          `[data-testid="agent-profile-${profile.id}"] [data-testid="agent-hand-back"]`,
-        );
-        await app.clickSelector('[data-testid="agent-hand-back-confirm"]');
-        await app.waitFor(
-          async () =>
-            (await app.invoke("get_agent_console")).holds.length === 0,
-          { description: "the hand-back reached the backend" },
-        );
+            2,
+          );
 
-        await app.clickSelector('[data-testid="agent-tab-activity"]');
-        const activity = await waitPainted("agent-activity-list");
-        assert.match(activity, /shop\.example\.com/);
-        assert.match(activity, /LOCATOR_NO_MATCH/);
-        await app.capture("agent-page");
-        await dismissSurface(app);
+          // A suggested answer is one click, and the card leaves the list.
+          await app.clickText("Office", { roles: ["button"] });
+          await absent("agent-request-9001");
+          const answered = await app.execute(
+            `return (window.__donutStubbedCalls ?? []).filter((c) => c.command === "answer_agent_request").map((c) => c.payload);`,
+          );
+          assert.deepEqual(answered, [{ requestId: 9001, answer: "Office" }]);
 
-        // The palette reaches the same page.
-        const modifier =
-          process.platform === "darwin" ? { meta: true } : { ctrl: true };
-        await app.pressShortcut({ key: "k", ...modifier });
-        await app.waitFor(
-          () =>
-            app.execute(
-              `return Boolean(document.querySelector("[cmdk-input]"));`,
-            ),
-          { description: "command palette" },
-        );
-        const input = await app.session.findCss("[cmdk-input]");
-        await app.session.sendKeys(input, en.shortcuts.goAgent);
-        await app.clickText(en.shortcuts.goAgent, {
-          exact: false,
-          roles: ["option", "button", "menuitem"],
-        });
-        await waitPainted("agent-page");
-        await dismissSurface(app);
-      } finally {
-        await restoreStubs(app);
-      }
-    },
-    { settings: { paid_welcome_seen_for: ["ui-agent"] } },
-  );
-});
+          // Real backend events update the open page: a note, then the pause.
+          await app.invoke("send_agent_note", {
+            text: "Use the EU shipping profile today",
+          });
+          await app.waitFor(
+            async () =>
+              ((await painted("agent-thread")) ?? "").includes(
+                "Use the EU shipping profile today",
+              ),
+            { description: "the note in the thread" },
+          );
+          await app.invoke("set_agents_paused", {
+            paused: true,
+            note: "Changing proxies",
+          });
+          assert.match(
+            await waitPainted("agent-paused-banner"),
+            /Changing proxies/,
+          );
+          await app.clickSelector('[data-testid="agent-resume"]');
+          await absent("agent-paused-banner");
+          assert.equal((await app.invoke("get_agent_console")).paused, null);
+
+          // Profiles: the agent's profile is listed with its last error, and the
+          // person can take it over and hand it back.
+          await app.clickSelector('[data-testid="agent-tab-profiles"]');
+          const row = await waitPainted(`agent-profile-${profile.id}`);
+          assert.match(row, /Agent UI Profile/);
+          assert.match(row, /LOCATOR_NO_MATCH/);
+          await app.clickSelector(
+            `[data-testid="agent-profile-${profile.id}"] [data-testid="agent-take-over"]`,
+          );
+          await app.fillSelector(
+            '[data-testid="agent-take-over-note"]',
+            "Fixing the address",
+          );
+          await app.clickSelector('[data-testid="agent-take-over-confirm"]');
+          await app.waitFor(
+            async () =>
+              (await app.invoke("get_agent_console")).holds.some(
+                (hold) =>
+                  hold.profile_id === profile.id &&
+                  hold.note === "Fixing the address",
+              ),
+            { description: "the take-over reached the backend" },
+          );
+          await app.waitFor(
+            () =>
+              app.execute(
+                `return Boolean(document.querySelector('[data-testid="agent-profile-' + arguments[0] + '"] [data-testid="agent-hand-back"]'));`,
+                [profile.id],
+              ),
+            { description: "the row offers hand back" },
+          );
+          await app.clickSelector(
+            `[data-testid="agent-profile-${profile.id}"] [data-testid="agent-hand-back"]`,
+          );
+          await app.clickSelector('[data-testid="agent-hand-back-confirm"]');
+          await app.waitFor(
+            async () =>
+              (await app.invoke("get_agent_console")).holds.length === 0,
+            { description: "the hand-back reached the backend" },
+          );
+
+          await app.clickSelector('[data-testid="agent-tab-activity"]');
+          const activity = await waitPainted("agent-activity-list");
+          assert.match(activity, /shop\.example\.com/);
+          assert.match(activity, /LOCATOR_NO_MATCH/);
+          await app.capture("agent-page");
+          await dismissSurface(app);
+
+          // The palette reaches the same page.
+          const modifier =
+            process.platform === "darwin" ? { meta: true } : { ctrl: true };
+          await app.pressShortcut({ key: "k", ...modifier });
+          await app.waitFor(
+            () =>
+              app.execute(
+                `return Boolean(document.querySelector("[cmdk-input]"));`,
+              ),
+            { description: "command palette" },
+          );
+          const input = await app.session.findCss("[cmdk-input]");
+          await app.session.sendKeys(input, en.shortcuts.goAgent);
+          await app.clickText(en.shortcuts.goAgent, {
+            exact: false,
+            roles: ["option", "button", "menuitem"],
+          });
+          await waitPainted("agent-page");
+          await dismissSurface(app);
+        } finally {
+          await restoreStubs(app);
+        }
+      },
+      { settings: { paid_welcome_seen_for: ["ui-agent"] } },
+    );
+  },
+);
 
 async function createUiProfile(app, name) {
   return app.invoke("create_browser_profile_new", {
@@ -3319,6 +3421,70 @@ test("the Cookie Robot dialog opens from the action bar, names a bad site, and r
   });
 });
 
+test("Settings shows the CloakBrowser licence by its last characters and refuses an unknown key", async () => {
+  await withApp("ui-cloakbrowser-licence", async (app) => {
+    // The stored key is never sent to the interface: only its end and what the
+    // licence server said about it.
+    await stubCommand(app, "get_cloakbrowser_license", {
+      source: "file",
+      hint: "9f3c",
+      valid: true,
+      plan: "solo",
+      expires: "2027-01-15T00:00:00+00:00",
+    });
+    const section = '[data-settings-section="cloakbrowserLicense"]';
+    await app.clickSelector(`[aria-label="${en.rail.settings}"]`);
+    await app.waitForText(en.settings.cloakbrowserLicense.title);
+    await app.execute(
+      `document.querySelector(arguments[0]).scrollIntoView({ block: "center" });`,
+      [section],
+    );
+    const text = () =>
+      app.execute(`return document.querySelector(arguments[0]).innerText;`, [
+        section,
+      ]);
+    await app.waitFor(async () => (await text()).includes("9f3c"), {
+      description: "the licence to be shown",
+    });
+    const shown = await text();
+    assert.ok(
+      shown.includes(
+        en.settings.cloakbrowserLicense.endsWith.replace("{{hint}}", "9f3c"),
+      ),
+      shown,
+    );
+    assert.match(shown, /Active until .*2027/);
+    assert.equal(
+      await app.execute(
+        `return document.querySelectorAll(arguments[0] + " input").length;`,
+        [section],
+      ),
+      0,
+      "a saved key is not put back into a field",
+    );
+    await app.capture("cloakbrowser-licence");
+
+    await app.clickTextIn(section, en.settings.cloakbrowserLicense.replace, {
+      roles: ["button"],
+    });
+    await app.fillSelector(`${section} input`, "not-a-key");
+    await app.clickTextIn(section, en.common.buttons.save, {
+      roles: ["button"],
+    });
+    // The licence server refuses a made-up key; offline, it cannot be asked.
+    await app.waitFor(
+      async () =>
+        (await app.visibleTextIncludes(
+          en.backendErrors.cloakbrowserLicenseInvalid,
+        )) ||
+        (await app.visibleTextIncludes(
+          en.backendErrors.cloakbrowserLicenseUnreachable,
+        )),
+      { description: "the key to be refused" },
+    );
+  });
+});
+
 test("the navigation names every destination in a wide window and folds to icons in a narrow one", async () => {
   await withApp("ui-sidebar", async (app) => {
     for (const name of ["Alpha", "Beta", "Gamma"]) {
@@ -3357,6 +3523,19 @@ test("the navigation names every destination in a wide window and folds to icons
     assert.equal(wide.labelShown, true, JSON.stringify(wide));
     assert.ok(wide.width >= 200, JSON.stringify(wide));
     assert.ok(wide.itemWidth > 150, JSON.stringify(wide));
+    // Pages that need Donut's cloud are not offered: not in the navigation,
+    // and not by their shortcut.
+    const destinations = await app.execute(
+      `return [...document.querySelectorAll("nav [aria-label]")].map((item) => item.getAttribute("aria-label"));`,
+    );
+    assert.ok(destinations.includes(en.rail.integrations), `${destinations}`);
+    assert.ok(!destinations.includes(en.rail.cookieBot), `${destinations}`);
+    assert.ok(!destinations.includes(en.rail.agent), `${destinations}`);
+    const modifier =
+      process.platform === "darwin" ? { meta: true } : { ctrl: true };
+    await app.pressShortcut({ ...modifier, key: "b" });
+    await app.pressShortcut({ ...modifier, key: "j" });
+    assert.equal(await app.visibleTextIncludes("Gamma"), true);
     // The destination is still reachable by its name, as it is from the rail.
     await app.clickSelector(`[aria-label="${en.rail.network}"]`);
     await app.waitForText("New proxy");
