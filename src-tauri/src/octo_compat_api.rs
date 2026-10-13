@@ -486,6 +486,10 @@ struct CreateProfileRequest {
   /// the camera.
   #[serde(default)]
   camera_video: Option<String>,
+  /// Antidetect extension, Camoufox and CloakBrowser: the language of the
+  /// browser's own interface, when it should differ from the profile's.
+  #[serde(default)]
+  interface_language: Option<String>,
 }
 
 fn fingerprint_os(os: Option<&str>) -> Result<Option<String>, ApiError> {
@@ -513,10 +517,18 @@ async fn create_from_request(
   let browser = req.browser.as_deref().unwrap_or("camoufox").to_string();
   let os = fingerprint_os(req.fingerprint.os.as_deref())?;
   let os_for_cloakbrowser = os.clone();
+  let interface_language = match req.interface_language.as_deref() {
+    None => None,
+    Some(language) => Some(
+      crate::interface_language::clean_tag(language)
+        .ok_or_else(|| bad_request(format!("not a language tag: {language}")))?,
+    ),
+  };
   let (camoufox_config, wayfern_config) = match browser.as_str() {
     "camoufox" => (
       Some(crate::camoufox_manager::CamoufoxConfig {
         os,
+        interface_language: interface_language.clone(),
         ..Default::default()
       }),
       None,
@@ -570,13 +582,15 @@ async fn create_from_request(
     )
     .await
     .map_err(|e| bad_request(e.to_string()))?;
-  let profile = match (cloakbrowser_os, camera_video) {
-    (None, None) => profile,
-    (os, camera_video) => {
+  let interface_language = interface_language.filter(|_| browser == "cloakbrowser");
+  let profile = match (cloakbrowser_os, camera_video, interface_language) {
+    (None, None, None) => profile,
+    (os, camera_video, interface_language) => {
       let current = profile.cloakbrowser_config.clone().unwrap_or_default();
       let config = crate::cloakbrowser_manager::CloakBrowserConfig {
         os: os.or(current.os.clone()),
         camera_video,
+        interface_language,
         ..current
       };
       manager
@@ -637,6 +651,7 @@ async fn start_one_time_profile(
       proxy: req.proxy,
       browser: req.browser,
       camera_video: None,
+      interface_language: None,
     },
   )
   .await?;

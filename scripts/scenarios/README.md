@@ -34,6 +34,7 @@ python3 s1_camoufox_fingerprints.py
 | `s11_camera.py` | A CloakBrowser profile with a camera video: a page granted the camera gets the clip, moving and at 1280x720. Needs ffmpeg. |
 | `s12_synchronizer.py` | Synchronizer on CloakBrowser: navigation, clicks, typing and scrolling in the leader are repeated in the follower; Camoufox is refused. |
 | `s13_fingerprint_surfaces.py` | Two CloakBrowser profiles side by side: which canvas, WebGL, audio and layout surfaces are each profile's own and whether they hold across a restart. Judged on a Pro build, reported on the free one. |
+| `s14_interface_language.py` | A page reads one language everywhere (`navigator.languages`, `Intl`, number format, form messages) when the interface follows the profile, on both engines and across a restart. With `interface_language` set, `navigator.languages` stay the profile's and the interface shows through form messages, and through `Intl` on Camoufox and the free CloakBrowser build. Says most with `SCN_REMOTE_PROXY` pointing at an exit in another language. |
 | `s8_remote_exit.py` | Through a real remote proxy (`SCN_REMOTE_PROXY=http://user:password@host:port`): sites see the proxy's address and timezone, WebRTC shows nothing of this machine, the language is the same at every launch, and a profile whose exit moves follows it at the next launch. Skipped without the variable. |
 
 `EXPECT_TZ` and `EXPECT_LANG` (comma-separated) add geolocation assertions to

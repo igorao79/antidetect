@@ -3,6 +3,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { InterfaceLanguageField } from "@/components/interface-language-field";
 import { LoadingButton } from "@/components/loading-button";
 import MultipleSelector, { type Option } from "@/components/multiple-selector";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -335,6 +336,16 @@ export function SharedCamoufoxConfigForm({
           </Label>
         </div>
       </div>
+
+      {browserType !== "wayfern" && (
+        <InterfaceLanguageField
+          value={config.interface_language}
+          onChange={(value) => {
+            onConfigChange("interface_language", value);
+          }}
+          disabled={readOnly}
+        />
+      )}
 
       <div
         className={

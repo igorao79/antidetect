@@ -599,6 +599,77 @@ test("a template keeps the create dialog's choices and brings them back", async 
   );
 });
 
+test("a profile can ask for the browser's interface in this app's language, and is told what that shows", async () => {
+  await withApp(
+    "ui-interface-language",
+    async (app) => {
+      await stubCommand(app, "is_geoip_database_available", true);
+      const field = "[data-interface-language]";
+      const chosen = () =>
+        app.execute(
+          `return document.querySelector(arguments[0])?.getAttribute("data-interface-language");`,
+          [field],
+        );
+      for (const engine of ["Camoufox", "CloakBrowser"]) {
+        await app.clickText("New", { roles: ["button"] });
+        await app.waitFor(
+          () =>
+            app.execute(
+              `return Boolean(document.querySelector('#profile-name'));`,
+            ),
+          { description: "profile name field" },
+        );
+        await app.clickText(engine, { roles: ["radio"] });
+        await app.clickText(en.createProfile.advancedOptions, {
+          roles: ["button"],
+        });
+        await app.waitFor(async () => (await chosen()) === "profile", {
+          description: `${engine}: the interface follows the profile by default`,
+        });
+        await app.waitForText(en.interfaceLanguage.profileHint);
+
+        await app.clickSelector(field);
+        await app.clickText("English", { roles: ["option"] });
+        await app.waitFor(async () => (await chosen()) === "en", {
+          description: `${engine}: the app's language to be chosen`,
+        });
+        await app.waitForText(en.interfaceLanguage.otherHint);
+        if (engine === "CloakBrowser") {
+          await app.capture("interface-language");
+        }
+
+        // The choice is part of the profile's settings: a template keeps it.
+        await app.clickSelector("#profile-template");
+        await app.fillSelector(
+          `input[placeholder="${en.createProfile.templates.namePlaceholder}"]`,
+          engine,
+        );
+        await app.pressShortcut({ key: "Enter" });
+        const saved = await app.waitFor(
+          async () =>
+            (await app.invoke("list_profile_templates")).find(
+              (template) => template.name === engine,
+            ),
+          { description: `${engine}: the template to be saved` },
+        );
+        const config =
+          engine === "Camoufox"
+            ? saved.settings.camoufoxConfig
+            : saved.settings.cloakbrowserConfig;
+        assert.equal(config.interface_language, "en", JSON.stringify(config));
+
+        await app.pressShortcut({ key: "Escape" });
+        await app.pressShortcut({ key: "Escape" });
+        await app.waitFor(
+          () => app.execute(`return !document.querySelector('#profile-name');`),
+          { description: "the create dialog to close" },
+        );
+      }
+    },
+    { seedDownloadedBrowser: true },
+  );
+});
+
 test("profile table filters, range selection, view settings, and keyboard edits work together", async () => {
   await withApp(
     "ui-table-controls",

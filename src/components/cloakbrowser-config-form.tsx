@@ -4,6 +4,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { LuRefreshCw } from "react-icons/lu";
+import { InterfaceLanguageField } from "@/components/interface-language-field";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -166,6 +167,15 @@ export function CloakBrowserConfigForm({
           />
         </div>
       </div>
+
+      <InterfaceLanguageField
+        value={config.interface_language}
+        onChange={(value) => {
+          onConfigChange("interface_language", value ?? null);
+        }}
+        disabled={readOnly}
+        labelClassName={FIELD_LABEL_CLASS}
+      />
 
       <div className="min-w-0 space-y-1.5">
         <Label htmlFor={`${id}-webrtc`} className={FIELD_LABEL_CLASS}>

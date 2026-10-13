@@ -3738,5 +3738,11 @@
       "failed": "Fehlgeschlagen",
       "cancelled": "Angehalten"
     }
+  },
+  "interfaceLanguage": {
+    "label": "Sprache der Browseroberfläche",
+    "profile": "Wie das Profil",
+    "profileHint": "Die Menüs erscheinen in der Sprache des Profil-Landes, wie auf einem echten Gerät dort. Websites sehen überall dieselbe Sprache.",
+    "otherHint": "Leichter zu lesen, aber Websites können es bemerken: an Formularmeldungen, und in Camoufox und dem kostenlosen CloakBrowser-Build auch an Datums- und Zahlenformaten. Für wichtige Konten die Sprache des Profils beibehalten."
   }
 }

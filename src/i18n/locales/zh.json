@@ -3738,5 +3738,11 @@
       "failed": "失败",
       "cancelled": "已停止"
     }
+  },
+  "interfaceLanguage": {
+    "label": "浏览器界面语言",
+    "profile": "与配置文件相同",
+    "profileHint": "菜单使用配置文件所在国家的语言，就像那里的真实设备一样。网站在各处看到的都是同一种语言。",
+    "otherHint": "读起来更方便，但网站可能会察觉：通过表单提示的措辞；在 Camoufox 和 CloakBrowser 免费版本中，还会通过日期和数字格式。重要账号请保持配置文件的语言。"
   }
 }
