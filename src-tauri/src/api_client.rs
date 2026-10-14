@@ -6,6 +6,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 mod camoufox;
 mod cloakbrowser;
+pub(crate) use cloakbrowser::clean_cloakbrowser_key;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VersionComponent {

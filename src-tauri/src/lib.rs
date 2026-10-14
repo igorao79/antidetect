@@ -2458,6 +2458,9 @@ pub fn run_with_builder(
       // Recover ephemeral dir mappings from RAM-backed storage (tmpfs/ramdisk)
       ephemeral_dirs::recover_ephemeral_dirs();
 
+      // Before the frontend asks which engine builds to fetch.
+      cloakbrowser_license::install_bundled_key();
+
       // Extract icons and metadata for existing extensions that don't have them yet
       {
         let mgr = extension_manager::ExtensionManager::new();
