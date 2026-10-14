@@ -35,7 +35,7 @@ pub struct CloakBrowserLicenseVerdict {
 }
 
 /// A licence key as it is used: trimmed, and nothing at all when blank.
-fn clean_key(raw: &str) -> Option<String> {
+pub(crate) fn clean_cloakbrowser_key(raw: &str) -> Option<String> {
   let key = raw.trim();
   (!key.is_empty()).then(|| key.to_string())
 }
@@ -50,10 +50,10 @@ impl ApiClient {
   pub fn cloakbrowser_license_key() -> Option<String> {
     std::env::var("CLOAKBROWSER_LICENSE_KEY")
       .ok()
-      .and_then(|key| clean_key(&key))
+      .and_then(|key| clean_cloakbrowser_key(&key))
       .or_else(|| {
         let file = Self::cloakbrowser_license_file()?;
-        clean_key(&std::fs::read_to_string(file).ok()?)
+        clean_cloakbrowser_key(&std::fs::read_to_string(file).ok()?)
       })
   }
 
@@ -289,8 +289,11 @@ mod tests {
 
   #[test]
   fn a_key_is_trimmed_and_a_blank_one_is_no_key() {
-    assert_eq!(clean_key("  cb_abc\n"), Some("cb_abc".to_string()));
-    assert_eq!(clean_key(" \n"), None);
+    assert_eq!(
+      clean_cloakbrowser_key("  cb_abc\n"),
+      Some("cb_abc".to_string())
+    );
+    assert_eq!(clean_cloakbrowser_key(" \n"), None);
   }
 
   #[test]

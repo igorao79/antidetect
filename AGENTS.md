@@ -45,6 +45,12 @@ Fork-specific rules:
   build has used, and a Pro build stops when its licence does. A Pro build refuses to start by
   exit code (76 session limit, 77 key, 78 server, 79 setup), turned into backend error codes.
   It calls CloakHQ's licence server at every start, directly, not through the profile's proxy.
+- A build can carry a CloakBrowser Pro key for handing it to someone: set
+  `ANTIDETECT_BUNDLED_CLOAKBROWSER_KEY` in the build environment (never in the repository).
+  At startup the app writes it to `~/.cloakbrowser/license.key` once per install, only where
+  no key is set, and remembers that it did (`data/cloakbrowser_bundled_key_installed`), so a key
+  the user removes in Settings stays removed. Anyone holding such a build can read the key
+  out of it.
 - What a Pro build changes, measured (`s13_fingerprint_surfaces.py`): Chromium 154 instead of
   145, and `toDataURL`, `toBlob` and the WebGL image are each profile's own and hold across
   restarts. The audio fingerprint and text metrics are the host machine's on every profile, by
