@@ -39,7 +39,7 @@ export const PROBE = `(async () => {
     formMessage: Object.assign(document.createElement("input"), { required: true }).validationMessage,
     screen: screen.width + "x" + screen.height,
     avail: screen.availWidth + "x" + screen.availHeight,
-    screenInMedia: matchMedia(`(device-width: ${screen.width}px) and (device-height: ${screen.height}px)`).matches,
+    screenInMedia: matchMedia("(device-width: " + screen.width + "px) and (device-height: " + screen.height + "px)").matches,
     cores: navigator.hardwareConcurrency,
     memory: navigator.deviceMemory,
     webdriver: navigator.webdriver,
