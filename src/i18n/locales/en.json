@@ -2472,7 +2472,7 @@
     "cameraVideoConversionFailed": "The video could not be converted: {{detail}}",
     "locationDatabaseUnavailable": "The location database has not finished downloading, so the profile's timezone and language cannot be matched to its address yet. Try again in a minute, or turn off automatic location for this profile.",
     "cloakbrowserLicenseRequired": "This profile runs on a CloakBrowser Pro build, and no licence key is set. Add the key in Settings and try again.",
-    "cloakbrowserLicenseInvalid": "CloakBrowser Pro refused the licence key: it is invalid or has expired.",
+    "cloakbrowserLicenseInvalid": "CloakBrowser Pro refused the licence key: it is invalid or has expired. Replace it in Settings, or delete it there so that new profiles use the free build.",
     "cloakbrowserLicenseUnreachable": "CloakBrowser Pro could not check the licence: its server did not answer. Check the connection and try again.",
     "cloakbrowserLicenseSetup": "CloakBrowser Pro could not start: the folder ~/.cloakbrowser is not writable.",
     "cloakbrowserSessionLimit": "CloakBrowser Pro: your plan's limit of browsers running at once is reached. Close one and try again.",

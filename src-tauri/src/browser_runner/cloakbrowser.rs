@@ -27,6 +27,19 @@ async fn exit_location(profile: &BrowserProfile, local_proxy_url: &str) -> ExitL
   }
 }
 
+/// The logical size of the largest display attached to this machine.
+fn largest_display(app_handle: &tauri::AppHandle) -> Option<(u32, u32)> {
+  app_handle
+    .available_monitors()
+    .ok()?
+    .iter()
+    .map(|monitor| {
+      let size = monitor.size().to_logical::<f64>(monitor.scale_factor());
+      (size.width.round() as u32, size.height.round() as u32)
+    })
+    .max_by_key(|(width, height)| u64::from(*width) * u64::from(*height))
+}
+
 impl BrowserRunner {
   pub(super) async fn launch_cloakbrowser_internal(
     &self,
@@ -112,12 +125,22 @@ impl BrowserRunner {
       .clone()
       .or_else(|| cloakbrowser_manager::profile_locale(&config, &exit));
 
+    // What is launched, not what is stored: the screen follows the display
+    // the profile is opened on.
+    let mut launch_config = config.clone();
+    if let Some((width, height)) =
+      cloakbrowser_manager::launch_screen(&config, pro, largest_display(&app_handle))
+    {
+      launch_config.screen_width = Some(width);
+      launch_config.screen_height = Some(height);
+    }
+
     emit_launch_stage(profile, "starting", None);
     let process = cloakbrowser_manager::launch(LaunchRequest {
       executable: &executable,
       profile_path: &profile_path,
       profile_id: &profile.id.to_string(),
-      fingerprint_args: cloakbrowser_manager::fingerprint_args(&config, &exit, proxied),
+      fingerprint_args: cloakbrowser_manager::fingerprint_args(&launch_config, &exit, proxied),
       proxy_url: Some(&proxy_url),
       url: url.as_deref(),
       remote_debugging_port: port,

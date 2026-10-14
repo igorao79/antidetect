@@ -2472,7 +2472,7 @@
     "cameraVideoConversionFailed": "Das Video konnte nicht konvertiert werden: {{detail}}",
     "locationDatabaseUnavailable": "Die Standortdatenbank ist noch nicht fertig heruntergeladen, daher lassen sich Zeitzone und Sprache des Profils noch nicht an seine Adresse anpassen. Versuchen Sie es in einer Minute erneut oder schalten Sie den automatischen Standort für dieses Profil aus.",
     "cloakbrowserLicenseRequired": "Dieses Profil läuft auf einem CloakBrowser-Pro-Build, und es ist kein Lizenzschlüssel gesetzt. Fügen Sie den Schlüssel in den Einstellungen hinzu und versuchen Sie es erneut.",
-    "cloakbrowserLicenseInvalid": "CloakBrowser Pro hat den Lizenzschlüssel abgelehnt: Er ist ungültig oder abgelaufen.",
+    "cloakbrowserLicenseInvalid": "CloakBrowser Pro hat den Lizenzschlüssel abgelehnt: Er ist ungültig oder abgelaufen. Ersetzen Sie ihn in den Einstellungen oder löschen Sie ihn dort, damit neue Profile den kostenlosen Build verwenden.",
     "cloakbrowserLicenseUnreachable": "CloakBrowser Pro konnte die Lizenz nicht prüfen: Der Server hat nicht geantwortet. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
     "cloakbrowserLicenseSetup": "CloakBrowser Pro konnte nicht starten: Der Ordner ~/.cloakbrowser ist nicht beschreibbar.",
     "cloakbrowserSessionLimit": "CloakBrowser Pro: Das Limit gleichzeitig laufender Browser Ihres Tarifs ist erreicht. Schließen Sie einen und versuchen Sie es erneut.",

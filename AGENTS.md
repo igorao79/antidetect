@@ -81,6 +81,15 @@ Fork-specific rules:
   (the app's): `navigator.languages` stay the profile's, form messages turn to that language
   on every engine, and `Intl` with them on Camoufox and the free CloakBrowser build (a Pro
   build pins `Intl` with `--fingerprint-locale`).
+- Screen (`cloakbrowser_manager::launch_screen`, `s15_screen.py`). Left alone, a Pro build
+  in a window reports this machine's display and the space its real Dock leaves: profiles
+  share one screen, a Windows persona shows a MacBook panel, and the available height (and
+  with it an open-source FingerprintJS id) changes when the Dock does. Every launch now passes
+  a screen size, after which the build derives the available area itself and holds it: on a
+  Pro build one of the persona's sizes, drawn from the seed and never smaller than the
+  largest display, which CSS media queries report too; on the free build the real display's
+  size, because that build leaves media queries on the real display. A size pinned in the
+  profile wins. `--fingerprint-taskbar-height` does nothing for a macOS persona.
 - SSH is a proxy type (`ssh://user:password@host:port`, password or keyboard-interactive
   login). `ssh_upstream.rs` runs inside the local proxy worker: one session per upstream, one
   `direct-tcpip` channel per browser connection, TCP only. Host keys are not pinned.

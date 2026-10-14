@@ -2472,7 +2472,7 @@
     "cameraVideoConversionFailed": "无法转换视频：{{detail}}",
     "locationDatabaseUnavailable": "位置数据库尚未下载完成，因此暂时无法让配置文件的时区和语言与其地址匹配。请一分钟后重试，或为此配置文件关闭自动定位。",
     "cloakbrowserLicenseRequired": "此配置文件运行在 CloakBrowser Pro 版本上，但尚未设置许可证密钥。请在设置中添加密钥后重试。",
-    "cloakbrowserLicenseInvalid": "CloakBrowser Pro 拒绝了许可证密钥：密钥无效或已过期。",
+    "cloakbrowserLicenseInvalid": "CloakBrowser Pro 拒绝了许可证密钥：密钥无效或已过期。请在设置中替换密钥，或在那里删除它，让新的配置文件使用免费版本。",
     "cloakbrowserLicenseUnreachable": "CloakBrowser Pro 无法验证许可证：服务器没有响应。请检查网络连接后重试。",
     "cloakbrowserLicenseSetup": "CloakBrowser Pro 无法启动：文件夹 ~/.cloakbrowser 不可写。",
     "cloakbrowserSessionLimit": "CloakBrowser Pro：已达到当前套餐同时运行浏览器的上限。请关闭一个后重试。",
