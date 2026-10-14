@@ -3,7 +3,12 @@
 This repository is the company's internal fork of [Donut Browser](https://github.com/zhom/donutbrowser)
 (AGPL-3.0), branded "Antidetect" and used only inside the company. The goal is feature parity
 with Octo Browser. Upstream is kept as the `upstream` remote and `fork-base` tags the commit the
-fork started from; merge upstream regularly.
+fork started from; merge upstream regularly. The published history starts from one commit that
+holds Donut Browser as it was at `fork-base` (upstream's own history is left out); before merging
+upstream, give that commit its real parent locally so Git sees the shared ancestry:
+`git fetch upstream --tags && git replace --graft $(git rev-list --max-parents=0 HEAD) fork-base`.
+Files of upstream's that the fork does not use (CI and release workflows, Linux and Windows
+packaging, Nix, community docs, changelog, template images) are removed.
 
 Fork-specific rules:
 
@@ -245,11 +250,7 @@ donutbrowser/
 │   ├── api-paths.json              # Snapshot of every published operation; drift check for both SDKs
 │   ├── python/                     # `donutbrowser` (stdlib only, pytest)
 │   └── node/                       # `@donutbrowser/sdk` (ESM TypeScript, node --test)
-├── patches/                        # pnpm compatibility patches for secured dependencies
-├── packaging/                      # Flatpak manifest, shared AppStream metainfo, Linux package smoke tests
-├── snap/                           # snapcraft.yaml (strict confinement, repackages the .deb)
-├── flake.nix                       # Nix development environment
-└── .github/workflows/              # CI/CD pipelines
+└── patches/                        # pnpm compatibility patches for secured dependencies
 ```
 
 ## Testing and Quality
@@ -542,27 +543,6 @@ destination above it, and the window opens at 1200x760.
 - Windows: `%LOCALAPPDATA%\Antidetect\`
 
 Debug builds (`cargo build`, `pnpm tauri dev`) write to the `AntidetectDev` sibling at the same root, and a `dev-{version}` `BUILD_VERSION` is injected via `build.rs`. Logs and screenshots referencing `AntidetectDev` therefore mean a local dev build is in play, not a release; useful when a bug report seems to disagree with what production users see.
-
-## Publishing Linux Repositories
-
-The `scripts/publish-repo.sh` script publishes DEB and RPM packages to Cloudflare R2 (served at `repo.donutbrowser.com`). It requires Linux tools, so run it in Docker on macOS:
-
-```bash
-docker run --rm -v "$(pwd):/work" -w /work --env-file .env -e GH_TOKEN="$(gh auth token)" \
-  ubuntu:24.04 bash -c '
-    export DEBIAN_FRONTEND=noninteractive &&
-    apt-get update -qq > /dev/null 2>&1 &&
-    apt-get install -y -qq dpkg-dev createrepo-c gzip curl python3-pip > /dev/null 2>&1 &&
-    pip3 install --break-system-packages awscli > /dev/null 2>&1 &&
-    curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg 2>/dev/null &&
-    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" > /etc/apt/sources.list.d/github-cli.list &&
-    apt-get update -qq > /dev/null 2>&1 && apt-get install -y -qq gh > /dev/null 2>&1 &&
-    bash scripts/publish-repo.sh v0.18.1'
-```
-
-The `.github/workflows/publish-repos.yml` workflow runs automatically after stable releases and can also be triggered manually via `gh workflow run publish-repos.yml -f tag=v0.18.1`.
-
-Required env vars / secrets: `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_ENDPOINT_URL`, `R2_BUCKET_NAME`.
 
 ## Sync (cloud / self-hosted)
 

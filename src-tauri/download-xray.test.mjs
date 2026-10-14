@@ -77,7 +77,7 @@ test("uses the sidecar filenames expected by Tauri", () => {
   );
 });
 
-test("bundles the upstream license in Tauri and portable releases", async () => {
+test("bundles the upstream license in the app", async () => {
   const tauriConfig = JSON.parse(
     await readFile(new URL("./tauri.conf.json", import.meta.url), "utf8"),
   );
@@ -85,17 +85,6 @@ test("bundles the upstream license in Tauri and portable releases", async () => 
     tauriConfig.bundle.resources[`binaries/${XRAY_LICENSE_FILE}`],
     "licenses/Xray-core-LICENSE.txt",
   );
-
-  for (const workflow of ["release.yml", "rolling-release.yml"]) {
-    const contents = await readFile(
-      new URL(`../.github/workflows/${workflow}`, import.meta.url),
-      "utf8",
-    );
-    assert.match(
-      contents,
-      /cp "src-tauri\/binaries\/xray-LICENSE\.txt" "\$PORTABLE_DIR\/licenses\/Xray-core-LICENSE\.txt"/,
-    );
-  }
 });
 
 test("binds Windows extraction paths that PowerShell can actually read", () => {
