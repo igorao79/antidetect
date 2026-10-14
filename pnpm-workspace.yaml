@@ -1,0 +1,33 @@
+packages:
+  - donut-sync
+
+onlyBuiltDependencies:
+  - '@biomejs/biome'
+  - '@nestjs/core'
+  - '@tailwindcss/oxide'
+  - better-sqlite3
+  - esbuild
+  - sharp
+  - sqlite3
+  - unrs-resolver
+
+# Dependency pins. Moved from package.json#pnpm.overrides — pnpm 11
+# no longer reads that field; settings live here now.
+overrides:
+  # Keep the API used by plugins on the Rust crate's minor version.
+  '@tauri-apps/api': '~2.12.1'
+  # Fixes the brace-expansion advisories for every major still in the tree;
+  # patches/brace-expansion@5.0.12.patch keeps the older CommonJS imports working.
+  brace-expansion@<5.0.12: 5.0.12
+  # js-yaml 3 pulls sprintf-js through argparse 1; no sprintf-js release fixes
+  # GHSA-hp3w-g68c-fv3c. load-nyc-config only calls load(), which js-yaml 4 keeps.
+  '@istanbuljs/load-nyc-config>js-yaml': ^4.3.2
+
+allowBuilds:
+  '@nestjs/core': true
+  '@parcel/watcher': false
+  sharp: true
+  unrs-resolver: true
+
+patchedDependencies:
+  brace-expansion@5.0.12: patches/brace-expansion@5.0.12.patch

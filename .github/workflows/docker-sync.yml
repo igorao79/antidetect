@@ -1,0 +1,133 @@
+name: Build and Push donut-sync Docker Image
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "donut-sync/**"
+  workflow_call:
+    inputs:
+      tag:
+        description: "Docker tag (e.g., v1.0.0)"
+        required: true
+        type: string
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Docker tag (e.g., v1.0.0, latest)"
+        required: true
+        default: "latest"
+
+permissions:
+  contents: read
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: donutbrowser/donut-sync
+
+jobs:
+  # donut-sync's own end-to-end suite covers which host it signs into presigned
+  # URLs. That is the whole of the self-hosted sync failure in issue 534: sign
+  # against an address only the server can reach and every client transfer dies
+  # at connect while /health and /readyz stay green. The suite existed and was
+  # never run by anything, so the guard was decorative. Run it here, before the
+  # image ships, because an image with broken presigning is the thing that
+  # reaches users.
+  #
+  # Ubuntu only, and separate from the Rust and Node matrices, because it needs
+  # Docker for the S3 test server.
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+
+      - name: Set up pnpm package manager
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 #v6.1.0
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 #v7.0.0
+        with:
+          node-version-file: .node-version
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Publishes the S3 test server on 8987, the port test/test-env.ts pins.
+      - name: Start test storage
+        run: docker compose -f donut-sync/docker-compose.yml up -d --wait
+
+      - name: Run donut-sync end-to-end tests
+        working-directory: ./donut-sync
+        run: pnpm test:e2e
+
+      - name: Stop test storage
+        if: always()
+        run: docker compose -f donut-sync/docker-compose.yml down -v
+
+  build-and-push:
+    needs: test
+    # Forks have no Docker Hub credentials; skip instead of failing there.
+    if: github.repository == 'zhom/donutbrowser'
+    runs-on: ubuntu-latest
+    # A normal build takes 4 to 6 minutes. The emulated arm64 `npm install`
+    # hung four times since August and burned the 6-hour default each time.
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 #v7.0.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 #v4.4.1
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f #v4.6.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Determine tags
+        id: tags
+        env:
+          INPUT_TAG: ${{ inputs.tag }}
+          EVENT_NAME: ${{ github.event_name }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          TAGS=""
+
+          if [ -n "$INPUT_TAG" ]; then
+            # Called from release workflow or manual dispatch
+            if [[ ! "$INPUT_TAG" =~ ^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$ ]]; then
+              echo "Invalid Docker tag" >&2
+              exit 1
+            fi
+            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${INPUT_TAG}"
+            TAGS="${TAGS},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          elif [ "$EVENT_NAME" = "push" ]; then
+            # Push to main (nightly): tag with nightly and commit SHA
+            SHORT_SHA=${COMMIT_SHA:0:7}
+            TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nightly"
+            TAGS="${TAGS},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nightly-${SHORT_SHA}"
+          fi
+
+          printf 'tags=%s\n' "$TAGS" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc #v7.4.0
+        with:
+          context: .
+          file: ./donut-sync/Dockerfile
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64,linux/arm64

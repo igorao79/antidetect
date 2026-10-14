@@ -1,0 +1,465 @@
+"use client";
+
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { GoPlus } from "react-icons/go";
+import { LuCircleHelp, LuSearch, LuX } from "react-icons/lu";
+import { useWindowDecorations } from "@/hooks/use-window-decorations";
+import { getCurrentOS } from "@/lib/browser-utils";
+import {
+  PROFILE_SEARCH_EXAMPLES,
+  PROFILE_SEARCH_FIELDS,
+  PROFILE_SEARCH_OPERATORS,
+} from "@/lib/profile-search";
+import { cn } from "@/lib/utils";
+import type { GroupWithCount } from "@/types";
+import { UNGROUPED_DROP_ID, useProfileGroupDrag } from "./profile-group-drag";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { ScrollStrip } from "./ui/scroll-strip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+
+const HOLD_MS = 150;
+const DRAG_THRESHOLD_PX = 3;
+
+// Any interactive control (buttons, links, inputs) must NOT start a window
+// drag when pressed — otherwise the press-and-hold / drag-threshold logic below
+// hands the pointer to the OS window-move loop and the control's click never
+// fires (e.g. the "+ New" button needing a double-click, and the window
+// un-maximizing on Windows). Mirrors the guard handleDoubleClick already uses.
+const isInteractiveTarget = (target: EventTarget | null): boolean => {
+  if (!(target instanceof Element)) return false;
+  const el = target.closest(
+    "button, a, [role='button'], input, select, textarea, [contenteditable=''], [contenteditable='true']",
+  );
+  return el !== null;
+};
+
+const ALL_FILTER_ID = "__all__";
+
+interface Props {
+  onCreateProfileDialogOpen: (open: boolean) => void;
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
+  groups: GroupWithCount[];
+  totalProfiles: number;
+  selectedGroupId: string | null;
+  onGroupSelect: (groupId: string) => void;
+  pageTitle?: string;
+}
+
+/**
+ * What the search box understands. The vocabulary is data owned by the parser
+ * (`src/lib/profile-search.ts`), so the tokens listed here cannot drift from the
+ * ones a query is actually matched against; only the prose beside them is
+ * translated, because the tokens themselves have to mean the same thing to
+ * everybody who is handed a query.
+ */
+const SearchSyntaxHelp = () => {
+  const { t } = useTranslation();
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={t("search.helpLabel")}
+          className="grid size-6 shrink-0 place-items-center rounded-sm text-muted-foreground transition-colors duration-100 hover:bg-accent hover:text-accent-foreground"
+        >
+          <LuCircleHelp className="size-3.5" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        align="end"
+        className="w-96 max-w-[calc(100vw-1.5rem)] p-0"
+      >
+        <div className="space-y-3 p-3 text-xs">
+          <div>
+            <p className="font-medium text-foreground">
+              {t("search.helpTitle")}
+            </p>
+            <p className="mt-1 text-muted-foreground">
+              {t("search.helpIntro")}
+            </p>
+          </div>
+
+          <div>
+            <p className="font-medium text-foreground">
+              {t("search.fieldsTitle")}
+            </p>
+            <div className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+              {PROFILE_SEARCH_FIELDS.map((field) => (
+                <div key={field.key} className="contents">
+                  <code className="font-mono text-[11px] text-foreground">
+                    {field.key}:
+                  </code>
+                  <span className="text-muted-foreground">
+                    {t(field.labelKey)}
+                    {field.values ? (
+                      <span className="ml-1.5 font-mono text-[10px] text-muted-foreground/70">
+                        {field.values.join(" ")}
+                      </span>
+                    ) : null}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="font-medium text-foreground">
+              {t("search.operatorsTitle")}
+            </p>
+            <div className="mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+              {PROFILE_SEARCH_OPERATORS.map((operator) => (
+                <div key={operator.labelKey} className="contents">
+                  <code className="font-mono text-[11px] text-foreground">
+                    {operator.token}
+                  </code>
+                  <span className="text-muted-foreground">
+                    {t(operator.labelKey)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="font-medium text-foreground">
+              {t("search.examplesTitle")}
+            </p>
+            <div className="mt-1.5 space-y-1.5">
+              {PROFILE_SEARCH_EXAMPLES.map((example) => (
+                <div key={example.labelKey}>
+                  <code className="font-mono text-[11px] text-foreground">
+                    {example.query}
+                  </code>
+                  <p className="text-muted-foreground">{t(example.labelKey)}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+const HomeHeader = ({
+  onCreateProfileDialogOpen,
+  searchQuery,
+  onSearchQueryChange,
+  groups,
+  totalProfiles,
+  selectedGroupId,
+  onGroupSelect,
+  pageTitle,
+}: Props) => {
+  const { t } = useTranslation();
+  const profileDrag = useProfileGroupDrag();
+  const [platform, setPlatform] = useState<string>("macos");
+
+  useEffect(() => {
+    setPlatform(getCurrentOS());
+  }, []);
+
+  const isMacOS = platform === "macos";
+  const isLinux = platform === "linux";
+  const showProfileToolbar = !pageTitle;
+
+  // Same hook the controls use, so the reserved space can never disagree with
+  // what is actually drawn.
+  const decorations = useWindowDecorations();
+  const linuxLayout = decorations.clientSide ? decorations.layout : null;
+
+  // Press-and-hold drag: any pixel of the sys-bar becomes a drag handle after
+  // HOLD_MS, but quick clicks still reach buttons/inputs underneath.
+  const holdTimeoutRef = useRef<number | null>(null);
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const dragStartedRef = useRef(false);
+  const activePointerIdRef = useRef<number | null>(null);
+  const dragRootRef = useRef<HTMLDivElement | null>(null);
+
+  const clearHold = useCallback(() => {
+    if (holdTimeoutRef.current !== null) {
+      window.clearTimeout(holdTimeoutRef.current);
+      holdTimeoutRef.current = null;
+    }
+  }, []);
+
+  const beginDrag = useCallback(() => {
+    if (dragStartedRef.current) return;
+    dragStartedRef.current = true;
+    clearHold();
+    void getCurrentWindow().startDragging();
+  }, [clearHold]);
+
+  useEffect(() => {
+    return () => {
+      clearHold();
+    };
+  }, [clearHold]);
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.button !== 0) return;
+      if (isInteractiveTarget(e.target)) return;
+
+      dragStartedRef.current = false;
+      dragStartRef.current = { x: e.clientX, y: e.clientY };
+      activePointerIdRef.current = e.pointerId;
+
+      clearHold();
+      holdTimeoutRef.current = window.setTimeout(() => {
+        holdTimeoutRef.current = null;
+        beginDrag();
+      }, HOLD_MS);
+    },
+    [beginDrag, clearHold],
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (
+        dragStartedRef.current ||
+        dragStartRef.current === null ||
+        activePointerIdRef.current !== e.pointerId
+      ) {
+        return;
+      }
+      const dx = e.clientX - dragStartRef.current.x;
+      const dy = e.clientY - dragStartRef.current.y;
+      if (Math.hypot(dx, dy) > DRAG_THRESHOLD_PX) {
+        beginDrag();
+      }
+    },
+    [beginDrag],
+  );
+
+  const handlePointerEnd = useCallback(
+    (e: React.PointerEvent<HTMLDivElement>) => {
+      if (activePointerIdRef.current !== e.pointerId) return;
+      clearHold();
+      dragStartRef.current = null;
+      activePointerIdRef.current = null;
+      dragStartedRef.current = false;
+    },
+    [clearHold],
+  );
+
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (isInteractiveTarget(e.target)) return;
+      clearHold();
+      void getCurrentWindow().toggleMaximize();
+    },
+    [clearHold],
+  );
+
+  const isWindows = platform === "windows";
+
+  return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: titlebar drag surface; the interactive controls inside are real buttons/inputs
+    <div
+      ref={dragRootRef}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={handlePointerEnd}
+      onDoubleClick={handleDoubleClick}
+      className={cn(
+        "flex h-11 items-center gap-2 border-b border-border bg-card select-none",
+        // Windows: WindowDragArea renders three 44px native-style controls
+        // (minimize + maximize/restore + close) fixed at top-right with
+        // z-50, total 132px wide. Reserve 144px on the right edge so the
+        // "+ New" button and search input clear them with a few pixels of
+        // breathing room and never sit underneath the controls.
+        isWindows ? "pl-3 pr-[144px]" : null,
+        // Linux reserves its space through the inline style below, because the
+        // desktop chooses which side the controls sit on and how many there
+        // are. Everything else keeps the plain symmetric padding.
+        !isWindows && !isLinux ? "pl-3 pr-3" : null,
+      )}
+      style={
+        isLinux
+          ? {
+              // Each control is 44px wide; add the usual 12px gutter. Before
+              // the layout resolves, fall back to the gutter alone rather than
+              // to no padding, which would visibly shift the content.
+              paddingLeft: (linuxLayout?.left.length ?? 0) * 44 + 12,
+              paddingRight: (linuxLayout?.right.length ?? 0) * 44 + 12,
+            }
+          : undefined
+      }
+    >
+      {/* The OS draws the traffic lights here through the transparent
+          titlebar, 15px from the left edge (lib.rs). On macOS 26 they end at
+          75px; this keeps the header's content a 13px gap clear of them. */}
+      {isMacOS && <div aria-hidden="true" className="w-15 shrink-0" />}
+
+      {pageTitle ? (
+        <span className="ml-2 text-xs font-semibold text-card-foreground">
+          {pageTitle}
+        </span>
+      ) : null}
+
+      {showProfileToolbar && (
+        <ScrollStrip
+          data-slot="profile-group-strip"
+          className="ml-2 flex-1"
+          stripClassName="gap-3"
+          activeKey={selectedGroupId}
+          instant={Boolean(profileDrag?.active)}
+          scrollLeftLabel={t("header.scrollGroupsLeft")}
+          scrollRightLabel={t("header.scrollGroupsRight")}
+        >
+          {/* "All" filter — shows every profile regardless of group. */}
+          {(() => {
+            const active = selectedGroupId === ALL_FILTER_ID;
+            return (
+              <button
+                key="__all__"
+                type="button"
+                aria-current={active ? "true" : undefined}
+                onClick={() => {
+                  onGroupSelect(ALL_FILTER_ID);
+                }}
+                className={cn(
+                  "flex h-7 shrink-0 items-center gap-1.5 px-1 text-xs transition-colors duration-100",
+                  active
+                    ? "font-medium text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <span>{t("groups.all")}</span>
+                <span className="text-[11px] text-muted-foreground tabular-nums">
+                  {totalProfiles}
+                </span>
+              </button>
+            );
+          })()}
+          {profileDrag && profileDrag.movingIds.size > 0 && (
+            <span
+              data-profile-group-drop={UNGROUPED_DROP_ID}
+              data-drop-state={
+                profileDrag.targetId === UNGROUPED_DROP_ID
+                  ? "target"
+                  : profileDrag.canDrop(UNGROUPED_DROP_ID)
+                    ? "available"
+                    : "unavailable"
+              }
+              title={t("profileMotion.dragTarget", {
+                group: t("groups.noGroup"),
+              })}
+              className={cn(
+                "flex h-7 shrink-0 items-center rounded-sm px-2 text-xs text-muted-foreground transition-colors duration-100",
+                profileDrag.targetId === UNGROUPED_DROP_ID &&
+                  "bg-accent font-medium text-accent-foreground",
+                !profileDrag.canDrop(UNGROUPED_DROP_ID) && "opacity-40",
+              )}
+            >
+              {t("groups.noGroup")}
+            </span>
+          )}
+          {groups.map((group) => {
+            const active = selectedGroupId === group.id;
+            const dropTarget = profileDrag?.targetId === group.id;
+            return (
+              <button
+                key={group.id}
+                type="button"
+                title={group.name}
+                data-profile-group-drop={group.id}
+                data-drop-state={
+                  profileDrag?.active
+                    ? dropTarget
+                      ? "target"
+                      : profileDrag.canDrop(group.id)
+                        ? "available"
+                        : "unavailable"
+                    : undefined
+                }
+                aria-current={active ? "true" : undefined}
+                onClick={() => {
+                  onGroupSelect(active ? ALL_FILTER_ID : group.id);
+                }}
+                className={cn(
+                  "flex h-7 shrink-0 items-center gap-1.5 rounded-sm px-1 text-xs transition-colors duration-100",
+                  dropTarget && "bg-accent text-accent-foreground",
+                  profileDrag?.active &&
+                    !profileDrag.canDrop(group.id) &&
+                    "opacity-40",
+                  active
+                    ? "font-medium text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <span className="max-w-40 truncate">{group.name}</span>
+                <span className="text-[11px] text-muted-foreground tabular-nums">
+                  {group.count}
+                </span>
+              </button>
+            );
+          })}
+        </ScrollStrip>
+      )}
+
+      {!showProfileToolbar && <div className="flex-1" />}
+
+      {showProfileToolbar && (
+        <div className="relative shrink-0">
+          <LuSearch className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            variant="soft"
+            placeholder={t("header.searchPlaceholder")}
+            value={searchQuery}
+            onChange={(e) => {
+              onSearchQueryChange(e.target.value);
+            }}
+            className="h-7 w-36 pr-7 pl-8 text-xs md:text-xs min-[860px]:w-52"
+          />
+          {searchQuery ? (
+            <button
+              type="button"
+              onClick={() => {
+                onSearchQueryChange("");
+              }}
+              className="absolute top-1/2 right-1.5 -translate-y-1/2 rounded-sm p-0.5 transition-colors hover:bg-foreground/10"
+              aria-label={t("header.clearSearch")}
+            >
+              <LuX className="size-3.5 text-muted-foreground hover:text-foreground" />
+            </button>
+          ) : null}
+        </div>
+      )}
+
+      {showProfileToolbar && <SearchSyntaxHelp />}
+
+      {showProfileToolbar && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="shrink-0">
+              <Button
+                size="sm"
+                data-onborda="create-profile"
+                onClick={() => {
+                  onCreateProfileDialogOpen(true);
+                }}
+                className="flex h-7 items-center gap-1.5 px-2.5 text-xs"
+              >
+                <GoPlus className="size-3.5" />
+                {t("header.newProfile")}
+              </Button>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>{t("header.createProfile")}</TooltipContent>
+        </Tooltip>
+      )}
+    </div>
+  );
+};
+
+export default HomeHeader;
