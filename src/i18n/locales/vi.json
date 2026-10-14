@@ -2472,7 +2472,7 @@
     "cameraVideoConversionFailed": "Không thể chuyển đổi video: {{detail}}",
     "locationDatabaseUnavailable": "Cơ sở dữ liệu vị trí chưa tải xong nên múi giờ và ngôn ngữ của hồ sơ chưa thể khớp với địa chỉ của nó. Hãy thử lại sau một phút hoặc tắt vị trí tự động cho hồ sơ này.",
     "cloakbrowserLicenseRequired": "Hồ sơ này chạy trên bản dựng CloakBrowser Pro nhưng chưa có khóa giấy phép. Hãy thêm khóa trong Cài đặt rồi thử lại.",
-    "cloakbrowserLicenseInvalid": "CloakBrowser Pro từ chối khóa bản quyền: khóa không hợp lệ hoặc đã hết hạn.",
+    "cloakbrowserLicenseInvalid": "CloakBrowser Pro đã từ chối khóa giấy phép: khóa không hợp lệ hoặc đã hết hạn. Hãy thay khóa trong Cài đặt, hoặc xóa khóa ở đó để hồ sơ mới dùng bản dựng miễn phí.",
     "cloakbrowserLicenseUnreachable": "CloakBrowser Pro không kiểm tra được bản quyền: máy chủ không phản hồi. Hãy kiểm tra kết nối rồi thử lại.",
     "cloakbrowserLicenseSetup": "CloakBrowser Pro không khởi động được: không ghi được vào thư mục ~/.cloakbrowser.",
     "cloakbrowserSessionLimit": "CloakBrowser Pro: đã đạt giới hạn số trình duyệt chạy cùng lúc của gói. Hãy đóng một trình duyệt rồi thử lại.",

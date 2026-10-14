@@ -2472,7 +2472,7 @@
     "cameraVideoConversionFailed": "Video dönüştürülemedi: {{detail}}",
     "locationDatabaseUnavailable": "Konum veritabanının indirilmesi henüz bitmedi; bu yüzden profilin saat dilimi ve dili adresiyle eşleştirilemiyor. Bir dakika sonra yeniden deneyin veya bu profil için otomatik konumu kapatın.",
     "cloakbrowserLicenseRequired": "Bu profil bir CloakBrowser Pro derlemesinde çalışıyor ve lisans anahtarı ayarlanmamış. Anahtarı Ayarlar'dan ekleyip yeniden deneyin.",
-    "cloakbrowserLicenseInvalid": "CloakBrowser Pro lisans anahtarını reddetti: anahtar geçersiz veya süresi dolmuş.",
+    "cloakbrowserLicenseInvalid": "CloakBrowser Pro lisans anahtarını reddetti: anahtar geçersiz veya süresi dolmuş. Ayarlar'da değiştirin ya da yeni profillerin ücretsiz derlemeyi kullanması için oradan silin.",
     "cloakbrowserLicenseUnreachable": "CloakBrowser Pro lisansı doğrulayamadı: sunucusu yanıt vermedi. Bağlantıyı kontrol edip yeniden deneyin.",
     "cloakbrowserLicenseSetup": "CloakBrowser Pro başlatılamadı: ~/.cloakbrowser klasörüne yazılamıyor.",
     "cloakbrowserSessionLimit": "CloakBrowser Pro: planınızın aynı anda çalışan tarayıcı sınırına ulaşıldı. Birini kapatıp yeniden deneyin.",

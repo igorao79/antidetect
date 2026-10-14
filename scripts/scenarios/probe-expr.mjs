@@ -38,6 +38,8 @@ export const PROBE = `(async () => {
     dateSample: new Date(Date.UTC(2026, 0, 15, 12)).toLocaleDateString(),
     formMessage: Object.assign(document.createElement("input"), { required: true }).validationMessage,
     screen: screen.width + "x" + screen.height,
+    avail: screen.availWidth + "x" + screen.availHeight,
+    screenInMedia: matchMedia(`(device-width: ${screen.width}px) and (device-height: ${screen.height}px)`).matches,
     cores: navigator.hardwareConcurrency,
     memory: navigator.deviceMemory,
     webdriver: navigator.webdriver,

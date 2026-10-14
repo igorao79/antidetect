@@ -92,6 +92,70 @@ pub struct ExitLocation {
   pub locale: Option<String>,
 }
 
+/// Logical screen sizes a Mac reports, built-in panels and common externals.
+const MAC_SCREENS: &[(u32, u32)] = &[
+  (1440, 900),
+  (1470, 956),
+  (1512, 982),
+  (1680, 1050),
+  (1728, 1117),
+  (1792, 1120),
+  (1800, 1169),
+  (1920, 1080),
+  (2056, 1329),
+  (2560, 1440),
+];
+
+/// Logical screen sizes common on Windows and Linux desktops.
+const DESKTOP_SCREENS: &[(u32, u32)] = &[
+  (1536, 864),
+  (1600, 900),
+  (1680, 1050),
+  (1920, 1080),
+  (1920, 1200),
+  (2560, 1080),
+  (2560, 1440),
+  (3440, 1440),
+];
+
+/// The screen a launch reports when the profile does not pin one.
+///
+/// Left alone, a Pro build reports this machine's own screen and the space its
+/// Dock leaves, so every profile shares one screen, a Windows persona shows a
+/// MacBook panel, and the available height moves whenever the Dock does. With
+/// a size given, the build derives the available area itself and holds it.
+///
+/// A Pro build carries the size into CSS media queries, so each profile gets
+/// one of its persona's screens, drawn from its seed and never smaller than
+/// `host` (a window cannot be larger than its screen). The free build changes
+/// `screen` only and leaves media queries on the real display, so there the
+/// real size is the one that agrees with itself.
+pub fn launch_screen(
+  config: &CloakBrowserConfig,
+  pro: bool,
+  host: Option<(u32, u32)>,
+) -> Option<(u32, u32)> {
+  if let (Some(width), Some(height)) = (config.screen_width, config.screen_height) {
+    return Some((width, height));
+  }
+  if !pro {
+    return host;
+  }
+  let screens = if config.os.as_deref() == Some("macos") {
+    MAC_SCREENS
+  } else {
+    DESKTOP_SCREENS
+  };
+  let (host_width, host_height) = host.unwrap_or((0, 0));
+  let fitting: Vec<(u32, u32)> = screens
+    .iter()
+    .copied()
+    .filter(|(width, height)| *width >= host_width && *height >= host_height)
+    .collect();
+  let seed = config.seed? as usize;
+  fitting.get(seed % fitting.len().max(1)).copied()
+}
+
 /// The language the profile speaks: its own setting, else its exit's.
 pub fn profile_locale(config: &CloakBrowserConfig, exit: &ExitLocation) -> Option<String> {
   config
@@ -534,6 +598,64 @@ mod tests {
         "--fingerprint-noise=false",
       ]
     );
+  }
+
+  #[test]
+  fn a_pro_profile_gets_a_screen_of_its_persona_that_holds_and_fits_the_host() {
+    let host = Some((1470, 956));
+    let profile = |os: &str, seed: u32| CloakBrowserConfig {
+      os: Some(os.to_string()),
+      seed: Some(seed),
+      ..Default::default()
+    };
+    let mac = launch_screen(&profile("macos", 40_001), true, host).unwrap();
+    assert_eq!(
+      launch_screen(&profile("macos", 40_001), true, host),
+      Some(mac)
+    );
+    assert!(MAC_SCREENS.contains(&mac));
+    assert!(mac.0 >= 1470 && mac.1 >= 956, "{mac:?}");
+
+    let windows = launch_screen(&profile("windows", 40_001), true, host).unwrap();
+    assert!(DESKTOP_SCREENS.contains(&windows));
+    assert!(windows.0 >= 1470 && windows.1 >= 956, "{windows:?}");
+
+    // Seeds spread over the sizes instead of all landing on one.
+    let drawn: std::collections::HashSet<(u32, u32)> = (10_000..10_040)
+      .filter_map(|seed| launch_screen(&profile("macos", seed), true, host))
+      .collect();
+    assert!(drawn.len() > 3, "{drawn:?}");
+  }
+
+  #[test]
+  fn a_pinned_screen_wins_and_the_free_build_keeps_the_real_one() {
+    let pinned = CloakBrowserConfig {
+      seed: Some(12_345),
+      screen_width: Some(1366),
+      screen_height: Some(768),
+      ..Default::default()
+    };
+    assert_eq!(
+      launch_screen(&pinned, true, Some((1470, 956))),
+      Some((1366, 768))
+    );
+    assert_eq!(
+      launch_screen(&pinned, false, Some((1470, 956))),
+      Some((1366, 768))
+    );
+
+    let free = CloakBrowserConfig {
+      os: Some("windows".to_string()),
+      seed: Some(12_345),
+      ..Default::default()
+    };
+    assert_eq!(
+      launch_screen(&free, false, Some((1470, 956))),
+      Some((1470, 956))
+    );
+    assert_eq!(launch_screen(&free, false, None), None);
+    // No size of the persona fits a display this large: the build's own stays.
+    assert_eq!(launch_screen(&free, true, Some((5120, 2880))), None);
   }
 
   #[test]
