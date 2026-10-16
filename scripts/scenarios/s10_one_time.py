@@ -33,7 +33,7 @@ def wait_gone_untouched(uuid, timeout=90):
 
 leftovers = []
 try:
-    for browser in ("camoufox", "cloakbrowser"):
+    for browser in ("camoufox",):
         status, st = api("POST", "/api/profiles/one_time/start", {"browser": browser, "fingerprint": {"os": "win"}, "headless": True})
         check(f"{browser}: a one-time profile starts", status == 200 and st.get("state") == "STARTED", f"{status} {str(st)[:160]}")
         if status != 200: continue

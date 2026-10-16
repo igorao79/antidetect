@@ -244,18 +244,11 @@ export type BackendErrorCode =
   | "SYNC_DISPLAY_UNAVAILABLE"
   | "SYNC_DISPLAY_TOO_SMALL"
   | "SYNC_ARRANGE_FAILED"
-  | "CLOAKBROWSER_LICENSE_REQUIRED"
-  | "CLOAKBROWSER_LICENSE_INVALID"
-  | "CLOAKBROWSER_LICENSE_UNREACHABLE"
-  | "CLOAKBROWSER_LICENSE_SETUP"
-  | "CLOAKBROWSER_SESSION_LIMIT"
+  | "ENGINE_REMOVED"
   | "PROFILE_TEMPLATE_INVALID"
   | "PROFILE_TEMPLATE_LIMIT"
   | "PROFILE_TEMPLATE_NOT_FOUND"
   | "LOCATION_DATABASE_UNAVAILABLE"
-  | "CAMERA_VIDEO_NOT_FOUND"
-  | "CAMERA_VIDEO_NEEDS_FFMPEG"
-  | "CAMERA_VIDEO_CONVERSION_FAILED"
   | "COOKIE_ROBOT_INVALID_URL"
   | "COOKIE_ROBOT_NO_SITES"
   | "COOKIE_ROBOT_TOO_MANY_SITES"
@@ -868,16 +861,8 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       });
     case "SYNC_ARRANGE_FAILED":
       return t("backendErrors.syncArrangeFailed");
-    case "CLOAKBROWSER_LICENSE_REQUIRED":
-      return t("backendErrors.cloakbrowserLicenseRequired");
-    case "CLOAKBROWSER_LICENSE_INVALID":
-      return t("backendErrors.cloakbrowserLicenseInvalid");
-    case "CLOAKBROWSER_LICENSE_UNREACHABLE":
-      return t("backendErrors.cloakbrowserLicenseUnreachable");
-    case "CLOAKBROWSER_LICENSE_SETUP":
-      return t("backendErrors.cloakbrowserLicenseSetup");
-    case "CLOAKBROWSER_SESSION_LIMIT":
-      return t("backendErrors.cloakbrowserSessionLimit");
+    case "ENGINE_REMOVED":
+      return t("backendErrors.engineRemoved");
     case "PROFILE_TEMPLATE_INVALID":
       return t("backendErrors.profileTemplateInvalid");
     case "PROFILE_TEMPLATE_LIMIT":
@@ -886,14 +871,6 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       return t("backendErrors.profileTemplateNotFound");
     case "LOCATION_DATABASE_UNAVAILABLE":
       return t("backendErrors.locationDatabaseUnavailable");
-    case "CAMERA_VIDEO_NOT_FOUND":
-      return t("backendErrors.cameraVideoNotFound");
-    case "CAMERA_VIDEO_NEEDS_FFMPEG":
-      return t("backendErrors.cameraVideoNeedsFfmpeg");
-    case "CAMERA_VIDEO_CONVERSION_FAILED":
-      return t("backendErrors.cameraVideoConversionFailed", {
-        detail: parsed.params?.detail ?? "",
-      });
     case "COOKIE_ROBOT_INVALID_URL":
       return t("backendErrors.cookieRobotInvalidUrl", {
         url: parsed.params?.url ?? "",

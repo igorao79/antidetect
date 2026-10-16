@@ -278,13 +278,9 @@ export const commandCoverage = {
     level: "contract",
     commands: [
       "update_camoufox_config",
-      "profile::cloakbrowser::update_cloakbrowser_config",
       "cookie_robot::start_cookie_robot",
       "cookie_robot::stop_cookie_robot",
       "cookie_robot::get_cookie_robot_status",
-      "cloakbrowser_license::get_cloakbrowser_license",
-      "cloakbrowser_license::set_cloakbrowser_license_key",
-      "cloakbrowser_license::remove_cloakbrowser_license_key",
       "profile_templates::list_profile_templates",
       "profile_templates::save_profile_template",
       "profile_templates::delete_profile_template",

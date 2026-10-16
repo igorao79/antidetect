@@ -38,7 +38,7 @@ def still_open():
     return [p["uuid"] for p in api("GET", "/api/profiles/active")[1] if p["uuid"] in created]
 
 try:
-    for browser in ("camoufox", "cloakbrowser"):
+    for browser in ("camoufox",):
         created.append(create(f"S9 {browser}", "win", browser=browser))
 
     status, r = api("POST", ROBOT, {"uuids": created, "urls": ["ftp://files.example"]})

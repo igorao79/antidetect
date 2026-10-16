@@ -506,9 +506,6 @@ impl AutoUpdater {
     if !self.is_version_newer(&latest, &profile.version) {
       return None;
     }
-    if !crate::browser_runner::stays_in_tier(profile, &latest) {
-      return None;
-    }
 
     match self
       .profile_manager
@@ -673,7 +670,6 @@ mod tests {
       release_type: "stable".to_string(),
       camoufox_config: None,
       wayfern_config: None,
-      cloakbrowser_config: None,
       group_id: None,
       tags: Vec::new(),
       note: None,

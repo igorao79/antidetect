@@ -1,16 +1,13 @@
 from scn import *
 wait_api()
-created = [create(f"S6 {browser}", "win", browser=browser) for browser in ("camoufox", "cloakbrowser")]
+created = [create(f"S6 {browser}", "win", browser=browser) for browser in ("camoufox",)]
 by = {}
 for uuid in created:
     status, started = start(uuid)
     if status == 200: by[started["browser"]] = started
 time.sleep(4)
 for browser, p in by.items():
-    if browser == "camoufox":
-        cmd = ["node", "bidi-eval.mjs", p["ws_endpoint"], "https://bot.sannysoft.com/", "sannysoft.js", "9000"]
-    else:
-        cmd = ["node", "cdp-nav-eval.mjs", str(p["debug_port"]), "https://bot.sannysoft.com/", "sannysoft.js", "9000"]
+    cmd = ["node", "bidi-eval.mjs", p["ws_endpoint"], "https://bot.sannysoft.com/", "sannysoft.js", "9000"]
     out = subprocess.run(cmd, cwd=HERE, capture_output=True, text=True, timeout=150)
     try:
         r = json.loads(out.stdout)

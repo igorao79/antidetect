@@ -15,9 +15,12 @@ Fork-specific rules:
 - Paid-plan gates on local features (API/MCP automation, any fingerprint OS) are removed in
   `cloud_auth.rs` and `src/lib/entitlements.ts`. Features that need Donut's cloud stay off.
 - Engines: Camoufox (anti-detect Firefox, free, restored from upstream `23dab4c8e4`) is the
-  default; CloakBrowser (anti-detect Chromium, free build pinned per platform, macOS = Chromium
-  145) is the Chromium option; Wayfern stays available for a paid subscription and is only
-  downloaded on demand. Only Camoufox and CloakBrowser are fetched at startup.
+  engine; Wayfern stays available for a paid subscription and is only downloaded on demand.
+  Only Camoufox is fetched at startup. The product is to stay free, so CloakBrowser (Chromium,
+  with a paid Pro tier) was removed in October 2026, with its camera video, licence and
+  Chromium language override. Its profiles stay listed so their data can be exported; a
+  launch answers `ENGINE_REMOVED`, and the downloaded build is cleaned up once no profile uses
+  it.
 - `octo_compat_api.rs` serves an Octo Browser compatible API on `127.0.0.1:58888` (no token,
   loopback only): profile start/stop/active, one-time profiles (`/api/profiles/one_time/start`,
   deleted when their browser stops) plus Octo's automation calls against local data: profiles
@@ -28,42 +31,27 @@ Fork-specific rules:
   bar's menu) is the local counterpart of Donut's cloud Cookie Bot: it launches each selected
   profile, walks a site list over CDP or WebDriver BiDi with pauses and scrolling, and closes it.
   One run at a time; also `GET/POST/DELETE /api/v2/automation/cookie_robot` on the local API.
-- A CloakBrowser profile can show a video file in place of the camera
-  (`cloakbrowser_camera.rs`, "Camera video" in the profile's settings, `camera_video` on the
-  local API's profile creation). The file is converted with ffmpeg to Motion JPEG beside the
-  profile and passed with Chromium's fake-capture switches. A page gets the video; one that
-  lists devices sees "Fake Audio Input" microphones and a camera named after the file, which
-  the free build cannot rename.
-- The synchronizer takes CloakBrowser profiles as well as Wayfern ones. Followers are replayed
-  over DevTools as before; a CloakBrowser leader has no native input capture, so
-  `synchronizer_capture.rs` watches it from an isolated world of the page (a listener script and
-  a binding the page's own scripts cannot see, re-armed after every top-level navigation, no
-  `Runtime.enable`). Input inside frames is not mirrored. Also on the local API as
-  `POST/DELETE /api/v2/automation/synchronizer`, where `headless` runs a session without windows.
-- CloakBrowser Pro. With a licence key (`CLOAKBROWSER_LICENSE_KEY`, or
-  `~/.cloakbrowser/license.key`, where the binary itself looks; Settings writes that file
-  through `cloakbrowser_license.rs` once CloakHQ's server has accepted the key, and shows only
-  the key's last characters) the current Pro build is
-  listed, downloaded with the key, verified by the same signed manifest and kept beside the
-  free one; new CloakBrowser profiles are created on it. A profile never moves between the
-  free and a Pro build by itself (`stays_in_tier`): Chromium cannot reopen a profile a newer
-  build has used, and a Pro build stops when its licence does. A Pro build refuses to start by
-  exit code (76 session limit, 77 key, 78 server, 79 setup), turned into backend error codes.
-  It calls CloakHQ's licence server at every start, directly, not through the profile's proxy.
-- A build can carry a CloakBrowser Pro key for handing it to someone: set
-  `ANTIDETECT_BUNDLED_CLOAKBROWSER_KEY` in the build environment (never in the repository).
-  At startup the app writes it to `~/.cloakbrowser/license.key` once per install, only where
-  no key is set, and remembers that it did (`data/cloakbrowser_bundled_key_installed`), so a key
-  the user removes in Settings stays removed. Anyone holding such a build can read the key
-  out of it.
-- What a Pro build changes, measured (`s13_fingerprint_surfaces.py`): Chromium 154 instead of
-  145, and `toDataURL`, `toBlob` and the WebGL image are each profile's own and hold across
-  restarts. The audio fingerprint and text metrics are the host machine's on every profile, by
-  design: that is right for a macOS persona on a Mac and a mismatch for a Windows one.
 - Profile templates (`profile_templates.rs`, `profile-template-menu.tsx`, the "Template" pill
   of the create dialog) keep the dialog's choices under a name in
   `data/profile_templates.json`: engine, proxy, extension group and fingerprint settings, never
-  a pinned fingerprint or seed, so every profile made from one is still its own device.
+  a pinned fingerprint or seed, so every profile made from one is still its own device. A
+  template saved for an engine the app no longer has keeps the dialog's current engine.
+- The synchronizer is Wayfern's only (native input capture, followers replayed over
+  DevTools), also on the local API as `POST/DELETE /api/v2/automation/synchronizer`, where
+  `headless` runs a session without windows. Camoufox would need a capture and a replay over
+  WebDriver BiDi.
+- A persistent Camoufox profile reopens its session at launch: tabs, their session storage
+  and session cookies (`SESSION_RESTORE_PREFS` in `camoufox_manager.rs`, written to `user.js`
+  at every launch). camoufox.cfg starts on a blank page and drops the session. A stop first
+  asks the browser to quit over WebDriver BiDi (`close_over_bidi`, `browser.close`), so it
+  writes its session, cookies and storage, and falls back to SIGTERM and a kill when it cannot
+  ask (an automation client holds Firefox's one BiDi session). After a clean quit Firefox
+  reopens tabs and session cookies but drops session storage, which only a crashed session
+  brings back, so each launch moves `sessionstore.jsonlz4` to
+  `sessionstore-backups/recovery.jsonlz4` (`resume_as_recovery`) and the session resumes as
+  after a crash, without the restore prompt. Ephemeral profiles keep their no-history prefs.
+  `s16_session_restore.py` checks it; session storage comes back a moment after the
+  restored page loads, and a value set from outside over BiDi is not recorded at all.
 - Donut's cloud is switched off in the interface by one flag, `DONUT_CLOUD` in
   `src/lib/cloud-only-pages.ts`, with the lists beside it: the Account page (signing in, sync
   setup), the cloud Cookie Bot and the Agent console are out of the rail, the shortcuts and
@@ -81,55 +69,46 @@ Fork-specific rules:
   Settings requests them afterwards. An ad-hoc signed build is a new app to macOS after every
   rebuild, so a grant given to an earlier build does not carry over.
 - Interface language (`interface_language.rs`, `interface-language-field.tsx`, the
-  `interface_language` profile setting of Camoufox and CloakBrowser, also on the local API's
-  profile creation). Neither engine keeps the language of its menus apart from what a page
-  reads, so by default the interface follows the profile's language. Camoufox takes menus,
-  `Intl`, date formats and form messages from `intl.locale.requested`, handed over as
-  `CAMOU_PREFS_1`; its translations are inside the build. Chromium on macOS ignores `--lang`
-  and reads the system's `AppleLanguages`, so the launch writes that key into the engine's
-  own preferences domain for the second and a half the browser takes to start, one launch at
-  a time, and puts back what was there. A profile may ask for another interface language
-  (the app's): `navigator.languages` stay the profile's, form messages turn to that language
-  on every engine, and `Intl` with them on Camoufox and the free CloakBrowser build (a Pro
-  build pins `Intl` with `--fingerprint-locale`).
-- Screen (`cloakbrowser_manager::launch_screen`, `s15_screen.py`). Left alone, a Pro build
-  in a window reports this machine's display and the space its real Dock leaves: profiles
-  share one screen, a Windows persona shows a MacBook panel, and the available height (and
-  with it an open-source FingerprintJS id) changes when the Dock does. Every launch now passes
-  a screen size, after which the build derives the available area itself and holds it: on a
-  Pro build one of the persona's sizes, drawn from the seed and never smaller than the
-  largest display, which CSS media queries report too; on the free build the real display's
-  size, because that build leaves media queries on the real display. A size pinned in the
-  profile wins. `--fingerprint-taskbar-height` does nothing for a macOS persona.
+  `interface_language` setting of a Camoufox profile, also on the local API's profile
+  creation). Camoufox keeps no language of its menus apart from what a page reads, so by
+  default the interface follows the profile's language. It takes menus, `Intl`, date formats
+  and form messages from `intl.locale.requested`, handed over as `CAMOU_PREFS_1`; its
+  translations are inside the build. A profile may ask for another interface language (the
+  app's): `navigator.languages` stay the profile's, and form messages and `Intl` turn to that
+  language.
 - SSH is a proxy type (`ssh://user:password@host:port`, password or keyboard-interactive
   login). `ssh_upstream.rs` runs inside the local proxy worker: one session per upstream, one
   `direct-tcpip` channel per browser connection, TCP only. Host keys are not pinned.
 - Put fork code in its own modules and keep edits to upstream files small, so upstream merges
-  stay easy. Fork modules: `browser_runner/{launch_network,engine_common,camoufox,cloakbrowser}.rs`,
-  `api_client/{camoufox,cloakbrowser}.rs`, `camoufox/`, `camoufox_manager.rs`,
-  `cloakbrowser_manager.rs`, `cloakbrowser_camera.rs`, `cloakbrowser_license.rs`,
-  `profile_templates.rs`, `interface_language.rs`, `donut_cloud.rs`, `synchronizer_capture.rs`,
-  `profile/{after_exit,camoufox,cloakbrowser}.rs`, `ssh_upstream.rs`,
+  stay easy. Fork modules: `browser_runner/{launch_network,engine_common,camoufox}.rs`,
+  `api_client/camoufox.rs`, `camoufox/`, `camoufox_manager.rs`,
+  `profile_templates.rs`, `interface_language.rs`, `donut_cloud.rs`,
+  `profile/{after_exit,camoufox}.rs`, `ssh_upstream.rs`,
   `cookie_robot.rs`, `octo_compat_api.rs`, and on the frontend
-  `cloakbrowser-config-{form,dialog}.tsx`, `camoufox-config-dialog.tsx`,
-  `shared-camoufox-config-form.tsx`, `cookie-robot-dialog.tsx`,
-  `cloakbrowser-license-section.tsx`, `profile-template-menu.tsx`,
-  `interface-language-field.tsx`.
+  `camoufox-config-dialog.tsx`, `shared-camoufox-config-form.tsx`, `cookie-robot-dialog.tsx`,
+  `profile-template-menu.tsx`, `interface-language-field.tsx`.
 - Keep the AGPL license and upstream copyright notices.
 - Commit only when the user asks.
 
 What testing established about the engines (`scripts/scenarios/` reruns these checks against a
 running dev app):
 
-- Camoufox 156 keeps stock Firefox's per-session canvas randomization (baseline fingerprinting
-  protection). Profiles are not linkable by canvas, but a profile's canvas is not stable across
-  restarts; `canvas:seed` does not change 2D canvas output in this build.
-- The free CloakBrowser 145 macOS build applies its per-seed noise to `getImageData` and WebGL
-  `readPixels` only. `toDataURL`/`toBlob` and the audio fingerprint are the real hardware's, so
-  profiles on one machine share them. Whether newer (paid) builds differ is untested.
+- Camoufox 156 surfaces, measured on the binary with two profiles that differ only in their
+  seeds and offsets (`s13_fingerprint_surfaces.py` reruns it through the app): `toDataURL`,
+  `toBlob` and the WebGL image carry stock Firefox's per-session randomization
+  (`EfficientCanvasRandomization` of baseline fingerprinting protection), so profiles are not
+  linkable by them but a profile's value changes at every launch. `getImageData`, WebGL
+  `readPixels` and text metrics are this machine's, the same in every profile: `canvas:seed`,
+  `canvas:aaOffset` and `fonts:spacing_seed` do not reach them in this build (the canvas
+  anti-aliasing patch is not in the open-source build), with GPU canvas on or off. The audio
+  fingerprint follows `audio:seed`: each profile's own and stable. Switching the randomization
+  off (`privacy.baselineFingerprintingProtection` false, or `-EfficientCanvasRandomization` in
+  the overrides) makes `toDataURL` stable but the machine's own, shared by every profile, so
+  the app leaves it on; a canvas that is a profile's own and stable needs a patch to the
+  engine.
 - Launch the dev app without `HTTP(S)_PROXY` in its environment: the app's own lookups honour
   those variables while a profile's traffic does not, so geolocation ends up for the wrong exit.
-- Location follows the exit at every launch, for both engines: the exit address is measured
+- Location follows the exit at every launch: the exit address is measured
   through the launch's local proxy and sets timezone, language, coordinates and the WebRTC
   address (unless the profile turned automatic location off). A new Camoufox fingerprint is
   located through a proxy check, never by handing the proxy to reqwest, which looks up this
@@ -142,13 +121,9 @@ running dev app):
   still downloading it) and fails with `LOCATION_DATABASE_UNAVAILABLE` after 150 s. Without the
   database the browser came up with this machine's own timezone and a default language.
 - Before the interface language was set at launch, a page could read a language the profile
-  did not speak: Camoufox reported `Intl` as `en-US` under any `navigator.language`, and
-  CloakBrowser reported this Mac's system language in `Intl` (free build) and in form
-  messages (both builds). `s14_interface_language.py` holds the fix; the earlier scenarios
-  only compared `navigator.languages` and the timezone.
-- A Pro build that cannot reach the licence server may give up later than the 2.5 s it is
-  watched for (seen once, 18 s, exit 78, on a remote proxy): the launch has already
-  succeeded and the profile simply closes.
+  did not speak: Camoufox reported `Intl` as `en-US` under any `navigator.language`.
+  `s14_interface_language.py` holds the fix; the earlier scenarios only compared
+  `navigator.languages` and the timezone.
 - The REST API (`api_server.rs`) asked for the Wayfern terms on every install and answered
   403 before it looked at the key, so on an install without Wayfern (every fork install) the
   API on port 10108 refused everything and "Check connection" read "key not accepted". The
@@ -223,7 +198,6 @@ donutbrowser/
 │   │   ├── vault.rs                # Per-install key that seals local secrets; opens legacy build-password seals once
 │   │   ├── cookie_manager.rs       # Cookie import/export
 │   │   ├── cookie_robot.rs         # Local Cookie Robot: warms profiles on a site list (fork)
-│   │   ├── cloakbrowser_license.rs # CloakBrowser Pro licence key: check, save, remove (fork)
 │   │   ├── profile_templates.rs    # Named sets of the create dialog's choices (fork)
 │   │   ├── interface_language.rs   # Language of a profile browser's own menus, per engine (fork)
 │   │   ├── donut_cloud.rs          # What the backend still treats as available without Donut's cloud (fork)
@@ -235,7 +209,6 @@ donutbrowser/
 │   │   ├── extension_fetch.rs      # Web Store link/id and direct .crx/.zip import, CRX3 unwrapping
 │   │   ├── group_manager.rs        # Profile group management
 │   │   ├── synchronizer.rs         # Real-time profile synchronizer (pause/resume, hold a follower out, window layouts)
-│   │   ├── synchronizer_capture.rs # Leader input capture for engines without Wayfern's own (fork)
 │   │   ├── daemon/                 # Background daemon + tray icon (currently disabled)
 │   │   └── cloud_auth.rs           # Cloud authentication
 │   ├── tests/                      # Integration tests

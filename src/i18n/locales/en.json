@@ -248,22 +248,7 @@
     },
     "trashRetentionOff": "Delete at once",
     "scrollSectionsLeft": "Scroll sections left",
-    "scrollSectionsRight": "Scroll sections right",
-    "cloakbrowserLicense": {
-      "title": "CloakBrowser Pro licence",
-      "description": "With a licence key, new CloakBrowser profiles are created on the current Pro build of Chromium. Without one they use the free build.",
-      "keyLabel": "Licence key",
-      "placeholder": "Paste the key",
-      "endsWith": "Key ending in {{hint}}",
-      "activeUntil": "Active until {{date}}",
-      "refused": "Refused",
-      "notChecked": "Not checked",
-      "fromEnvironment": "Set by the CLOAKBROWSER_LICENSE_KEY environment variable; it cannot be changed here.",
-      "removeNote": "Profiles created on a Pro build do not start without a key.",
-      "replace": "Replace",
-      "saved": "Licence key saved. The Pro build is downloading in the background.",
-      "removed": "Licence key removed."
-    }
+    "scrollSectionsRight": "Scroll sections right"
   },
   "header": {
     "searchPlaceholder": "Search profiles...",
@@ -530,8 +515,7 @@
     "engine": {
       "label": "Browser engine",
       "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
-      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription.",
-      "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
+      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
     },
     "count": "Number of profiles",
     "countHint": "Create several profiles at once. They are named “Name 1”, “Name 2” and so on, and each gets its own fingerprint.",
@@ -2467,15 +2451,8 @@
     "cookieRobotAlreadyRunning": "Cookie Robot is already running. Wait for it to finish or stop it.",
     "cookieRobotProfileRunning": "The profile is open. Close it and run the robot again.",
     "cookieRobotNoControl": "The browser started but could not be controlled: {{detail}}",
-    "cameraVideoNotFound": "The video file was not found.",
-    "cameraVideoNeedsFfmpeg": "This video has to be converted, and ffmpeg is not installed. Install ffmpeg or choose a .mjpeg file.",
-    "cameraVideoConversionFailed": "The video could not be converted: {{detail}}",
     "locationDatabaseUnavailable": "The location database has not finished downloading, so the profile's timezone and language cannot be matched to its address yet. Try again in a minute, or turn off automatic location for this profile.",
-    "cloakbrowserLicenseRequired": "This profile runs on a CloakBrowser Pro build, and no licence key is set. Add the key in Settings and try again.",
-    "cloakbrowserLicenseInvalid": "CloakBrowser Pro refused the licence key: it is invalid or has expired. Replace it in Settings, or delete it there so that new profiles use the free build.",
-    "cloakbrowserLicenseUnreachable": "CloakBrowser Pro could not check the licence: its server did not answer. Check the connection and try again.",
-    "cloakbrowserLicenseSetup": "CloakBrowser Pro could not start: the folder ~/.cloakbrowser is not writable.",
-    "cloakbrowserSessionLimit": "CloakBrowser Pro: your plan's limit of browsers running at once is reached. Close one and try again.",
+    "engineRemoved": "CloakBrowser has been removed from Owl, so this profile no longer starts. Export its cookies and import them into a Camoufox profile.",
     "profileTemplateInvalid": "This template cannot be saved: its name is too long or its settings are damaged.",
     "profileTemplateLimit": "There are too many templates. Delete one before saving another.",
     "profileTemplateNotFound": "This template no longer exists."
@@ -3682,39 +3659,6 @@
     "titleView": "View Fingerprint Settings - {{name}} ({{browser}})",
     "titleConfigure": "Configure Fingerprint Settings - {{name}} ({{browser}})"
   },
-  "cloakbrowser": {
-    "seed": "Fingerprint seed",
-    "seedPlaceholder": "Generated automatically",
-    "newSeed": "New seed",
-    "seedDescription": "The seed is the device: the same seed gives the same GPU, canvas, audio and font fingerprint on every launch. A new seed is a new device.",
-    "timezone": "Timezone",
-    "locale": "Language",
-    "followsProxy": "Follows the proxy",
-    "webrtc": {
-      "label": "WebRTC",
-      "auto": "Proxy address (recommended)",
-      "real": "Real address",
-      "block": "Blocked"
-    },
-    "noise": "Canvas, WebGL, audio and layout noise",
-    "overrides": {
-      "title": "Hardware overrides",
-      "description": "Leave empty to use the values the seed produces. Overriding them can make the device less coherent.",
-      "gpuVendor": "GPU vendor",
-      "gpuRenderer": "GPU renderer",
-      "cpuCores": "CPU cores",
-      "memory": "Memory, GB",
-      "screenWidth": "Screen width",
-      "screenHeight": "Screen height"
-    },
-    "camera": {
-      "label": "Camera video",
-      "real": "Real camera",
-      "choose": "Choose video…",
-      "remove": "Remove",
-      "hint": "Sites that ask for the camera get this video on a loop, and the microphone goes silent. A site that lists devices can still tell they are not real hardware."
-    }
-  },
   "cookieRobot": {
     "title": "Cookie Robot",
     "description": "Opens the selected profiles, visits the sites below in each of them and closes them again, so every profile collects cookies and history before you work in it.",
@@ -3743,6 +3687,6 @@
     "label": "Browser interface language",
     "profile": "Same as the profile",
     "profileHint": "Menus are in the language of the profile's country, as on a real device there. Sites see one language everywhere.",
-    "otherHint": "Easier to read, but sites can notice it: by the wording of form messages, and in Camoufox and the free CloakBrowser build also by date and number formats. Keep the profile's language for accounts that matter."
+    "otherHint": "Easier to read, but sites can notice it: by the wording of form messages and by date and number formats. Keep the profile's language for accounts that matter."
   }
 }

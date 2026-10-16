@@ -11,7 +11,6 @@ import { AboutDialog } from "@/components/about-dialog";
 import { AccountPage } from "@/components/account-page";
 import { AgentPage, type AgentTab } from "@/components/agent-page";
 import { CamoufoxConfigDialog } from "@/components/camoufox-config-dialog";
-import { CloakBrowserConfigDialog } from "@/components/cloakbrowser-config-dialog";
 import { CloneProfileDialog } from "@/components/clone-profile-dialog";
 import { CloseConfirmDialog } from "@/components/close-confirm-dialog";
 import { CommandPalette } from "@/components/command-palette";
@@ -117,7 +116,6 @@ import {
 import type {
   BrowserProfile,
   CamoufoxConfig,
-  CloakBrowserConfig,
   ConsistencyResult,
   ExtensionGroup,
   PreLaunchChecks,
@@ -157,7 +155,7 @@ function consistencyFromErrorParams(
   };
 }
 
-type BrowserTypeString = "camoufox" | "cloakbrowser" | "wayfern";
+type BrowserTypeString = "camoufox" | "wayfern";
 
 interface PendingUrl {
   id: string;
@@ -475,8 +473,6 @@ export default function Home() {
     useState(false);
   const [wayfernConfigDialogOpen, setWayfernConfigDialogOpen] = useState(false);
   const [camoufoxConfigProfile, setCamoufoxConfigProfile] =
-    useState<BrowserProfile | null>(null);
-  const [cloakbrowserConfigProfile, setCloakbrowserConfigProfile] =
     useState<BrowserProfile | null>(null);
   const [groupManagementDialogOpen, setGroupManagementDialogOpen] =
     useState(false);
@@ -1130,23 +1126,9 @@ export default function Home() {
       setCamoufoxConfigProfile(profile);
       return;
     }
-    if (profile.browser === "cloakbrowser") {
-      setCloakbrowserConfigProfile(profile);
-      return;
-    }
     setCurrentProfileForWayfernConfig(profile);
     setWayfernConfigDialogOpen(true);
   }, []);
-
-  const handleSaveCloakBrowserConfig = useCallback(
-    async (profile: BrowserProfile, config: CloakBrowserConfig) => {
-      await invoke("update_cloakbrowser_config", {
-        profileId: profile.id,
-        config,
-      });
-    },
-    [],
-  );
 
   const handleSaveCamoufoxConfig = useCallback(
     async (profile: BrowserProfile, config: CamoufoxConfig) => {
@@ -1185,7 +1167,6 @@ export default function Home() {
       proxyId?: string;
       vpnId?: string;
       camoufoxConfig?: CamoufoxConfig;
-      cloakbrowserConfig?: CloakBrowserConfig;
       wayfernConfig?: WayfernConfig;
       groupId?: string;
       extensionGroupId?: string;
@@ -1216,15 +1197,6 @@ export default function Home() {
             launchHook: profileData.launchHook,
           },
         );
-
-        // A CloakBrowser profile is created with a config of its own; the
-        // choices made in the dialog replace it.
-        if (profileData.cloakbrowserConfig) {
-          await invoke("update_cloakbrowser_config", {
-            profileId: profile.id,
-            config: profileData.cloakbrowserConfig,
-          });
-        }
 
         if (profileData.extensionGroupId) {
           try {
@@ -2801,18 +2773,6 @@ export default function Home() {
               : false
           }
           crossOsUnlocked={crossOsUnlocked}
-        />
-
-        <CloakBrowserConfigDialog
-          isOpen={cloakbrowserConfigProfile !== null}
-          onClose={() => setCloakbrowserConfigProfile(null)}
-          profile={cloakbrowserConfigProfile}
-          onSave={handleSaveCloakBrowserConfig}
-          isRunning={
-            cloakbrowserConfigProfile
-              ? runningProfiles.has(cloakbrowserConfigProfile.id)
-              : false
-          }
         />
 
         <WayfernConfigDialog

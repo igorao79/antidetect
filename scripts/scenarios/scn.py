@@ -52,12 +52,7 @@ def delete(*uuids):
 
 def probe(started, url=None, set_cookie=None, tries=4):
     """Read the device fingerprint out of a started profile."""
-    args = []
-    if started["browser"] == "camoufox":
-        args = ["node", "bidi-probe.mjs", started["ws_endpoint"]]
-    else:
-        args = ["node", "cdp-probe.mjs", str(started["debug_port"])]
-    args.append(url or "")
+    args = ["node", "bidi-probe.mjs", started["ws_endpoint"], url or ""]
     if set_cookie: args += ["--set-cookie", set_cookie]
     last = ""
     for attempt in range(tries):

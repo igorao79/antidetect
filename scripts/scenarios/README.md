@@ -2,7 +2,7 @@
 
 End-to-end checks that drive a running Antidetect dev app through its
 Octo-compatible API (`127.0.0.1:58888`) and read the device a site would see out
-of the launched browsers (WebDriver BiDi for Camoufox, CDP for CloakBrowser).
+of the launched browsers over WebDriver BiDi.
 
 Run the app without proxy variables in its environment, then run scenarios from
 this directory. `--no-watch` keeps the app from restarting under a run when a
@@ -23,23 +23,20 @@ python3 s1_camoufox_fingerprints.py
 | --- | --- |
 | `s1_camoufox_fingerprints.py` | Three Camoufox profiles (Windows, macOS, Linux): OS-consistent device, engine version in the UA, WebRTC address, distinct canvas. Leaves them running for s2 and s4. |
 | `s2_camoufox_persistence.py` | Same device and cookies after a restart; debug ports recovered for running profiles. |
-| `s3_cloakbrowser.py` | CloakBrowser profiles: OS and client hints, per-seed noise, same device and cookies after a restart. |
 | `s4_api_edge_cases.py` | Status codes for bad requests, Host and content-type guards, headless start, delete. |
 | `s5_proxy_routing.py` | A profile's traffic goes through its assigned proxy (a local logging proxy). |
 | `s5b_dead_proxy.py` | A proxy that dies never makes a profile fall back to a direct connection. |
-| `s6_bot_detection.py` | `bot.sannysoft.com` reports no failed test for either engine. |
-| `s7_ssh_proxy.py` | Both engines route through an SSH proxy; a wrong password refuses the profile. Needs `cargo build --example ssh_test_server` in `src-tauri`. |
-| `s9_cookie_robot.py` | Cookie Robot on both engines: bad requests refused, sites visited and counted, profiles closed afterwards with their cookies kept, a running robot stopped. |
+| `s6_bot_detection.py` | `bot.sannysoft.com` reports no failed test. |
+| `s7_ssh_proxy.py` | A profile routes through an SSH proxy; a wrong password refuses the profile. Needs `cargo build --example ssh_test_server` in `src-tauri`. |
+| `s9_cookie_robot.py` | Cookie Robot: bad requests refused, sites visited and counted, profiles closed afterwards with their cookies kept, a running robot stopped. |
 | `s10_one_time.py` | One-time profiles: started in one call, absent from the profile list, deleted when stopped and when their browser exits on its own. |
-| `s11_camera.py` | A CloakBrowser profile with a camera video: a page granted the camera gets the clip, moving and at 1280x720. Needs ffmpeg. |
-| `s12_synchronizer.py` | Synchronizer on CloakBrowser: navigation, clicks, typing and scrolling in the leader are repeated in the follower; Camoufox is refused. |
-| `s13_fingerprint_surfaces.py` | Two CloakBrowser profiles side by side: which canvas, WebGL, audio and layout surfaces are each profile's own and whether they hold across a restart. Judged on a Pro build, reported on the free one. |
-| `s14_interface_language.py` | A page reads one language everywhere (`navigator.languages`, `Intl`, number format, form messages) when the interface follows the profile, on both engines and across a restart. With `interface_language` set, `navigator.languages` stay the profile's and the interface shows through form messages, and through `Intl` on Camoufox and the free CloakBrowser build. Says most with `SCN_REMOTE_PROXY` pointing at an exit in another language. |
-| `s15_screen.py` | A CloakBrowser profile reports a screen that is its own, the same at the next launch, a size its persona has, and (on a Pro build) the one CSS media queries report too. Run with `SCN_HEADED=1` to see the part that matters most on a Mac: the available height no longer follows the real Dock. |
+| `s13_fingerprint_surfaces.py` | Two Camoufox profiles side by side: `toDataURL`/`toBlob` not shared (Firefox's per-session randomization), audio each profile's own and stable; reports which canvas, WebGL and text surfaces are this machine's. |
+| `s14_interface_language.py` | A page reads one language everywhere (`navigator.languages`, `Intl`, number format, form messages) when the interface follows the profile and across a restart. With `interface_language` set, `navigator.languages` stay the profile's and the interface shows through form messages and through `Intl`. Says most with `SCN_REMOTE_PROXY` pointing at an exit in another language. |
+| `s16_session_restore.py` | A profile reopens the tabs it had, with their session storage, after a stop, without the restore prompt. `SCN_DEBUG=1` prints every reading. |
 | `s8_remote_exit.py` | Through a real remote proxy (`SCN_REMOTE_PROXY=http://user:password@host:port`): sites see the proxy's address and timezone, WebRTC shows nothing of this machine, the language is the same at every launch, and a profile whose exit moves follows it at the next launch. Skipped without the variable. |
 
 `EXPECT_TZ` and `EXPECT_LANG` (comma-separated) add geolocation assertions to
-s1 and s3, for example `EXPECT_TZ=Europe/Berlin EXPECT_LANG=de`.
+s1, for example `EXPECT_TZ=Europe/Berlin EXPECT_LANG=de`.
 
 The scenarios create and delete their own profiles and proxies; s1 leaves its
 three profiles running on purpose and removes the previous run's on start.

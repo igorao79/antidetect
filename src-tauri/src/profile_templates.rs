@@ -135,7 +135,7 @@ mod tests {
   fn a_template_is_kept_listed_by_name_and_deleted() {
     let (_dir, file) = file();
     save_into(&file, "Windows shop", json!({ "engine": "camoufox" })).unwrap();
-    let listed = save_into(&file, " ads ", json!({ "engine": "cloakbrowser" })).unwrap();
+    let listed = save_into(&file, " ads ", json!({ "engine": "wayfern" })).unwrap();
     assert_eq!(
       listed.iter().map(|t| t.name.as_str()).collect::<Vec<_>>(),
       vec!["ads", "Windows shop"]
@@ -154,10 +154,10 @@ mod tests {
   fn saving_under_a_name_in_use_replaces_that_template() {
     let (_dir, file) = file();
     let first = save_into(&file, "Shop", json!({ "engine": "camoufox" })).unwrap();
-    let second = save_into(&file, "Shop", json!({ "engine": "cloakbrowser" })).unwrap();
+    let second = save_into(&file, "Shop", json!({ "engine": "wayfern" })).unwrap();
     assert_eq!(second.len(), 1);
     assert_eq!(second[0].id, first[0].id);
-    assert_eq!(second[0].settings["engine"], "cloakbrowser");
+    assert_eq!(second[0].settings["engine"], "wayfern");
   }
 
   #[test]

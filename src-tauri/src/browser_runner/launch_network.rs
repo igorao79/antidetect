@@ -1,5 +1,5 @@
-//! Routing for a profile launch, shared by the engines Antidetect adds on top
-//! of Wayfern (Camoufox, CloakBrowser).
+//! Routing for a profile launch of the engine Antidetect adds on top of
+//! Wayfern (Camoufox).
 //!
 //! It runs the same steps, in the same order, as the Wayfern branch of
 //! `launch_browser_internal`: Xray / VPN workers, the route-required and

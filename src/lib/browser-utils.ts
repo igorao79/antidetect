@@ -24,6 +24,7 @@ export { getCurrentOS } from "@/lib/platform";
 export function getBrowserDisplayName(browserType: string): string {
   const browserNames: Record<string, string> = {
     camoufox: "Camoufox",
+    // Removed from the app; profiles made on it stay listed.
     cloakbrowser: "CloakBrowser",
     wayfern: "Wayfern",
   };
@@ -93,24 +94,21 @@ export function getProfileIcon(profile: {
 }
 
 /**
- * Engines whose profiles can lead or follow in the synchronizer
- * (`synchronizer_capture.rs::is_supported`): the Chromium ones, which are
- * replayed over DevTools.
+ * Engines whose profiles can lead or follow in the synchronizer: Wayfern,
+ * which captures input natively and is replayed over DevTools.
  */
 export function supportsSynchronizer(browserType: string): boolean {
-  return browserType === "wayfern" || browserType === "cloakbrowser";
+  return browserType === "wayfern";
 }
 
 export function isCrossOsProfile(profile: {
   host_os?: string;
   camoufox_config?: { os?: string };
-  cloakbrowser_config?: { os?: string | null };
   wayfern_config?: { os?: string };
 }): boolean {
   const profileOs =
     profile.host_os ||
     profile.camoufox_config?.os ||
-    profile.cloakbrowser_config?.os ||
     profile.wayfern_config?.os;
   if (!profileOs) return false;
   return profileOs !== getCurrentOS();

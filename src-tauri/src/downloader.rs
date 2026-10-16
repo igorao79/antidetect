@@ -200,17 +200,6 @@ impl Downloader {
 
         Ok(asset_url)
       }
-      BrowserType::CloakBrowser => {
-        // The free build is one pinned version; anything else is a Pro
-        // build, which only a licence key can download.
-        if crate::api_client::ApiClient::cloakbrowser_is_pro(version)
-          && crate::api_client::ApiClient::cloakbrowser_license_key().is_none()
-        {
-          return Err(crate::backend_error("CLOAKBROWSER_LICENSE_REQUIRED").into());
-        }
-        crate::api_client::ApiClient::cloakbrowser_download_url(version)
-          .ok_or_else(|| "CloakBrowser has no build for this platform".into())
-      }
       BrowserType::Wayfern => {
         // For Wayfern, get the download URL from version.json
         let version_info = self
@@ -395,21 +384,6 @@ impl Downloader {
     let expected_sha256 = if browser_type == BrowserType::Camoufox {
       // Camoufox publishes no sidecar; GitHub's own asset digest serves instead.
       self.camoufox_asset_digest(version, &download_url).await?
-    } else if browser_type == BrowserType::CloakBrowser {
-      // CloakBrowser signs its SHA256SUMS; the signature is the trust root.
-      self
-        .api_client
-        .cloakbrowser_archive_digest(version)
-        .await
-        .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> {
-          log::warn!("CloakBrowser {version} could not be authenticated: {e}");
-          serde_json::json!({
-            "code": "BROWSER_CHECKSUM_UNAVAILABLE",
-            "params": { "browser": "CloakBrowser", "version": version }
-          })
-          .to_string()
-          .into()
-        })?
     } else {
       self
         .fetch_expected_archive_checksum(&download_url, browser_type.display_name(), version)
@@ -580,11 +554,6 @@ impl Downloader {
           .client
           .get(download_url)
           .header("User-Agent", DOWNLOAD_USER_AGENT);
-        for (name, value) in
-          crate::api_client::ApiClient::cloakbrowser_download_headers(download_url)
-        {
-          request = request.header(name, value);
-        }
 
         if existing_size > 0 {
           request = request.header("Range", format!("bytes={existing_size}-"));

@@ -46,7 +46,7 @@ try:
     check("an interface language that is not a language tag is refused", status == 400, f"{status} {str(r)[:120]}")
     if status == 200: created.append(r["data"]["uuid"])
 
-    for browser in ("camoufox", "cloakbrowser"):
+    for browser in ("camoufox",):
         own = create(f"S14 {browser} own language", "win", browser=browser, proxy=proxy); created.append(own)
         fp = read(own, f"{browser}, interface in the profile's language")
         if not fp: continue
@@ -67,13 +67,8 @@ try:
         if not fp: continue
         check(f"{browser}: navigator.languages stay the profile's", lang(fp["languages"][0]) == spoken, str(fp["languages"]))
         check(f"{browser}: the interface language reaches form messages", fp["formMessage"] != own_message, fp["formMessage"])
-        status, st = api("GET", "/api/v2/automation/profiles/" + other)
-        pro = browser == "cloakbrowser" and not st["data"]["version"].startswith("145.")
-        if pro:
-            check("cloakbrowser Pro: Intl stays the profile's under another interface language", lang(fp["locale"]) == spoken, fp["locale"])
-        else:
-            # Measured, not wanted: these builds take Intl from the interface.
-            check(f"{browser}: Intl follows the interface language on this build", lang(fp["locale"]) == lang(ASKED), fp["locale"])
+        # Measured, not wanted: Camoufox takes Intl from the interface.
+        check(f"{browser}: Intl follows the interface language", lang(fp["locale"]) == lang(ASKED), fp["locale"])
 finally:
     for u in created: stop(u)
     time.sleep(2)

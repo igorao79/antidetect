@@ -248,22 +248,7 @@
     },
     "trashRetentionOff": "Xóa ngay",
     "scrollSectionsLeft": "Cuộn các mục sang trái",
-    "scrollSectionsRight": "Cuộn các mục sang phải",
-    "cloakbrowserLicense": {
-      "title": "Giấy phép CloakBrowser Pro",
-      "description": "Khi có khóa giấy phép, hồ sơ CloakBrowser mới được tạo trên bản dựng Pro hiện tại của Chromium. Không có khóa thì dùng bản dựng miễn phí.",
-      "keyLabel": "Khóa giấy phép",
-      "placeholder": "Dán khóa",
-      "endsWith": "Khóa kết thúc bằng {{hint}}",
-      "activeUntil": "Có hiệu lực đến {{date}}",
-      "refused": "Bị từ chối",
-      "notChecked": "Chưa kiểm tra",
-      "fromEnvironment": "Được đặt bằng biến môi trường CLOAKBROWSER_LICENSE_KEY; không thể thay đổi tại đây.",
-      "removeNote": "Hồ sơ tạo trên bản dựng Pro sẽ không khởi động nếu thiếu khóa.",
-      "replace": "Thay thế",
-      "saved": "Đã lưu khóa giấy phép. Bản dựng Pro đang được tải xuống trong nền.",
-      "removed": "Đã xóa khóa giấy phép."
-    }
+    "scrollSectionsRight": "Cuộn các mục sang phải"
   },
   "header": {
     "searchPlaceholder": "Tìm kiếm hồ sơ...",
@@ -530,8 +515,7 @@
     "engine": {
       "label": "Browser engine",
       "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
-      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription.",
-      "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
+      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
     },
     "count": "Số lượng hồ sơ",
     "countHint": "Tạo nhiều hồ sơ cùng lúc. Chúng được đặt tên “Tên 1”, “Tên 2”… và mỗi hồ sơ có dấu vân tay riêng.",
@@ -2467,15 +2451,8 @@
     "cookieRobotAlreadyRunning": "Cookie Robot đang chạy. Hãy chờ kết thúc hoặc dừng nó.",
     "cookieRobotProfileRunning": "Hồ sơ đang mở. Hãy đóng lại rồi chạy robot lần nữa.",
     "cookieRobotNoControl": "Trình duyệt đã khởi động nhưng không điều khiển được: {{detail}}",
-    "cameraVideoNotFound": "Không tìm thấy tệp video.",
-    "cameraVideoNeedsFfmpeg": "Video này cần được chuyển đổi nhưng chưa cài ffmpeg. Hãy cài ffmpeg hoặc chọn tệp .mjpeg.",
-    "cameraVideoConversionFailed": "Không thể chuyển đổi video: {{detail}}",
     "locationDatabaseUnavailable": "Cơ sở dữ liệu vị trí chưa tải xong nên múi giờ và ngôn ngữ của hồ sơ chưa thể khớp với địa chỉ của nó. Hãy thử lại sau một phút hoặc tắt vị trí tự động cho hồ sơ này.",
-    "cloakbrowserLicenseRequired": "Hồ sơ này chạy trên bản dựng CloakBrowser Pro nhưng chưa có khóa giấy phép. Hãy thêm khóa trong Cài đặt rồi thử lại.",
-    "cloakbrowserLicenseInvalid": "CloakBrowser Pro đã từ chối khóa giấy phép: khóa không hợp lệ hoặc đã hết hạn. Hãy thay khóa trong Cài đặt, hoặc xóa khóa ở đó để hồ sơ mới dùng bản dựng miễn phí.",
-    "cloakbrowserLicenseUnreachable": "CloakBrowser Pro không kiểm tra được bản quyền: máy chủ không phản hồi. Hãy kiểm tra kết nối rồi thử lại.",
-    "cloakbrowserLicenseSetup": "CloakBrowser Pro không khởi động được: không ghi được vào thư mục ~/.cloakbrowser.",
-    "cloakbrowserSessionLimit": "CloakBrowser Pro: đã đạt giới hạn số trình duyệt chạy cùng lúc của gói. Hãy đóng một trình duyệt rồi thử lại.",
+    "engineRemoved": "CloakBrowser đã bị gỡ khỏi Owl nên hồ sơ này không còn khởi động được. Hãy xuất cookie của nó và nhập vào một hồ sơ Camoufox.",
     "profileTemplateInvalid": "Không thể lưu mẫu này: tên quá dài hoặc cài đặt bị hỏng.",
     "profileTemplateLimit": "Có quá nhiều mẫu. Hãy xóa một mẫu trước khi lưu mẫu khác.",
     "profileTemplateNotFound": "Mẫu này không còn tồn tại."
@@ -3682,39 +3659,6 @@
     "titleView": "Xem cài đặt vân tay - {{name}} ({{browser}})",
     "titleConfigure": "Cấu hình cài đặt vân tay - {{name}} ({{browser}})"
   },
-  "cloakbrowser": {
-    "seed": "Fingerprint seed",
-    "seedPlaceholder": "Generated automatically",
-    "newSeed": "New seed",
-    "seedDescription": "The seed is the device: the same seed gives the same GPU, canvas, audio and font fingerprint on every launch. A new seed is a new device.",
-    "timezone": "Timezone",
-    "locale": "Language",
-    "followsProxy": "Follows the proxy",
-    "webrtc": {
-      "label": "WebRTC",
-      "auto": "Proxy address (recommended)",
-      "real": "Real address",
-      "block": "Blocked"
-    },
-    "noise": "Canvas, WebGL, audio and layout noise",
-    "overrides": {
-      "title": "Hardware overrides",
-      "description": "Leave empty to use the values the seed produces. Overriding them can make the device less coherent.",
-      "gpuVendor": "GPU vendor",
-      "gpuRenderer": "GPU renderer",
-      "cpuCores": "CPU cores",
-      "memory": "Memory, GB",
-      "screenWidth": "Screen width",
-      "screenHeight": "Screen height"
-    },
-    "camera": {
-      "label": "Video thay camera",
-      "real": "Camera thật",
-      "choose": "Chọn video…",
-      "remove": "Gỡ bỏ",
-      "hint": "Trang web yêu cầu camera sẽ nhận video này lặp lại, còn micro thì im lặng. Trang nào liệt kê thiết bị vẫn có thể nhận ra chúng không phải phần cứng thật."
-    }
-  },
   "cookieRobot": {
     "title": "Cookie Robot",
     "description": "Mở các hồ sơ đã chọn, truy cập các trang trong danh sách ở từng hồ sơ rồi đóng lại, để mỗi hồ sơ có cookie và lịch sử trước khi bạn dùng.",
@@ -3743,6 +3687,6 @@
     "label": "Ngôn ngữ giao diện trình duyệt",
     "profile": "Giống hồ sơ",
     "profileHint": "Menu hiển thị bằng ngôn ngữ của quốc gia hồ sơ, như trên một thiết bị thật ở đó. Trang web thấy cùng một ngôn ngữ ở mọi nơi.",
-    "otherHint": "Dễ đọc hơn, nhưng trang web có thể nhận ra: qua lời nhắc trong biểu mẫu, và trong Camoufox cùng bản dựng CloakBrowser miễn phí còn qua định dạng ngày và số. Hãy giữ ngôn ngữ của hồ sơ cho các tài khoản quan trọng."
+    "otherHint": "Dễ đọc hơn, nhưng trang web có thể nhận ra: qua lời nhắc trong biểu mẫu và qua định dạng ngày và số. Hãy giữ ngôn ngữ của hồ sơ cho các tài khoản quan trọng."
   }
 }

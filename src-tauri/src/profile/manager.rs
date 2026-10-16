@@ -256,7 +256,6 @@ impl ProfileManager {
           release_type: release_type.to_string(),
           camoufox_config: None,
           wayfern_config: None,
-          cloakbrowser_config: None,
           group_id: group_id.clone(),
           tags: Vec::new(),
           note: None,
@@ -407,7 +406,6 @@ impl ProfileManager {
           release_type: release_type.to_string(),
           camoufox_config: None,
           wayfern_config: None,
-          cloakbrowser_config: None,
           group_id: group_id.clone(),
           tags: Vec::new(),
           note: None,
@@ -525,7 +523,6 @@ impl ProfileManager {
       release_type: release_type.to_string(),
       camoufox_config: final_camoufox_config,
       wayfern_config: final_wayfern_config,
-      cloakbrowser_config: crate::profile::cloakbrowser::config_for_new_profile(browser),
       group_id: group_id.clone(),
       tags: Vec::new(),
       note: None,
@@ -575,7 +572,7 @@ impl ProfileManager {
     // So we only call it for any unrecognized browser type that might be
     // a true Firefox-family target (none currently). Ephemeral profiles
     // skip regardless because their data dir is created at launch time.
-    if !ephemeral && !matches!(browser, "camoufox" | "wayfern" | "cloakbrowser") {
+    if !ephemeral && !matches!(browser, "camoufox" | "wayfern") {
       if let Some(proxy_id_ref) = &proxy_id {
         if let Some(proxy_settings) = PROXY_MANAGER.get_proxy_settings_by_id(proxy_id_ref) {
           self.apply_proxy_settings_to_profile(&profile_data_dir, &proxy_settings, None)?;
@@ -1585,7 +1582,6 @@ impl ProfileManager {
       release_type: source.release_type,
       camoufox_config: source.camoufox_config,
       wayfern_config: source.wayfern_config,
-      cloakbrowser_config: source.cloakbrowser_config,
       group_id: source.group_id,
       tags: source.tags,
       note: source.note,
@@ -1849,10 +1845,7 @@ impl ProfileManager {
     // proxy via `--proxy-pac-url=` and never reads user.js), and for
     // Camoufox specifically writing the upstream host here would leave a
     // stale, wrong proxy in user.js until the next launch.
-    if !matches!(
-      profile.browser.as_str(),
-      "camoufox" | "wayfern" | "cloakbrowser"
-    ) {
+    if !matches!(profile.browser.as_str(), "camoufox" | "wayfern") {
       if let Some(proxy_id_ref) = &proxy_id {
         if let Some(proxy_settings) = PROXY_MANAGER.get_proxy_settings_by_id(proxy_id_ref) {
           let profiles_dir = self.get_profiles_dir();
@@ -2017,10 +2010,6 @@ impl ProfileManager {
     // Handle Wayfern profiles using WayfernManager-based status checking
     if profile.browser == "wayfern" {
       return self.check_wayfern_status(&app_handle, profile).await;
-    }
-
-    if profile.browser == "cloakbrowser" {
-      return self.check_cloakbrowser_status(&app_handle, profile).await;
     }
 
     // For non-camoufox browsers, use the existing PID-based logic

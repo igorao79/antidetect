@@ -1,7 +1,6 @@
 pub(crate) mod after_exit;
 mod camoufox;
 pub mod clear_on_close;
-pub mod cloakbrowser;
 pub mod encryption;
 pub mod manager;
 pub mod password;

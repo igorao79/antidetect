@@ -15,11 +15,6 @@ fn main() {
     println!("cargo:rustc-link-lib=framework=CoreServices");
   }
 
-  // A CloakBrowser Pro licence key to hand to installs that have none (fork,
-  // see cloakbrowser_license.rs). Read from the build environment only, so it
-  // never lands in the repository.
-  println!("cargo:rerun-if-env-changed=ANTIDETECT_BUNDLED_CLOAKBROWSER_KEY");
-
   // Inject build version based on environment variables set by CI
   if let Ok(build_tag) = std::env::var("BUILD_TAG") {
     // Custom BUILD_TAG takes highest priority (used for nightly builds)

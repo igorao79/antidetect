@@ -1501,7 +1501,7 @@ impl ExtensionManager {
   ) -> Result<(), Box<dyn std::error::Error>> {
     let group = self.get_group(group_id)?;
     let browser_type = match browser {
-      "wayfern" | "cloakbrowser" => "chromium",
+      "wayfern" => "chromium",
       _ => return Err(format!("Extensions are not supported for browser '{browser}'").into()),
     };
 
@@ -1590,7 +1590,7 @@ impl ExtensionManager {
       return self.install_firefox_extensions(&group, profile_data_path);
     }
 
-    if !matches!(profile.browser.as_str(), "wayfern" | "cloakbrowser") {
+    if profile.browser.as_str() != "wayfern" {
       return Ok(Vec::new());
     }
 

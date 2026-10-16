@@ -80,6 +80,79 @@ pub struct CamoufoxManager {
   inner: Arc<AsyncMutex<CamoufoxManagerInner>>,
 }
 
+/// Ask the Camoufox listening for WebDriver BiDi on `port` to quit the way a
+/// person quitting it would, so it writes its session, cookies and storage
+/// before it exits. False when it cannot be asked: the endpoint is gone, or an
+/// automation client holds the one session Firefox allows.
+pub async fn close_over_bidi(port: u16) -> bool {
+  use futures_util::{SinkExt, StreamExt};
+  use tokio_tungstenite::tungstenite::Message;
+  const STEP: std::time::Duration = std::time::Duration::from_secs(3);
+
+  let endpoint = format!("ws://127.0.0.1:{port}/session");
+  let Ok(Ok((mut socket, _))) =
+    tokio::time::timeout(STEP, tokio_tungstenite::connect_async(endpoint)).await
+  else {
+    return false;
+  };
+  let mut call = async |id: u64, method: &str, params: serde_json::Value| -> bool {
+    let command = serde_json::json!({ "id": id, "method": method, "params": params });
+    if socket
+      .send(Message::text(command.to_string()))
+      .await
+      .is_err()
+    {
+      return false;
+    }
+    let answer = tokio::time::timeout(STEP, async {
+      while let Some(Ok(message)) = socket.next().await {
+        let Message::Text(text) = message else {
+          continue;
+        };
+        let Ok(value) = serde_json::from_str::<serde_json::Value>(text.as_str()) else {
+          continue;
+        };
+        if value["id"] == id {
+          return value["type"] == "success";
+        }
+      }
+      // The browser closing the socket as it quits answers `browser.close`.
+      method == "browser.close"
+    })
+    .await;
+    answer.unwrap_or(false)
+  };
+  call(1, "session.new", serde_json::json!({ "capabilities": {} })).await
+    && call(2, "browser.close", serde_json::json!({})).await
+}
+
+/// Hand the session a clean quit saved to Firefox as the one to recover.
+/// After a clean quit Firefox reopens the tabs and session cookies but drops
+/// their session storage, which it only brings back when it resumes a crashed
+/// session; the clean file is the newest state, so it becomes the recovery one.
+fn resume_as_recovery(profile_path: &std::path::Path) {
+  let clean = profile_path.join("sessionstore.jsonlz4");
+  if !clean.exists() {
+    return;
+  }
+  let backups = profile_path.join("sessionstore-backups");
+  let moved = std::fs::create_dir_all(&backups)
+    .and_then(|()| std::fs::rename(&clean, backups.join("recovery.jsonlz4")));
+  if let Err(e) = moved {
+    log::warn!("Could not hand the saved session to session restore: {e}");
+  }
+}
+
+/// The `user.js` prefs that make a persistent profile reopen its session.
+const SESSION_RESTORE_PREFS: [(&str, &str); 6] = [
+  ("browser.startup.page", "3"),
+  ("privacy.clearOnShutdown.openWindows", "false"),
+  ("browser.sessionstore.resume_from_crash", "true"),
+  ("browser.sessionstore.max_resumed_crashes", "9999"),
+  ("browser.sessionstore.privacy_level", "0"),
+  ("browser.sessionstore.interval", "5000"),
+];
+
 impl CamoufoxManager {
   fn new() -> Self {
     Self {
@@ -425,6 +498,11 @@ impl CamoufoxManager {
     }
   }
 
+  /// Forget an instance whose browser has already exited.
+  pub async fn forget_instance(&self, id: &str) {
+    self.inner.lock().await.instances.remove(id);
+  }
+
   /// Kill a process by PID
   fn kill_process(&self, pid: u32) -> bool {
     #[cfg(unix)]
@@ -756,7 +834,7 @@ impl CamoufoxManager {
 
       // Preserve existing user.js lines, but strip any keys we're about to
       // re-emit so they never duplicate.
-      let managed_keys = [
+      let mut managed_keys = vec![
         "network.proxy.",
         "network.http.http3.enable",
         "network.http.http3.enabled",
@@ -765,6 +843,10 @@ impl CamoufoxManager {
         "browser.sessionhistory.max_entries",
         "browser.sessionhistory.max_total_viewers",
       ];
+      let restores_session = override_profile_path.is_none();
+      if restores_session {
+        managed_keys.extend(SESSION_RESTORE_PREFS.iter().map(|(key, _)| *key));
+      }
       if let Ok(existing) = std::fs::read_to_string(&user_js_path) {
         for line in existing.lines() {
           if !managed_keys.iter().any(|k| line.contains(k)) {
@@ -782,6 +864,20 @@ impl CamoufoxManager {
         "user_pref(\"browser.sessionhistory.max_entries\", 50);\n\
          user_pref(\"browser.sessionhistory.max_total_viewers\", -1);\n",
       );
+
+      // A profile reopens the tabs it had, with their session storage and
+      // session cookies, as a regular browser that restores its session does.
+      // camoufox.cfg starts on a blank page and drops the session instead.
+      // The session is resumed as a crashed one (see `resume_as_recovery`),
+      // which is also what a stop that had to fall back to a kill leaves,
+      // without the restore prompt. Ephemeral profiles keep their own
+      // no-history prefs written above.
+      if restores_session {
+        for (key, value) in SESSION_RESTORE_PREFS {
+          prefs.push_str(&format!("user_pref(\"{key}\", {value});\n"));
+        }
+        resume_as_recovery(&profile_path);
+      }
 
       // Required for sideloaded extensions:
       // - signatures.required=false accepts unsigned .xpi (Camoufox is built

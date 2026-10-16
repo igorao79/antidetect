@@ -263,6 +263,10 @@ impl BrowserRunner {
       .find_camoufox_by_profile(&profile_path_str)
       .await
     {
+      Ok(Some(instance)) if closed_gracefully(&instance).await => {
+        camoufox_manager.forget_instance(&instance.id).await;
+        true
+      }
       Ok(Some(instance)) => {
         let stop_result = camoufox_manager
           .stop_camoufox(&app_handle, &instance.id)
@@ -302,4 +306,23 @@ impl BrowserRunner {
 
     self.finish_stop(&app_handle, profile).await
   }
+}
+
+/// Quit the browser over WebDriver BiDi and wait for it to exit, so it saves
+/// its session; SIGTERM, the fallback, leaves Firefox no time to.
+async fn closed_gracefully(instance: &crate::camoufox_manager::CamoufoxLaunchResult) -> bool {
+  let (Some(pid), Some(port)) = (instance.processId, instance.cdp_port) else {
+    return false;
+  };
+  if !crate::camoufox_manager::close_over_bidi(port).await {
+    return false;
+  }
+  for _ in 0..40 {
+    if process_is_gone(pid) {
+      return true;
+    }
+    tokio::time::sleep(Duration::from_millis(250)).await;
+  }
+  log::warn!("Camoufox {pid} was asked to quit and is still running; stopping it");
+  false
 }

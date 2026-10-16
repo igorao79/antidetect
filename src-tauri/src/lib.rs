@@ -108,7 +108,6 @@ pub mod socks5_local;
 pub mod ssh_upstream;
 pub mod sync;
 mod synchronizer;
-mod synchronizer_capture;
 mod system_proxy;
 pub mod traffic_stats;
 mod wayfern_cdp;
@@ -119,9 +118,6 @@ mod wayfern_terms;
 mod window_decorations;
 // mod theme_detector; // removed: theme detection handled in webview via CSS prefers-color-scheme
 mod agent_console;
-mod cloakbrowser_camera;
-mod cloakbrowser_license;
-mod cloakbrowser_manager;
 pub mod cloud_auth;
 mod cloud_errors;
 mod commercial_license;
@@ -1840,7 +1836,6 @@ async fn generate_sample_fingerprint(
     release_type: "stable".to_string(),
     camoufox_config: None,
     wayfern_config: None,
-    cloakbrowser_config: None,
     group_id: None,
     tags: Vec::new(),
     note: None,
@@ -2457,9 +2452,6 @@ pub fn run_with_builder(
   builder.setup(|app| {
       // Recover ephemeral dir mappings from RAM-backed storage (tmpfs/ramdisk)
       ephemeral_dirs::recover_ephemeral_dirs();
-
-      // Before the frontend asks which engine builds to fetch.
-      cloakbrowser_license::install_bundled_key();
 
       // Extract icons and metadata for existing extensions that don't have them yet
       {
@@ -3419,10 +3411,6 @@ pub fn run_with_builder(
       import_proxies_from_parsed,
       update_camoufox_config,
       update_wayfern_config,
-      profile::cloakbrowser::update_cloakbrowser_config,
-      cloakbrowser_license::get_cloakbrowser_license,
-      cloakbrowser_license::set_cloakbrowser_license_key,
-      cloakbrowser_license::remove_cloakbrowser_license_key,
       profile_templates::list_profile_templates,
       profile_templates::save_profile_template,
       profile_templates::delete_profile_template,

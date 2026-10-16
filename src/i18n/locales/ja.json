@@ -248,22 +248,7 @@
     },
     "trashRetentionOff": "すぐに削除",
     "scrollSectionsLeft": "セクションを左へスクロール",
-    "scrollSectionsRight": "セクションを右へスクロール",
-    "cloakbrowserLicense": {
-      "title": "CloakBrowser Pro ライセンス",
-      "description": "ライセンスキーがあると、新しい CloakBrowser プロファイルは最新の Pro ビルドの Chromium で作成されます。キーがない場合は無料ビルドを使用します。",
-      "keyLabel": "ライセンスキー",
-      "placeholder": "キーを貼り付け",
-      "endsWith": "末尾が {{hint}} のキー",
-      "activeUntil": "{{date}} まで有効",
-      "refused": "拒否されました",
-      "notChecked": "未確認",
-      "fromEnvironment": "環境変数 CLOAKBROWSER_LICENSE_KEY で設定されているため、ここでは変更できません。",
-      "removeNote": "Pro ビルドで作成したプロファイルは、キーがないと起動しません。",
-      "replace": "置き換え",
-      "saved": "ライセンスキーを保存しました。Pro ビルドをバックグラウンドでダウンロードしています。",
-      "removed": "ライセンスキーを削除しました。"
-    }
+    "scrollSectionsRight": "セクションを右へスクロール"
   },
   "header": {
     "searchPlaceholder": "プロファイルを検索...",
@@ -530,8 +515,7 @@
     "engine": {
       "label": "Browser engine",
       "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
-      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription.",
-      "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
+      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
     },
     "count": "プロファイルの数",
     "countHint": "複数のプロファイルをまとめて作成します。「名前 1」「名前 2」のように名前が付き、それぞれ固有のフィンガープリントを持ちます。",
@@ -2467,15 +2451,8 @@
     "cookieRobotAlreadyRunning": "Cookie Robot はすでに実行中です。終了を待つか停止してください。",
     "cookieRobotProfileRunning": "プロファイルが開いています。閉じてからもう一度実行してください。",
     "cookieRobotNoControl": "ブラウザは起動しましたが、制御できませんでした: {{detail}}",
-    "cameraVideoNotFound": "動画ファイルが見つかりません。",
-    "cameraVideoNeedsFfmpeg": "この動画は変換が必要ですが、ffmpeg がインストールされていません。ffmpeg をインストールするか、.mjpeg ファイルを選択してください。",
-    "cameraVideoConversionFailed": "動画を変換できませんでした: {{detail}}",
     "locationDatabaseUnavailable": "位置情報データベースのダウンロードがまだ完了していないため、プロファイルのタイムゾーンと言語をアドレスに合わせられません。1 分後にもう一度試すか、このプロファイルの自動位置設定をオフにしてください。",
-    "cloakbrowserLicenseRequired": "このプロファイルは CloakBrowser Pro ビルドで動作しますが、ライセンスキーが設定されていません。設定でキーを追加して、もう一度お試しください。",
-    "cloakbrowserLicenseInvalid": "CloakBrowser Pro がライセンスキーを拒否しました。キーが無効か、期限が切れています。設定でキーを置き換えるか、削除して新しいプロファイルが無料ビルドを使うようにしてください。",
-    "cloakbrowserLicenseUnreachable": "CloakBrowser Pro がライセンスを確認できませんでした。サーバーから応答がありません。接続を確認してもう一度お試しください。",
-    "cloakbrowserLicenseSetup": "CloakBrowser Pro を起動できませんでした。フォルダー ~/.cloakbrowser に書き込めません。",
-    "cloakbrowserSessionLimit": "CloakBrowser Pro: プランの同時起動数の上限に達しました。1 つ閉じてからもう一度お試しください。",
+    "engineRemoved": "CloakBrowser は Owl から削除されたため、このプロファイルは起動できません。Cookie をエクスポートして Camoufox プロファイルにインポートしてください。",
     "profileTemplateInvalid": "このテンプレートは保存できません。名前が長すぎるか、設定が壊れています。",
     "profileTemplateLimit": "テンプレートが多すぎます。1 つ削除してから保存してください。",
     "profileTemplateNotFound": "このテンプレートはもう存在しません。"
@@ -3682,39 +3659,6 @@
     "titleView": "フィンガープリント設定を表示 - {{name}} ({{browser}})",
     "titleConfigure": "フィンガープリント設定 - {{name}} ({{browser}})"
   },
-  "cloakbrowser": {
-    "seed": "Fingerprint seed",
-    "seedPlaceholder": "Generated automatically",
-    "newSeed": "New seed",
-    "seedDescription": "The seed is the device: the same seed gives the same GPU, canvas, audio and font fingerprint on every launch. A new seed is a new device.",
-    "timezone": "Timezone",
-    "locale": "Language",
-    "followsProxy": "Follows the proxy",
-    "webrtc": {
-      "label": "WebRTC",
-      "auto": "Proxy address (recommended)",
-      "real": "Real address",
-      "block": "Blocked"
-    },
-    "noise": "Canvas, WebGL, audio and layout noise",
-    "overrides": {
-      "title": "Hardware overrides",
-      "description": "Leave empty to use the values the seed produces. Overriding them can make the device less coherent.",
-      "gpuVendor": "GPU vendor",
-      "gpuRenderer": "GPU renderer",
-      "cpuCores": "CPU cores",
-      "memory": "Memory, GB",
-      "screenWidth": "Screen width",
-      "screenHeight": "Screen height"
-    },
-    "camera": {
-      "label": "カメラ映像",
-      "real": "実際のカメラ",
-      "choose": "動画を選択…",
-      "remove": "削除",
-      "hint": "カメラを要求するサイトにはこの動画が繰り返し流れ、マイクは無音になります。デバイス一覧を取得するサイトには、実機ではないことが分かる場合があります。"
-    }
-  },
   "cookieRobot": {
     "title": "Cookie Robot",
     "description": "選択したプロファイルを開き、それぞれで下のサイトを巡回してから閉じます。作業を始める前に、各プロファイルに Cookie と履歴がたまります。",
@@ -3743,6 +3687,6 @@
     "label": "ブラウザーの表示言語",
     "profile": "プロファイルと同じ",
     "profileHint": "メニューはプロファイルの国の言語で表示されます。その国の実際の端末と同じです。サイトから見える言語はどこでも 1 つです。",
-    "otherHint": "読みやすくなりますが、サイトに気づかれる可能性があります。フォームのメッセージの文言から、Camoufox と CloakBrowser の無料ビルドでは日付や数値の形式からも分かります。大切なアカウントではプロファイルの言語のままにしてください。"
+    "otherHint": "読みやすくなりますが、サイトに気づかれる可能性があります。フォームのメッセージの文言や、日付や数値の形式から分かります。大切なアカウントではプロファイルの言語のままにしてください。"
   }
 }

@@ -22,7 +22,7 @@ try:
     status, r = add_proxy("S7 ssh", "s3cret")
     check("create an SSH proxy", status == 200 and r.get("success"), f"{status} {str(r)[:120]}")
     pid = r["data"]["uuid"]; proxies.append(pid)
-    for browser in ("camoufox", "cloakbrowser"):
+    for browser in ("camoufox",):
         u = create(f"S7 {browser} via ssh", "win", browser=browser, proxy=pid); created.append(u)
         seen = len(forwards())
         status, st = start(u)

@@ -11,7 +11,7 @@ try:
     pid = r["data"]["uuid"]
     status, lst = api("GET", "/api/v2/automation/proxies")
     check("proxy is listed", any(p["uuid"] == pid for p in lst["data"]))
-    for browser in ("camoufox", "cloakbrowser"):
+    for browser in ("camoufox",):
         u = create(f"S5 {browser} via proxy", "win", browser=browser, proxy=pid); created.append(u)
         before = len(open(LOG).read().splitlines())
         status, st = start(u)

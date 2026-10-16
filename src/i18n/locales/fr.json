@@ -249,22 +249,7 @@
     },
     "trashRetentionOff": "Supprimer aussitôt",
     "scrollSectionsLeft": "Faire défiler les sections vers la gauche",
-    "scrollSectionsRight": "Faire défiler les sections vers la droite",
-    "cloakbrowserLicense": {
-      "title": "Licence CloakBrowser Pro",
-      "description": "Avec une clé de licence, les nouveaux profils CloakBrowser sont créés sur la version Pro actuelle de Chromium. Sans clé, ils utilisent la version gratuite.",
-      "keyLabel": "Clé de licence",
-      "placeholder": "Collez la clé",
-      "endsWith": "Clé se terminant par {{hint}}",
-      "activeUntil": "Active jusqu’au {{date}}",
-      "refused": "Refusée",
-      "notChecked": "Non vérifiée",
-      "fromEnvironment": "Définie par la variable d’environnement CLOAKBROWSER_LICENSE_KEY ; elle ne peut pas être modifiée ici.",
-      "removeNote": "Les profils créés sur une version Pro ne démarrent pas sans clé.",
-      "replace": "Remplacer",
-      "saved": "Clé de licence enregistrée. La version Pro se télécharge en arrière-plan.",
-      "removed": "Clé de licence supprimée."
-    }
+    "scrollSectionsRight": "Faire défiler les sections vers la droite"
   },
   "header": {
     "searchPlaceholder": "Rechercher des profils...",
@@ -531,8 +516,7 @@
     "engine": {
       "label": "Browser engine",
       "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
-      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription.",
-      "cloakbrowserHint": "CloakBrowser: anti-detect Chromium, closest to Octo. Free build is Chromium 145."
+      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
     },
     "count": "Nombre de profils",
     "countHint": "Créer plusieurs profils à la fois. Ils s'appelleront « Nom 1 », « Nom 2 », etc., et chacun aura sa propre empreinte.",
@@ -2477,15 +2461,8 @@
     "cookieRobotAlreadyRunning": "Cookie Robot est déjà en cours. Attendez la fin ou arrêtez-le.",
     "cookieRobotProfileRunning": "Le profil est ouvert. Fermez-le et relancez le robot.",
     "cookieRobotNoControl": "Le navigateur a démarré mais n'a pas pu être piloté : {{detail}}",
-    "cameraVideoNotFound": "Le fichier vidéo est introuvable.",
-    "cameraVideoNeedsFfmpeg": "Cette vidéo doit être convertie et ffmpeg n'est pas installé. Installez ffmpeg ou choisissez un fichier .mjpeg.",
-    "cameraVideoConversionFailed": "La vidéo n'a pas pu être convertie : {{detail}}",
     "locationDatabaseUnavailable": "La base de données de localisation n'a pas fini de se télécharger : le fuseau horaire et la langue du profil ne peuvent pas encore être accordés à son adresse. Réessayez dans une minute ou désactivez la localisation automatique pour ce profil.",
-    "cloakbrowserLicenseRequired": "Ce profil fonctionne sur une version Pro de CloakBrowser et aucune clé de licence n’est définie. Ajoutez la clé dans les réglages et réessayez.",
-    "cloakbrowserLicenseInvalid": "CloakBrowser Pro a refusé la clé de licence : elle est invalide ou a expiré. Remplacez-la dans les réglages, ou supprimez-la pour que les nouveaux profils utilisent la version gratuite.",
-    "cloakbrowserLicenseUnreachable": "CloakBrowser Pro n'a pas pu vérifier la licence : son serveur n'a pas répondu. Vérifiez la connexion puis réessayez.",
-    "cloakbrowserLicenseSetup": "CloakBrowser Pro n'a pas pu démarrer : le dossier ~/.cloakbrowser n'est pas accessible en écriture.",
-    "cloakbrowserSessionLimit": "CloakBrowser Pro : la limite de navigateurs ouverts en même temps de votre offre est atteinte. Fermez-en un puis réessayez.",
+    "engineRemoved": "CloakBrowser a été retiré d'Owl : ce profil ne démarre plus. Exportez ses cookies et importez-les dans un profil Camoufox.",
     "profileTemplateInvalid": "Ce modèle ne peut pas être enregistré : son nom est trop long ou ses réglages sont endommagés.",
     "profileTemplateLimit": "Il y a trop de modèles. Supprimez-en un avant d’en enregistrer un autre.",
     "profileTemplateNotFound": "Ce modèle n’existe plus."
@@ -3715,39 +3692,6 @@
     "titleView": "Voir les paramètres d'empreinte - {{name}} ({{browser}})",
     "titleConfigure": "Configurer les paramètres d'empreinte - {{name}} ({{browser}})"
   },
-  "cloakbrowser": {
-    "seed": "Fingerprint seed",
-    "seedPlaceholder": "Generated automatically",
-    "newSeed": "New seed",
-    "seedDescription": "The seed is the device: the same seed gives the same GPU, canvas, audio and font fingerprint on every launch. A new seed is a new device.",
-    "timezone": "Timezone",
-    "locale": "Language",
-    "followsProxy": "Follows the proxy",
-    "webrtc": {
-      "label": "WebRTC",
-      "auto": "Proxy address (recommended)",
-      "real": "Real address",
-      "block": "Blocked"
-    },
-    "noise": "Canvas, WebGL, audio and layout noise",
-    "overrides": {
-      "title": "Hardware overrides",
-      "description": "Leave empty to use the values the seed produces. Overriding them can make the device less coherent.",
-      "gpuVendor": "GPU vendor",
-      "gpuRenderer": "GPU renderer",
-      "cpuCores": "CPU cores",
-      "memory": "Memory, GB",
-      "screenWidth": "Screen width",
-      "screenHeight": "Screen height"
-    },
-    "camera": {
-      "label": "Vidéo de la caméra",
-      "real": "Caméra réelle",
-      "choose": "Choisir une vidéo…",
-      "remove": "Retirer",
-      "hint": "Les sites qui demandent la caméra reçoivent cette vidéo en boucle et le micro reste muet. Un site qui liste les périphériques peut tout de même voir qu'ils ne sont pas du vrai matériel."
-    }
-  },
   "cookieRobot": {
     "title": "Cookie Robot",
     "description": "Ouvre les profils sélectionnés, visite dans chacun les sites de la liste puis les referme, afin que chaque profil accumule des cookies et un historique avant utilisation.",
@@ -3776,6 +3720,6 @@
     "label": "Langue de l’interface du navigateur",
     "profile": "Celle du profil",
     "profileHint": "Les menus sont dans la langue du pays du profil, comme sur un vrai appareil de là-bas. Les sites voient partout la même langue.",
-    "otherHint": "Plus facile à lire, mais les sites peuvent le remarquer : par les messages des formulaires et, dans Camoufox et la version gratuite de CloakBrowser, aussi par les formats de date et de nombre. Gardez la langue du profil pour les comptes importants."
+    "otherHint": "Plus facile à lire, mais les sites peuvent le remarquer : par les messages des formulaires et par les formats de date et de nombre. Gardez la langue du profil pour les comptes importants."
   }
 }

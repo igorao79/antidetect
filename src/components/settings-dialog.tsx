@@ -8,7 +8,6 @@ import { motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { BsCamera, BsMic } from "react-icons/bs";
-import { CloakBrowserLicenseSection } from "@/components/cloakbrowser-license-section";
 import { DnsBlocklistDialog } from "@/components/dns-blocklist-dialog";
 import { LoadingButton } from "@/components/loading-button";
 import { useTheme } from "@/components/theme-provider";
@@ -879,11 +878,6 @@ export function SettingsDialog({
     ["integrations", "settings.integrations.title", ["settings.integrations"]],
     ["dns", "dnsBlocklist.title", ["dnsBlocklist"]],
     ["encryption", "settings.encryption.title", ["settings.encryption"]],
-    [
-      "cloakbrowserLicense",
-      "settings.cloakbrowserLicense.title",
-      ["settings.cloakbrowserLicense"],
-    ],
     ["commercial", "settings.commercial.title", ["settings.commercial"]],
     [
       "privacy",
@@ -1626,11 +1620,6 @@ export function SettingsDialog({
                   </div>
                 )}
               </div>
-
-              <CloakBrowserLicenseSection
-                isOpen={isOpen}
-                hidden={!sectionVisible("cloakbrowserLicense")}
-              />
 
               {/* Commercial License Section */}
               <div

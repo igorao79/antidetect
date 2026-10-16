@@ -1757,12 +1757,12 @@ test("profile templates are kept by name, replaced, and deleted", async () => {
     });
     const replaced = await app.invoke("save_profile_template", {
       name: "Shop",
-      settings: { engine: "cloakbrowser", ephemeral: true },
+      settings: { engine: "wayfern", ephemeral: true },
     });
     assert.equal(replaced.length, 1);
     assert.equal(replaced[0].id, first.id);
     assert.deepEqual(replaced[0].settings, {
-      engine: "cloakbrowser",
+      engine: "wayfern",
       ephemeral: true,
     });
 
@@ -1775,39 +1775,6 @@ test("profile templates are kept by name, replaced, and deleted", async () => {
     assert.match(
       await app.invokeError("delete_profile_template", { id: first.id }),
       /"code":"PROFILE_TEMPLATE_NOT_FOUND"/,
-    );
-  });
-});
-
-test("a CloakBrowser licence key is checked before it is kept", async () => {
-  await withApp("entities-cloakbrowser-licence", async (app) => {
-    const none = {
-      source: null,
-      hint: null,
-      valid: null,
-      plan: null,
-      expires: null,
-    };
-    assert.deepEqual(
-      await app.invoke("get_cloakbrowser_license", { check: false }),
-      none,
-    );
-    assert.match(
-      await app.invokeError("set_cloakbrowser_license_key", { key: "  " }),
-      /"code":"CLOAKBROWSER_LICENSE_INVALID"/,
-    );
-    // The licence server refuses a made-up key; offline, it cannot be asked.
-    assert.match(
-      await app.invokeError("set_cloakbrowser_license_key", {
-        key: "not-a-key",
-      }),
-      /"code":"CLOAKBROWSER_LICENSE_(INVALID|UNREACHABLE)"/,
-    );
-    assert.deepEqual(await app.invoke("remove_cloakbrowser_license_key"), none);
-    assert.deepEqual(
-      await app.invoke("get_cloakbrowser_license", { check: true }),
-      none,
-      "a refused key was kept",
     );
   });
 });
@@ -1825,20 +1792,6 @@ test("the fork's engine settings and Cookie Robot answer with their contract", a
     );
     assert.match(
       await app.invokeError("update_camoufox_config", {
-        profileId: "not-an-id",
-        config: {},
-      }),
-      /"code":"INVALID_PROFILE_ID"/,
-    );
-    assert.match(
-      await app.invokeError("update_cloakbrowser_config", {
-        profileId: missing,
-        config: {},
-      }),
-      /"code":"PROFILE_NOT_FOUND"/,
-    );
-    assert.match(
-      await app.invokeError("update_cloakbrowser_config", {
         profileId: "not-an-id",
         config: {},
       }),

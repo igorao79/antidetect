@@ -57,7 +57,7 @@ def run_chain(upstream=None):
 
 try:
     direct = add_proxy("S8 remote", remote.hostname, remote.port, unquote(remote.username or ""), unquote(remote.password or ""))
-    for browser in ("camoufox", "cloakbrowser"):
+    for browser in ("camoufox",):
         u = create(f"S8 {browser} remote", "win", browser=browser, proxy=direct); created.append(u)
         status, st = start(u)
         check(f"{browser}: start on the remote proxy", status == 200, f"{status} {str(st)[:160]}")
@@ -79,7 +79,7 @@ try:
     run_chain()
     moving = add_proxy("S8 moving exit", "127.0.0.1", CHAIN_PORT)
     movers = {}
-    for browser in ("camoufox", "cloakbrowser"):
+    for browser in ("camoufox",):
         u = create(f"S8 {browser} moving exit", "win", browser=browser, proxy=moving); created.append(u); movers[browser] = u
         status, st = start(u)
         if status != 200: check(f"{browser}: start before the exit moves", False, str(st)[:160]); continue

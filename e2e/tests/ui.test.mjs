@@ -553,7 +553,6 @@ test("a template keeps the create dialog's choices and brings them back", async 
       assert.equal(saved.settings.ephemeral, true);
       // A template is not one device.
       assert.equal(saved.settings.wayfernConfig.fingerprint ?? null, null);
-      assert.equal(saved.settings.cloakbrowserConfig.seed ?? null, null);
 
       // Enter in the name field saved the template; it did not create a profile.
       assert.deepEqual(await app.invoke("list_browser_profiles"), []);
@@ -614,7 +613,7 @@ test("a profile can ask for the browser's interface in this app's language, and 
           `return document.querySelector(arguments[0])?.getAttribute("data-interface-language");`,
           [field],
         );
-      for (const engine of ["Camoufox", "CloakBrowser"]) {
+      for (const engine of ["Camoufox"]) {
         await app.clickText("New", { roles: ["button"] });
         await app.waitFor(
           () =>
@@ -638,9 +637,7 @@ test("a profile can ask for the browser's interface in this app's language, and 
           description: `${engine}: the app's language to be chosen`,
         });
         await app.waitForText(en.interfaceLanguage.otherHint);
-        if (engine === "CloakBrowser") {
-          await app.capture("interface-language");
-        }
+        await app.capture("interface-language");
 
         // The choice is part of the profile's settings: a template keeps it.
         await app.clickSelector("#profile-template");
@@ -656,10 +653,7 @@ test("a profile can ask for the browser's interface in this app's language, and 
             ),
           { description: `${engine}: the template to be saved` },
         );
-        const config =
-          engine === "Camoufox"
-            ? saved.settings.camoufoxConfig
-            : saved.settings.cloakbrowserConfig;
+        const config = saved.settings.camoufoxConfig;
         assert.equal(config.interface_language, "en", JSON.stringify(config));
 
         await app.pressShortcut({ key: "Escape" });
@@ -3475,74 +3469,6 @@ test("the Cookie Robot dialog opens from the action bar, names a bad site, and r
           `return document.querySelector('[role="dialog"] textarea')?.value === "example.com";`,
         ),
       { description: "the site list to be remembered" },
-    );
-  });
-});
-
-test("Settings shows the CloakBrowser licence by its last characters and refuses an unknown key", async () => {
-  await withApp("ui-cloakbrowser-licence", async (app) => {
-    // The stored key is never sent to the interface: only its end and what the
-    // licence server said about it.
-    await stubCommand(app, "get_cloakbrowser_license", {
-      source: "file",
-      hint: "9f3c",
-      valid: true,
-      plan: "solo",
-      expires: "2027-01-15T00:00:00+00:00",
-    });
-    const section = '[data-settings-section="cloakbrowserLicense"]';
-    await app.clickSelector(`[aria-label="${en.rail.settings}"]`);
-    await app.waitForText(en.settings.cloakbrowserLicense.title);
-    // Nothing of Donut's licence or of sync is offered in Settings.
-    const settingsText = await app.bodyText();
-    assert.ok(!settingsText.includes(en.settings.commercial.title));
-    assert.ok(!settingsText.includes(en.settings.encryption.title));
-    await app.execute(
-      `document.querySelector(arguments[0]).scrollIntoView({ block: "center" });`,
-      [section],
-    );
-    const text = () =>
-      app.execute(`return document.querySelector(arguments[0]).innerText;`, [
-        section,
-      ]);
-    await app.waitFor(async () => (await text()).includes("9f3c"), {
-      description: "the licence to be shown",
-    });
-    const shown = await text();
-    assert.ok(
-      shown.includes(
-        en.settings.cloakbrowserLicense.endsWith.replace("{{hint}}", "9f3c"),
-      ),
-      shown,
-    );
-    assert.match(shown, /Active until .*2027/);
-    assert.equal(
-      await app.execute(
-        `return document.querySelectorAll(arguments[0] + " input").length;`,
-        [section],
-      ),
-      0,
-      "a saved key is not put back into a field",
-    );
-    await app.capture("cloakbrowser-licence");
-
-    await app.clickTextIn(section, en.settings.cloakbrowserLicense.replace, {
-      roles: ["button"],
-    });
-    await app.fillSelector(`${section} input`, "not-a-key");
-    await app.clickTextIn(section, en.common.buttons.save, {
-      roles: ["button"],
-    });
-    // The licence server refuses a made-up key; offline, it cannot be asked.
-    await app.waitFor(
-      async () =>
-        (await app.visibleTextIncludes(
-          en.backendErrors.cloakbrowserLicenseInvalid,
-        )) ||
-        (await app.visibleTextIncludes(
-          en.backendErrors.cloakbrowserLicenseUnreachable,
-        )),
-      { description: "the key to be refused" },
     );
   });
 });

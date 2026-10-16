@@ -14,18 +14,14 @@ import {
 import { translateBackendError } from "@/lib/backend-errors";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
 import { cn } from "@/lib/utils";
-import type {
-  CamoufoxConfig,
-  CloakBrowserConfig,
-  WayfernConfig,
-} from "@/types";
+import type { CamoufoxConfig, WayfernConfig } from "@/types";
 
 /**
  * What a template keeps: the create dialog's choices without the name and
  * without anything that pins one device (a fingerprint or a seed).
  */
 export interface ProfileTemplateSettings {
-  engine: "camoufox" | "cloakbrowser" | "wayfern";
+  engine: "camoufox" | "wayfern";
   /** A stored proxy's id, or `vpn-<id>` for a VPN, as the dialog selects it. */
   proxyId?: string;
   extensionGroupId?: string;
@@ -33,7 +29,6 @@ export interface ProfileTemplateSettings {
   dnsBlocklist: string;
   launchHook: string;
   camoufoxConfig: CamoufoxConfig;
-  cloakbrowserConfig: CloakBrowserConfig;
   wayfernConfig: WayfernConfig;
 }
 

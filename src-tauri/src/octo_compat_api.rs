@@ -148,7 +148,7 @@ async fn free_port() -> Result<u16, ApiError> {
     .map_err(|e| ApiError(StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
 }
 
-/// The endpoint an automation library connects to: CDP for Chromium engines,
+/// The endpoint an automation library connects to: CDP for Wayfern (Chromium),
 /// WebDriver BiDi for Camoufox (Firefox).
 async fn ws_endpoint(browser: &str, port: u16) -> String {
   if browser == "camoufox" {
@@ -478,15 +478,10 @@ struct CreateProfileRequest {
   /// Stored proxy to attach, as `{ "uuid": "<proxy id>" }`.
   #[serde(default)]
   proxy: Option<UuidRequest>,
-  /// Antidetect extension: the engine, `camoufox` (default), `cloakbrowser`
-  /// or `wayfern`.
+  /// Antidetect extension: the engine, `camoufox` (default) or `wayfern`.
   #[serde(default)]
   browser: Option<String>,
-  /// Antidetect extension, CloakBrowser only: a video file to stand in for
-  /// the camera.
-  #[serde(default)]
-  camera_video: Option<String>,
-  /// Antidetect extension, Camoufox and CloakBrowser: the language of the
+  /// Antidetect extension, Camoufox only: the language of the
   /// browser's own interface, when it should differ from the profile's.
   #[serde(default)]
   interface_language: Option<String>,
@@ -516,7 +511,6 @@ async fn create_from_request(
 ) -> Result<BrowserProfile, ApiError> {
   let browser = req.browser.as_deref().unwrap_or("camoufox").to_string();
   let os = fingerprint_os(req.fingerprint.os.as_deref())?;
-  let os_for_cloakbrowser = os.clone();
   let interface_language = match req.interface_language.as_deref() {
     None => None,
     Some(language) => Some(
@@ -540,23 +534,10 @@ async fn create_from_request(
         ..Default::default()
       }),
     ),
-    // A CloakBrowser profile is created with its own seed; the requested OS
-    // is applied to that config below.
-    "cloakbrowser" => (None, None),
     other => return Err(bad_request(format!("unsupported browser: {other}"))),
   };
-  let cloakbrowser_os = (browser == "cloakbrowser")
-    .then(|| os_for_cloakbrowser.clone())
-    .flatten();
-  let camera_video = req.camera_video.filter(|_| browser == "cloakbrowser");
-
   let mut versions = crate::downloaded_browsers_registry::DownloadedBrowsersRegistry::instance()
     .get_downloaded_versions(&browser);
-  if browser == "cloakbrowser" && crate::api_client::ApiClient::cloakbrowser_license_key().is_none()
-  {
-    // Without a licence key a Pro build on disk cannot start.
-    versions.retain(|version| !crate::api_client::ApiClient::cloakbrowser_is_pro(version));
-  }
   versions.sort_by(|a, b| crate::api_client::compare_versions(b, a));
   let version = versions
     .into_iter()
@@ -582,23 +563,6 @@ async fn create_from_request(
     )
     .await
     .map_err(|e| bad_request(e.to_string()))?;
-  let interface_language = interface_language.filter(|_| browser == "cloakbrowser");
-  let profile = match (cloakbrowser_os, camera_video, interface_language) {
-    (None, None, None) => profile,
-    (os, camera_video, interface_language) => {
-      let current = profile.cloakbrowser_config.clone().unwrap_or_default();
-      let config = crate::cloakbrowser_manager::CloakBrowserConfig {
-        os: os.or(current.os.clone()),
-        camera_video,
-        interface_language,
-        ..current
-      };
-      manager
-        .update_cloakbrowser_config(app_handle.clone(), &profile.id.to_string(), config)
-        .await
-        .map_err(bad_request)?
-    }
-  };
   let profile = if req.tags.is_empty() {
     profile
   } else {
@@ -650,7 +614,6 @@ async fn start_one_time_profile(
       fingerprint: req.fingerprint,
       proxy: req.proxy,
       browser: req.browser,
-      camera_video: None,
       interface_language: None,
     },
   )
@@ -955,9 +918,6 @@ async fn running_debug_port(profile: &BrowserProfile) -> Option<u16> {
       .ok()
       .flatten()
       .and_then(|instance| instance.cdp_port),
-    "cloakbrowser" => {
-      crate::cloakbrowser_manager::find_by_profile(&path).and_then(|process| process.cdp_port)
-    }
     _ => None,
   }
 }

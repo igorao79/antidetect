@@ -99,12 +99,9 @@ impl GeoIPDownloader {
       .list_profiles()
       .map_err(|e| format!("Failed to list profiles: {e}"))?;
 
-    let needs_geoip = profiles.iter().any(|profile| {
-      matches!(
-        profile.browser.as_str(),
-        "wayfern" | "camoufox" | "cloakbrowser"
-      )
-    });
+    let needs_geoip = profiles
+      .iter()
+      .any(|profile| matches!(profile.browser.as_str(), "wayfern" | "camoufox"));
 
     if needs_geoip {
       return Ok(!Self::is_geoip_database_available() || Self::is_geoip_stale());

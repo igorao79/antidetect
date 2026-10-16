@@ -20,10 +20,6 @@ import {
   LuShieldCheck,
   LuTriangleAlert,
 } from "react-icons/lu";
-import {
-  CloakBrowserConfigForm,
-  randomCloakBrowserSeed,
-} from "@/components/cloakbrowser-config-form";
 import { LoadingButton } from "@/components/loading-button";
 import { ProfileGlyph } from "@/components/profile-glyph";
 import {
@@ -86,7 +82,6 @@ import type {
   BrowserReleaseTypes,
   CamoufoxConfig,
   CamoufoxOS,
-  CloakBrowserConfig,
   WayfernConfig,
   WayfernOS,
 } from "@/types";
@@ -102,24 +97,17 @@ const getCurrentOS = (): WayfernOS => {
 };
 
 /** Anti-detect engines a profile can be created on. */
-export type ProfileEngine = "camoufox" | "cloakbrowser" | "wayfern";
+export type ProfileEngine = "camoufox" | "wayfern";
 
 /** The most profiles one submit creates. */
 const MAX_PROFILE_COUNT = 50;
 
-const ENGINES: ProfileEngine[] = ["camoufox", "cloakbrowser", "wayfern"];
+const ENGINES: ProfileEngine[] = ["camoufox", "wayfern"];
 
 const ENGINE_LABELS: Record<ProfileEngine, string> = {
   camoufox: "Camoufox",
-  cloakbrowser: "CloakBrowser",
   wayfern: "Wayfern",
 };
-
-const defaultCloakBrowserConfig = (): CloakBrowserConfig => ({
-  // getCurrentOS never reports "android"; only desktop OSes are detected.
-  os: getCurrentOS() as CamoufoxOS,
-  seed: randomCloakBrowserSeed(),
-});
 
 const defaultCamoufoxConfig = (): CamoufoxConfig => ({
   // getCurrentOS never reports "android"; only desktop OSes are detected.
@@ -146,7 +134,6 @@ interface CreateProfileDialogProps {
     proxyId?: string;
     vpnId?: string;
     camoufoxConfig?: CamoufoxConfig;
-    cloakbrowserConfig?: CloakBrowserConfig;
     wayfernConfig?: WayfernConfig;
     groupId?: string;
     extensionGroupId?: string;
@@ -193,8 +180,6 @@ export function CreateProfileDialog({
   const [camoufoxConfig, setCamoufoxConfig] = useState<CamoufoxConfig>(
     defaultCamoufoxConfig,
   );
-  const [cloakbrowserConfig, setCloakbrowserConfig] =
-    useState<CloakBrowserConfig>(defaultCloakBrowserConfig);
   const [wayfernConfig, setWayfernConfig] =
     useState<WayfernConfig>(defaultWayfernConfig);
   // Wayfern takes its fingerprints from a Donut account, which this fork does
@@ -368,7 +353,6 @@ export function CreateProfileDialog({
     setReleaseTypesError(false);
     setEngine("camoufox");
     setCamoufoxConfig(defaultCamoufoxConfig());
-    setCloakbrowserConfig(defaultCloakBrowserConfig());
     setWayfernConfig(defaultWayfernConfig());
     setEphemeral(false);
     clearPassword();
@@ -410,12 +394,6 @@ export function CreateProfileDialog({
                 ? { ...camoufoxConfig, fingerprint: undefined }
                 : camoufoxConfig
               : undefined,
-          cloakbrowserConfig:
-            engine === "cloakbrowser"
-              ? series
-                ? { ...cloakbrowserConfig, seed: undefined }
-                : cloakbrowserConfig
-              : undefined,
           wayfernConfig:
             engine === "wayfern"
               ? series
@@ -451,7 +429,6 @@ export function CreateProfileDialog({
       dnsBlocklist,
       launchHook,
       camoufoxConfig: { ...camoufoxConfig, fingerprint: undefined },
-      cloakbrowserConfig: { ...cloakbrowserConfig, seed: undefined },
       wayfernConfig: { ...wayfernConfig, fingerprint: undefined },
     }),
     [
@@ -462,7 +439,6 @@ export function CreateProfileDialog({
       dnsBlocklist,
       launchHook,
       camoufoxConfig,
-      cloakbrowserConfig,
       wayfernConfig,
     ],
   );
@@ -470,7 +446,9 @@ export function CreateProfileDialog({
   // A template names a proxy and an extension group by id; one that has been
   // deleted since is left out instead of failing the create.
   const applyTemplate = (settings: ProfileTemplateSettings) => {
-    if (settings.engine !== engine) {
+    // A template saved for an engine the app no longer has keeps the
+    // current one.
+    if (settings.engine !== engine && ENGINES.includes(settings.engine)) {
       setEngine(settings.engine);
       setReleaseTypes({});
     }
@@ -491,11 +469,6 @@ export function CreateProfileDialog({
     setCamoufoxConfig({
       ...defaultCamoufoxConfig(),
       ...settings.camoufoxConfig,
-    });
-    setCloakbrowserConfig({
-      ...defaultCloakBrowserConfig(),
-      ...settings.cloakbrowserConfig,
-      seed: randomCloakBrowserSeed(),
     });
     setWayfernConfig({ ...defaultWayfernConfig(), ...settings.wayfernConfig });
   };
@@ -1158,18 +1131,6 @@ export function CreateProfileDialog({
                         limitedMode={!crossOsUnlocked}
                         profileVersion={creatableVersion}
                         profileBrowser="camoufox"
-                      />
-                    ) : engine === "cloakbrowser" ? (
-                      <CloakBrowserConfigForm
-                        className="[&_[data-slot=select-trigger]]:w-full"
-                        config={cloakbrowserConfig}
-                        onConfigChange={(key, value) =>
-                          setCloakbrowserConfig((previous) => ({
-                            ...previous,
-                            [key]: value,
-                          }))
-                        }
-                        readOnly={isCreating}
                       />
                     ) : (
                       <WayfernConfigForm
