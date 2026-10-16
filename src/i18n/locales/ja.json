@@ -134,16 +134,16 @@
       "title": "デフォルトブラウザ",
       "setAsDefault": "デフォルトブラウザに設定",
       "alreadyDefault": "既にデフォルトブラウザです",
-      "description": "デフォルトに設定すると、Antidetect がウェブリンクを処理し、使用するプロファイルを選択できます。",
-      "setSuccess": "Antidetect が既定のブラウザーになりました",
+      "description": "デフォルトに設定すると、Owl がウェブリンクを処理し、使用するプロファイルを選択できます。",
+      "setSuccess": "Owl が既定のブラウザーになりました",
       "setFailed": "既定のブラウザーを設定できませんでした",
       "finishInSystemSettings": "Windows の設定で完了してください",
-      "finishInSystemSettingsDescription": "Antidetect を登録しました。Windows の設定が開いています。「Web ブラウザー」で Antidetect を選ぶと完了します。"
+      "finishInSystemSettingsDescription": "Owl を登録しました。Windows の設定が開いています。「Web ブラウザー」で Owl を選ぶと完了します。"
     },
     "permissions": {
       "title": "システム権限",
       "loading": "権限を読み込み中...",
-      "description": "これらの権限により、Antidetect から起動したブラウザがシステムリソースにアクセスできます。各ウェブサイトは個別に許可を求めます。",
+      "description": "これらの権限により、Owl から起動したブラウザがシステムリソースにアクセスできます。各ウェブサイトは個別に許可を求めます。",
       "microphone": "マイク",
       "microphoneDescription": "ブラウザアプリケーションのマイクアクセス",
       "camera": "カメラ",
@@ -200,7 +200,7 @@
       "copyLogsDescription": "最近のログを編集したバンドル（最大 5 MB）をコピーします。編集ではすべての種類の個人データを識別できないため、共有前に内容を確認してください。"
     },
     "disableAutoUpdates": "アプリの自動更新を無効にする",
-    "disableAutoUpdatesDescription": "Antidetectの自動更新確認・インストールを無効にします。ブラウザの更新には影響しません。",
+    "disableAutoUpdatesDescription": "Owlの自動更新確認・インストールを無効にします。ブラウザの更新には影響しません。",
     "keepDecryptedProfilesInRam": "復号済みプロファイルをRAMに保持",
     "keepDecryptedProfilesInRamDescription": "起動を高速化するため、パスワード保護されたプロファイルの復号済みコピーをRAMに保持します。ディスク上のコピーは常に暗号化されたままです。",
     "privacy": {
@@ -230,9 +230,9 @@
       "chooseTitle": "データディレクトリにするフォルダーを選んでください",
       "move": "移動",
       "willMoveTo": "すべての移動先",
-      "moved": "データディレクトリを移動しました。Antidetect を再起動すると使われます。",
+      "moved": "データディレクトリを移動しました。Owl を再起動すると使われます。",
       "reading": "データディレクトリを読み込んでいます…",
-      "restartRequired": "新しい場所を使うには Antidetect を再起動してください。それまでは以前の場所で動きます。",
+      "restartRequired": "新しい場所を使うには Owl を再起動してください。それまでは以前の場所で動きます。",
       "environmentOverride": "DONUTBROWSER_DATA_DIR が設定されているため、ここで何を選んでもアプリはその場所を使います。",
       "missing": "選んだデータディレクトリが見つかりません。取り外し可能なドライブにある場合は、つなぎ直して再起動してください。",
       "useDefault": "既定の場所に戻す",
@@ -280,7 +280,7 @@
       "extensions": "拡張機能"
     },
     "newProfile": "新規",
-    "donutLogo": "Antidetect ロゴ",
+    "donutLogo": "Owl ロゴ",
     "scrollGroupsLeft": "グループを左へスクロール",
     "scrollGroupsRight": "グループを右へスクロール"
   },
@@ -525,7 +525,7 @@
     "hourlyLimit": {
       "reached": "ご利用プランでは1時間に{{limit}}件まで新規プロファイルを作成できます。次は約{{minutes}}分後に作成できます。",
       "warningTitle": "プロファイルの作成ペースが速すぎます",
-      "warning": "少し時間をおいてください。1時間に多くのプロファイルを作成しすぎると、24時間以上の一時的なブロックがかかり、その間は新しいアイデンティティを生成できません。1時間あたりの上限を引き上げたい場合は、有料プランで Antidetect を支援することをご検討ください。"
+      "warning": "少し時間をおいてください。1時間に多くのプロファイルを作成しすぎると、24時間以上の一時的なブロックがかかり、その間は新しいアイデンティティを生成できません。1時間あたりの上限を引き上げたい場合は、有料プランで Owl を支援することをご検討ください。"
     },
     "engine": {
       "label": "Browser engine",
@@ -1424,7 +1424,7 @@
     "addFontsPlaceholder": "フォントを追加...",
     "enterAsJson": "{{title}} を JSON で入力",
     "launchArgs": "起動引数",
-    "launchArgsDescription": "1 行に 1 つの引数を --name または --name=value の形式で入力します。使用できるのは対応している引数だけです（例: --disable-gpu、--mute-audio、--disable-features=Name）。プロファイル、プロキシ、ウィンドウ、デバッグの引数は Antidetect が管理します。",
+    "launchArgsDescription": "1 行に 1 つの引数を --name または --name=value の形式で入力します。使用できるのは対応している引数だけです（例: --disable-gpu、--mute-audio、--disable-features=Name）。プロファイル、プロキシ、ウィンドウ、デバッグの引数は Owl が管理します。",
     "launchArgsSkipped": "{{profile}} ではカスタム起動引数が使われませんでした。{{reason}}",
     "refreshFingerprint": "フィンガープリントを更新"
   },
@@ -1657,8 +1657,8 @@
     "selectedFolder": "選択したフォルダ",
     "selectFolder": "フォルダを選択",
     "linkFolder": "このフォルダから直接読み込む",
-    "linkFolderOff": "フォルダは Antidetect にコピーされます。拡張機能は持ち運べるようになり、他のデバイスにも同期されます。",
-    "linkFolderOn": "Antidetect は起動のたびにこのフォルダから直接拡張機能を読み込みます。編集内容は次回のブラウザ起動時に反映されますが、拡張機能はこの端末にのみ残り、同期されません。",
+    "linkFolderOff": "フォルダは Owl にコピーされます。拡張機能は持ち運べるようになり、他のデバイスにも同期されます。",
+    "linkFolderOn": "Owl は起動のたびにこのフォルダから直接拡張機能を読み込みます。編集内容は次回のブラウザ起動時に反映されますが、拡張機能はこの端末にのみ残り、同期されません。",
     "replaceSource": "ソースを置き換える",
     "linkedNoSync": "リンクした拡張機能はこの端末にのみ残るため、同期できません。",
     "uploadFailed": "拡張機能を追加できませんでした",
@@ -1691,7 +1691,7 @@
     "fromUrl": "リンクから",
     "fromUrlTooltip": "Chrome ウェブストアのリンク、拡張機能 ID、または .crx / .zip の直接リンクから拡張機能を追加します",
     "urlPlaceholder": "ウェブストアのリンク、拡張機能 ID、または .crx リンク",
-    "urlHint": "Antidetect は HTTPS でパッケージをダウンロードし、保存する前に名前とバージョンを読み取ります。",
+    "urlHint": "Owl は HTTPS でパッケージをダウンロードし、保存する前に名前とバージョンを読み取ります。",
     "fetchExtension": "取得",
     "fetching": "取得中…",
     "fetchedIdentity": "{{name}} · バージョン {{version}}",
@@ -1981,7 +1981,7 @@
   },
   "wayfernTerms": {
     "title": "Wayfern 利用規約",
-    "description": "Antidetect を使用する前に、Wayfern の利用規約を読み、同意する必要があります。",
+    "description": "Owl を使用する前に、Wayfern の利用規約を読み、同意する必要があります。",
     "reviewLabel": "次の URL で利用規約をご確認ください:",
     "agreeNotice": "「同意します」をクリックすると、これらの条項に拘束されることに同意します。",
     "acceptButton": "同意します",
@@ -2000,10 +2000,10 @@
   "permissionDialog": {
     "titleMicrophone": "マイクへのアクセスが必要です",
     "titleCamera": "カメラへのアクセスが必要です",
-    "descMicrophone": "Antidetect はブラウザのマイク機能を有効にするためにマイクへのアクセスを必要とします。マイクを使用するウェブサイトはそれぞれ個別に許可を求めます。",
-    "descCamera": "Antidetect はブラウザのカメラ機能を有効にするためにカメラへのアクセスを必要とします。カメラを使用するウェブサイトはそれぞれ個別に許可を求めます。",
-    "grantedMicrophone": "許可が付与されました!Antidetect から起動したブラウザはマイクにアクセスできます。",
-    "grantedCamera": "許可が付与されました!Antidetect から起動したブラウザはカメラにアクセスできます。",
+    "descMicrophone": "Owl はブラウザのマイク機能を有効にするためにマイクへのアクセスを必要とします。マイクを使用するウェブサイトはそれぞれ個別に許可を求めます。",
+    "descCamera": "Owl はブラウザのカメラ機能を有効にするためにカメラへのアクセスを必要とします。カメラを使用するウェブサイトはそれぞれ個別に許可を求めます。",
+    "grantedMicrophone": "許可が付与されました!Owl から起動したブラウザはマイクにアクセスできます。",
+    "grantedCamera": "許可が付与されました!Owl から起動したブラウザはカメラにアクセスできます。",
     "notGrantedMicrophone": "許可されていません。下のボタンを押してマイクへのアクセスを要求してください。",
     "notGrantedCamera": "許可されていません。下のボタンを押してカメラへのアクセスを要求してください。",
     "doneButton": "完了",
@@ -2123,7 +2123,7 @@
   },
   "appUpdate": {
     "toast": {
-      "updateFailed": "Antidetect の更新に失敗しました",
+      "updateFailed": "Owl の更新に失敗しました",
       "restartFailed": "再起動に失敗しました",
       "updateReady": "アップデートの準備完了。再起動して適用",
       "manualDownloadRequired": "手動ダウンロードが必要です",
@@ -2217,7 +2217,7 @@
     },
     "warnings": {
       "forgetWarningTitle": "重要: このパスワードは復元できません",
-      "forgetWarningBody": "Antidetectはこのパスワードをリセット、復元、回避することはできません。忘れた場合、このプロファイルのデータへのアクセスは永続的に失われます。"
+      "forgetWarningBody": "Owlはこのパスワードをリセット、復元、回避することはできません。忘れた場合、このプロファイルのデータへのアクセスは永続的に失われます。"
     },
     "modes": {
       "set": "設定",
@@ -2260,7 +2260,7 @@
     "extensionNotADirectory": "そのパスはフォルダではありません。",
     "extensionManifestMissing": "そのフォルダに manifest.json がありません。拡張機能の manifest.json があるフォルダを選択してください。",
     "extensionManifestInvalid": "そのフォルダの manifest.json を読み取れませんでした。",
-    "extensionDirTooLarge": "そのフォルダは大きすぎて Antidetect にコピーできません（上限は 256 MB・20,000 ファイル）。代わりにリンクして読み込んでください。",
+    "extensionDirTooLarge": "そのフォルダは大きすぎて Owl にコピーできません（上限は 256 MB・20,000 ファイル）。代わりにリンクして読み込んでください。",
     "extensionPathHasComma": "そのフォルダのパスにカンマが含まれており、Chromium が読み込めません。フォルダの名前を変更するか、移動してください。",
     "extensionLinkRequiresDirectory": "その場で読み込めるのはフォルダのみです。アーカイブを追加するにはリンクをオフにしてください。",
     "extensionLinkedCannotSync": "この拡張機能はこの端末のフォルダから読み込まれているため、同期する対象がありません。",
@@ -2300,14 +2300,14 @@
     "dnsRulesSaveFailed": "DNS ルールを保存できませんでした。",
     "dnsRulesExportFailed": "DNS ルールをエクスポートできませんでした。",
     "fingerprintMatchFailed": "フィンガープリントをプロキシに合わせられませんでした。",
-    "proxySidecarVersionMismatch": "Antidetect のファイルに異なるバージョンが混在しています。最新のアップデートを再インストールしてください。プロファイルはそのまま保持されます。",
+    "proxySidecarVersionMismatch": "Owl のファイルに異なるバージョンが混在しています。最新のアップデートを再インストールしてください。プロファイルはそのまま保持されます。",
     "updateProfilesRunning": "アップデートをインストールする前に、実行中のプロファイルをすべて停止してください。",
     "updatePreparationFailed": "バックグラウンドのネットワークプロセスを安全に停止できませんでした。コンピューターを再起動してから、もう一度アップデートしてください。",
     "wayfernTermsRequired": "Wayfernを使用するには、Wayfernの利用規約に同意してください。",
     "apiPortUnavailable": "APIサーバーで利用可能なポートが見つかりませんでした。",
     "mcpAgentUnknown": "このMCPクライアントはサポートされていません。",
-    "mcpAgentInstallFailed": "MCPクライアントにAntidetectを追加できませんでした：{{detail}}",
-    "mcpAgentRemoveFailed": "MCPクライアントからAntidetectを削除できませんでした：{{detail}}",
+    "mcpAgentInstallFailed": "MCPクライアントにOwlを追加できませんでした：{{detail}}",
+    "mcpAgentRemoveFailed": "MCPクライアントからOwlを削除できませんでした：{{detail}}",
     "vlessConfigInvalid": "共有リンクが無効です。",
     "xrayUnavailable": "このシステムでは Xray-core を利用できません。",
     "xrayUnsupportedOs": "VLESS、VMess、Trojan、Hysteria2のプロキシにはmacOS 12以降が必要です。",
@@ -2355,17 +2355,17 @@
     "vpnWorkerStartFailed": "VPN接続を開始できませんでした: {{detail}}",
     "exitProbeFailed": "プロキシの出口ノードに接続できず、所在地を確認できませんでした。",
     "vlessUnsupported": {
-      "security": "このリンクはAntidetectが対応していないセキュリティ設定を使用しています。Antidetectはnone、TLS、REALITYに対応しており、REALITYはRAW (TCP)、gRPC、XHTTP上でのみ使用できます。",
-      "flow": "このリンクはAntidetectが対応していないflowを使用しています。XTLS Visionは、TLSまたはREALITYを使うRAW (TCP)上のVLESSでのみ動作します。",
-      "transport": "このリンクはAntidetectが対応していないトランスポートまたはトランスポートモードを使用しています。AntidetectはRAW (TCP)、WebSocket、gRPC、HTTPUpgrade、XHTTPに対応していますが、mKCP、HTTP/2、QUICには対応していません。",
-      "encryption": "このリンクはAntidetectが対応していない暗号化設定を使用しています。",
-      "headerType": "このリンクはAntidetectが対応していないヘッダー難読化を使用しています。",
-      "fingerprint": "このリンクはAntidetectが対応していないTLSフィンガープリントを要求しています。",
+      "security": "このリンクはOwlが対応していないセキュリティ設定を使用しています。Owlはnone、TLS、REALITYに対応しており、REALITYはRAW (TCP)、gRPC、XHTTP上でのみ使用できます。",
+      "flow": "このリンクはOwlが対応していないflowを使用しています。XTLS Visionは、TLSまたはREALITYを使うRAW (TCP)上のVLESSでのみ動作します。",
+      "transport": "このリンクはOwlが対応していないトランスポートまたはトランスポートモードを使用しています。OwlはRAW (TCP)、WebSocket、gRPC、HTTPUpgrade、XHTTPに対応していますが、mKCP、HTTP/2、QUICには対応していません。",
+      "encryption": "このリンクはOwlが対応していない暗号化設定を使用しています。",
+      "headerType": "このリンクはOwlが対応していないヘッダー難読化を使用しています。",
+      "fingerprint": "このリンクはOwlが対応していないTLSフィンガープリントを要求しています。",
       "sni": "リンクに有効なサーバー名 (sni) がありません。",
       "publicKey": "リンクにREALITYの公開鍵 (pbk) がありません。",
-      "obfs": "このHysteria2リンクはAntidetectが対応していない難読化を使用しています。AntidetectはSalamanderのみに対応しています。",
+      "obfs": "このHysteria2リンクはOwlが対応していない難読化を使用しています。OwlはSalamanderのみに対応しています。",
       "scheme": "対応している共有リンクではありません。vless://、vmess://、trojan://、hysteria2:// または hy2:// で始まる必要があります。",
-      "parameter": "リンクにAntidetectが対応していないオプションが含まれています。",
+      "parameter": "リンクにOwlが対応していないオプションが含まれています。",
       "malformed": "共有リンクが無効です。"
     },
     "camoufoxRemoved": "Camoufoxはサポートされなくなりました。Wayfernでこのプロファイルを作り直してください。",
@@ -2388,7 +2388,7 @@
     "profileExportFailed": "このプロファイルを書き出せませんでした。{{detail}}",
     "profileExportTooLarge": "このプロファイルは大きすぎて書き出せません。閲覧データを一部消してからもう一度お試しください。",
     "profileImportFailed": "このアーカイブを読み取れませんでした。{{detail}}",
-    "profileImportTooNew": "このアーカイブは新しいバージョンの Antidetect で作成されています。アプリを更新してからもう一度お試しください。",
+    "profileImportTooNew": "このアーカイブは新しいバージョンの Owl で作成されています。アプリを更新してからもう一度お試しください。",
     "profileImportUnsafeArchive": "このアーカイブはプロファイルフォルダーの外に書き込もうとしたため、拒否しました。",
     "recordingAlreadyRunning": "すでに記録中です。別の記録を始める前に停止してください。",
     "profileNotRunning": "このプロファイルのブラウザーは起動していません。先に起動してください。",
@@ -2453,7 +2453,7 @@
     "profileRouteUnavailable": "このプロファイルのプロキシまたは VPN が利用できないため、IP アドレスを隠すために起動を停止しました。動作するプロキシまたは VPN をプロファイルに割り当ててください。",
     "wayfernLaunchArgsRequiresPro": "カスタム起動引数には Pro 以上のプランが必要です。引数を削除するか、プランをアップグレードしてください。",
     "wayfernLaunchArgInvalid": "各引数には --name または --name=value を使用してください。制御文字は使用できません。",
-    "wayfernLaunchArgReserved": "{{argument}} は Antidetect が管理します。この引数を削除してください。",
+    "wayfernLaunchArgReserved": "{{argument}} は Owl が管理します。この引数を削除してください。",
     "wayfernLaunchArgNotAllowed": "{{argument}} は対応していない起動引数です。削除してください。",
     "wayfernLaunchArgValueInvalid": "{{argument}} の値には対応していません。",
     "wayfernLaunchArgsLimit": "起動引数は {{count}} 個まで、1 つあたり {{length}} 文字までにしてください。",
@@ -2492,7 +2492,7 @@
       "importProfileHint": "別のツールから取り込む",
       "keyboardShortcuts": "キーボードショートカット",
       "keyboardShortcutsHint": "すべてのショートカットを表示",
-      "about": "Antidetect について",
+      "about": "Owl について",
       "aboutHint": "バージョンとアプリ情報",
       "trash": "ゴミ箱",
       "trashHint": "削除したプロファイルを復元",
@@ -2506,7 +2506,7 @@
     "cookieBotRunning": "Cookie Bot — 実行中",
     "agent": "エージェント",
     "agentWaiting": "エージェント、対応待ちのリクエスト: {{count}}",
-    "brand": "Antidetect"
+    "brand": "Owl"
   },
   "pageTitle": {
     "proxies": "ネットワーク",
@@ -2570,7 +2570,7 @@
     },
     "selfHosted": {
       "title": "セルフホスト同期サーバー",
-      "description": "Antidetect を独自の donut-sync サーバーに接続して、ホスト型クラウドを使わずにプロファイル、プロキシ、グループ、拡張機能を同期します。",
+      "description": "Owl を独自の donut-sync サーバーに接続して、ホスト型クラウドを使わずにプロファイル、プロキシ、グループ、拡張機能を同期します。",
       "disabledWhileLoggedIn": "Donut アカウントにサインインしている間はセルフホスト同期を利用できません。カスタムサーバーを使うにはサインアウトしてください。",
       "connectionStatus": "接続:",
       "statusUnknown": "未テスト",
@@ -2600,7 +2600,7 @@
       "stopProfile": "{{name}} を停止",
       "profileInfo": "情報 — {{name}}",
       "createProfile": "プロファイルを作成",
-      "about": "Antidetect について"
+      "about": "Owl について"
     }
   },
   "shortcuts": {
@@ -2620,13 +2620,13 @@
     "openTips": "ヒントを開く"
   },
   "closeConfirm": {
-    "title": "Antidetect を閉じますか？",
+    "title": "Owl を閉じますか？",
     "description": "アプリをシステムトレイに格納しますか、それとも終了しますか？",
     "minimize": "トレイに格納",
     "quit": "終了"
   },
   "tray": {
-    "show": "Antidetect を表示",
+    "show": "Owl を表示",
     "quit": "終了"
   },
   "onboarding": {
@@ -2647,13 +2647,13 @@
       "finish": "完了"
     },
     "thankYou": {
-      "title": "Antidetect を選んでいただきありがとうございます",
+      "title": "Owl を選んでいただきありがとうございます",
       "body": "それぞれのIDを分けて、データを端末の外に出さずに、よりプライベートなブラウジングのお役に立てれば幸いです。どうぞお楽しみください。",
       "cta": "ブラウジングを始める"
     }
   },
   "welcome": {
-    "title": "Antidetect へようこそ",
+    "title": "Owl へようこそ",
     "tagline": "複数のIDを同時に管理できるオープンソースのアンチディテクトブラウザ。",
     "skip": "スキップ",
     "next": "次へ",
@@ -2697,7 +2697,7 @@
     },
     "license": {
       "title": "ライセンス",
-      "body": "Antidetect はオープンソースで、無料で利用できます。",
+      "body": "Owl はオープンソースで、無料で利用できます。",
       "agree": "了解しました",
       "personalTitle": "個人利用",
       "personalDesc": "永久に無料です。",
@@ -3085,16 +3085,16 @@
     "vpnExtensionConfirmed": "既知のVPN・プロキシツール",
     "vpnExtensionLikely": "VPN・プロキシツールと思われます",
     "vpnExtensionCapability": "プロキシ権限を持っています",
-    "vpnExtensionExplainer": "いずれかが通信を別の経路に変えると、ブラウザーの実際の所在地は、このプロファイルの作成時に設定されたタイムゾーン・言語・位置情報と一致しなくなります。Antidetectは外部からそれを検出できません。",
+    "vpnExtensionExplainer": "いずれかが通信を別の経路に変えると、ブラウザーの実際の所在地は、このプロファイルの作成時に設定されたタイムゾーン・言語・位置情報と一致しなくなります。Owlは外部からそれを検出できません。",
     "proxyCapableHeading": "プロキシを変更できる拡張機能",
-    "proxyCapableIntro": "VPNには見えませんが、Chromiumのプロキシ権限を持っています。ダウンロードマネージャーやデバッグツールにも必要な権限で、実際に使っているかどうかをAntidetectは判別できません:",
-    "sourceDonut": "Antidetectが管理",
+    "proxyCapableIntro": "VPNには見えませんが、Chromiumのプロキシ権限を持っています。ダウンロードマネージャーやデバッグツールにも必要な権限で、実際に使っているかどうかをOwlは判別できません:",
+    "sourceDonut": "Owlが管理",
     "sourceBrowser": "プロファイルにインストール済み",
     "measurementUnreliable": "このプロファイルの拡張機能がプロキシ権限を持っているため、出口の確認結果がブラウザーの実際の経路を表していない可能性があります。",
-    "scanIncompleteEncrypted": "このプロファイルは暗号化されているため、Antidetectが管理する拡張機能のみ確認できました。",
-    "scanIncompleteEphemeral": "このプロファイルにはまだデータがないため、Antidetectが管理する拡張機能のみ確認できました。",
+    "scanIncompleteEncrypted": "このプロファイルは暗号化されているため、Owlが管理する拡張機能のみ確認できました。",
+    "scanIncompleteEphemeral": "このプロファイルにはまだデータがないため、Owlが管理する拡張機能のみ確認できました。",
     "scanIncompletePartial": "拡張機能のスキャンが途中で終了したため、一部が表示されていない可能性があります。",
-    "probePending": "プロキシの出口はまだ測定されていません。Antidetectは起動中に確認し、一致しない場合は停止します。",
+    "probePending": "プロキシの出口はまだ測定されていません。Owlは起動中に確認し、一致しない場合は停止します。",
     "launchAnyway": "このまま起動",
     "dontBlockAgain": "この不一致では今後ブロックしない",
     "dontWarnExtensions": "これらの拡張機能について今後警告しない",
@@ -3102,7 +3102,7 @@
     "cancelledSummary": "{{total}}件中{{cancelled}}件の起動をキャンセルしました",
     "vpnExtensionEntry": " {{version}}（{{capability}}、{{source}}）",
     "vpnExtensionEntryNoVersion": "（{{capability}}、{{source}}）",
-    "scanIncompleteMissing": "このプロファイルはまだ起動されていないため、Antidetectが管理する拡張機能のみ確認できました。",
+    "scanIncompleteMissing": "このプロファイルはまだ起動されていないため、Owlが管理する拡張機能のみ確認できました。",
     "exitUnverifiedTimezone": "このプロファイルのフィンガープリントにはタイムゾーンが指定されていないため、出口チェックでは検証できません。起動はブロックされませんが、比較も行われていません。",
     "exitUnverifiedLanguage": "このプロファイルのフィンガープリントの言語は出口の国と比較できないため、このチェックは合格ではなく未検証のままです。"
   },
@@ -3486,7 +3486,7 @@
   },
   "groupBookmarks": {
     "title": "{{name}} のブックマーク",
-    "description": "このグループのすべてのプロファイルに、Antidetect が管理するフォルダーとしてこれらのブックマークが追加されます。他のブックマークは変更されません。",
+    "description": "このグループのすべてのプロファイルに、Owl が管理するフォルダーとしてこれらのブックマークが追加されます。他のブックマークは変更されません。",
     "editTooltip": "グループのブックマーク ({{n}})",
     "empty": "このグループには共有ブックマークがまだありません。",
     "addRow": "ブックマークを追加",
@@ -3538,7 +3538,7 @@
       "fingerprintGate": {
         "label": "フィンガープリント検査",
         "title": "フィンガープリントを出口と一致させる",
-        "body": "起動前に Antidetect はプロキシ出口のタイムゾーンと言語をプロファイルのフィンガープリントと比較し、不一致があれば起動を止めます。フィンガープリントを修正するか、理解した上で「詳細設定」でゲートを無効にしてください。",
+        "body": "起動前に Owl はプロキシ出口のタイムゾーンと言語をプロファイルのフィンガープリントと比較し、不一致があれば起動を止めます。フィンガープリントを修正するか、理解した上で「詳細設定」でゲートを無効にしてください。",
         "action": "詳細設定を開く"
       },
       "profilePassword": {
@@ -3556,7 +3556,7 @@
       "defaultBrowser": {
         "label": "既定のブラウザ",
         "title": "すべてのリンクを適切なプロファイルで開く",
-        "body": "Antidetect を既定のブラウザにすると、他のアプリからのリンクごとにどのプロファイルで開くかを確認できます。",
+        "body": "Owl を既定のブラウザにすると、他のアプリからのリンクごとにどのプロファイルで開くかを確認できます。",
         "action": "既定のブラウザ設定を開く"
       },
       "extensionGroups": {
@@ -3579,14 +3579,14 @@
       },
       "localApi": {
         "label": "API と MCP",
-        "title": "スクリプトやエージェントから Antidetect を自動化",
+        "title": "スクリプトやエージェントから Owl を自動化",
         "body": "ローカルの REST API で、スクリプトがプロファイルの一覧取得、作成、設定を行えます。「連携」で有効にしてトークンをコピーしてください。",
         "action": "連携を開く"
       },
       "importProfiles": {
         "label": "インポート",
         "title": "Chrome、Edge、Brave からプロファイルを移行",
-        "body": "インポートは Chromium プロファイルやアーカイブから Cookie、ログイン情報、拡張機能を新しい Antidetect プロファイルにコピーし、すぐ起動できる状態にします。",
+        "body": "インポートは Chromium プロファイルやアーカイブから Cookie、ログイン情報、拡張機能を新しい Owl プロファイルにコピーし、すぐ起動できる状態にします。",
         "action": "インポートを開く"
       },
       "cloudBackup": {

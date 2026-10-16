@@ -1,7 +1,7 @@
 # Antidetect (internal fork of Donut Browser)
 
 This repository is the company's internal fork of [Donut Browser](https://github.com/zhom/donutbrowser)
-(AGPL-3.0), branded "Antidetect" and used only inside the company. The goal is feature parity
+(AGPL-3.0), branded "Owl" (it was "Antidetect" before) and used only inside the company. The goal is feature parity
 with Octo Browser. Upstream is kept as the `upstream` remote and `fork-base` tags the commit the
 fork started from; merge upstream regularly. The published history starts from one commit that
 holds Donut Browser as it was at `fork-base` (upstream's own history is left out); before merging
@@ -506,7 +506,7 @@ The command palette (Mod+K) is built on the shadcn `Command` primitive with a to
 
 ## UI Theming
 
-The fork has its own look, Antidetect Graphite: blue-black graphite surfaces, one violet
+The fork has its own look, Owl Graphite: blue-black graphite surfaces, one violet
 (`--primary`) for everything that acts, mint (`--success`) for what is running. It lives in the
 `.dark` block of `src/styles/globals.css` (the light counterpart is `:root`) and, with the same
 values, as the first entry of `THEMES`, so `pnpm test:themes` holds it to the same contrast

@@ -885,7 +885,7 @@ fn mcp_remote_key_label() -> String {
     .map(|h| h.trim().to_string())
     .filter(|h| !h.is_empty())
     .unwrap_or_else(|| "this computer".to_string());
-  format!("Antidetect on {host}")
+  format!("Owl on {host}")
     .chars()
     .take(MAX_LABEL_CHARS)
     .collect()
@@ -1164,10 +1164,10 @@ fn add_mcp_to_claude_desktop_internal(target: &mcp_integrations::McpTarget) -> R
   let manifest = serde_json::json!({
     "manifest_version": "0.3",
     "name": "donut-browser",
-    "display_name": "Antidetect",
+    "display_name": "Owl",
     "version": env!("CARGO_PKG_VERSION"),
-    "description": "Control Antidetect profiles, proxies, and automation via MCP",
-    "author": { "name": "Antidetect" },
+    "description": "Control Owl profiles, proxies, and automation via MCP",
+    "author": { "name": "Owl" },
     "tools_generated": true,
     "server": {
       "type": "node",
@@ -2223,7 +2223,7 @@ fn setup_system_tray(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::E
   // Bootstrap labels only — the frontend pushes localized labels via
   // `update_tray_menu` on mount and on language change, and the menu is only
   // opened after a minimize-to-tray (post-mount), so these are never shown.
-  let show_item = MenuItemBuilder::with_id("tray_show", "Show Antidetect").build(app)?;
+  let show_item = MenuItemBuilder::with_id("tray_show", "Show Owl").build(app)?;
   let quit_item = MenuItemBuilder::with_id("tray_quit", "Quit").build(app)?;
   let tray_menu = MenuBuilder::new(app)
     .item(&show_item)
@@ -2250,7 +2250,7 @@ fn setup_system_tray(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::E
   TrayIconBuilder::with_id("main")
     .icon(tray_image)
     .icon_as_template(cfg!(target_os = "macos"))
-    .tooltip("Antidetect")
+    .tooltip("Owl")
     .menu(&tray_menu)
     .show_menu_on_left_click(false)
     .on_menu_event(|app_handle, event| match event.id().as_ref() {
@@ -2492,7 +2492,7 @@ pub fn run_with_builder(
       }
       #[allow(unused_variables)]
       let win_builder = WebviewWindowBuilder::new(app, "main", WebviewUrl::default())
-        .title("Antidetect")
+        .title("Owl")
         .inner_size(1200.0, 760.0)
         .min_inner_size(640.0, 400.0)
         .resizable(true)
@@ -3715,9 +3715,9 @@ mod tests {
   #[test]
   fn the_key_label_names_this_machine_and_fits_the_servers_cap() {
     let label = super::mcp_remote_key_label();
-    assert!(label.starts_with("Antidetect on "), "{label}");
+    assert!(label.starts_with("Owl on "), "{label}");
     assert!(label.chars().count() <= 80, "{label}");
-    assert!(label.len() > "Antidetect on ".len(), "{label}");
+    assert!(label.len() > "Owl on ".len(), "{label}");
   }
 
   #[test]

@@ -39,7 +39,7 @@ export const THEMES: Theme[] = [
     // The app's own look; `.dark` in globals.css carries the same values for
     // an install that has never picked a theme.
     id: "antidetect-graphite",
-    name: "Antidetect Graphite",
+    name: "Owl Graphite",
     mode: "dark",
     colors: {
       "--background": "#0a0c11",

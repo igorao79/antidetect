@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="assets/brand/app-icon.svg" alt="Antidetect" width="120" height="120" />
-  <h1>Antidetect</h1>
+  <img src="assets/brand/app-icon.svg" alt="Owl" width="120" height="120" />
+  <h1>Owl</h1>
   <p>Антидетект-браузер для внутренней работы компании: отдельные профили с собственным отпечатком устройства, прокси и автоматизацией, по возможностям близкий к Octo Browser.</p>
 </div>
 
@@ -29,10 +29,10 @@
 
 ## Установка готовой сборки
 
-1. Открыть `.dmg` и перетащить Antidetect в «Программы».
+1. Открыть `.dmg` и перетащить Owl в «Программы».
 2. Приложение не подписано сертификатом Apple, поэтому при первом запуске нужно разрешить его в «Системные настройки → Конфиденциальность и безопасность → Всё равно открыть». Если macOS пишет, что приложение «повреждено»:
    ```bash
-   xattr -dr com.apple.quarantine /Applications/Antidetect.app
+   xattr -dr com.apple.quarantine /Applications/Owl.app
    ```
 3. При первом запуске приложение само скачивает движки Camoufox и CloakBrowser и базу геолокации.
 
@@ -86,4 +86,4 @@ pnpm e2e:integrations
 
 ## Лицензия
 
-Antidetect основан на [Donut Browser](https://github.com/zhom/donutbrowser) © zhom и его авторы и распространяется на тех же условиях — [AGPL-3.0](LICENSE).
+Owl основан на [Donut Browser](https://github.com/zhom/donutbrowser) © zhom и его авторы и распространяется на тех же условиях — [AGPL-3.0](LICENSE).

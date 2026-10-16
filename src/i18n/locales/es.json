@@ -134,16 +134,16 @@
       "title": "Navegador Predeterminado",
       "setAsDefault": "Establecer como Navegador Predeterminado",
       "alreadyDefault": "Ya es el Navegador Predeterminado",
-      "description": "Cuando se establece como predeterminado, Antidetect manejará los enlaces web y te permitirá elegir qué perfil usar.",
-      "setSuccess": "Antidetect ya es tu navegador predeterminado",
+      "description": "Cuando se establece como predeterminado, Owl manejará los enlaces web y te permitirá elegir qué perfil usar.",
+      "setSuccess": "Owl ya es tu navegador predeterminado",
       "setFailed": "No se pudo establecer el navegador predeterminado",
       "finishInSystemSettings": "Termina en la Configuración de Windows",
-      "finishInSystemSettingsDescription": "Antidetect está registrado. Se abrió la Configuración de Windows: elige Antidetect en Navegador web para terminar."
+      "finishInSystemSettingsDescription": "Owl está registrado. Se abrió la Configuración de Windows: elige Owl en Navegador web para terminar."
     },
     "permissions": {
       "title": "Permisos del Sistema",
       "loading": "Cargando permisos...",
-      "description": "Estos permisos permiten que los navegadores iniciados desde Antidetect accedan a los recursos del sistema. Cada sitio web seguirá pidiendo tu permiso individualmente.",
+      "description": "Estos permisos permiten que los navegadores iniciados desde Owl accedan a los recursos del sistema. Cada sitio web seguirá pidiendo tu permiso individualmente.",
       "microphone": "Micrófono",
       "microphoneDescription": "Acceso al micrófono para aplicaciones del navegador",
       "camera": "Cámara",
@@ -200,7 +200,7 @@
       "copyLogsDescription": "Copia un paquete censurado de los registros recientes (hasta 5 MB). Revísalo antes de compartirlo, ya que la censura no puede identificar todos los tipos de datos personales."
     },
     "disableAutoUpdates": "Desactivar Actualizaciones Automáticas de la App",
-    "disableAutoUpdatesDescription": "Evita que la aplicación busque e instale actualizaciones de Antidetect automáticamente. Las actualizaciones de navegadores no se ven afectadas.",
+    "disableAutoUpdatesDescription": "Evita que la aplicación busque e instale actualizaciones de Owl automáticamente. Las actualizaciones de navegadores no se ven afectadas.",
     "keepDecryptedProfilesInRam": "Mantener Perfiles Descifrados en RAM",
     "keepDecryptedProfilesInRamDescription": "Conservar la copia descifrada en RAM de los perfiles protegidos por contraseña entre lanzamientos para un inicio más rápido. La copia en disco permanece cifrada en cualquier caso.",
     "privacy": {
@@ -231,9 +231,9 @@
       "chooseTitle": "Elige una carpeta para el directorio de datos",
       "move": "Mover",
       "willMoveTo": "Todo se mueve a",
-      "moved": "Directorio de datos movido. Reinicia Antidetect para usarlo.",
+      "moved": "Directorio de datos movido. Reinicia Owl para usarlo.",
       "reading": "Leyendo el directorio de datos...",
-      "restartRequired": "Reinicia Antidetect para usar la nueva ubicación. Hasta entonces sigue funcionando desde la anterior.",
+      "restartRequired": "Reinicia Owl para usar la nueva ubicación. Hasta entonces sigue funcionando desde la anterior.",
       "environmentOverride": "DONUTBROWSER_DATA_DIR está definido, así que la aplicación usa esa ubicación sea cual sea la elegida aquí.",
       "missing": "El directorio de datos elegido no está. Si está en una unidad extraíble, vuelve a conectarla y reinicia.",
       "useDefault": "Volver a la ubicación predeterminada",
@@ -281,7 +281,7 @@
       "extensions": "Extensiones"
     },
     "newProfile": "Nuevo",
-    "donutLogo": "Logotipo de Antidetect",
+    "donutLogo": "Logotipo de Owl",
     "scrollGroupsLeft": "Desplazar grupos a la izquierda",
     "scrollGroupsRight": "Desplazar grupos a la derecha"
   },
@@ -526,7 +526,7 @@
     "hourlyLimit": {
       "reached": "Tu plan permite {{limit}} perfiles nuevos por hora. Podrás crear el siguiente en unos {{minutes}} min.",
       "warningTitle": "Estás creando perfiles demasiado rápido",
-      "warning": "Espera un poco. Crear demasiados perfiles en una hora provoca un bloqueo temporal de 24 horas o más, durante el cual no podrás generar nuevas identidades. Si necesitas un límite por hora más alto, considera apoyar a Antidetect con un plan de pago."
+      "warning": "Espera un poco. Crear demasiados perfiles en una hora provoca un bloqueo temporal de 24 horas o más, durante el cual no podrás generar nuevas identidades. Si necesitas un límite por hora más alto, considera apoyar a Owl con un plan de pago."
     },
     "engine": {
       "label": "Browser engine",
@@ -1430,7 +1430,7 @@
     "addFontsPlaceholder": "Agregar fuentes...",
     "enterAsJson": "Ingresa {{title}} como JSON",
     "launchArgs": "Argumentos de inicio",
-    "launchArgsDescription": "Introduce un argumento por línea, como --name o --name=value. Solo se aceptan argumentos compatibles, por ejemplo --disable-gpu, --mute-audio o --disable-features=Name. Antidetect controla los argumentos de perfil, proxy, ventana y depuración.",
+    "launchArgsDescription": "Introduce un argumento por línea, como --name o --name=value. Solo se aceptan argumentos compatibles, por ejemplo --disable-gpu, --mute-audio o --disable-features=Name. Owl controla los argumentos de perfil, proxy, ventana y depuración.",
     "launchArgsSkipped": "No se usaron los argumentos de inicio personalizados de {{profile}}. {{reason}}",
     "refreshFingerprint": "Actualizar Huella Digital"
   },
@@ -1513,7 +1513,7 @@
     "launchHook": {
       "title": "URL del hook de inicio",
       "label": "URL del hook de inicio",
-      "description": "Antidetect enviará una solicitud GET a esta URL cada vez que se inicie el perfil.",
+      "description": "Owl enviará una solicitud GET a esta URL cada vez que se inicie el perfil.",
       "placeholder": "https://example.com/hooks/profile-launch",
       "invalidUrlHint": "Introduce una URL válida http:// o https://."
     },
@@ -1663,8 +1663,8 @@
     "selectedFolder": "Carpeta seleccionada",
     "selectFolder": "Elegir carpeta",
     "linkFolder": "Cargar directamente desde esta carpeta",
-    "linkFolderOff": "La carpeta se copia en Antidetect. La extensión es portátil y se sincroniza con tus otros dispositivos.",
-    "linkFolderOn": "Antidetect carga la extensión directamente desde esta carpeta en cada inicio. Tus cambios se aplican al abrir el navegador de nuevo, pero la extensión permanece en este equipo y nunca se sincroniza.",
+    "linkFolderOff": "La carpeta se copia en Owl. La extensión es portátil y se sincroniza con tus otros dispositivos.",
+    "linkFolderOn": "Owl carga la extensión directamente desde esta carpeta en cada inicio. Tus cambios se aplican al abrir el navegador de nuevo, pero la extensión permanece en este equipo y nunca se sincroniza.",
     "replaceSource": "Reemplazar origen",
     "linkedNoSync": "Las extensiones enlazadas permanecen en este equipo y no se pueden sincronizar.",
     "uploadFailed": "No se pudo añadir la extensión",
@@ -1697,7 +1697,7 @@
     "fromUrl": "Desde un enlace",
     "fromUrlTooltip": "Añade una extensión desde un enlace de Chrome Web Store, un ID de extensión o un enlace directo .crx o .zip",
     "urlPlaceholder": "Enlace de Web Store, ID de extensión o enlace .crx",
-    "urlHint": "Antidetect descarga el paquete por HTTPS y lee su nombre y versión antes de guardar nada.",
+    "urlHint": "Owl descarga el paquete por HTTPS y lee su nombre y versión antes de guardar nada.",
     "fetchExtension": "Descargar",
     "fetching": "Descargando…",
     "fetchedIdentity": "{{name}} · versión {{version}}",
@@ -1991,7 +1991,7 @@
   },
   "wayfernTerms": {
     "title": "Términos y condiciones de Wayfern",
-    "description": "Antes de usar Antidetect, debes leer y aceptar los Términos y Condiciones de Wayfern.",
+    "description": "Antes de usar Owl, debes leer y aceptar los Términos y Condiciones de Wayfern.",
     "reviewLabel": "Por favor, revisa los Términos y Condiciones en:",
     "agreeNotice": "Al hacer clic en \"Acepto\", aceptas estos términos.",
     "acceptButton": "Acepto",
@@ -2010,10 +2010,10 @@
   "permissionDialog": {
     "titleMicrophone": "Se requiere acceso al micrófono",
     "titleCamera": "Se requiere acceso a la cámara",
-    "descMicrophone": "Antidetect necesita acceso a tu micrófono para activar la funcionalidad de micrófono en los navegadores. Cada sitio web que quiera usar tu micrófono te lo pedirá individualmente.",
-    "descCamera": "Antidetect necesita acceso a tu cámara para activar la funcionalidad de cámara en los navegadores. Cada sitio web que quiera usar tu cámara te lo pedirá individualmente.",
-    "grantedMicrophone": "¡Permiso concedido! Los navegadores lanzados desde Antidetect ya pueden acceder a tu micrófono.",
-    "grantedCamera": "¡Permiso concedido! Los navegadores lanzados desde Antidetect ya pueden acceder a tu cámara.",
+    "descMicrophone": "Owl necesita acceso a tu micrófono para activar la funcionalidad de micrófono en los navegadores. Cada sitio web que quiera usar tu micrófono te lo pedirá individualmente.",
+    "descCamera": "Owl necesita acceso a tu cámara para activar la funcionalidad de cámara en los navegadores. Cada sitio web que quiera usar tu cámara te lo pedirá individualmente.",
+    "grantedMicrophone": "¡Permiso concedido! Los navegadores lanzados desde Owl ya pueden acceder a tu micrófono.",
+    "grantedCamera": "¡Permiso concedido! Los navegadores lanzados desde Owl ya pueden acceder a tu cámara.",
     "notGrantedMicrophone": "Permiso no concedido. Haz clic en el botón para solicitar acceso a tu micrófono.",
     "notGrantedCamera": "Permiso no concedido. Haz clic en el botón para solicitar acceso a tu cámara.",
     "doneButton": "Hecho",
@@ -2133,7 +2133,7 @@
   },
   "appUpdate": {
     "toast": {
-      "updateFailed": "Error al actualizar Antidetect",
+      "updateFailed": "Error al actualizar Owl",
       "restartFailed": "Error al reiniciar",
       "updateReady": "Actualización lista, reinicia para aplicar",
       "manualDownloadRequired": "Descarga manual requerida",
@@ -2227,7 +2227,7 @@
     },
     "warnings": {
       "forgetWarningTitle": "Importante: esta contraseña no se puede recuperar",
-      "forgetWarningBody": "Antidetect no puede restablecer, recuperar ni omitir esta contraseña. Si la olvidas, perderás permanentemente el acceso a los datos de este perfil."
+      "forgetWarningBody": "Owl no puede restablecer, recuperar ni omitir esta contraseña. Si la olvidas, perderás permanentemente el acceso a los datos de este perfil."
     },
     "modes": {
       "set": "Establecer",
@@ -2270,7 +2270,7 @@
     "extensionNotADirectory": "Esa ruta no es una carpeta.",
     "extensionManifestMissing": "No hay ningún manifest.json en esa carpeta. Elige la carpeta que contiene el manifest.json de la extensión.",
     "extensionManifestInvalid": "No se pudo leer el manifest.json de esa carpeta.",
-    "extensionDirTooLarge": "Esa carpeta es demasiado grande para copiarla en Antidetect (el límite es 256 MB y 20 000 archivos). Enlázala en su ubicación.",
+    "extensionDirTooLarge": "Esa carpeta es demasiado grande para copiarla en Owl (el límite es 256 MB y 20 000 archivos). Enlázala en su ubicación.",
     "extensionPathHasComma": "La ruta de esa carpeta contiene una coma, que Chromium no puede cargar. Cambia el nombre de la carpeta o muévela.",
     "extensionLinkRequiresDirectory": "Solo se puede cargar en su ubicación una carpeta. Desactiva el enlace para añadir un archivo comprimido.",
     "extensionLinkedCannotSync": "Esta extensión se carga desde una carpeta de este equipo, así que no hay nada que sincronizar.",
@@ -2310,14 +2310,14 @@
     "dnsRulesSaveFailed": "No se pudieron guardar las reglas DNS.",
     "dnsRulesExportFailed": "No se pudieron exportar las reglas DNS.",
     "fingerprintMatchFailed": "No se pudo ajustar la huella al proxy.",
-    "proxySidecarVersionMismatch": "Algunos archivos de Antidetect pertenecen a versiones diferentes. Reinstala la última actualización; tus perfiles permanecerán seguros.",
+    "proxySidecarVersionMismatch": "Algunos archivos de Owl pertenecen a versiones diferentes. Reinstala la última actualización; tus perfiles permanecerán seguros.",
     "updateProfilesRunning": "Detén todos los perfiles en ejecución antes de instalar la actualización.",
-    "updatePreparationFailed": "Antidetect no pudo detener de forma segura un proceso de red en segundo plano. Reinicia el equipo y vuelve a intentar la actualización.",
+    "updatePreparationFailed": "Owl no pudo detener de forma segura un proceso de red en segundo plano. Reinicia el equipo y vuelve a intentar la actualización.",
     "wayfernTermsRequired": "Acepta los Términos y condiciones de Wayfern para usar Wayfern.",
     "apiPortUnavailable": "El servidor API no pudo encontrar un puerto disponible.",
     "mcpAgentUnknown": "Este cliente MCP no es compatible.",
-    "mcpAgentInstallFailed": "No se pudo añadir Antidetect al cliente MCP: {{detail}}",
-    "mcpAgentRemoveFailed": "No se pudo eliminar Antidetect del cliente MCP: {{detail}}",
+    "mcpAgentInstallFailed": "No se pudo añadir Owl al cliente MCP: {{detail}}",
+    "mcpAgentRemoveFailed": "No se pudo eliminar Owl del cliente MCP: {{detail}}",
     "vlessConfigInvalid": "El enlace para compartir no es válido.",
     "xrayUnavailable": "Xray-core no está disponible en este sistema.",
     "xrayUnsupportedOs": "Los proxies VLESS, VMess, Trojan y Hysteria2 requieren macOS 12 o posterior.",
@@ -2365,17 +2365,17 @@
     "vpnWorkerStartFailed": "No se pudo iniciar la conexión VPN: {{detail}}",
     "exitProbeFailed": "No se pudo contactar con el nodo de salida del proxy para comprobar su ubicación.",
     "vlessUnsupported": {
-      "security": "Este enlace usa un ajuste de seguridad que Antidetect no admite. Antidetect admite none, TLS y REALITY, y REALITY solo sobre RAW (TCP), gRPC o XHTTP.",
-      "flow": "Este enlace usa un flow que Antidetect no admite. XTLS Vision solo funciona con VLESS sobre RAW (TCP) con TLS o REALITY.",
-      "transport": "Este enlace usa un transporte, o un modo de transporte, que Antidetect no admite. Antidetect admite RAW (TCP), WebSocket, gRPC, HTTPUpgrade y XHTTP, pero no mKCP, HTTP/2 ni QUIC.",
-      "encryption": "Este enlace usa un ajuste de cifrado que Antidetect no admite.",
-      "headerType": "Este enlace usa una ofuscación de cabecera que Antidetect no admite.",
-      "fingerprint": "Este enlace pide una huella TLS que Antidetect no admite.",
+      "security": "Este enlace usa un ajuste de seguridad que Owl no admite. Owl admite none, TLS y REALITY, y REALITY solo sobre RAW (TCP), gRPC o XHTTP.",
+      "flow": "Este enlace usa un flow que Owl no admite. XTLS Vision solo funciona con VLESS sobre RAW (TCP) con TLS o REALITY.",
+      "transport": "Este enlace usa un transporte, o un modo de transporte, que Owl no admite. Owl admite RAW (TCP), WebSocket, gRPC, HTTPUpgrade y XHTTP, pero no mKCP, HTTP/2 ni QUIC.",
+      "encryption": "Este enlace usa un ajuste de cifrado que Owl no admite.",
+      "headerType": "Este enlace usa una ofuscación de cabecera que Owl no admite.",
+      "fingerprint": "Este enlace pide una huella TLS que Owl no admite.",
       "sni": "Al enlace le falta un nombre de servidor (sni) válido.",
       "publicKey": "Al enlace le falta la clave pública de REALITY (pbk).",
-      "obfs": "Este enlace de Hysteria2 usa una ofuscación que Antidetect no admite. Antidetect solo admite Salamander.",
+      "obfs": "Este enlace de Hysteria2 usa una ofuscación que Owl no admite. Owl solo admite Salamander.",
       "scheme": "Eso no es un enlace para compartir admitido. Debe empezar por vless://, vmess://, trojan://, hysteria2:// o hy2://.",
-      "parameter": "El enlace contiene una opción que Antidetect no admite.",
+      "parameter": "El enlace contiene una opción que Owl no admite.",
       "malformed": "El enlace para compartir no es válido."
     },
     "camoufoxRemoved": "Camoufox ya no es compatible. Vuelve a crear este perfil con Wayfern.",
@@ -2398,7 +2398,7 @@
     "profileExportFailed": "No se pudo exportar este perfil. {{detail}}",
     "profileExportTooLarge": "Este perfil es demasiado grande para exportarlo. Borra parte de sus datos de navegación e inténtalo de nuevo.",
     "profileImportFailed": "No se pudo leer este archivo. {{detail}}",
-    "profileImportTooNew": "Este archivo se creó con una versión más reciente de Antidetect. Actualiza la aplicación e inténtalo de nuevo.",
+    "profileImportTooNew": "Este archivo se creó con una versión más reciente de Owl. Actualiza la aplicación e inténtalo de nuevo.",
     "profileImportUnsafeArchive": "Este archivo intenta escribir fuera de la carpeta del perfil, así que se rechazó.",
     "recordingAlreadyRunning": "Ya hay una grabación en curso. Deténla antes de empezar otra.",
     "profileNotRunning": "El navegador de este perfil no se está ejecutando. Inícialo primero.",
@@ -2458,12 +2458,12 @@
     "syncDisplayTooSmall": "La pantalla es demasiado pequeña para {{windows}} ventanas en esa disposición.",
     "syncArrangeFailed": "No se pudo mover ninguna ventana.",
     "extensionPathInvalid": "Esa ruta no está permitida: contiene '..'.",
-    "systemProxyUnreachable": "Antidetect no pudo conectarse a través del proxy del sistema {{proxy}}. Corrige o desactiva el proxy en la configuración de red del sistema e inténtalo de nuevo.",
+    "systemProxyUnreachable": "Owl no pudo conectarse a través del proxy del sistema {{proxy}}. Corrige o desactiva el proxy en la configuración de red del sistema e inténtalo de nuevo.",
     "profileRouteRequired": "Este perfil no tiene proxy ni VPN. Los inicios sin ellos están bloqueados en Ajustes, en Privacidad.",
     "profileRouteUnavailable": "El proxy o la VPN de este perfil no está disponible, así que el inicio se detuvo para mantener oculta tu dirección IP. Asigna al perfil un proxy o una VPN que funcione.",
     "wayfernLaunchArgsRequiresPro": "Los argumentos de inicio personalizados requieren Pro o un plan superior. Borra los argumentos o mejora tu plan.",
     "wayfernLaunchArgInvalid": "Usa --name o --name=value para cada argumento. No se permiten caracteres de control.",
-    "wayfernLaunchArgReserved": "Antidetect controla {{argument}}. Elimina este argumento.",
+    "wayfernLaunchArgReserved": "Owl controla {{argument}}. Elimina este argumento.",
     "wayfernLaunchArgNotAllowed": "{{argument}} no es un argumento de inicio compatible. Elimínalo.",
     "wayfernLaunchArgValueInvalid": "El valor de {{argument}} no es compatible.",
     "wayfernLaunchArgsLimit": "Usa como máximo {{count}} argumentos de inicio, de hasta {{length}} caracteres cada uno.",
@@ -2502,7 +2502,7 @@
       "importProfileHint": "Trae perfiles de otra herramienta",
       "keyboardShortcuts": "Atajos de teclado",
       "keyboardShortcutsHint": "Ver todos los atajos",
-      "about": "Acerca de Antidetect",
+      "about": "Acerca de Owl",
       "aboutHint": "Versión e información de la aplicación",
       "trash": "Papelera",
       "trashHint": "Restaurar perfiles eliminados",
@@ -2516,7 +2516,7 @@
     "cookieBotRunning": "Cookie Bot: en ejecución ahora",
     "agent": "Agente",
     "agentWaiting": "Agente, solicitudes en espera: {{count}}",
-    "brand": "Antidetect"
+    "brand": "Owl"
   },
   "pageTitle": {
     "proxies": "Red",
@@ -2580,7 +2580,7 @@
     },
     "selfHosted": {
       "title": "Servidor de sincronización autoalojado",
-      "description": "Conecta Antidetect a tu propio servidor donut-sync para sincronizar perfiles, proxies, grupos y extensiones sin usar la nube alojada.",
+      "description": "Conecta Owl a tu propio servidor donut-sync para sincronizar perfiles, proxies, grupos y extensiones sin usar la nube alojada.",
       "disabledWhileLoggedIn": "La sincronización autoalojada no está disponible mientras estás conectado a tu cuenta de Donut. Cierra sesión para usar un servidor personalizado.",
       "connectionStatus": "Conexión:",
       "statusUnknown": "Sin probar",
@@ -2610,7 +2610,7 @@
       "stopProfile": "Detener {{name}}",
       "profileInfo": "Información — {{name}}",
       "createProfile": "Crear perfil",
-      "about": "Acerca de Antidetect"
+      "about": "Acerca de Owl"
     }
   },
   "shortcuts": {
@@ -2630,13 +2630,13 @@
     "openTips": "Abrir consejos"
   },
   "closeConfirm": {
-    "title": "¿Cerrar Antidetect?",
+    "title": "¿Cerrar Owl?",
     "description": "¿Quieres enviar la aplicación a la bandeja del sistema o salir?",
     "minimize": "Minimizar a la bandeja",
     "quit": "Salir"
   },
   "tray": {
-    "show": "Mostrar Antidetect",
+    "show": "Mostrar Owl",
     "quit": "Salir"
   },
   "onboarding": {
@@ -2657,13 +2657,13 @@
       "finish": "Finalizar"
     },
     "thankYou": {
-      "title": "Gracias por elegir Antidetect",
+      "title": "Gracias por elegir Owl",
       "body": "Ojalá ayude a hacer tu navegación más privada: cada identidad por separado y sin que nada salga de tu equipo. ¡Que lo disfrutes!",
       "cta": "Empezar a navegar"
     }
   },
   "welcome": {
-    "title": "Te damos la bienvenida a Antidetect",
+    "title": "Te damos la bienvenida a Owl",
     "tagline": "Un navegador antidetección de código abierto para gestionar muchas identidades a la vez.",
     "skip": "Omitir",
     "next": "Siguiente",
@@ -2707,7 +2707,7 @@
     },
     "license": {
       "title": "Licencias",
-      "body": "Antidetect es de código abierto y de uso gratuito.",
+      "body": "Owl es de código abierto y de uso gratuito.",
       "agree": "Entendido",
       "personalTitle": "Uso personal",
       "personalDesc": "Gratis para siempre.",
@@ -3115,16 +3115,16 @@
     "vpnExtensionConfirmed": "Herramienta de VPN o proxy conocida",
     "vpnExtensionLikely": "Parece una herramienta de VPN o proxy",
     "vpnExtensionCapability": "Tiene el permiso de proxy",
-    "vpnExtensionExplainer": "Si alguna de ellas redirige tu tráfico a otro lugar, la ubicación real del navegador dejará de coincidir con la zona horaria, el idioma y la geolocalización con los que se creó este perfil, y Antidetect no puede detectarlo desde fuera.",
+    "vpnExtensionExplainer": "Si alguna de ellas redirige tu tráfico a otro lugar, la ubicación real del navegador dejará de coincidir con la zona horaria, el idioma y la geolocalización con los que se creó este perfil, y Owl no puede detectarlo desde fuera.",
     "proxyCapableHeading": "Extensiones que pueden cambiar el proxy",
-    "proxyCapableIntro": "No parecen VPN, pero tienen el permiso de proxy de Chromium, que también necesitan los gestores de descargas y las herramientas de depuración. Antidetect no puede saber si alguna lo está usando:",
-    "sourceDonut": "Gestionada por Antidetect",
+    "proxyCapableIntro": "No parecen VPN, pero tienen el permiso de proxy de Chromium, que también necesitan los gestores de descargas y las herramientas de depuración. Owl no puede saber si alguna lo está usando:",
+    "sourceDonut": "Gestionada por Owl",
     "sourceBrowser": "Instalada en el perfil",
     "measurementUnreliable": "Una extensión de este perfil tiene el permiso de proxy, así que la comprobación de salida podría no reflejar la ruta que el navegador usa realmente.",
-    "scanIncompleteEncrypted": "Este perfil está cifrado, así que solo se pudieron comprobar las extensiones gestionadas por Antidetect.",
-    "scanIncompleteEphemeral": "Este perfil aún no tiene datos, así que solo se pudieron comprobar las extensiones gestionadas por Antidetect.",
+    "scanIncompleteEncrypted": "Este perfil está cifrado, así que solo se pudieron comprobar las extensiones gestionadas por Owl.",
+    "scanIncompleteEphemeral": "Este perfil aún no tiene datos, así que solo se pudieron comprobar las extensiones gestionadas por Owl.",
     "scanIncompletePartial": "El análisis de extensiones se interrumpió, así que puede que falten algunas.",
-    "probePending": "Todavía no se ha medido la salida del proxy. Antidetect la comprobará al iniciar y se detendrá si no coincide.",
+    "probePending": "Todavía no se ha medido la salida del proxy. Owl la comprobará al iniciar y se detendrá si no coincide.",
     "launchAnyway": "Iniciar de todos modos",
     "dontBlockAgain": "No bloquear de nuevo por esta discrepancia exacta",
     "dontWarnExtensions": "No volver a avisar sobre estas extensiones",
@@ -3132,7 +3132,7 @@
     "cancelledSummary": "{{cancelled}} de {{total}} inicios cancelados",
     "vpnExtensionEntry": " {{version}} — {{capability}}, {{source}}",
     "vpnExtensionEntryNoVersion": " — {{capability}}, {{source}}",
-    "scanIncompleteMissing": "Este perfil aún no se ha iniciado, así que solo se pudieron comprobar las extensiones gestionadas por Antidetect.",
+    "scanIncompleteMissing": "Este perfil aún no se ha iniciado, así que solo se pudieron comprobar las extensiones gestionadas por Owl.",
     "exitUnverifiedTimezone": "La huella digital de este perfil no declara ninguna zona horaria, así que la comprobación de salida no puede verificarla. El inicio no se bloquea, pero tampoco se comparó nada.",
     "exitUnverifiedLanguage": "El idioma de la huella digital de este perfil no se puede comparar con el país de salida, así que esa comprobación queda sin verificar, no aprobada."
   },
@@ -3519,7 +3519,7 @@
   },
   "groupBookmarks": {
     "title": "Marcadores de {{name}}",
-    "description": "Todos los perfiles de este grupo reciben estos marcadores en una carpeta que gestiona Antidetect. Los demás marcadores no se tocan.",
+    "description": "Todos los perfiles de este grupo reciben estos marcadores en una carpeta que gestiona Owl. Los demás marcadores no se tocan.",
     "editTooltip": "Marcadores del grupo ({{n}})",
     "empty": "Este grupo aún no tiene marcadores compartidos.",
     "addRow": "Añadir marcador",
@@ -3571,7 +3571,7 @@
       "fingerprintGate": {
         "label": "Control de huella",
         "title": "Mantén la huella coherente con la salida",
-        "body": "Antes de lanzar, Antidetect compara la zona horaria y el idioma de la salida del proxy con la huella del perfil y detiene cualquier discrepancia. Corrige la huella o desactiva el bloqueo en Avanzado si sabes lo que haces.",
+        "body": "Antes de lanzar, Owl compara la zona horaria y el idioma de la salida del proxy con la huella del perfil y detiene cualquier discrepancia. Corrige la huella o desactiva el bloqueo en Avanzado si sabes lo que haces.",
         "action": "Abrir ajustes avanzados"
       },
       "profilePassword": {
@@ -3589,7 +3589,7 @@
       "defaultBrowser": {
         "label": "Navegador predeterminado",
         "title": "Abre cada enlace en el perfil correcto",
-        "body": "Haz de Antidetect tu navegador predeterminado y cada enlace de otra aplicación preguntará qué perfil debe abrirlo.",
+        "body": "Haz de Owl tu navegador predeterminado y cada enlace de otra aplicación preguntará qué perfil debe abrirlo.",
         "action": "Abrir ajustes del navegador predeterminado"
       },
       "extensionGroups": {
@@ -3601,7 +3601,7 @@
       "selfHostedSync": {
         "label": "Sincronización propia",
         "title": "Haz copias en tu propio servidor",
-        "body": "Apunta Antidetect a un servidor donut-sync autoalojado y los perfiles, proxies y grupos se replicarán en él. Añade una contraseña de extremo a extremo y el servidor solo verá texto cifrado.",
+        "body": "Apunta Owl a un servidor donut-sync autoalojado y los perfiles, proxies y grupos se replicarán en él. Añade una contraseña de extremo a extremo y el servidor solo verá texto cifrado.",
         "action": "Abrir Cuenta"
       },
       "trash": {
@@ -3612,14 +3612,14 @@
       },
       "localApi": {
         "label": "API y MCP",
-        "title": "Automatiza Antidetect desde scripts y agentes",
+        "title": "Automatiza Owl desde scripts y agentes",
         "body": "La API REST local permite que los scripts listen, creen y configuren perfiles. Actívala en Integraciones y copia el token.",
         "action": "Abrir Integraciones"
       },
       "importProfiles": {
         "label": "Importar",
         "title": "Trae perfiles desde Chrome, Edge o Brave",
-        "body": "La importación copia cookies, inicios de sesión y extensiones de un perfil Chromium o de un archivo a un nuevo perfil de Antidetect, listo para lanzar.",
+        "body": "La importación copia cookies, inicios de sesión y extensiones de un perfil Chromium o de un archivo a un nuevo perfil de Owl, listo para lanzar.",
         "action": "Abrir Importar"
       },
       "cloudBackup": {

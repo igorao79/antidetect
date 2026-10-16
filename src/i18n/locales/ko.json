@@ -134,16 +134,16 @@
       "title": "기본 브라우저",
       "setAsDefault": "기본 브라우저로 설정",
       "alreadyDefault": "이미 기본 브라우저입니다",
-      "description": "기본 브라우저로 설정하면 Antidetect가 웹 링크를 처리하고 사용할 프로필을 선택할 수 있습니다.",
-      "setSuccess": "이제 Antidetect가 기본 브라우저입니다",
+      "description": "기본 브라우저로 설정하면 Owl가 웹 링크를 처리하고 사용할 프로필을 선택할 수 있습니다.",
+      "setSuccess": "이제 Owl가 기본 브라우저입니다",
       "setFailed": "기본 브라우저를 설정하지 못했습니다",
       "finishInSystemSettings": "Windows 설정에서 완료하세요",
-      "finishInSystemSettingsDescription": "Antidetect가 등록되었습니다. Windows 설정이 열려 있습니다. '웹 브라우저'에서 Antidetect를 선택하면 완료됩니다."
+      "finishInSystemSettingsDescription": "Owl가 등록되었습니다. Windows 설정이 열려 있습니다. '웹 브라우저'에서 Owl를 선택하면 완료됩니다."
     },
     "permissions": {
       "title": "시스템 권한",
       "loading": "권한 불러오는 중...",
-      "description": "이 권한은 Antidetect에서 실행된 브라우저가 시스템 리소스에 액세스할 수 있도록 합니다. 각 웹사이트는 여전히 개별적으로 권한을 요청합니다.",
+      "description": "이 권한은 Owl에서 실행된 브라우저가 시스템 리소스에 액세스할 수 있도록 합니다. 각 웹사이트는 여전히 개별적으로 권한을 요청합니다.",
       "microphone": "마이크",
       "microphoneDescription": "브라우저 애플리케이션의 마이크 액세스",
       "camera": "카메라",
@@ -200,7 +200,7 @@
       "copyLogsDescription": "최근 로그를 민감 정보가 제거된 묶음으로 복사합니다(최대 5MB). 모든 유형의 개인 데이터를 식별할 수는 없으므로 공유하기 전에 검토하세요."
     },
     "disableAutoUpdates": "앱 자동 업데이트 사용 안 함",
-    "disableAutoUpdatesDescription": "Antidetect 업데이트를 앱이 자동으로 확인하고 설치하지 않도록 합니다. 브라우저 업데이트는 영향을 받지 않습니다.",
+    "disableAutoUpdatesDescription": "Owl 업데이트를 앱이 자동으로 확인하고 설치하지 않도록 합니다. 브라우저 업데이트는 영향을 받지 않습니다.",
     "keepDecryptedProfilesInRam": "복호화된 프로필을 RAM에 유지",
     "keepDecryptedProfilesInRamDescription": "비밀번호로 보호된 프로필의 복호화된 RAM 사본을 실행 사이에 유지하여 시작 속도를 높입니다. 디스크의 사본은 그대로 암호화된 상태로 유지됩니다.",
     "privacy": {
@@ -230,9 +230,9 @@
       "chooseTitle": "데이터 디렉터리로 쓸 폴더를 선택하세요",
       "move": "옮기기",
       "willMoveTo": "모두 옮겨질 위치",
-      "moved": "데이터 디렉터리를 옮겼습니다. Antidetect를 다시 시작하면 적용됩니다.",
+      "moved": "데이터 디렉터리를 옮겼습니다. Owl를 다시 시작하면 적용됩니다.",
       "reading": "데이터 디렉터리를 읽는 중…",
-      "restartRequired": "새 위치를 쓰려면 Antidetect를 다시 시작하세요. 그때까지는 이전 위치에서 동작합니다.",
+      "restartRequired": "새 위치를 쓰려면 Owl를 다시 시작하세요. 그때까지는 이전 위치에서 동작합니다.",
       "environmentOverride": "DONUTBROWSER_DATA_DIR이 설정되어 있어, 여기서 무엇을 골라도 앱은 그 위치를 사용합니다.",
       "missing": "선택한 데이터 디렉터리가 없습니다. 이동식 드라이브에 있다면 다시 연결하고 재시작하세요.",
       "useDefault": "기본 위치로 되돌리기",
@@ -280,7 +280,7 @@
       "extensions": "확장 프로그램"
     },
     "newProfile": "새로 만들기",
-    "donutLogo": "Antidetect 로고",
+    "donutLogo": "Owl 로고",
     "scrollGroupsLeft": "그룹 왼쪽으로 스크롤",
     "scrollGroupsRight": "그룹 오른쪽으로 스크롤"
   },
@@ -525,7 +525,7 @@
     "hourlyLimit": {
       "reached": "현재 요금제는 시간당 새 프로필 {{limit}}개까지 허용합니다. 약 {{minutes}}분 후에 다음 프로필을 만들 수 있습니다.",
       "warningTitle": "프로필을 너무 빠르게 만들고 있습니다",
-      "warning": "잠시 기다려 주세요. 1시간 안에 너무 많은 프로필을 만들면 24시간 이상 일시적으로 차단되며, 그동안 새 아이덴티티를 생성할 수 없습니다. 더 높은 시간당 한도가 필요하다면 유료 요금제로 Antidetect을 후원해 주세요."
+      "warning": "잠시 기다려 주세요. 1시간 안에 너무 많은 프로필을 만들면 24시간 이상 일시적으로 차단되며, 그동안 새 아이덴티티를 생성할 수 없습니다. 더 높은 시간당 한도가 필요하다면 유료 요금제로 Owl을 후원해 주세요."
     },
     "engine": {
       "label": "Browser engine",
@@ -1424,7 +1424,7 @@
     "addFontsPlaceholder": "글꼴 추가...",
     "enterAsJson": "{{title}}을(를) JSON으로 입력",
     "launchArgs": "실행 인수",
-    "launchArgsDescription": "한 줄에 하나의 인수를 --name 또는 --name=value 형식으로 입력하세요. 지원되는 인수만 사용할 수 있습니다(예: --disable-gpu, --mute-audio, --disable-features=Name). 프로필, 프록시, 창 및 디버깅 인수는 Antidetect이 관리합니다.",
+    "launchArgsDescription": "한 줄에 하나의 인수를 --name 또는 --name=value 형식으로 입력하세요. 지원되는 인수만 사용할 수 있습니다(예: --disable-gpu, --mute-audio, --disable-features=Name). 프로필, 프록시, 창 및 디버깅 인수는 Owl이 관리합니다.",
     "launchArgsSkipped": "{{profile}}에 사용자 지정 실행 인수가 적용되지 않았습니다. {{reason}}",
     "refreshFingerprint": "핑거프린트 새로 고침"
   },
@@ -1507,7 +1507,7 @@
     "launchHook": {
       "title": "실행 후크 URL",
       "label": "실행 후크 URL",
-      "description": "Antidetect는 프로필이 실행될 때마다 이 URL로 GET 요청을 보냅니다.",
+      "description": "Owl는 프로필이 실행될 때마다 이 URL로 GET 요청을 보냅니다.",
       "placeholder": "https://example.com/hooks/profile-launch",
       "invalidUrlHint": "유효한 http:// 또는 https:// URL을 입력하세요."
     },
@@ -1657,8 +1657,8 @@
     "selectedFolder": "선택한 폴더",
     "selectFolder": "폴더 선택",
     "linkFolder": "이 폴더에서 바로 불러오기",
-    "linkFolderOff": "폴더가 Antidetect으로 복사됩니다. 확장 프로그램을 옮길 수 있고 다른 기기와 동기화됩니다.",
-    "linkFolderOn": "Antidetect이 실행할 때마다 이 폴더에서 바로 확장 프로그램을 불러옵니다. 수정한 내용은 브라우저를 다시 시작할 때 적용되지만, 확장 프로그램은 이 컴퓨터에만 남고 동기화되지 않습니다.",
+    "linkFolderOff": "폴더가 Owl으로 복사됩니다. 확장 프로그램을 옮길 수 있고 다른 기기와 동기화됩니다.",
+    "linkFolderOn": "Owl이 실행할 때마다 이 폴더에서 바로 확장 프로그램을 불러옵니다. 수정한 내용은 브라우저를 다시 시작할 때 적용되지만, 확장 프로그램은 이 컴퓨터에만 남고 동기화되지 않습니다.",
     "replaceSource": "소스 교체",
     "linkedNoSync": "연결된 확장 프로그램은 이 컴퓨터에만 있어 동기화할 수 없습니다.",
     "uploadFailed": "확장 프로그램을 추가하지 못했습니다",
@@ -1691,7 +1691,7 @@
     "fromUrl": "링크에서",
     "fromUrlTooltip": "Chrome 웹 스토어 링크, 확장 프로그램 ID 또는 .crx/.zip 직접 링크에서 확장 프로그램을 추가합니다",
     "urlPlaceholder": "웹 스토어 링크, 확장 프로그램 ID 또는 .crx 링크",
-    "urlHint": "Antidetect은 HTTPS로 패키지를 내려받고, 저장하기 전에 이름과 버전을 읽습니다.",
+    "urlHint": "Owl은 HTTPS로 패키지를 내려받고, 저장하기 전에 이름과 버전을 읽습니다.",
     "fetchExtension": "가져오기",
     "fetching": "가져오는 중…",
     "fetchedIdentity": "{{name}} · 버전 {{version}}",
@@ -1981,7 +1981,7 @@
   },
   "wayfernTerms": {
     "title": "Wayfern 이용 약관",
-    "description": "Antidetect를 사용하기 전에 Wayfern의 이용 약관을 읽고 동의해야 합니다.",
+    "description": "Owl를 사용하기 전에 Wayfern의 이용 약관을 읽고 동의해야 합니다.",
     "reviewLabel": "다음 위치에서 이용 약관을 검토하세요:",
     "agreeNotice": "\"동의함\"을 클릭하면 이 약관에 동의하는 것입니다.",
     "acceptButton": "동의함",
@@ -2000,10 +2000,10 @@
   "permissionDialog": {
     "titleMicrophone": "마이크 액세스가 필요합니다",
     "titleCamera": "카메라 액세스가 필요합니다",
-    "descMicrophone": "Antidetect는 웹 브라우저에서 마이크 기능을 활성화하기 위해 마이크에 액세스해야 합니다. 마이크를 사용하려는 각 웹사이트는 여전히 개별적으로 권한을 요청합니다.",
-    "descCamera": "Antidetect는 웹 브라우저에서 카메라 기능을 활성화하기 위해 카메라에 액세스해야 합니다. 카메라를 사용하려는 각 웹사이트는 여전히 개별적으로 권한을 요청합니다.",
-    "grantedMicrophone": "권한이 허용되었습니다! 이제 Antidetect에서 실행된 브라우저가 마이크에 액세스할 수 있습니다.",
-    "grantedCamera": "권한이 허용되었습니다! 이제 Antidetect에서 실행된 브라우저가 카메라에 액세스할 수 있습니다.",
+    "descMicrophone": "Owl는 웹 브라우저에서 마이크 기능을 활성화하기 위해 마이크에 액세스해야 합니다. 마이크를 사용하려는 각 웹사이트는 여전히 개별적으로 권한을 요청합니다.",
+    "descCamera": "Owl는 웹 브라우저에서 카메라 기능을 활성화하기 위해 카메라에 액세스해야 합니다. 카메라를 사용하려는 각 웹사이트는 여전히 개별적으로 권한을 요청합니다.",
+    "grantedMicrophone": "권한이 허용되었습니다! 이제 Owl에서 실행된 브라우저가 마이크에 액세스할 수 있습니다.",
+    "grantedCamera": "권한이 허용되었습니다! 이제 Owl에서 실행된 브라우저가 카메라에 액세스할 수 있습니다.",
     "notGrantedMicrophone": "권한이 허용되지 않았습니다. 아래 버튼을 클릭하여 마이크에 대한 액세스를 요청하세요.",
     "notGrantedCamera": "권한이 허용되지 않았습니다. 아래 버튼을 클릭하여 카메라에 대한 액세스를 요청하세요.",
     "doneButton": "완료",
@@ -2123,7 +2123,7 @@
   },
   "appUpdate": {
     "toast": {
-      "updateFailed": "Antidetect 업데이트 실패",
+      "updateFailed": "Owl 업데이트 실패",
       "restartFailed": "재시작 실패",
       "updateReady": "업데이트 준비됨, 적용하려면 재시작하세요",
       "manualDownloadRequired": "수동 다운로드 필요",
@@ -2217,7 +2217,7 @@
     },
     "warnings": {
       "forgetWarningTitle": "중요: 이 비밀번호는 복구할 수 없습니다",
-      "forgetWarningBody": "Antidetect는 이 비밀번호를 재설정, 복구 또는 우회할 수 없습니다. 잊어버리면 이 프로필의 데이터에 영구적으로 액세스할 수 없게 됩니다."
+      "forgetWarningBody": "Owl는 이 비밀번호를 재설정, 복구 또는 우회할 수 없습니다. 잊어버리면 이 프로필의 데이터에 영구적으로 액세스할 수 없게 됩니다."
     },
     "modes": {
       "set": "설정",
@@ -2260,7 +2260,7 @@
     "extensionNotADirectory": "해당 경로는 폴더가 아닙니다.",
     "extensionManifestMissing": "해당 폴더에 manifest.json이 없습니다. 확장 프로그램의 manifest.json이 있는 폴더를 선택하세요.",
     "extensionManifestInvalid": "해당 폴더의 manifest.json을 읽을 수 없습니다.",
-    "extensionDirTooLarge": "폴더가 너무 커서 Antidetect으로 복사할 수 없습니다(최대 256MB, 20,000개 파일). 대신 폴더를 연결해 사용하세요.",
+    "extensionDirTooLarge": "폴더가 너무 커서 Owl으로 복사할 수 없습니다(최대 256MB, 20,000개 파일). 대신 폴더를 연결해 사용하세요.",
     "extensionPathHasComma": "폴더 경로에 쉼표가 있어 Chromium이 불러올 수 없습니다. 폴더 이름을 바꾸거나 옮기세요.",
     "extensionLinkRequiresDirectory": "폴더만 그 자리에서 불러올 수 있습니다. 압축 파일을 추가하려면 연결을 끄세요.",
     "extensionLinkedCannotSync": "이 확장 프로그램은 이 컴퓨터의 폴더에서 불러오므로 동기화할 항목이 없습니다.",
@@ -2300,14 +2300,14 @@
     "dnsRulesSaveFailed": "DNS 규칙을 저장하지 못했습니다.",
     "dnsRulesExportFailed": "DNS 규칙을 내보내지 못했습니다.",
     "fingerprintMatchFailed": "지문을 프록시에 맞추지 못했습니다.",
-    "proxySidecarVersionMismatch": "Antidetect 파일에 서로 다른 버전이 섞여 있습니다. 최신 업데이트를 다시 설치해 주세요. 프로필은 안전하게 유지됩니다.",
+    "proxySidecarVersionMismatch": "Owl 파일에 서로 다른 버전이 섞여 있습니다. 최신 업데이트를 다시 설치해 주세요. 프로필은 안전하게 유지됩니다.",
     "updateProfilesRunning": "업데이트를 설치하기 전에 실행 중인 모든 프로필을 중지하세요.",
-    "updatePreparationFailed": "Antidetect가 백그라운드 네트워크 프로세스를 안전하게 중지하지 못했습니다. 컴퓨터를 다시 시작한 후 업데이트를 다시 시도하세요.",
+    "updatePreparationFailed": "Owl가 백그라운드 네트워크 프로세스를 안전하게 중지하지 못했습니다. 컴퓨터를 다시 시작한 후 업데이트를 다시 시도하세요.",
     "wayfernTermsRequired": "Wayfern을 사용하려면 Wayfern 이용 약관에 동의하세요.",
     "apiPortUnavailable": "API 서버에서 사용 가능한 포트를 찾지 못했습니다.",
     "mcpAgentUnknown": "이 MCP 클라이언트는 지원되지 않습니다.",
-    "mcpAgentInstallFailed": "MCP 클라이언트에 Antidetect를 추가하지 못했습니다: {{detail}}",
-    "mcpAgentRemoveFailed": "MCP 클라이언트에서 Antidetect를 제거하지 못했습니다: {{detail}}",
+    "mcpAgentInstallFailed": "MCP 클라이언트에 Owl를 추가하지 못했습니다: {{detail}}",
+    "mcpAgentRemoveFailed": "MCP 클라이언트에서 Owl를 제거하지 못했습니다: {{detail}}",
     "vlessConfigInvalid": "공유 링크가 올바르지 않습니다.",
     "xrayUnavailable": "이 시스템에서는 Xray-core를 사용할 수 없습니다.",
     "xrayUnsupportedOs": "VLESS, VMess, Trojan, Hysteria2 프록시는 macOS 12 이상이 필요합니다.",
@@ -2355,17 +2355,17 @@
     "vpnWorkerStartFailed": "VPN 연결을 시작하지 못했습니다: {{detail}}",
     "exitProbeFailed": "프록시 출구 노드에 연결할 수 없어 위치를 확인하지 못했습니다.",
     "vlessUnsupported": {
-      "security": "이 링크는 Antidetect이 지원하지 않는 보안 설정을 사용합니다. Antidetect은 none, TLS, REALITY를 지원하며, REALITY는 RAW (TCP), gRPC, XHTTP에서만 사용할 수 있습니다.",
-      "flow": "이 링크는 Antidetect이 지원하지 않는 flow를 사용합니다. XTLS Vision은 TLS 또는 REALITY를 사용하는 RAW (TCP) 위의 VLESS에서만 작동합니다.",
-      "transport": "이 링크는 Antidetect이 지원하지 않는 전송 방식 또는 전송 모드를 사용합니다. Antidetect은 RAW (TCP), WebSocket, gRPC, HTTPUpgrade, XHTTP를 지원하지만 mKCP, HTTP/2, QUIC은 지원하지 않습니다.",
-      "encryption": "이 링크는 Antidetect이 지원하지 않는 암호화 설정을 사용합니다.",
-      "headerType": "이 링크는 Antidetect이 지원하지 않는 헤더 난독화를 사용합니다.",
-      "fingerprint": "이 링크는 Antidetect이 지원하지 않는 TLS 지문을 요청합니다.",
+      "security": "이 링크는 Owl이 지원하지 않는 보안 설정을 사용합니다. Owl은 none, TLS, REALITY를 지원하며, REALITY는 RAW (TCP), gRPC, XHTTP에서만 사용할 수 있습니다.",
+      "flow": "이 링크는 Owl이 지원하지 않는 flow를 사용합니다. XTLS Vision은 TLS 또는 REALITY를 사용하는 RAW (TCP) 위의 VLESS에서만 작동합니다.",
+      "transport": "이 링크는 Owl이 지원하지 않는 전송 방식 또는 전송 모드를 사용합니다. Owl은 RAW (TCP), WebSocket, gRPC, HTTPUpgrade, XHTTP를 지원하지만 mKCP, HTTP/2, QUIC은 지원하지 않습니다.",
+      "encryption": "이 링크는 Owl이 지원하지 않는 암호화 설정을 사용합니다.",
+      "headerType": "이 링크는 Owl이 지원하지 않는 헤더 난독화를 사용합니다.",
+      "fingerprint": "이 링크는 Owl이 지원하지 않는 TLS 지문을 요청합니다.",
       "sni": "링크에 올바른 서버 이름(sni)이 없습니다.",
       "publicKey": "링크에 REALITY 공개 키(pbk)가 없습니다.",
-      "obfs": "이 Hysteria2 링크는 Antidetect이 지원하지 않는 난독화를 사용합니다. Antidetect은 Salamander만 지원합니다.",
+      "obfs": "이 Hysteria2 링크는 Owl이 지원하지 않는 난독화를 사용합니다. Owl은 Salamander만 지원합니다.",
       "scheme": "지원되는 공유 링크가 아닙니다. vless://, vmess://, trojan://, hysteria2:// 또는 hy2:// 로 시작해야 합니다.",
-      "parameter": "링크에 Antidetect이 지원하지 않는 옵션이 포함되어 있습니다.",
+      "parameter": "링크에 Owl이 지원하지 않는 옵션이 포함되어 있습니다.",
       "malformed": "공유 링크가 올바르지 않습니다."
     },
     "camoufoxRemoved": "Camoufox는 더 이상 지원되지 않습니다. Wayfern으로 이 프로필을 다시 만드세요.",
@@ -2388,7 +2388,7 @@
     "profileExportFailed": "이 프로필을 내보낼 수 없습니다. {{detail}}",
     "profileExportTooLarge": "이 프로필은 너무 커서 내보낼 수 없습니다. 검색 데이터를 일부 지우고 다시 시도하세요.",
     "profileImportFailed": "이 아카이브를 읽을 수 없습니다. {{detail}}",
-    "profileImportTooNew": "이 아카이브는 더 새로운 버전의 Antidetect에서 만들어졌습니다. 앱을 업데이트한 뒤 다시 시도하세요.",
+    "profileImportTooNew": "이 아카이브는 더 새로운 버전의 Owl에서 만들어졌습니다. 앱을 업데이트한 뒤 다시 시도하세요.",
     "profileImportUnsafeArchive": "이 아카이브가 프로필 폴더 밖에 쓰려고 해서 거부했습니다.",
     "recordingAlreadyRunning": "이미 기록이 진행 중입니다. 새로 시작하기 전에 중지하세요.",
     "profileNotRunning": "이 프로필의 브라우저가 실행 중이 아닙니다. 먼저 시작하세요.",
@@ -2453,7 +2453,7 @@
     "profileRouteUnavailable": "이 프로필의 프록시나 VPN을 사용할 수 없어 IP 주소를 숨기기 위해 실행을 중단했습니다. 작동하는 프록시나 VPN을 프로필에 지정하세요.",
     "wayfernLaunchArgsRequiresPro": "사용자 지정 실행 인수에는 Pro 이상의 요금제가 필요합니다. 인수를 지우거나 요금제를 업그레이드하세요.",
     "wayfernLaunchArgInvalid": "각 인수에 --name 또는 --name=value를 사용하세요. 제어 문자는 허용되지 않습니다.",
-    "wayfernLaunchArgReserved": "{{argument}}은(는) Antidetect이 관리합니다. 이 인수를 제거하세요.",
+    "wayfernLaunchArgReserved": "{{argument}}은(는) Owl이 관리합니다. 이 인수를 제거하세요.",
     "wayfernLaunchArgNotAllowed": "{{argument}}은(는) 지원되지 않는 실행 인수입니다. 제거하세요.",
     "wayfernLaunchArgValueInvalid": "{{argument}}의 값은 지원되지 않습니다.",
     "wayfernLaunchArgsLimit": "실행 인수는 최대 {{count}}개, 각각 {{length}}자 이하로 입력하세요.",
@@ -2492,7 +2492,7 @@
       "importProfileHint": "다른 도구에서 프로필 가져오기",
       "keyboardShortcuts": "키보드 단축키",
       "keyboardShortcutsHint": "모든 단축키 보기",
-      "about": "Antidetect 정보",
+      "about": "Owl 정보",
       "aboutHint": "버전 및 앱 정보",
       "trash": "휴지통",
       "trashHint": "삭제한 프로필 복원",
@@ -2506,7 +2506,7 @@
     "cookieBotRunning": "Cookie Bot — 실행 중",
     "agent": "에이전트",
     "agentWaiting": "에이전트, 기다리는 요청: {{count}}",
-    "brand": "Antidetect"
+    "brand": "Owl"
   },
   "pageTitle": {
     "proxies": "네트워크",
@@ -2570,7 +2570,7 @@
     },
     "selfHosted": {
       "title": "자체 호스팅 동기화 서버",
-      "description": "호스팅 클라우드를 사용하지 않고 프로필, 프록시, 그룹 및 확장 프로그램을 동기화하려면 Antidetect을 자체 donut-sync 서버로 연결하세요.",
+      "description": "호스팅 클라우드를 사용하지 않고 프로필, 프록시, 그룹 및 확장 프로그램을 동기화하려면 Owl을 자체 donut-sync 서버로 연결하세요.",
       "disabledWhileLoggedIn": "Donut 계정에 로그인되어 있는 동안에는 자체 호스팅 동기화를 사용할 수 없습니다. 사용자 지정 서버를 사용하려면 로그아웃하세요.",
       "connectionStatus": "연결:",
       "statusUnknown": "테스트 안 됨",
@@ -2600,7 +2600,7 @@
       "stopProfile": "{{name}} 중지",
       "profileInfo": "정보 — {{name}}",
       "createProfile": "프로필 생성",
-      "about": "Antidetect 정보"
+      "about": "Owl 정보"
     }
   },
   "shortcuts": {
@@ -2620,13 +2620,13 @@
     "openTips": "팁 열기"
   },
   "closeConfirm": {
-    "title": "Antidetect를 닫으시겠습니까?",
+    "title": "Owl를 닫으시겠습니까?",
     "description": "앱을 시스템 트레이로 보내시겠습니까, 아니면 종료하시겠습니까?",
     "minimize": "트레이로 최소화",
     "quit": "종료"
   },
   "tray": {
-    "show": "Antidetect 표시",
+    "show": "Owl 표시",
     "quit": "종료"
   },
   "onboarding": {
@@ -2647,13 +2647,13 @@
       "finish": "완료"
     },
     "thankYou": {
-      "title": "Antidetect를 선택해 주셔서 감사합니다",
+      "title": "Owl를 선택해 주셔서 감사합니다",
       "body": "각 ID를 분리하고 어떤 데이터도 기기 밖으로 내보내지 않으면서 더 프라이빗한 브라우징에 도움이 되길 바랍니다. 즐겁게 사용하세요.",
       "cta": "브라우징 시작"
     }
   },
   "welcome": {
-    "title": "Antidetect에 오신 것을 환영합니다",
+    "title": "Owl에 오신 것을 환영합니다",
     "tagline": "여러 ID를 한 번에 관리할 수 있는 오픈 소스 안티디텍트 브라우저입니다.",
     "skip": "건너뛰기",
     "next": "다음",
@@ -2697,7 +2697,7 @@
     },
     "license": {
       "title": "라이선스",
-      "body": "Antidetect는 오픈 소스이며 무료로 사용할 수 있습니다.",
+      "body": "Owl는 오픈 소스이며 무료로 사용할 수 있습니다.",
       "agree": "이해했습니다",
       "personalTitle": "개인 사용",
       "personalDesc": "영구적으로 무료입니다.",
@@ -3085,16 +3085,16 @@
     "vpnExtensionConfirmed": "알려진 VPN 또는 프록시 도구",
     "vpnExtensionLikely": "VPN 또는 프록시 도구로 보임",
     "vpnExtensionCapability": "프록시 권한을 보유함",
-    "vpnExtensionExplainer": "이 중 하나가 트래픽을 다른 곳으로 보내면 브라우저의 실제 위치가 이 프로필을 만들 때 사용한 시간대, 언어, 지리 정보와 더 이상 일치하지 않으며, Antidetect은 외부에서 이를 감지할 수 없습니다.",
+    "vpnExtensionExplainer": "이 중 하나가 트래픽을 다른 곳으로 보내면 브라우저의 실제 위치가 이 프로필을 만들 때 사용한 시간대, 언어, 지리 정보와 더 이상 일치하지 않으며, Owl은 외부에서 이를 감지할 수 없습니다.",
     "proxyCapableHeading": "프록시를 변경할 수 있는 확장 프로그램",
-    "proxyCapableIntro": "VPN으로 보이지는 않지만 Chromium의 프록시 권한을 가지고 있습니다. 다운로드 관리자나 디버깅 도구에도 필요한 권한이며, 실제로 사용하는지는 Antidetect이 알 수 없습니다:",
-    "sourceDonut": "Antidetect이 관리",
+    "proxyCapableIntro": "VPN으로 보이지는 않지만 Chromium의 프록시 권한을 가지고 있습니다. 다운로드 관리자나 디버깅 도구에도 필요한 권한이며, 실제로 사용하는지는 Owl이 알 수 없습니다:",
+    "sourceDonut": "Owl이 관리",
     "sourceBrowser": "프로필에 설치됨",
     "measurementUnreliable": "이 프로필의 확장 프로그램이 프록시 권한을 가지고 있어, 출구 확인 결과가 브라우저의 실제 경로와 다를 수 있습니다.",
-    "scanIncompleteEncrypted": "이 프로필은 암호화되어 있어 Antidetect이 관리하는 확장 프로그램만 확인할 수 있었습니다.",
-    "scanIncompleteEphemeral": "이 프로필에는 아직 데이터가 없어 Antidetect이 관리하는 확장 프로그램만 확인할 수 있었습니다.",
+    "scanIncompleteEncrypted": "이 프로필은 암호화되어 있어 Owl이 관리하는 확장 프로그램만 확인할 수 있었습니다.",
+    "scanIncompleteEphemeral": "이 프로필에는 아직 데이터가 없어 Owl이 관리하는 확장 프로그램만 확인할 수 있었습니다.",
     "scanIncompletePartial": "확장 프로그램 검사가 중단되어 일부가 표시되지 않을 수 있습니다.",
-    "probePending": "프록시 출구를 아직 측정하지 않았습니다. Antidetect이 시작 중에 확인하고 일치하지 않으면 중단합니다.",
+    "probePending": "프록시 출구를 아직 측정하지 않았습니다. Owl이 시작 중에 확인하고 일치하지 않으면 중단합니다.",
     "launchAnyway": "그래도 실행",
     "dontBlockAgain": "이 불일치에 대해 다시 차단하지 않기",
     "dontWarnExtensions": "이 확장 프로그램에 대해 다시 경고하지 않기",
@@ -3102,7 +3102,7 @@
     "cancelledSummary": "{{total}}개 중 {{cancelled}}개의 실행이 취소됨",
     "vpnExtensionEntry": " {{version}} — {{capability}}, {{source}}",
     "vpnExtensionEntryNoVersion": " — {{capability}}, {{source}}",
-    "scanIncompleteMissing": "이 프로필은 아직 실행된 적이 없어 Antidetect이 관리하는 확장 프로그램만 확인할 수 있었습니다.",
+    "scanIncompleteMissing": "이 프로필은 아직 실행된 적이 없어 Owl이 관리하는 확장 프로그램만 확인할 수 있었습니다.",
     "exitUnverifiedTimezone": "이 프로필의 핑거프린트에 시간대가 없어 출구 검사로 확인할 수 없습니다. 실행은 차단되지 않지만 비교된 것도 없습니다.",
     "exitUnverifiedLanguage": "이 프로필의 핑거프린트 언어는 출구 국가와 비교할 수 없으므로, 이 검사는 통과가 아니라 미확인 상태입니다."
   },
@@ -3486,7 +3486,7 @@
   },
   "groupBookmarks": {
     "title": "{{name}} 북마크",
-    "description": "이 그룹의 모든 프로필이 Antidetect이 관리하는 폴더로 이 북마크를 받습니다. 다른 북마크는 그대로 유지됩니다.",
+    "description": "이 그룹의 모든 프로필이 Owl이 관리하는 폴더로 이 북마크를 받습니다. 다른 북마크는 그대로 유지됩니다.",
     "editTooltip": "그룹 북마크 ({{n}})",
     "empty": "이 그룹에는 아직 공유 북마크가 없습니다.",
     "addRow": "북마크 추가",
@@ -3538,7 +3538,7 @@
       "fingerprintGate": {
         "label": "핑거프린트 검사",
         "title": "핑거프린트를 출구와 일치시키기",
-        "body": "실행 전에 Antidetect은 프록시 출구의 시간대와 언어를 프로필 핑거프린트와 비교하고 불일치가 있으면 실행을 막습니다. 핑거프린트를 고치거나, 잘 알고 있다면 고급 설정에서 게이트를 끄세요.",
+        "body": "실행 전에 Owl은 프록시 출구의 시간대와 언어를 프로필 핑거프린트와 비교하고 불일치가 있으면 실행을 막습니다. 핑거프린트를 고치거나, 잘 알고 있다면 고급 설정에서 게이트를 끄세요.",
         "action": "고급 설정 열기"
       },
       "profilePassword": {
@@ -3556,7 +3556,7 @@
       "defaultBrowser": {
         "label": "기본 브라우저",
         "title": "모든 링크를 알맞은 프로필에서 열기",
-        "body": "Antidetect을 기본 브라우저로 설정하면 다른 앱에서 온 링크마다 어떤 프로필로 열지 물어봅니다.",
+        "body": "Owl을 기본 브라우저로 설정하면 다른 앱에서 온 링크마다 어떤 프로필로 열지 물어봅니다.",
         "action": "기본 브라우저 설정 열기"
       },
       "extensionGroups": {
@@ -3579,14 +3579,14 @@
       },
       "localApi": {
         "label": "API와 MCP",
-        "title": "스크립트와 에이전트로 Antidetect 자동화",
+        "title": "스크립트와 에이전트로 Owl 자동화",
         "body": "로컬 REST API로 스크립트가 프로필을 나열, 생성, 설정할 수 있습니다. 통합에서 켜고 토큰을 복사하세요.",
         "action": "통합 열기"
       },
       "importProfiles": {
         "label": "가져오기",
         "title": "Chrome, Edge, Brave에서 프로필 가져오기",
-        "body": "가져오기는 Chromium 프로필이나 아카이브의 쿠키, 로그인 정보, 확장 프로그램을 새 Antidetect 프로필로 복사해 바로 실행할 수 있게 합니다.",
+        "body": "가져오기는 Chromium 프로필이나 아카이브의 쿠키, 로그인 정보, 확장 프로그램을 새 Owl 프로필로 복사해 바로 실행할 수 있게 합니다.",
         "action": "가져오기 열기"
       },
       "cloudBackup": {

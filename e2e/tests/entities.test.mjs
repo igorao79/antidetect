@@ -1609,7 +1609,7 @@ test("proxies distribute one to one, and group bookmarks reach the profile's Boo
     let document = await readBookmarks();
     let managed = managedFolderOf(document);
     assert.equal(managed.length, 1);
-    assert.equal(managed[0].name, "Antidetect Group Bookmarks");
+    assert.equal(managed[0].name, "Owl Group Bookmarks");
     assert.deepEqual(
       managed[0].children.map((child) => child.name),
       ["Support", "Ops"],

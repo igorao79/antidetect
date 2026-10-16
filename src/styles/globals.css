@@ -69,7 +69,7 @@
 :root {
   --radius: 0.5rem;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
-  /* Antidetect Daylight: the light counterpart of Graphite below. Cool paper,
+  /* Owl Daylight: the light counterpart of Graphite below. Cool paper,
      ink with a blue cast, the same violet for everything that acts. */
   --background: #f3f5f9;
   --foreground: #11141b;
@@ -114,7 +114,7 @@
 }
 
 .dark {
-  /* Antidetect Graphite: blue-black graphite surfaces, one violet for
+  /* Owl Graphite: blue-black graphite surfaces, one violet for
      everything that acts, mint for what is running. */
   --background: #0a0c11;
   --foreground: #e9edf5;

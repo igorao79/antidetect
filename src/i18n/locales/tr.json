@@ -134,16 +134,16 @@
       "title": "Varsayılan Tarayıcı",
       "setAsDefault": "Varsayılan Tarayıcı Olarak Ayarla",
       "alreadyDefault": "Zaten Varsayılan Tarayıcı",
-      "description": "Varsayılan olarak ayarlandığında, Antidetect web bağlantılarını yönetir ve hangi profilin kullanılacağını seçmenize olanak tanır.",
-      "setSuccess": "Antidetect artık varsayılan tarayıcınız",
+      "description": "Varsayılan olarak ayarlandığında, Owl web bağlantılarını yönetir ve hangi profilin kullanılacağını seçmenize olanak tanır.",
+      "setSuccess": "Owl artık varsayılan tarayıcınız",
       "setFailed": "Varsayılan tarayıcı ayarlanamadı",
       "finishInSystemSettings": "Windows Ayarları'nda tamamlayın",
-      "finishInSystemSettingsDescription": "Antidetect kaydedildi. Windows Ayarları açıldı: tamamlamak için Web tarayıcısı bölümünden Antidetect'ı seçin."
+      "finishInSystemSettingsDescription": "Owl kaydedildi. Windows Ayarları açıldı: tamamlamak için Web tarayıcısı bölümünden Owl'ı seçin."
     },
     "permissions": {
       "title": "Sistem İzinleri",
       "loading": "İzinler yükleniyor...",
-      "description": "Bu izinler, Antidetect'dan başlatılan tarayıcıların sistem kaynaklarına erişmesine olanak tanır. Her web sitesi yine de sizden ayrı ayrı izin isteyecektir.",
+      "description": "Bu izinler, Owl'dan başlatılan tarayıcıların sistem kaynaklarına erişmesine olanak tanır. Her web sitesi yine de sizden ayrı ayrı izin isteyecektir.",
       "microphone": "Mikrofon",
       "microphoneDescription": "Tarayıcı uygulamaları için mikrofon erişimi",
       "camera": "Kamera",
@@ -200,7 +200,7 @@
       "copyLogsDescription": "Son günlüklerin hassas verileri ayıklanmış bir paketini kopyalar (en fazla 5 MB). Ayıklama her tür kişisel veriyi belirleyemeyeceğinden paylaşmadan önce inceleyin."
     },
     "disableAutoUpdates": "Uygulama Otomatik Güncellemelerini Devre Dışı Bırak",
-    "disableAutoUpdatesDescription": "Uygulamanın Antidetect güncellemelerini otomatik olarak denetlemesini ve yüklemesini engelleyin. Tarayıcı güncellemeleri bundan etkilenmez.",
+    "disableAutoUpdatesDescription": "Uygulamanın Owl güncellemelerini otomatik olarak denetlemesini ve yüklemesini engelleyin. Tarayıcı güncellemeleri bundan etkilenmez.",
     "keepDecryptedProfilesInRam": "Şifresi Çözülmüş Profilleri RAM'de Tut",
     "keepDecryptedProfilesInRamDescription": "Daha hızlı başlatma için parola korumalı profillerin şifresi çözülmüş RAM kopyasını başlatmalar arasında koruyun. Diskteki kopya her durumda şifreli kalır.",
     "privacy": {
@@ -230,9 +230,9 @@
       "chooseTitle": "Veri dizini için bir klasör seçin",
       "move": "Taşı",
       "willMoveTo": "Her şey buraya taşınır",
-      "moved": "Veri dizini taşındı. Kullanmak için Antidetect'ı yeniden başlatın.",
+      "moved": "Veri dizini taşındı. Kullanmak için Owl'ı yeniden başlatın.",
       "reading": "Veri dizini okunuyor…",
-      "restartRequired": "Yeni konumu kullanmak için Antidetect'ı yeniden başlatın. O zamana kadar eski konumdan çalışır.",
+      "restartRequired": "Yeni konumu kullanmak için Owl'ı yeniden başlatın. O zamana kadar eski konumdan çalışır.",
       "environmentOverride": "DONUTBROWSER_DATA_DIR tanımlı; burada ne seçilirse seçilsin uygulama o konumu kullanır.",
       "missing": "Seçilen veri dizini yok. Çıkarılabilir bir sürücüdeyse tekrar takıp yeniden başlatın.",
       "useDefault": "Yeniden varsayılan konumu kullan",
@@ -280,7 +280,7 @@
       "extensions": "Uzantılar"
     },
     "newProfile": "Yeni",
-    "donutLogo": "Antidetect logosu",
+    "donutLogo": "Owl logosu",
     "scrollGroupsLeft": "Grupları sola kaydır",
     "scrollGroupsRight": "Grupları sağa kaydır"
   },
@@ -525,7 +525,7 @@
     "hourlyLimit": {
       "reached": "Planınız saatte {{limit}} yeni profile izin verir. Bir sonrakini yaklaşık {{minutes}} dk sonra oluşturabilirsiniz.",
       "warningTitle": "Profilleri çok hızlı oluşturuyorsunuz",
-      "warning": "Lütfen biraz bekleyin. Bir saatte çok fazla profil oluşturmak, 24 saat veya daha uzun süren geçici bir engele yol açar; bu süre boyunca yeni kimlik oluşturamazsınız. Daha yüksek bir saatlik sınıra ihtiyacınız varsa, Antidetect'u ücretli bir planla desteklemeyi düşünün."
+      "warning": "Lütfen biraz bekleyin. Bir saatte çok fazla profil oluşturmak, 24 saat veya daha uzun süren geçici bir engele yol açar; bu süre boyunca yeni kimlik oluşturamazsınız. Daha yüksek bir saatlik sınıra ihtiyacınız varsa, Owl'u ücretli bir planla desteklemeyi düşünün."
     },
     "engine": {
       "label": "Browser engine",
@@ -1424,7 +1424,7 @@
     "addFontsPlaceholder": "Yazı tipi ekleyin...",
     "enterAsJson": "{{title}} değerini JSON olarak girin",
     "launchArgs": "Başlatma argümanları",
-    "launchArgsDescription": "Her satıra bir argüman girin: --name veya --name=value. Yalnızca desteklenen argümanlar kabul edilir; örneğin --disable-gpu, --mute-audio veya --disable-features=Name. Profil, proxy, pencere ve hata ayıklama argümanlarını Antidetect yönetir.",
+    "launchArgsDescription": "Her satıra bir argüman girin: --name veya --name=value. Yalnızca desteklenen argümanlar kabul edilir; örneğin --disable-gpu, --mute-audio veya --disable-features=Name. Profil, proxy, pencere ve hata ayıklama argümanlarını Owl yönetir.",
     "launchArgsSkipped": "{{profile}} için özel başlatma argümanları kullanılmadı. {{reason}}",
     "refreshFingerprint": "Refresh Fingerprint"
   },
@@ -1507,7 +1507,7 @@
     "launchHook": {
       "title": "Başlatma Kancası URL'si",
       "label": "Başlatma Kancası URL'si",
-      "description": "Antidetect, profil her başlatıldığında bu URL'ye bir GET isteği gönderir.",
+      "description": "Owl, profil her başlatıldığında bu URL'ye bir GET isteği gönderir.",
       "placeholder": "https://example.com/hooks/profile-launch",
       "invalidUrlHint": "Geçerli bir http:// veya https:// URL'si girin."
     },
@@ -1657,8 +1657,8 @@
     "selectedFolder": "Seçilen klasör",
     "selectFolder": "Klasör seç",
     "linkFolder": "Doğrudan bu klasörden yükle",
-    "linkFolderOff": "Klasör Antidetect'a kopyalanır. Uzantı taşınabilir olur ve diğer cihazlarınızla eşitlenir.",
-    "linkFolderOn": "Antidetect her başlatmada uzantıyı doğrudan bu klasörden yükler. Değişiklikleriniz tarayıcının bir sonraki açılışında geçerli olur, ancak uzantı yalnızca bu bilgisayarda kalır ve hiçbir zaman eşitlenmez.",
+    "linkFolderOff": "Klasör Owl'a kopyalanır. Uzantı taşınabilir olur ve diğer cihazlarınızla eşitlenir.",
+    "linkFolderOn": "Owl her başlatmada uzantıyı doğrudan bu klasörden yükler. Değişiklikleriniz tarayıcının bir sonraki açılışında geçerli olur, ancak uzantı yalnızca bu bilgisayarda kalır ve hiçbir zaman eşitlenmez.",
     "replaceSource": "Kaynağı değiştir",
     "linkedNoSync": "Bağlı uzantılar yalnızca bu bilgisayarda kalır ve eşitlenemez.",
     "uploadFailed": "Uzantı eklenemedi",
@@ -1691,7 +1691,7 @@
     "fromUrl": "Bağlantıdan",
     "fromUrlTooltip": "Chrome Web Mağazası bağlantısından, uzantı kimliğinden veya doğrudan .crx ya da .zip bağlantısından uzantı ekleyin",
     "urlPlaceholder": "Web Mağazası bağlantısı, uzantı kimliği veya .crx bağlantısı",
-    "urlHint": "Antidetect paketi HTTPS ile indirir ve hiçbir şey kaydedilmeden önce adını ve sürümünü okur.",
+    "urlHint": "Owl paketi HTTPS ile indirir ve hiçbir şey kaydedilmeden önce adını ve sürümünü okur.",
     "fetchExtension": "İndir",
     "fetching": "İndiriliyor…",
     "fetchedIdentity": "{{name}} · sürüm {{version}}",
@@ -1981,7 +1981,7 @@
   },
   "wayfernTerms": {
     "title": "Wayfern Şartlar ve Koşulları",
-    "description": "Antidetect'ı kullanmadan önce Wayfern'ün Şartlar ve Koşullarını okuyup kabul etmelisiniz.",
+    "description": "Owl'ı kullanmadan önce Wayfern'ün Şartlar ve Koşullarını okuyup kabul etmelisiniz.",
     "reviewLabel": "Lütfen Şartlar ve Koşulları şu adresten inceleyin:",
     "agreeNotice": "\"Kabul Ediyorum\"a tıklayarak bu şartlara bağlı kalmayı kabul edersiniz.",
     "acceptButton": "Kabul Ediyorum",
@@ -2000,10 +2000,10 @@
   "permissionDialog": {
     "titleMicrophone": "Mikrofon Erişimi Gerekli",
     "titleCamera": "Kamera Erişimi Gerekli",
-    "descMicrophone": "Antidetect, web tarayıcılarında mikrofon işlevini etkinleştirmek için mikrofonunuza erişmelidir. Mikrofonunuzu kullanmak isteyen her web sitesi yine de sizden ayrıca izin isteyecektir.",
-    "descCamera": "Antidetect, web tarayıcılarında kamera işlevini etkinleştirmek için kameranıza erişmelidir. Kameranızı kullanmak isteyen her web sitesi yine de sizden ayrıca izin isteyecektir.",
-    "grantedMicrophone": "İzin verildi! Antidetect'dan başlatılan tarayıcılar artık mikrofonunuza erişebilir.",
-    "grantedCamera": "İzin verildi! Antidetect'dan başlatılan tarayıcılar artık kameranıza erişebilir.",
+    "descMicrophone": "Owl, web tarayıcılarında mikrofon işlevini etkinleştirmek için mikrofonunuza erişmelidir. Mikrofonunuzu kullanmak isteyen her web sitesi yine de sizden ayrıca izin isteyecektir.",
+    "descCamera": "Owl, web tarayıcılarında kamera işlevini etkinleştirmek için kameranıza erişmelidir. Kameranızı kullanmak isteyen her web sitesi yine de sizden ayrıca izin isteyecektir.",
+    "grantedMicrophone": "İzin verildi! Owl'dan başlatılan tarayıcılar artık mikrofonunuza erişebilir.",
+    "grantedCamera": "İzin verildi! Owl'dan başlatılan tarayıcılar artık kameranıza erişebilir.",
     "notGrantedMicrophone": "İzin verilmedi. Mikrofonunuza erişim istemek için aşağıdaki düğmeye tıklayın.",
     "notGrantedCamera": "İzin verilmedi. Kameranıza erişim istemek için aşağıdaki düğmeye tıklayın.",
     "doneButton": "Bitti",
@@ -2123,7 +2123,7 @@
   },
   "appUpdate": {
     "toast": {
-      "updateFailed": "Antidetect güncellenemedi",
+      "updateFailed": "Owl güncellenemedi",
       "restartFailed": "Yeniden başlatılamadı",
       "updateReady": "Güncelleme hazır, uygulamak için yeniden başlatın",
       "manualDownloadRequired": "Elle indirme gerekli",
@@ -2217,7 +2217,7 @@
     },
     "warnings": {
       "forgetWarningTitle": "Önemli: bu parola kurtarılamaz",
-      "forgetWarningBody": "Antidetect bu parolayı sıfırlayamaz, kurtaramaz veya atlayamaz. Unutursanız bu profilin verilerine erişimi kalıcı olarak kaybedersiniz."
+      "forgetWarningBody": "Owl bu parolayı sıfırlayamaz, kurtaramaz veya atlayamaz. Unutursanız bu profilin verilerine erişimi kalıcı olarak kaybedersiniz."
     },
     "modes": {
       "set": "Belirle",
@@ -2260,7 +2260,7 @@
     "extensionNotADirectory": "Bu yol bir klasör değil.",
     "extensionManifestMissing": "Bu klasörde manifest.json yok. Uzantının manifest.json dosyasını içeren klasörü seçin.",
     "extensionManifestInvalid": "Bu klasördeki manifest.json okunamadı.",
-    "extensionDirTooLarge": "Bu klasör Antidetect'a kopyalanamayacak kadar büyük (sınır: 256 MB ve 20.000 dosya). Bunun yerine klasörü bağlayın.",
+    "extensionDirTooLarge": "Bu klasör Owl'a kopyalanamayacak kadar büyük (sınır: 256 MB ve 20.000 dosya). Bunun yerine klasörü bağlayın.",
     "extensionPathHasComma": "Bu klasörün yolunda virgül var ve Chromium bunu yükleyemez. Klasörü yeniden adlandırın veya taşıyın.",
     "extensionLinkRequiresDirectory": "Yerinde yalnızca bir klasör yüklenebilir. Arşiv eklemek için bağlamayı kapatın.",
     "extensionLinkedCannotSync": "Bu uzantı, bu bilgisayardaki bir klasörden yükleniyor; eşitlenecek bir şey yok.",
@@ -2300,14 +2300,14 @@
     "dnsRulesSaveFailed": "DNS kuralları kaydedilemedi.",
     "dnsRulesExportFailed": "DNS kuralları dışa aktarılamadı.",
     "fingerprintMatchFailed": "Parmak izi proxy'ye eşlenemedi.",
-    "proxySidecarVersionMismatch": "Bazı Antidetect dosyaları farklı sürümlere ait. En son güncellemeyi yeniden yükleyin; profilleriniz güvende kalır.",
+    "proxySidecarVersionMismatch": "Bazı Owl dosyaları farklı sürümlere ait. En son güncellemeyi yeniden yükleyin; profilleriniz güvende kalır.",
     "updateProfilesRunning": "Güncellemeyi yüklemeden önce çalışan tüm profilleri durdurun.",
-    "updatePreparationFailed": "Antidetect arka plandaki bir ağ işlemini güvenli şekilde durduramadı. Bilgisayarınızı yeniden başlatıp güncellemeyi tekrar deneyin.",
+    "updatePreparationFailed": "Owl arka plandaki bir ağ işlemini güvenli şekilde durduramadı. Bilgisayarınızı yeniden başlatıp güncellemeyi tekrar deneyin.",
     "wayfernTermsRequired": "Wayfern'ü kullanmak için Wayfern Hüküm ve Koşullarını kabul edin.",
     "apiPortUnavailable": "API sunucusu kullanılabilir bir bağlantı noktası bulamadı.",
     "mcpAgentUnknown": "Bu MCP istemcisi desteklenmiyor.",
-    "mcpAgentInstallFailed": "Antidetect MCP istemcisine eklenemedi: {{detail}}",
-    "mcpAgentRemoveFailed": "Antidetect MCP istemcisinden kaldırılamadı: {{detail}}",
+    "mcpAgentInstallFailed": "Owl MCP istemcisine eklenemedi: {{detail}}",
+    "mcpAgentRemoveFailed": "Owl MCP istemcisinden kaldırılamadı: {{detail}}",
     "vlessConfigInvalid": "Paylaşım bağlantısı geçersiz.",
     "xrayUnavailable": "Xray-core bu sistemde kullanılamıyor.",
     "xrayUnsupportedOs": "VLESS, VMess, Trojan ve Hysteria2 proxy'leri macOS 12 veya daha yenisini gerektirir.",
@@ -2355,17 +2355,17 @@
     "vpnWorkerStartFailed": "VPN bağlantısı başlatılamadı: {{detail}}",
     "exitProbeFailed": "Konumunu denetlemek için proxy çıkış düğümüne ulaşılamadı.",
     "vlessUnsupported": {
-      "security": "Bu bağlantı, Antidetect'un desteklemediği bir güvenlik ayarı kullanıyor. Antidetect none, TLS ve REALITY'yi destekler; REALITY yalnızca RAW (TCP), gRPC veya XHTTP üzerinde çalışır.",
-      "flow": "Bu bağlantı, Antidetect'un desteklemediği bir flow kullanıyor. XTLS Vision yalnızca TLS veya REALITY ile RAW (TCP) üzerinden VLESS ile çalışır.",
-      "transport": "Bu bağlantı, Antidetect'un desteklemediği bir aktarım veya aktarım modu kullanıyor. Antidetect RAW (TCP), WebSocket, gRPC, HTTPUpgrade ve XHTTP'yi destekler; mKCP, HTTP/2 ve QUIC'i desteklemez.",
-      "encryption": "Bu bağlantı, Antidetect'un desteklemediği bir şifreleme ayarı kullanıyor.",
-      "headerType": "Bu bağlantı, Antidetect'un desteklemediği bir başlık gizlemesi kullanıyor.",
-      "fingerprint": "Bu bağlantı, Antidetect'un desteklemediği bir TLS parmak izi istiyor.",
+      "security": "Bu bağlantı, Owl'un desteklemediği bir güvenlik ayarı kullanıyor. Owl none, TLS ve REALITY'yi destekler; REALITY yalnızca RAW (TCP), gRPC veya XHTTP üzerinde çalışır.",
+      "flow": "Bu bağlantı, Owl'un desteklemediği bir flow kullanıyor. XTLS Vision yalnızca TLS veya REALITY ile RAW (TCP) üzerinden VLESS ile çalışır.",
+      "transport": "Bu bağlantı, Owl'un desteklemediği bir aktarım veya aktarım modu kullanıyor. Owl RAW (TCP), WebSocket, gRPC, HTTPUpgrade ve XHTTP'yi destekler; mKCP, HTTP/2 ve QUIC'i desteklemez.",
+      "encryption": "Bu bağlantı, Owl'un desteklemediği bir şifreleme ayarı kullanıyor.",
+      "headerType": "Bu bağlantı, Owl'un desteklemediği bir başlık gizlemesi kullanıyor.",
+      "fingerprint": "Bu bağlantı, Owl'un desteklemediği bir TLS parmak izi istiyor.",
       "sni": "Bağlantıda geçerli bir sunucu adı (sni) yok.",
       "publicKey": "Bağlantıda REALITY açık anahtarı (pbk) yok.",
-      "obfs": "Bu Hysteria2 bağlantısı, Antidetect'un desteklemediği bir gizleme kullanıyor. Antidetect yalnızca Salamander'ı destekler.",
+      "obfs": "Bu Hysteria2 bağlantısı, Owl'un desteklemediği bir gizleme kullanıyor. Owl yalnızca Salamander'ı destekler.",
       "scheme": "Bu desteklenen bir paylaşım bağlantısı değil. vless://, vmess://, trojan://, hysteria2:// veya hy2:// ile başlamalı.",
-      "parameter": "Bağlantı, Antidetect'un desteklemediği bir seçenek içeriyor.",
+      "parameter": "Bağlantı, Owl'un desteklemediği bir seçenek içeriyor.",
       "malformed": "Paylaşım bağlantısı geçersiz."
     },
     "camoufoxRemoved": "Camoufox artık desteklenmiyor. Bu profili Wayfern ile yeniden oluşturun.",
@@ -2388,7 +2388,7 @@
     "profileExportFailed": "Bu profil dışa aktarılamadı. {{detail}}",
     "profileExportTooLarge": "Bu profil dışa aktarmak için fazla büyük. Gezinme verilerinin bir kısmını silip yeniden deneyin.",
     "profileImportFailed": "Bu arşiv okunamadı. {{detail}}",
-    "profileImportTooNew": "Bu arşiv Antidetect'ın daha yeni bir sürümüyle yazıldı. Uygulamayı güncelleyip yeniden deneyin.",
+    "profileImportTooNew": "Bu arşiv Owl'ın daha yeni bir sürümüyle yazıldı. Uygulamayı güncelleyip yeniden deneyin.",
     "profileImportUnsafeArchive": "Bu arşiv profil klasörünün dışına yazmaya çalıştığı için reddedildi.",
     "recordingAlreadyRunning": "Zaten bir kayıt sürüyor. Yenisine başlamadan önce durdurun.",
     "profileNotRunning": "Bu profilin tarayıcısı çalışmıyor. Önce başlatın.",
@@ -2448,12 +2448,12 @@
     "syncDisplayTooSmall": "Ekran, o düzende {{windows}} pencere için fazla küçük.",
     "syncArrangeFailed": "Hiçbir pencere taşınamadı.",
     "extensionPathInvalid": "Bu yol kullanılamaz: '..' içeriyor.",
-    "systemProxyUnreachable": "Antidetect, {{proxy}} sistem proxy'si üzerinden bağlanamadı. Sistem ağ ayarlarınızda proxy'yi düzeltin veya kapatın, ardından yeniden deneyin.",
+    "systemProxyUnreachable": "Owl, {{proxy}} sistem proxy'si üzerinden bağlanamadı. Sistem ağ ayarlarınızda proxy'yi düzeltin veya kapatın, ardından yeniden deneyin.",
     "profileRouteRequired": "Bu profilin proxy'si veya VPN'i yok. Bunlar olmadan başlatma, Ayarlar'daki Gizlilik bölümünde engellendi.",
     "profileRouteUnavailable": "Bu profilin proxy'si veya VPN'i kullanılamıyor, bu yüzden IP adresinizi gizli tutmak için başlatma durduruldu. Profile çalışan bir proxy veya VPN atayın.",
     "wayfernLaunchArgsRequiresPro": "Özel başlatma argümanları için Pro veya üstü bir plan gerekir. Argümanları temizleyin veya planınızı yükseltin.",
     "wayfernLaunchArgInvalid": "Her argüman için --name veya --name=value kullanın. Kontrol karakterlerine izin verilmez.",
-    "wayfernLaunchArgReserved": "{{argument}} argümanını Antidetect yönetir. Bu argümanı kaldırın.",
+    "wayfernLaunchArgReserved": "{{argument}} argümanını Owl yönetir. Bu argümanı kaldırın.",
     "wayfernLaunchArgNotAllowed": "{{argument}} desteklenen bir başlatma argümanı değil. Kaldırın.",
     "wayfernLaunchArgValueInvalid": "{{argument}} için girilen değer desteklenmiyor.",
     "wayfernLaunchArgsLimit": "En fazla {{count}} başlatma argümanı kullanın; her biri en fazla {{length}} karakter olsun.",
@@ -2492,7 +2492,7 @@
       "importProfileHint": "Başka bir araçtan profil getirin",
       "keyboardShortcuts": "Klavye kısayolları",
       "keyboardShortcutsHint": "Tüm kısayolları görüntüle",
-      "about": "Antidetect Hakkında",
+      "about": "Owl Hakkında",
       "aboutHint": "Sürüm ve uygulama bilgileri",
       "trash": "Çöp Kutusu",
       "trashHint": "Silinen profilleri geri yükle",
@@ -2506,7 +2506,7 @@
     "cookieBotRunning": "Cookie Bot — şu anda çalışıyor",
     "agent": "Ajan",
     "agentWaiting": "Ajan, bekleyen istekler: {{count}}",
-    "brand": "Antidetect"
+    "brand": "Owl"
   },
   "pageTitle": {
     "proxies": "Ağ",
@@ -2570,7 +2570,7 @@
     },
     "selfHosted": {
       "title": "Kendi eşitleme sunucunuz",
-      "description": "Barındırılan bulutu kullanmadan profilleri, proxy'leri, grupları ve uzantıları eşitlemek için Antidetect'u kendi donut-sync sunucunuza yönlendirin.",
+      "description": "Barındırılan bulutu kullanmadan profilleri, proxy'leri, grupları ve uzantıları eşitlemek için Owl'u kendi donut-sync sunucunuza yönlendirin.",
       "disabledWhileLoggedIn": "Donut hesabınızda oturum açıkken kendi sunucunuzla eşitleme kullanılamaz. Özel bir sunucu kullanmak için çıkış yapın.",
       "connectionStatus": "Bağlantı:",
       "statusUnknown": "Test edilmedi",
@@ -2600,7 +2600,7 @@
       "stopProfile": "{{name}} profilini durdur",
       "profileInfo": "Bilgi — {{name}}",
       "createProfile": "Profil oluştur",
-      "about": "Antidetect Hakkında"
+      "about": "Owl Hakkında"
     }
   },
   "shortcuts": {
@@ -2620,13 +2620,13 @@
     "openTips": "İpuçlarını aç"
   },
   "closeConfirm": {
-    "title": "Antidetect kapatılsın mı?",
+    "title": "Owl kapatılsın mı?",
     "description": "Uygulamayı sistem tepsisine göndermek mi yoksa çıkmak mı istersiniz?",
     "minimize": "Tepsiye Küçült",
     "quit": "Çık"
   },
   "tray": {
-    "show": "Antidetect'ı Göster",
+    "show": "Owl'ı Göster",
     "quit": "Çık"
   },
   "onboarding": {
@@ -2647,13 +2647,13 @@
       "finish": "Bitir"
     },
     "thankYou": {
-      "title": "Antidetect'ı seçtiğiniz için teşekkürler",
+      "title": "Owl'ı seçtiğiniz için teşekkürler",
       "body": "Umarız gezinmenizi daha gizli hale getirmenize yardımcı olur — her kimlik kendine ait kalır ve hiçbir şey makinenizden dışarı çıkmaz. İyi kullanımlar.",
       "cta": "Gezinmeye başla"
     }
   },
   "welcome": {
-    "title": "Antidetect'a Hoş Geldiniz",
+    "title": "Owl'a Hoş Geldiniz",
     "tagline": "Aynı anda birçok kimliği yönetmek için açık kaynaklı bir anti-detect tarayıcı.",
     "skip": "Atla",
     "next": "İleri",
@@ -2697,7 +2697,7 @@
     },
     "license": {
       "title": "Lisanslama",
-      "body": "Antidetect açık kaynaklıdır ve kullanımı ücretsizdir.",
+      "body": "Owl açık kaynaklıdır ve kullanımı ücretsizdir.",
       "agree": "Anladım",
       "personalTitle": "Kişisel kullanım",
       "personalDesc": "Sonsuza dek ücretsiz.",
@@ -3085,16 +3085,16 @@
     "vpnExtensionConfirmed": "Bilinen VPN veya proxy aracı",
     "vpnExtensionLikely": "VPN veya proxy aracı gibi görünüyor",
     "vpnExtensionCapability": "Proxy iznine sahip",
-    "vpnExtensionExplainer": "Bunlardan biri trafiğinizi başka bir yere yönlendirirse, tarayıcının gerçek konumu artık bu profilin oluşturulduğu saat dilimi, dil ve coğrafi konumla eşleşmez ve Antidetect bunu dışarıdan algılayamaz.",
+    "vpnExtensionExplainer": "Bunlardan biri trafiğinizi başka bir yere yönlendirirse, tarayıcının gerçek konumu artık bu profilin oluşturulduğu saat dilimi, dil ve coğrafi konumla eşleşmez ve Owl bunu dışarıdan algılayamaz.",
     "proxyCapableHeading": "Proxy'yi değiştirebilen uzantılar",
-    "proxyCapableIntro": "Bunlar VPN'e benzemiyor, ancak Chromium'un proxy iznine sahipler; bu izne indirme yöneticileri ve hata ayıklama araçları da ihtiyaç duyar. Antidetect, herhangi birinin bunu kullanıp kullanmadığını anlayamaz:",
-    "sourceDonut": "Antidetect tarafından yönetiliyor",
+    "proxyCapableIntro": "Bunlar VPN'e benzemiyor, ancak Chromium'un proxy iznine sahipler; bu izne indirme yöneticileri ve hata ayıklama araçları da ihtiyaç duyar. Owl, herhangi birinin bunu kullanıp kullanmadığını anlayamaz:",
+    "sourceDonut": "Owl tarafından yönetiliyor",
     "sourceBrowser": "Profile yüklenmiş",
     "measurementUnreliable": "Bu profildeki bir uzantı proxy iznine sahip, bu nedenle çıkış kontrolü tarayıcının gerçekte kullandığı rotayı yansıtmayabilir.",
-    "scanIncompleteEncrypted": "Bu profil şifreli olduğundan yalnızca Antidetect tarafından yönetilen uzantılar denetlenebildi.",
-    "scanIncompleteEphemeral": "Bu profilde henüz veri olmadığından yalnızca Antidetect tarafından yönetilen uzantılar denetlenebildi.",
+    "scanIncompleteEncrypted": "Bu profil şifreli olduğundan yalnızca Owl tarafından yönetilen uzantılar denetlenebildi.",
+    "scanIncompleteEphemeral": "Bu profilde henüz veri olmadığından yalnızca Owl tarafından yönetilen uzantılar denetlenebildi.",
     "scanIncompletePartial": "Uzantı taraması yarıda kesildi, bu nedenle bazıları listelenmemiş olabilir.",
-    "probePending": "Proxy çıkışı henüz ölçülmedi. Antidetect başlatma sırasında kontrol edecek ve eşleşmezse duracak.",
+    "probePending": "Proxy çıkışı henüz ölçülmedi. Owl başlatma sırasında kontrol edecek ve eşleşmezse duracak.",
     "launchAnyway": "Yine de başlat",
     "dontBlockAgain": "Bu tam uyuşmazlık için bir daha engelleme",
     "dontWarnExtensions": "Bu uzantılar için bir daha uyarma",
@@ -3102,7 +3102,7 @@
     "cancelledSummary": "{{total}} başlatmadan {{cancelled}} tanesi iptal edildi",
     "vpnExtensionEntry": " {{version}} — {{capability}}, {{source}}",
     "vpnExtensionEntryNoVersion": " — {{capability}}, {{source}}",
-    "scanIncompleteMissing": "Bu profil henüz başlatılmadığından yalnızca Antidetect tarafından yönetilen uzantılar denetlenebildi.",
+    "scanIncompleteMissing": "Bu profil henüz başlatılmadığından yalnızca Owl tarafından yönetilen uzantılar denetlenebildi.",
     "exitUnverifiedTimezone": "Bu profilin parmak izinde saat dilimi belirtilmediği için çıkış kontrolü bunu doğrulayamaz. Başlatma engellenmez, ancak hiçbir karşılaştırma da yapılmadı.",
     "exitUnverifiedLanguage": "Bu profilin parmak izi dili çıkış ülkesiyle karşılaştırılamıyor, bu nedenle bu kontrol geçmiş değil doğrulanmamış sayılır."
   },
@@ -3486,7 +3486,7 @@
   },
   "groupBookmarks": {
     "title": "{{name}} yer imleri",
-    "description": "Bu gruptaki her profil, bu yer imlerini Antidetect'ın yönettiği bir klasörde alır. Diğer yer imlerine dokunulmaz.",
+    "description": "Bu gruptaki her profil, bu yer imlerini Owl'ın yönettiği bir klasörde alır. Diğer yer imlerine dokunulmaz.",
     "editTooltip": "Grup yer imleri ({{n}})",
     "empty": "Bu grubun henüz paylaşılan yer imi yok.",
     "addRow": "Yer imi ekle",
@@ -3538,7 +3538,7 @@
       "fingerprintGate": {
         "label": "Parmak izi denetimi",
         "title": "Parmak izini çıkışla tutarlı tutun",
-        "body": "Başlatmadan önce Antidetect, proxy çıkışının saat dilimi ve dilini profilin parmak iziyle karşılaştırır ve uyuşmazlığı durdurur. Parmak izini düzeltin ya da ne yaptığınızı biliyorsanız Gelişmiş'ten bu denetimi kapatın.",
+        "body": "Başlatmadan önce Owl, proxy çıkışının saat dilimi ve dilini profilin parmak iziyle karşılaştırır ve uyuşmazlığı durdurur. Parmak izini düzeltin ya da ne yaptığınızı biliyorsanız Gelişmiş'ten bu denetimi kapatın.",
         "action": "Gelişmiş ayarları aç"
       },
       "profilePassword": {
@@ -3556,7 +3556,7 @@
       "defaultBrowser": {
         "label": "Varsayılan tarayıcı",
         "title": "Her bağlantıyı doğru profilde açın",
-        "body": "Antidetect'u varsayılan tarayıcınız yapın; başka bir uygulamadan gelen her bağlantı hangi profilde açılacağını sorar.",
+        "body": "Owl'u varsayılan tarayıcınız yapın; başka bir uygulamadan gelen her bağlantı hangi profilde açılacağını sorar.",
         "action": "Varsayılan tarayıcı ayarlarını aç"
       },
       "extensionGroups": {
@@ -3568,7 +3568,7 @@
       "selfHostedSync": {
         "label": "Kendi eşitlemeniz",
         "title": "Kendi sunucunuza yedekleyin",
-        "body": "Antidetect'u kendi barındırdığınız bir donut-sync sunucusuna yönlendirin; profiller, proxy'ler ve gruplar oraya yansıtılır. Uçtan uca bir parola ekleyin, sunucu yalnızca şifreli metin görsün.",
+        "body": "Owl'u kendi barındırdığınız bir donut-sync sunucusuna yönlendirin; profiller, proxy'ler ve gruplar oraya yansıtılır. Uçtan uca bir parola ekleyin, sunucu yalnızca şifreli metin görsün.",
         "action": "Hesabı aç"
       },
       "trash": {
@@ -3579,14 +3579,14 @@
       },
       "localApi": {
         "label": "API ve MCP",
-        "title": "Antidetect'u betikler ve ajanlarla otomatikleştirin",
+        "title": "Owl'u betikler ve ajanlarla otomatikleştirin",
         "body": "Yerel REST API, betiklerin profilleri listelemesine, oluşturmasına ve yapılandırmasına izin verir. Entegrasyonlar'dan açın ve belirteci kopyalayın.",
         "action": "Entegrasyonları aç"
       },
       "importProfiles": {
         "label": "İçe aktarma",
         "title": "Chrome, Edge veya Brave'den profil getirin",
-        "body": "İçe aktarma, bir Chromium profilinden veya arşivden çerezleri, oturum bilgilerini ve uzantıları başlatmaya hazır yeni bir Antidetect profiline kopyalar.",
+        "body": "İçe aktarma, bir Chromium profilinden veya arşivden çerezleri, oturum bilgilerini ve uzantıları başlatmaya hazır yeni bir Owl profiline kopyalar.",
         "action": "İçe aktarmayı aç"
       },
       "cloudBackup": {
