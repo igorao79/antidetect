@@ -314,6 +314,8 @@ async fn closed_gracefully(instance: &crate::camoufox_manager::CamoufoxLaunchRes
   let (Some(pid), Some(port)) = (instance.processId, instance.cdp_port) else {
     return false;
   };
+  // A synchronizer session holds the one BiDi session Firefox allows.
+  crate::synchronizer_bidi::release(port).await;
   if !crate::camoufox_manager::close_over_bidi(port).await {
     return false;
   }

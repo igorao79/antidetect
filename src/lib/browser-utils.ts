@@ -94,11 +94,12 @@ export function getProfileIcon(profile: {
 }
 
 /**
- * Engines whose profiles can lead or follow in the synchronizer: Wayfern,
- * which captures input natively and is replayed over DevTools.
+ * Engines whose profiles can lead or follow in the synchronizer
+ * (`synchronizer_bidi.rs::is_supported`): Wayfern over DevTools, Camoufox
+ * over WebDriver BiDi.
  */
 export function supportsSynchronizer(browserType: string): boolean {
-  return browserType === "wayfern";
+  return browserType === "wayfern" || browserType === "camoufox";
 }
 
 export function isCrossOsProfile(profile: {

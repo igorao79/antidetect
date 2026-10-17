@@ -189,7 +189,7 @@ export function SyncFollowerDialog({
                 <div className="space-y-1 p-2">
                   {eligibleProfiles.length === 0 ? (
                     <p className="py-4 text-center text-sm text-muted-foreground">
-                      {t("profiles.synchronizer.wayfernOnly")}
+                      {t("profiles.synchronizer.supportedEnginesOnly")}
                     </p>
                   ) : (
                     eligibleProfiles.map((profile) => {

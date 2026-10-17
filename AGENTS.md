@@ -36,10 +36,22 @@ Fork-specific rules:
   `data/profile_templates.json`: engine, proxy, extension group and fingerprint settings, never
   a pinned fingerprint or seed, so every profile made from one is still its own device. A
   template saved for an engine the app no longer has keeps the dialog's current engine.
-- The synchronizer is Wayfern's only (native input capture, followers replayed over
-  DevTools), also on the local API as `POST/DELETE /api/v2/automation/synchronizer`, where
-  `headless` runs a session without windows. Camoufox would need a capture and a replay over
-  WebDriver BiDi.
+- The synchronizer takes Camoufox profiles as well as Wayfern ones, as leader and follower,
+  mixed or not (`synchronizer_bidi.rs`). Camoufox speaks WebDriver BiDi only: its leader is
+  watched by a preload script in a sandbox the page's own scripts cannot see, handing the
+  user's trusted mouse, key and wheel events to a `script.message` channel; the browser runs it
+  again in every new document, so navigations re-arm it. Top-level `navigationStarted` stands
+  for an address-bar navigation. Followers are replayed with `input.performActions` and
+  `browsingContext.navigate` into the tab in front, and placed with
+  `browser.setClientWindowState`. Pause and holding a follower out work as on Wayfern; the
+  three window layouts go through the same call but have not been tried end to end. Input
+  inside frames is not mirrored. Firefox takes one BiDi
+  session per browser and keeps it after its connection drops, so while a profile is in a
+  session nothing else can automate it, and every Camoufox stop ends the synchronizer's
+  session first (`synchronizer_bidi::release`) so the quit stays a clean one. Also on the
+  local API as `POST/DELETE /api/v2/automation/synchronizer`, where `headless` runs a session
+  without windows; debug builds add `POST /api/v2/automation/synchronizer/bidi`, which sends
+  a BiDi command through the held session (how `s12_synchronizer.py` drives and reads it).
 - A persistent Camoufox profile reopens its session at launch: tabs, their session storage
   and session cookies (`SESSION_RESTORE_PREFS` in `camoufox_manager.rs`, written to `user.js`
   at every launch). camoufox.cfg starts on a blank page and drops the session. A stop first
@@ -84,7 +96,7 @@ Fork-specific rules:
   `api_client/camoufox.rs`, `camoufox/`, `camoufox_manager.rs`,
   `profile_templates.rs`, `interface_language.rs`, `donut_cloud.rs`,
   `profile/{after_exit,camoufox}.rs`, `ssh_upstream.rs`,
-  `cookie_robot.rs`, `octo_compat_api.rs`, and on the frontend
+  `cookie_robot.rs`, `octo_compat_api.rs`, `synchronizer_bidi.rs`, and on the frontend
   `camoufox-config-dialog.tsx`, `shared-camoufox-config-form.tsx`, `cookie-robot-dialog.tsx`,
   `profile-template-menu.tsx`, `interface-language-field.tsx`.
 - Keep the AGPL license and upstream copyright notices.
@@ -209,6 +221,7 @@ donutbrowser/
 │   │   ├── extension_fetch.rs      # Web Store link/id and direct .crx/.zip import, CRX3 unwrapping
 │   │   ├── group_manager.rs        # Profile group management
 │   │   ├── synchronizer.rs         # Real-time profile synchronizer (pause/resume, hold a follower out, window layouts)
+│   │   ├── synchronizer_bidi.rs    # The synchronizer on Camoufox, over WebDriver BiDi (fork)
 │   │   ├── daemon/                 # Background daemon + tray icon (currently disabled)
 │   │   └── cloud_auth.rs           # Cloud authentication
 │   ├── tests/                      # Integration tests

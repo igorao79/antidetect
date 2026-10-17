@@ -895,6 +895,31 @@ async fn stop_synchronizer(
   Ok(envelope(json!({ "stopped": true })))
 }
 
+#[cfg(debug_assertions)]
+#[derive(Deserialize)]
+struct SynchronizerBidiRequest {
+  uuid: String,
+  method: String,
+  #[serde(default)]
+  params: serde_json::Value,
+}
+
+/// Debug builds only: send a WebDriver BiDi command to a Camoufox profile of a
+/// running synchronizer session through the session the synchronizer holds,
+/// the only one the browser takes. The scenarios drive a leader and read a
+/// follower this way.
+#[cfg(debug_assertions)]
+async fn synchronizer_bidi(Json(req): Json<SynchronizerBidiRequest>) -> ApiResult {
+  let profile = find_profile(&req.uuid)?;
+  let port = running_debug_port(&profile)
+    .await
+    .ok_or_else(|| ApiError(StatusCode::NOT_FOUND, "Profile is not running".to_string()))?;
+  let result = crate::synchronizer_bidi::call_held(port, &req.method, req.params)
+    .await
+    .map_err(bad_request)?;
+  Ok(envelope(result))
+}
+
 async fn cookie_robot_status() -> ApiResult {
   Ok(envelope(cookie_robot_json()))
 }
@@ -980,7 +1005,7 @@ async fn require_loopback_host(request: Request, next: Next) -> Response {
 }
 
 fn router(app_handle: tauri::AppHandle) -> Router {
-  Router::new()
+  let router = Router::new()
     .route("/api/profiles/start", post(start_profile))
     .route("/api/profiles/stop", post(stop_profile))
     .route("/api/profiles/force_stop", post(stop_profile))
@@ -1022,7 +1047,13 @@ fn router(app_handle: tauri::AppHandle) -> Router {
       get(cookie_robot_status)
         .post(start_cookie_robot)
         .delete(stop_cookie_robot),
-    )
+    );
+  #[cfg(debug_assertions)]
+  let router = router.route(
+    "/api/v2/automation/synchronizer/bidi",
+    post(synchronizer_bidi),
+  );
+  router
     .layer(middleware::from_fn(require_loopback_host))
     .with_state(ApiState { app_handle })
 }

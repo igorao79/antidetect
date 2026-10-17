@@ -228,6 +228,43 @@ impl MirrorGate {
 
 type SharedGate = Arc<std::sync::RwLock<MirrorGate>>;
 
+type CdpStream =
+  tokio_tungstenite::WebSocketStream<tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>>;
+
+/// Where the leader's events come from.
+enum LeaderLink {
+  Cdp(Box<CdpStream>),
+  Bidi(crate::synchronizer_bidi::Leader),
+}
+
+impl LeaderLink {
+  /// The next message, or None once the leader has closed.
+  async fn next(&mut self) -> Option<Result<serde_json::Value, String>> {
+    use futures_util::stream::StreamExt;
+    use tokio_tungstenite::tungstenite::Message;
+    match self {
+      Self::Cdp(ws) => loop {
+        match ws.next().await? {
+          Ok(Message::Text(text)) => {
+            if let Ok(value) = serde_json::from_str(text.as_str()) {
+              return Some(Ok(value));
+            }
+          }
+          Ok(_) => {} // pings, binary, etc.
+          Err(e) => return Some(Err(e.to_string())),
+        }
+      },
+      Self::Bidi(leader) => leader.next().await.map(Ok),
+    }
+  }
+}
+
+/// Where a follower's replayed events go.
+enum FollowerLink {
+  Cdp(Box<CdpStream>),
+  Bidi(crate::synchronizer_bidi::Follower),
+}
+
 /// Everything the listener task needs to know about the session it drives.
 struct SessionLoopContext {
   session_id: String,
@@ -342,7 +379,7 @@ impl SynchronizerManager {
         },
       )
     };
-    // Validate: leader must be wayfern
+    // Validate: leader must be on an engine the synchronizer drives
     let profiles = ProfileManager::instance()
       .list_profiles()
       .map_err(|e| format!("Failed to list profiles: {e}"))?;
@@ -353,8 +390,8 @@ impl SynchronizerManager {
       .ok_or("Leader profile not found")?
       .clone();
 
-    if leader.browser != "wayfern" {
-      return Err("Synchronizer only supports Wayfern profiles.".to_string());
+    if !crate::synchronizer_bidi::is_supported(&leader.browser) {
+      return Err("Synchronizer only supports Wayfern and Camoufox profiles.".to_string());
     }
 
     // Check leader is not already running
@@ -376,9 +413,9 @@ impl SynchronizerManager {
         .find(|p| p.id.to_string() == *fid)
         .ok_or(format!("Follower profile '{fid}' not found"))?
         .clone();
-      if fp.browser != "wayfern" {
+      if !crate::synchronizer_bidi::is_supported(&fp.browser) {
         return Err(format!(
-          "Profile '{}' is not a Wayfern profile. Only Wayfern profiles can be synchronized.",
+          "Profile '{}' cannot be synchronized. Only Wayfern and Camoufox profiles can.",
           fp.name
         ));
       }
@@ -601,139 +638,117 @@ impl SynchronizerManager {
     log::info!("Synchronizer: getting leader CDP port");
     let leader_profile = Self::get_profile(&leader_profile_id)?;
     let leader_port = Self::get_cdp_port(&leader_profile).await?;
-    log::info!("Synchronizer: leader CDP port = {leader_port}, getting WS URL");
-    let leader_ws_url = Self::get_page_ws_url(leader_port).await?;
-
-    log::info!("Synchronizer: connecting to leader page");
-
-    let (mut ws_stream, _) = connect_async(&leader_ws_url)
-      .await
-      .map_err(|e| format!("Failed to connect to leader CDP: {e}"))?;
-
-    // Helper: send command and collect response, buffering non-response events
-    let mut cmd_id: u64 = 0;
     let mut pending_events: Vec<serde_json::Value> = Vec::new();
 
-    // Send a CDP command and wait for its response, buffering events that arrive in between
-    async fn send_cmd(
-      ws: &mut tokio_tungstenite::WebSocketStream<
-        tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
-      >,
-      cmd_id: &mut u64,
-      pending_events: &mut Vec<serde_json::Value>,
-      method: &str,
-      params: serde_json::Value,
-    ) -> Result<serde_json::Value, String> {
-      *cmd_id += 1;
-      let id = *cmd_id;
-      let cmd = serde_json::json!({ "id": id, "method": method, "params": params });
-      ws.send(Message::Text(cmd.to_string().into()))
-        .await
-        .map_err(|e| format!("Failed to send {method}: {e}"))?;
-      let deadline = tokio::time::Instant::now() + tokio::time::Duration::from_secs(10);
-      loop {
-        let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
-        if remaining.is_zero() {
-          return Err(format!("Timeout waiting for {method} response"));
-        }
-        match tokio::time::timeout(remaining, ws.next()).await {
-          Ok(Some(Ok(Message::Text(text)))) => {
-            let resp: serde_json::Value = serde_json::from_str(text.as_str()).unwrap_or_default();
-            if resp.get("id") == Some(&serde_json::json!(id)) {
-              if let Some(error) = resp.get("error") {
-                return Err(format!("CDP error for {method}: {error}"));
-              }
-              return Ok(resp.get("result").cloned().unwrap_or(serde_json::json!({})));
+    // Camoufox has no DevTools: its leader is watched over WebDriver BiDi.
+    let (mut leader, leader_size) =
+      if crate::synchronizer_bidi::speaks_bidi(&leader_profile.browser) {
+        let leader = crate::synchronizer_bidi::Leader::attach(leader_port).await?;
+        let size = leader.window_size().await;
+        (LeaderLink::Bidi(leader), size)
+      } else {
+        log::info!("Synchronizer: leader CDP port = {leader_port}, getting WS URL");
+        let leader_ws_url = Self::get_page_ws_url(leader_port).await?;
+
+        log::info!("Synchronizer: connecting to leader page");
+
+        let (mut ws_stream, _) = connect_async(&leader_ws_url)
+          .await
+          .map_err(|e| format!("Failed to connect to leader CDP: {e}"))?;
+
+        // Helper: send command and collect response, buffering non-response events
+        let mut cmd_id: u64 = 0;
+
+        // Send a CDP command and wait for its response, buffering events that arrive in between
+        async fn send_cmd(
+          ws: &mut tokio_tungstenite::WebSocketStream<
+            tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
+          >,
+          cmd_id: &mut u64,
+          pending_events: &mut Vec<serde_json::Value>,
+          method: &str,
+          params: serde_json::Value,
+        ) -> Result<serde_json::Value, String> {
+          *cmd_id += 1;
+          let id = *cmd_id;
+          let cmd = serde_json::json!({ "id": id, "method": method, "params": params });
+          ws.send(Message::Text(cmd.to_string().into()))
+            .await
+            .map_err(|e| format!("Failed to send {method}: {e}"))?;
+          let deadline = tokio::time::Instant::now() + tokio::time::Duration::from_secs(10);
+          loop {
+            let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
+            if remaining.is_zero() {
+              return Err(format!("Timeout waiting for {method} response"));
             }
-            // Buffer events that arrive while waiting for response
-            if resp.get("method").is_some() {
-              pending_events.push(resp);
-            }
-          }
-          Ok(Some(Ok(_))) => continue,
-          Ok(Some(Err(e))) => return Err(format!("WebSocket error: {e}")),
-          Ok(None) => return Err("WebSocket closed".to_string()),
-          Err(_) => return Err(format!("Timeout waiting for {method} response")),
-        }
-      }
-    }
-
-    // Use Wayfern's native input capture — no JS injection needed.
-    // Captures all real user input at the browser process level.
-    let setup_commands: Vec<(&str, serde_json::Value)> = vec![
-      ("Page.enable", serde_json::json!({})),
-      ("Wayfern.enableInputCapture", serde_json::json!({})),
-    ];
-
-    for (method, params) in setup_commands {
-      match send_cmd(
-        &mut ws_stream,
-        &mut cmd_id,
-        &mut pending_events,
-        method,
-        params,
-      )
-      .await
-      {
-        Ok(_) => log::info!("Synchronizer: {method} OK"),
-        Err(e) => {
-          log::error!("Synchronizer: {method} FAILED: {e}");
-          return Err(format!("{method} failed: {e}"));
-        }
-      }
-    }
-
-    log::info!("Synchronizer: input capture enabled");
-
-    // Get leader window size and resize all followers to match
-    let leader_bounds = send_cmd(
-      &mut ws_stream,
-      &mut cmd_id,
-      &mut pending_events,
-      "Browser.getWindowForTarget",
-      serde_json::json!({}),
-    )
-    .await
-    .ok();
-
-    if let Some(bounds_result) = &leader_bounds {
-      if let Some(bounds) = bounds_result.get("bounds") {
-        let width = bounds.get("width").and_then(|v| v.as_i64()).unwrap_or(0);
-        let height = bounds.get("height").and_then(|v| v.as_i64()).unwrap_or(0);
-        if width > 0 && height > 0 {
-          log::info!("Synchronizer: leader window size {width}x{height}, resizing followers");
-          for fid in &follower_profile_ids {
-            if let Ok(fp) = Self::get_profile(fid) {
-              if let Ok(port) = Self::get_cdp_port(&fp).await {
-                if let Ok(f_ws) = Self::get_page_ws_url(port).await {
-                  if let Ok((mut fws, _)) = tokio_tungstenite::connect_async(&f_ws).await {
-                    // Get follower's window ID
-                    let get_win = serde_json::json!({ "id": 1, "method": "Browser.getWindowForTarget", "params": {} });
-                    let _ = fws.send(Message::Text(get_win.to_string().into())).await;
-                    if let Some(Ok(Message::Text(text))) = fws.next().await {
-                      if let Ok(resp) = serde_json::from_str::<serde_json::Value>(text.as_str()) {
-                        if let Some(win_id) = resp
-                          .get("result")
-                          .and_then(|r| r.get("windowId"))
-                          .and_then(|w| w.as_i64())
-                        {
-                          let set_bounds = serde_json::json!({
-                            "id": 2,
-                            "method": "Browser.setWindowBounds",
-                            "params": { "windowId": win_id, "bounds": { "width": width, "height": height } }
-                          });
-                          let _ = fws.send(Message::Text(set_bounds.to_string().into())).await;
-                        }
-                      }
-                    }
+            match tokio::time::timeout(remaining, ws.next()).await {
+              Ok(Some(Ok(Message::Text(text)))) => {
+                let resp: serde_json::Value =
+                  serde_json::from_str(text.as_str()).unwrap_or_default();
+                if resp.get("id") == Some(&serde_json::json!(id)) {
+                  if let Some(error) = resp.get("error") {
+                    return Err(format!("CDP error for {method}: {error}"));
                   }
+                  return Ok(resp.get("result").cloned().unwrap_or(serde_json::json!({})));
+                }
+                // Buffer events that arrive while waiting for response
+                if resp.get("method").is_some() {
+                  pending_events.push(resp);
                 }
               }
+              Ok(Some(Ok(_))) => continue,
+              Ok(Some(Err(e))) => return Err(format!("WebSocket error: {e}")),
+              Ok(None) => return Err("WebSocket closed".to_string()),
+              Err(_) => return Err(format!("Timeout waiting for {method} response")),
             }
           }
         }
-      }
-    }
+
+        // Use Wayfern's native input capture — no JS injection needed.
+        // Captures all real user input at the browser process level.
+        let setup_commands: Vec<(&str, serde_json::Value)> = vec![
+          ("Page.enable", serde_json::json!({})),
+          ("Wayfern.enableInputCapture", serde_json::json!({})),
+        ];
+
+        for (method, params) in setup_commands {
+          match send_cmd(
+            &mut ws_stream,
+            &mut cmd_id,
+            &mut pending_events,
+            method,
+            params,
+          )
+          .await
+          {
+            Ok(_) => log::info!("Synchronizer: {method} OK"),
+            Err(e) => {
+              log::error!("Synchronizer: {method} FAILED: {e}");
+              return Err(format!("{method} failed: {e}"));
+            }
+          }
+        }
+
+        log::info!("Synchronizer: input capture enabled");
+
+        // Get leader window size, for the followers to match
+        let size = send_cmd(
+          &mut ws_stream,
+          &mut cmd_id,
+          &mut pending_events,
+          "Browser.getWindowForTarget",
+          serde_json::json!({}),
+        )
+        .await
+        .ok()
+        .and_then(|result| {
+          let bounds = result.get("bounds")?;
+          let width = bounds.get("width").and_then(|v| v.as_i64()).unwrap_or(0);
+          let height = bounds.get("height").and_then(|v| v.as_i64()).unwrap_or(0);
+          (width > 0 && height > 0).then_some((width, height))
+        });
+        (LeaderLink::Cdp(Box::new(ws_stream)), size)
+      };
 
     log::info!("Synchronizer: opening persistent connections to followers");
 
@@ -743,42 +758,37 @@ impl SynchronizerManager {
       HashMap::new();
 
     for fid in &follower_profile_ids {
-      match Self::get_profile(fid) {
-        Ok(fp) => match Self::get_cdp_port(&fp).await {
-          Ok(port) => match Self::get_page_ws_url(port).await {
-            Ok(url) => {
-              match tokio_tungstenite::connect_async(&url).await {
-                Ok((ws, _)) => {
-                  log::info!("Synchronizer: follower connected");
-                  let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<CapturedEvent>();
-                  follower_senders.insert(fid.clone(), tx);
+      match Self::connect_follower(fid).await {
+        Ok(link) => {
+          log::info!("Synchronizer: follower connected");
+          let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<CapturedEvent>();
+          follower_senders.insert(fid.clone(), tx);
 
-                  // Spawn dedicated replay task for this follower
-                  let fid_clone = fid.clone();
-                  let mgr = manager.clone();
-                  let sid = session_id.clone();
-                  let ah = app_handle.clone();
-                  tokio::spawn(async move {
-                    Self::follower_replay_loop(ws, rx, fid_clone, mgr, sid, ah).await;
-                  });
-                }
-                Err(e) => log::warn!(
-                  "Synchronizer: failed to connect to follower {}: {e}",
-                  fp.name
-                ),
-              }
+          // Spawn dedicated replay task for this follower
+          let fid_clone = fid.clone();
+          let mgr = manager.clone();
+          let sid = session_id.clone();
+          let ah = app_handle.clone();
+          tokio::spawn(async move {
+            let lost = match link {
+              FollowerLink::Cdp(ws) => Self::follower_replay_loop(*ws, rx, &fid_clone).await,
+              FollowerLink::Bidi(follower) => follower.replay_all(rx).await,
+            };
+            if lost {
+              Self::mark_follower_lost(&mgr, &sid, &fid_clone, &ah).await;
             }
-            Err(e) => log::warn!(
-              "Synchronizer: failed to get WS URL for follower {}: {e}",
-              fp.name
-            ),
-          },
-          Err(e) => log::warn!(
-            "Synchronizer: failed to get CDP port for follower {}: {e}",
-            fp.name
-          ),
-        },
-        Err(e) => log::warn!("Synchronizer: failed to get follower profile {fid}: {e}"),
+          });
+        }
+        Err(e) => log::warn!("Synchronizer: failed to connect to follower {fid}: {e}"),
+      }
+    }
+
+    if let Some((width, height)) = leader_size {
+      log::info!("Synchronizer: leader window size {width}x{height}, resizing followers");
+      for fid in &follower_profile_ids {
+        if let Err(e) = Self::resize_follower(fid, width, height).await {
+          log::debug!("Synchronizer: could not resize follower {fid}: {e}");
+        }
       }
     }
 
@@ -799,7 +809,8 @@ impl SynchronizerManager {
       Self::handle_cdp_event(&event, &gate, &follower_senders, false).await;
     }
 
-    // Main event loop — listen for Wayfern.inputCaptured events
+    // Main event loop — listen for Wayfern.inputCaptured events (or the ones
+    // a BiDi leader's capture is rewritten into)
     loop {
       tokio::select! {
           _ = cancel_rx.changed() => {
@@ -808,14 +819,9 @@ impl SynchronizerManager {
                   break;
               }
           }
-          msg = ws_stream.next() => {
+          msg = leader.next() => {
               match msg {
-                  Some(Ok(Message::Text(text))) => {
-                      let value: serde_json::Value = match serde_json::from_str(text.as_str()) {
-                          Ok(v) => v,
-                          Err(_) => continue,
-                      };
-
+                  Some(Ok(value)) => {
                       let method = value.get("method").and_then(|m| m.as_str()).unwrap_or("");
 
                       // Log CDP command response errors
@@ -839,7 +845,6 @@ impl SynchronizerManager {
                           recent_user_event,
                       ).await;
                   }
-                  Some(Ok(_)) => {} // pings, binary, etc.
                   Some(Err(e)) => {
                       log::error!("Synchronizer: leader WebSocket error: {e}");
                       break;
@@ -968,16 +973,12 @@ impl SynchronizerManager {
 
   /// Dedicated replay loop for a single follower with a persistent WebSocket connection.
   /// Processes events from the channel sequentially — no per-event connection overhead.
+  /// True when it stopped because the connection was lost.
   async fn follower_replay_loop(
-    mut ws: tokio_tungstenite::WebSocketStream<
-      tokio_tungstenite::MaybeTlsStream<tokio::net::TcpStream>,
-    >,
+    mut ws: CdpStream,
     mut rx: tokio::sync::mpsc::UnboundedReceiver<CapturedEvent>,
-    follower_id: String,
-    manager: Arc<AsyncMutex<SynchronizerInner>>,
-    session_id: String,
-    app_handle: tauri::AppHandle,
-  ) {
+    follower_id: &str,
+  ) -> bool {
     use futures_util::sink::SinkExt;
     use tokio_tungstenite::tungstenite::Message;
 
@@ -1066,21 +1067,89 @@ impl SynchronizerManager {
         let cmd = serde_json::json!({ "id": cmd_id, "method": method, "params": params });
         if let Err(e) = ws.send(Message::Text(cmd.to_string().into())).await {
           log::warn!("Synchronizer: follower {follower_id} send failed: {e}");
-          // Mark as desynced
-          let mut inner = manager.lock().await;
-          if let Some(session) = inner.sessions.get_mut(&session_id) {
-            if let Some(follower) = session.follower_mut(&follower_id) {
-              follower.failed_at_url = Some("connection lost".to_string());
-              let info = session.info();
-              let _ = app_handle.emit("sync-session-changed", &info);
-            }
-          }
-          break;
+          return true;
         }
         // Don't wait for response — fire and forget for speed.
         // CDP commands are processed in order by Chromium.
       }
     }
+    false
+  }
+
+  /// Mark a follower whose connection is gone as desynced.
+  async fn mark_follower_lost(
+    manager: &Arc<AsyncMutex<SynchronizerInner>>,
+    session_id: &str,
+    follower_id: &str,
+    app_handle: &tauri::AppHandle,
+  ) {
+    let mut inner = manager.lock().await;
+    if let Some(session) = inner.sessions.get_mut(session_id) {
+      if let Some(follower) = session.follower_mut(follower_id) {
+        follower.failed_at_url = Some("connection lost".to_string());
+        let info = session.info();
+        let _ = app_handle.emit("sync-session-changed", &info);
+      }
+    }
+  }
+
+  /// Open the replay connection to a follower: DevTools, or WebDriver BiDi
+  /// for Camoufox.
+  async fn connect_follower(follower_profile_id: &str) -> Result<FollowerLink, String> {
+    let profile = Self::get_profile(follower_profile_id)?;
+    let port = Self::get_cdp_port(&profile).await?;
+    if crate::synchronizer_bidi::speaks_bidi(&profile.browser) {
+      return crate::synchronizer_bidi::Follower::attach(port)
+        .await
+        .map(FollowerLink::Bidi);
+    }
+    let url = Self::get_page_ws_url(port).await?;
+    let (ws, _) = tokio_tungstenite::connect_async(&url)
+      .await
+      .map_err(|e| format!("Failed to connect to follower CDP: {e}"))?;
+    Ok(FollowerLink::Cdp(Box::new(ws)))
+  }
+
+  /// Give a follower's window the leader's size.
+  async fn resize_follower(
+    follower_profile_id: &str,
+    width: i64,
+    height: i64,
+  ) -> Result<(), String> {
+    use futures_util::sink::SinkExt;
+    use futures_util::stream::StreamExt;
+    use tokio_tungstenite::tungstenite::Message;
+
+    let fp = Self::get_profile(follower_profile_id)?;
+    let port = Self::get_cdp_port(&fp).await?;
+    if crate::synchronizer_bidi::speaks_bidi(&fp.browser) {
+      return crate::synchronizer_bidi::resize_window(port, width, height).await;
+    }
+    let f_ws = Self::get_page_ws_url(port).await?;
+    let (mut fws, _) = tokio_tungstenite::connect_async(&f_ws)
+      .await
+      .map_err(|e| e.to_string())?;
+    // Get follower's window ID
+    let get_win =
+      serde_json::json!({ "id": 1, "method": "Browser.getWindowForTarget", "params": {} });
+    let _ = fws.send(Message::Text(get_win.to_string().into())).await;
+    if let Some(Ok(Message::Text(text))) = fws.next().await {
+      if let Ok(resp) = serde_json::from_str::<serde_json::Value>(text.as_str()) {
+        if let Some(win_id) = resp
+          .get("result")
+          .and_then(|r| r.get("windowId"))
+          .and_then(|w| w.as_i64())
+        {
+          let set_bounds = serde_json::json!({
+            "id": 2,
+            "method": "Browser.setWindowBounds",
+            "params": { "windowId": win_id, "bounds": { "width": width, "height": height } }
+          });
+          let _ = fws.send(Message::Text(set_bounds.to_string().into())).await;
+        }
+      }
+    }
+    Ok(())
   }
 
   /// Stop a sync session by ID. Kills all followers.
@@ -1277,7 +1346,8 @@ impl SynchronizerManager {
     Ok(info)
   }
 
-  /// Move one follower's browser window through CDP.
+  /// Move one follower's browser window through CDP (WebDriver BiDi for
+  /// Camoufox).
   async fn place_window(follower_profile_id: &str, rect: WindowRect) -> Result<(), String> {
     use futures_util::sink::SinkExt;
     use futures_util::stream::StreamExt;
@@ -1285,6 +1355,9 @@ impl SynchronizerManager {
 
     let profile = Self::get_profile(follower_profile_id)?;
     let port = Self::get_cdp_port(&profile).await?;
+    if crate::synchronizer_bidi::speaks_bidi(&profile.browser) {
+      return crate::synchronizer_bidi::place_window(port, rect).await;
+    }
     let ws_url = Self::get_page_ws_url(port).await?;
     let (mut ws, _) = tokio_tungstenite::connect_async(&ws_url)
       .await
@@ -1388,9 +1461,18 @@ impl SynchronizerManager {
       if attempt > 0 {
         tokio::time::sleep(std::time::Duration::from_secs(1)).await;
       }
-      let port = crate::wayfern_manager::WayfernManager::instance()
-        .get_cdp_port(&profile_path_str)
-        .await;
+      let port = if crate::synchronizer_bidi::speaks_bidi(&profile.browser) {
+        crate::camoufox_manager::CamoufoxManager::instance()
+          .find_camoufox_by_profile(&profile_path_str)
+          .await
+          .ok()
+          .flatten()
+          .and_then(|instance| instance.cdp_port)
+      } else {
+        crate::wayfern_manager::WayfernManager::instance()
+          .get_cdp_port(&profile_path_str)
+          .await
+      };
       if let Some(p) = port {
         return Ok(p);
       }
