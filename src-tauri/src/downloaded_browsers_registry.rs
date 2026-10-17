@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 
 use crate::geoip_downloader::GeoIPDownloader;
@@ -47,6 +47,24 @@ fn is_download_artifact(file_name: &str) -> bool {
   DOWNLOAD_ARTIFACT_SUFFIXES
     .iter()
     .any(|suffix| lowered.ends_with(suffix))
+}
+
+/// The marker that sits beside a version folder (`<browser>/.<version>.incomplete`)
+/// from the start of its download until extraction is verified, and stays
+/// when either fails or the app quits halfway.
+///
+/// A half-extracted macOS build already holds its `.app` folder, which is all
+/// the on-disk check looks for, so without the marker a profile stop in the
+/// middle of an update registered the partial build and moved every profile
+/// onto it. The marker is kept outside the folder because extraction flattens a
+/// lone top-level folder only when nothing else is beside it.
+fn incomplete_marker(version_dir: &Path) -> Option<PathBuf> {
+  let version = version_dir.file_name()?.to_str()?;
+  Some(version_dir.with_file_name(format!(".{version}.incomplete")))
+}
+
+fn install_is_incomplete(binaries_dir: &Path, browser: &str, version: &str) -> bool {
+  incomplete_marker(&binaries_dir.join(browser).join(version)).is_some_and(|m| m.exists())
 }
 
 impl DownloadedBrowsersRegistry {
@@ -143,7 +161,8 @@ impl DownloadedBrowsersRegistry {
 
     let binaries_dir = crate::app_dirs::binaries_dir();
 
-    let files_exist = browser_instance.is_version_downloaded(version, &binaries_dir);
+    let files_exist = browser_instance.is_version_downloaded(version, &binaries_dir)
+      && !install_is_incomplete(&binaries_dir, browser, version);
 
     // If files don't exist but registry thinks they do, clean up the registry
     if !files_exist {
@@ -173,6 +192,11 @@ impl DownloadedBrowsersRegistry {
       version,
       file_path.display()
     );
+    if let Some(marker) = incomplete_marker(&file_path) {
+      if let Err(e) = fs::write(&marker, b"") {
+        log::warn!("Could not mark {browser} {version} as being installed: {e}");
+      }
+    }
   }
 
   pub fn mark_download_completed(
@@ -181,6 +205,13 @@ impl DownloadedBrowsersRegistry {
     version: &str,
     file_path: PathBuf,
   ) -> Result<(), String> {
+    if let Some(marker) = incomplete_marker(&file_path) {
+      match fs::remove_file(&marker) {
+        Ok(()) => {}
+        Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+        Err(e) => return Err(format!("Could not clear the install marker: {e}")),
+      }
+    }
     // Only mark as completed after verification succeeds
     let info = DownloadedBrowserInfo {
       browser: browser.to_string(),
@@ -274,6 +305,11 @@ impl DownloadedBrowsersRegistry {
       for (browser, versions) in &data.browsers {
         for version in versions.keys() {
           let browser_version = (browser.clone(), version.clone());
+
+          if crate::downloader::is_downloading(browser, version) {
+            log::info!("Keeping: {browser} {version} (download in progress)");
+            continue;
+          }
 
           // Don't remove if it's used by any active profile
           if active_set.contains(&browser_version) {
@@ -494,6 +530,12 @@ impl DownloadedBrowsersRegistry {
           .unwrap_or("");
 
         if version_name.is_empty() || version_name.starts_with('.') {
+          continue;
+        }
+
+        if crate::downloader::is_downloading(browser_name, version_name)
+          || install_is_incomplete(binaries_dir, browser_name, version_name)
+        {
           continue;
         }
 
@@ -771,6 +813,34 @@ impl DownloadedBrowsersRegistry {
     consolidated
   }
 
+  /// The newest version some profile of `browser_name` uses whose install is
+  /// complete on disk. A version still downloading or extracting, or one whose
+  /// install failed halfway, is never one to move profiles onto.
+  fn latest_installed_profile_version(
+    browser_name: &str,
+    browser_profiles: &[&BrowserProfile],
+    binaries_dir: &Path,
+  ) -> Option<String> {
+    let browser_type = crate::browser::BrowserType::from_str(browser_name).ok()?;
+    let browser = crate::browser::create_browser(browser_type);
+    browser_profiles
+      .iter()
+      .filter(|profile| {
+        let installed = browser.is_version_downloaded(&profile.version, binaries_dir)
+          && !install_is_incomplete(binaries_dir, browser_name, &profile.version);
+        if !installed {
+          log::info!(
+            "Profile '{}' references version {} that is not installed",
+            profile.name,
+            profile.version
+          );
+        }
+        installed
+      })
+      .map(|profile| profile.version.clone())
+      .max_by(|a, b| crate::api_client::compare_versions(a, b))
+  }
+
   /// Consolidate browser versions - keep only the latest version per browser
   pub fn consolidate_browser_versions(
     &self,
@@ -797,40 +867,13 @@ impl DownloadedBrowsersRegistry {
     }
 
     for (browser_name, browser_profiles) in browser_profiles.iter() {
-      // Find the latest version among all profiles for this browser that actually exists on disk
-      let mut available_versions: Vec<String> = Vec::new();
-
-      for profile in browser_profiles {
-        // Only consider versions that actually exist on disk
-        let browser_type = match crate::browser::BrowserType::from_str(browser_name) {
-          Ok(bt) => bt,
-          Err(_) => continue,
-        };
-        let browser = crate::browser::create_browser(browser_type.clone());
-
-        if browser.is_version_downloaded(&profile.version, &binaries_dir) {
-          available_versions.push(profile.version.clone());
-        } else {
-          log::info!(
-            "Profile '{}' references version {} that doesn't exist on disk",
-            profile.name,
-            profile.version
-          );
-        }
-      }
-
-      if available_versions.is_empty() {
+      let Some(latest_version) =
+        Self::latest_installed_profile_version(browser_name, browser_profiles, &binaries_dir)
+      else {
         log::info!("No available versions found for {browser_name}, skipping consolidation");
         continue;
-      }
-
-      // Sort available versions to find the latest
-      available_versions.sort_by(|a, b| {
-        // Sort versions using semantic versioning logic
-        crate::api_client::compare_versions(b, a)
-      });
-
-      let latest_version = &available_versions[0];
+      };
+      let latest_version = latest_version.as_str();
       log::info!("Latest available version for {browser_name}: {latest_version}");
 
       let mut consolidated_for_browser = Self::consolidate_profiles_for_browser(
@@ -1523,6 +1566,130 @@ mod tests {
     assert_eq!(removed, vec!["138.0", "139.0"]);
 
     assert_eq!(consolidated.len(), updated.len() + removed.len());
+  }
+
+  /// Lay out what the on-disk check takes for an installed Camoufox, which a
+  /// half-extracted build already passes.
+  #[cfg(any(target_os = "macos", target_os = "linux"))]
+  fn camoufox_on_disk(binaries_dir: &Path, version: &str) -> PathBuf {
+    let version_dir = binaries_dir.join("camoufox").join(version);
+    std::fs::create_dir_all(version_dir.join("Camoufox.app")).unwrap();
+    std::fs::File::create(version_dir.join("camoufox")).unwrap();
+    version_dir
+  }
+
+  /// A profile stop while an update was still extracting registered the
+  /// partial build, and the next stop moved every profile onto it.
+  #[cfg(any(target_os = "macos", target_os = "linux"))]
+  #[test]
+  fn a_version_is_registered_only_once_its_install_is_verified() {
+    let root = tempfile::tempdir().unwrap();
+    let _guard = crate::app_dirs::set_test_data_dir(root.path().to_path_buf());
+    let binaries_dir = crate::app_dirs::binaries_dir();
+    camoufox_on_disk(&binaries_dir, "v1.0");
+    let updating = camoufox_on_disk(&binaries_dir, "v2.0");
+
+    let registry = DownloadedBrowsersRegistry::new();
+    registry.mark_download_started("camoufox", "v2.0", updating.clone());
+    registry
+      .sync_with_binaries_directory(&binaries_dir)
+      .expect("sync should succeed");
+
+    assert!(registry.is_browser_downloaded("camoufox", "v1.0"));
+    assert!(
+      !registry.is_browser_registered("camoufox", "v2.0"),
+      "a folder still being installed must not be registered from disk"
+    );
+    registry.add_browser(DownloadedBrowserInfo {
+      browser: "camoufox".to_string(),
+      version: "v2.0".to_string(),
+      file_path: updating.clone(),
+    });
+    assert!(
+      !registry.is_browser_downloaded("camoufox", "v2.0"),
+      "nor counted as installed when something registered it anyway"
+    );
+
+    registry
+      .mark_download_completed("camoufox", "v2.0", updating)
+      .expect("completion should succeed");
+    assert!(registry.is_browser_downloaded("camoufox", "v2.0"));
+  }
+
+  #[cfg(any(target_os = "macos", target_os = "linux"))]
+  #[test]
+  fn consolidation_moves_profiles_only_onto_a_complete_install() {
+    let root = tempfile::tempdir().unwrap();
+    let _guard = crate::app_dirs::set_test_data_dir(root.path().to_path_buf());
+    let binaries_dir = crate::app_dirs::binaries_dir();
+    camoufox_on_disk(&binaries_dir, "v1.0");
+    let updating = camoufox_on_disk(&binaries_dir, "v2.0");
+
+    let profile = |version: &str| BrowserProfile {
+      id: uuid::Uuid::new_v4(),
+      browser: "camoufox".to_string(),
+      version: version.to_string(),
+      ..Default::default()
+    };
+    let current = profile("v1.0");
+    let moved_by_mistake = profile("v2.0");
+    let profiles = [&current, &moved_by_mistake];
+
+    let registry = DownloadedBrowsersRegistry::new();
+    registry.mark_download_started("camoufox", "v2.0", updating.clone());
+    assert_eq!(
+      DownloadedBrowsersRegistry::latest_installed_profile_version(
+        "camoufox",
+        &profiles,
+        &binaries_dir
+      )
+      .as_deref(),
+      Some("v1.0"),
+      "a version still being installed is not one to move profiles onto"
+    );
+
+    registry
+      .mark_download_completed("camoufox", "v2.0", updating)
+      .expect("completion should succeed");
+    assert_eq!(
+      DownloadedBrowsersRegistry::latest_installed_profile_version(
+        "camoufox",
+        &profiles,
+        &binaries_dir
+      )
+      .as_deref(),
+      Some("v2.0")
+    );
+  }
+
+  /// The cleanup after a stop listed a version being downloaded for removal
+  /// and then reported it removed although it had stood down.
+  #[test]
+  fn cleanup_keeps_a_version_being_downloaded() {
+    let root = tempfile::tempdir().unwrap();
+    let _guard = crate::app_dirs::set_test_data_dir(root.path().to_path_buf());
+    let version_dir = crate::app_dirs::binaries_dir()
+      .join("downloadtest")
+      .join("2.0");
+    std::fs::create_dir_all(version_dir.join("Browser.app")).unwrap();
+
+    let registry = DownloadedBrowsersRegistry::new();
+    for version in ["1.0", "2.0"] {
+      registry.add_browser(DownloadedBrowserInfo {
+        browser: "downloadtest".to_string(),
+        version: version.to_string(),
+        file_path: version_dir.with_file_name(version),
+      });
+    }
+
+    crate::downloader::mark_downloading_for_test("downloadtest", "2.0");
+    let result = registry
+      .cleanup_unused_binaries_internal(&[("downloadtest".to_string(), "1.0".to_string())], &[]);
+    crate::downloader::clear_download_state_for_browser("downloadtest");
+
+    assert!(result.expect("cleanup should succeed").is_empty());
+    assert!(version_dir.join("Browser.app").exists());
+    assert!(registry.is_browser_registered("downloadtest", "2.0"));
   }
 }
 
