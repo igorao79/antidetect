@@ -34,7 +34,12 @@ services:
     restart: unless-stopped
     depends_on:
       - owl-server
-    command: caddy reverse-proxy --from ${DOMAIN:?set DOMAIN in .env} --to owl-server:12342
+    environment:
+      DOMAIN: ${DOMAIN:-}
+    entrypoint:
+      - sh
+      - -c
+      - 'test -n "$$DOMAIN" || { echo "Set DOMAIN in .env for the https profile"; exit 1; }; exec caddy reverse-proxy --from "$$DOMAIN" --to owl-server:12342'
     ports:
       - "80:80"
       - "443:443"

@@ -1,0 +1,8 @@
+# Only the Owl server is built into an image (donut-sync/Dockerfile, built
+# from the repository root). Everything else stays out of the build context.
+*
+!donut-sync/package.json
+!donut-sync/tsconfig.json
+!donut-sync/tsconfig.build.json
+!donut-sync/src/
+donut-sync/src/**/*.spec.ts
