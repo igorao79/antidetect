@@ -3744,7 +3744,9 @@
       "share": "Paylaş",
       "unshare": "Paylaşmayı durdur",
       "shared": "“{{profile}}” paylaşıldı",
-      "unshared": "“{{profile}}” artık paylaşılmıyor"
+      "unshared": "“{{profile}}” artık paylaşılmıyor",
+      "sharedState": "Bu profil {{server}} üzerinde paylaşılıyor: başka kimse açmadığında her üye açabilir.",
+      "notSharedState": "Bu profil yalnızca bu bilgisayarda. {{server}} sunucusunun tüm üyeleri açabilsin diye paylaşın."
     }
   }
 }

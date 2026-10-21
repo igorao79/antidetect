@@ -3744,7 +3744,9 @@
       "share": "共享",
       "unshare": "停止共享",
       "shared": "已共享“{{profile}}”",
-      "unshared": "“{{profile}}”已停止共享"
+      "unshared": "“{{profile}}”已停止共享",
+      "sharedState": "此配置文件已在 {{server}} 上共享：无人打开时，任何成员都可以打开。",
+      "notSharedState": "此配置文件只在这台电脑上。共享后，{{server}} 的所有成员都可以打开。"
     }
   }
 }

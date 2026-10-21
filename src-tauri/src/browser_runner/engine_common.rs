@@ -192,6 +192,15 @@ impl BrowserRunner {
       crate::profile::password::complete_after_quit_and_wait(profile).await;
     }
     crate::profile::after_exit::settle(app_handle, profile).await;
+    // The sync queued at launch runs once the profile is marked stopped. Every
+    // stop of this engine passes here (the local APIs and Cookie Robot too),
+    // not only the interface's Stop, so a shared profile's browsing reaches
+    // the server right away.
+    if let Some(scheduler) = crate::sync::get_global_scheduler() {
+      scheduler
+        .mark_profile_stopped(&profile.id.to_string())
+        .await;
+    }
 
     if let Ok(consolidated) = self
       .downloaded_browsers_registry

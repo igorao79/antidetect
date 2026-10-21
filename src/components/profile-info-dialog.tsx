@@ -30,6 +30,7 @@ import {
   LuPlus,
   LuPuzzle,
   LuRefreshCw,
+  LuServer,
   LuSettings,
   LuShield,
   LuShieldCheck,
@@ -1001,6 +1002,9 @@ function ProfileInfoLayout({
   t,
 }: ProfileInfoLayoutProps) {
   const contentId = React.useId();
+  // A joined Owl server turns the sync section into sharing on that server.
+  const { workspace } = useWorkspace();
+  const onWorkspace = workspace !== null && !DONUT_CLOUD;
 
   // Map sidebar items to existing actions by their stable, language-independent
   // `id`, so clicking a section triggers the existing dialog handler. Matching
@@ -1109,9 +1113,13 @@ function ProfileInfoLayout({
     },
     {
       id: "sync",
-      icon: <LuRefreshCw className="size-3.5" />,
-      label: t("profileInfo.sections.sync"),
-      hidden: !DONUT_CLOUD || (!syncAction && !isEphemeral),
+      icon: onWorkspace ? (
+        <LuServer className="size-3.5" />
+      ) : (
+        <LuRefreshCw className="size-3.5" />
+      ),
+      label: onWorkspace ? t("rail.workspace") : t("profileInfo.sections.sync"),
+      hidden: !(DONUT_CLOUD || onWorkspace) || (!syncAction && !isEphemeral),
     },
     {
       id: "automation",
@@ -1442,6 +1450,14 @@ function ProfileInfoLayout({
                 description={t("profileInfo.ephemeral.syncUnavailable")}
                 t={t}
               />
+            ) : onWorkspace && workspace ? (
+              <WorkspaceSectionInline
+                profile={profile}
+                serverName={workspace.name}
+                isDisabled={isDisabled}
+                onChange={syncAction?.onClick}
+                t={t}
+              />
             ) : (
               <SyncSectionInline
                 profile={profile}
@@ -1651,6 +1667,58 @@ function LaunchHookEditor({
             {t("common.buttons.cancel")}
           </Button>
         )}
+      </div>
+    </div>
+  );
+}
+
+/** Sharing this profile on the joined Owl server. */
+function WorkspaceSectionInline({
+  profile,
+  serverName,
+  isDisabled,
+  onChange,
+  t,
+}: {
+  profile: BrowserProfile;
+  serverName: string;
+  isDisabled: boolean;
+  onChange?: () => void;
+  t: (key: string, options?: Record<string, unknown>) => string;
+}) {
+  const shared = profile.sync_mode != null && profile.sync_mode !== "Disabled";
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <LuServer className="size-4" />
+        {serverName}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {t(
+          shared
+            ? "workspace.share.sharedState"
+            : "workspace.share.notSharedState",
+          { server: serverName },
+        )}
+      </p>
+      {shared && profile.shared_by && (
+        <p className="text-xs text-muted-foreground">
+          {t("workspace.share.sharedBy", { name: profile.shared_by.name })}
+        </p>
+      )}
+      <div>
+        <Button
+          size="sm"
+          variant={shared ? "soft" : "default"}
+          disabled={isDisabled || !onChange}
+          onClick={onChange}
+        >
+          {t(
+            shared
+              ? "workspace.share.titleUnshare"
+              : "workspace.share.titleShare",
+          )}
+        </Button>
       </div>
     </div>
   );

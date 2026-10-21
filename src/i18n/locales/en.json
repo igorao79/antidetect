@@ -3744,7 +3744,9 @@
       "share": "Share",
       "unshare": "Stop sharing",
       "shared": "“{{profile}}” is shared",
-      "unshared": "“{{profile}}” is no longer shared"
+      "unshared": "“{{profile}}” is no longer shared",
+      "sharedState": "This profile is shared on {{server}}: every member can open it while nobody else has it open.",
+      "notSharedState": "Only this computer has this profile. Share it so every member of {{server}} can open it."
     }
   }
 }

@@ -3744,7 +3744,9 @@
       "share": "Chia sẻ",
       "unshare": "Ngừng chia sẻ",
       "shared": "Đã chia sẻ “{{profile}}”",
-      "unshared": "“{{profile}}” không còn được chia sẻ"
+      "unshared": "“{{profile}}” không còn được chia sẻ",
+      "sharedState": "Hồ sơ này đang được chia sẻ trên {{server}}: mọi thành viên đều có thể mở khi không ai khác đang mở.",
+      "notSharedState": "Chỉ máy tính này có hồ sơ này. Hãy chia sẻ để mọi thành viên của {{server}} có thể mở."
     }
   }
 }
