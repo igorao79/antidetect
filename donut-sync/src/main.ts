@@ -1,6 +1,7 @@
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import { AppModule } from "./app.module.js";
+import { configureBodyParsing } from "./http-setup.js";
 
 const INSECURE_DEFAULT_TOKENS = new Set([
   "secret-sync-token",
@@ -9,11 +10,9 @@ const INSECURE_DEFAULT_TOKENS = new Set([
 ]);
 
 function validateEnv() {
+  // Without SYNC_TOKEN or SYNC_JWT_PUBLIC_KEY the server admits its members
+  // only, by the personal tokens they get when they join by invite.
   const token = process.env.SYNC_TOKEN;
-  if (!token && !process.env.SYNC_JWT_PUBLIC_KEY) {
-    console.error("Either SYNC_TOKEN or SYNC_JWT_PUBLIC_KEY must be set");
-    process.exit(1);
-  }
   // A static SYNC_TOKEN is the only credential on a self-hosted server that is
   // typically exposed on 0.0.0.0, so reject the shipped placeholders and any
   // token short enough to brute-force.
@@ -28,10 +27,10 @@ function validateEnv() {
 async function bootstrap() {
   validateEnv();
 
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
-
-  // biome-ignore lint/correctness/useHookAtTopLevel: NestJS method, not a React hook
-  app.useBodyParser("json", { limit: "50mb" });
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
+  configureBodyParsing(app);
 
   app.enableCors({
     origin: "*",
@@ -41,6 +40,6 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 3929;
   await app.listen(port);
-  console.log(`Donut Sync service running on port ${port}`);
+  console.log(`Owl server running on port ${port}`);
 }
 void bootstrap();

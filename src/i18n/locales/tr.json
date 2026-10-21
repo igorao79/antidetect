@@ -2455,7 +2455,17 @@
     "engineRemoved": "CloakBrowser Owl'dan kaldırıldı, bu yüzden bu profil artık başlamıyor. Çerezlerini dışa aktarıp bir Camoufox profiline içe aktarın.",
     "profileTemplateInvalid": "Bu şablon kaydedilemiyor: adı çok uzun veya ayarları bozuk.",
     "profileTemplateLimit": "Çok fazla şablon var. Yenisini kaydetmeden önce birini silin.",
-    "profileTemplateNotFound": "Bu şablon artık yok."
+    "profileTemplateNotFound": "Bu şablon artık yok.",
+    "workspaceNotJoined": "Bu uygulama hiçbir Owl sunucusuna bağlı değil.",
+    "workspaceUnreachable": "Owl sunucusu yanıt vermedi. Adresini ve çalıştığını kontrol edin.",
+    "workspaceAccessRevoked": "Bu Owl sunucusuna erişiminiz kaldırıldı. Bağlantıyı kesin veya sahibinden yeni bir davet isteyin.",
+    "workspaceOwnerOnly": "Bunu yalnızca sunucunun sahibi yapabilir.",
+    "workspaceRequestFailed": "Owl sunucusu bunu yapamadı. Tekrar deneyin.",
+    "workspaceInviteLinkInvalid": "Bu bir Owl davet bağlantısı değil. owl://join ile başlar.",
+    "workspaceAlreadyJoined": "Bu uygulama zaten bir Owl sunucusuna bağlı. Önce bağlantıyı kesin.",
+    "workspaceInviteInvalid": "Bu davet artık geçerli değil: kullanılmış, iptal edilmiş veya süresi dolmuş. Yeni bir tane isteyin.",
+    "workspaceTooManyAttempts": "Çok fazla deneme. Bir dakika bekleyip tekrar deneyin.",
+    "workspaceProfileNotYours": "Bu profili {{name}} paylaştı. Sunucudan yalnızca o kişi veya sunucu sahibi kaldırabilir."
   },
   "rail": {
     "profiles": "Profiller",
@@ -2483,7 +2493,8 @@
     "cookieBotRunning": "Cookie Bot — şu anda çalışıyor",
     "agent": "Ajan",
     "agentWaiting": "Ajan, bekleyen istekler: {{count}}",
-    "brand": "Owl"
+    "brand": "Owl",
+    "workspace": "Sunucu"
   },
   "pageTitle": {
     "proxies": "Ağ",
@@ -2497,7 +2508,8 @@
     "shortcuts": "Klavye kısayolları",
     "cookieBot": "Cookie Bot",
     "trash": "Çöp Kutusu",
-    "agent": "Ajan"
+    "agent": "Ajan",
+    "workspace": "Owl sunucusu"
   },
   "encryption": {
     "required": {
@@ -3688,5 +3700,51 @@
     "profile": "Profille aynı",
     "profileHint": "Menüler profilin ülkesinin dilinde görünür; oradaki gerçek bir cihazda olduğu gibi. Siteler her yerde tek bir dil görür.",
     "otherHint": "Okuması daha kolaydır ama siteler fark edebilir: form mesajlarının metninden ve tarih ile sayı biçimlerinden. Önemli hesaplar için profilin dilini koruyun."
+  },
+  "workspace": {
+    "title": "Owl sunucusu",
+    "joinTitle": "Bir sunucuya katıl",
+    "joinDescription": "Sunucu sahibinden aldığınız davet bağlantısını yapıştırın. Sunucuda paylaşılan profiller burada görünür ve üyeler bunları sırayla kullanır.",
+    "linkLabel": "Davet bağlantısı",
+    "linkPlaceholder": "owl://join?…",
+    "nameLabel": "Adınız",
+    "namePlaceholder": "Diğer üyelere gösterilir",
+    "join": "Katıl",
+    "ownServerTitle": "Kendi sunucunuz",
+    "ownServerBody": "Herkes bir bilgisayarda veya VPS'te Docker ile bir Owl sunucusu çalıştırabilir ve yalnızca istediği kişileri davet edebilir. İlk açılışta sahibin davet bağlantısını yazdırır.",
+    "connectedAs": "Siz {{name}}, {{role}}",
+    "roles": {
+      "owner": "sahip",
+      "member": "üye"
+    },
+    "members": "Üyeler",
+    "you": "siz",
+    "removeMember": "Sunucudan çıkar",
+    "removeMemberConfirm": "{{name}} sunucudan çıkarılsın mı? Erişimi hemen kesilir.",
+    "memberRemoved": "{{name}} çıkarıldı",
+    "invites": "Açık davetler",
+    "invite": "Davet et",
+    "inviteCreated": "Davet bağlantısı kopyalandı. Bir kez, 7 gün boyunca geçerlidir.",
+    "noInvites": "Açık davet yok.",
+    "inviteExpires": "Son geçerlilik {{date}}",
+    "revokeInvite": "İptal et",
+    "leave": "Sunucudan ayrıl",
+    "leaveDescription": "Profiller bu bilgisayarda yerel kopya olarak kalır ve sunucuyla senkronize edilmez.",
+    "joined": "{{name}} sunucusuna katıldınız",
+    "left": "Sunucudan ayrıldınız",
+    "revoked": "Bu sunucuya erişiminiz kaldırıldı. Ayrılın veya sahibinden yeni bir davet isteyin.",
+    "ownerOnlyHint": "Üyeleri yalnızca sahip davet eder ve çıkarır.",
+    "share": {
+      "titleShare": "Sunucuda paylaş",
+      "titleUnshare": "Paylaşmayı durdur",
+      "shareBody": "{{server}} sunucusundaki herkes “{{profile}}” profilini görecek ve başka kimse açmadığında açabilecek.",
+      "unshareBody": "“{{profile}}” tüm üyeler için sunucudan kaldırılacak. Bu bilgisayarda kalır.",
+      "sharedBy": "Paylaşan: {{name}}",
+      "notYours": "Bu profili {{name}} paylaştı. Paylaşımı yalnızca o kişi veya sunucu sahibi durdurabilir.",
+      "share": "Paylaş",
+      "unshare": "Paylaşmayı durdur",
+      "shared": "“{{profile}}” paylaşıldı",
+      "unshared": "“{{profile}}” artık paylaşılmıyor"
+    }
   }
 }

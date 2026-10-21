@@ -3667,6 +3667,9 @@ async fn apply_profile_sync_mode(
 
   let old_mode = profile.sync_mode;
   let enabling = new_mode != SyncMode::Disabled;
+  if !enabling {
+    crate::workspace::may_unshare(&profile)?;
+  }
 
   if enabling {
     let cloud_logged_in = crate::cloud_auth::CLOUD_AUTH.is_logged_in().await;
@@ -3759,6 +3762,9 @@ async fn apply_profile_sync_mode(
     }
   }
 
+  if enabling {
+    crate::workspace::stamp_shared_by(&mut profile);
+  }
   profile.sync_mode = new_mode;
 
   profile_manager

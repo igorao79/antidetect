@@ -54,6 +54,14 @@ pub const DEFAULT_EXCLUDE_PATTERNS: &[&str] = &[
   "**/*-wal",
   "**/*-shm",
   "**/SingletonLock",
+  // Firefox (Camoufox) holds these while a profile runs. Downloaded onto
+  // another machine they read as "this profile is already in use".
+  "**/.parentlock",
+  "**/parent.lock",
+  "**/lock",
+  // Camoufox's user.js is rewritten at every launch with this machine's local
+  // proxy port; another machine's copy would only be overwritten.
+  "**/user.js",
   // Rewritten by donut before every launch from the profile metadata that
   // already syncs; uploading it would only duplicate that state.
   "**/wayfern-identity.json",
@@ -618,6 +626,26 @@ mod tests {
 
     assert_eq!(manifest.files.len(), 1);
     assert_eq!(manifest.files[0].path, "file1.txt");
+  }
+
+  #[test]
+  fn test_generate_manifest_excludes_camoufox_locks_and_user_js() {
+    let temp_dir = TempDir::new().unwrap();
+    let profile_dir = temp_dir.path().join("profile");
+    fs::create_dir_all(&profile_dir).unwrap();
+
+    fs::write(profile_dir.join("cookies.sqlite"), "keep").unwrap();
+    fs::write(profile_dir.join("sessionstore.jsonlz4"), "keep").unwrap();
+    for machine_local in [".parentlock", "parent.lock", "lock", "user.js"] {
+      fs::write(profile_dir.join(machine_local), "exclude").unwrap();
+    }
+
+    let mut cache = HashCache::default();
+    let manifest = generate_manifest("test-profile", &profile_dir, &mut cache).unwrap();
+
+    let mut paths: Vec<&str> = manifest.files.iter().map(|f| f.path.as_str()).collect();
+    paths.sort();
+    assert_eq!(paths, vec!["cookies.sqlite", "sessionstore.jsonlz4"]);
   }
 
   #[test]

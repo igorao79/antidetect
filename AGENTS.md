@@ -64,6 +64,25 @@ Fork-specific rules:
   after a crash, without the restore prompt. Ephemeral profiles keep their no-history prefs.
   `s16_session_restore.py` checks it; session storage comes back a moment after the
   restored page loads, and a value set from outside over BiDi is not recorded at all.
+- Own Owl server (`donut-sync/`, `workspace.rs`, `workspace-page.tsx`,
+  `workspace-share-dialog.tsx`, the "Server" page in the rail). Anyone runs one with
+  `docker compose up` in `donut-sync/` (one container, objects on its own disk in the
+  `owl-data` volume, `STORAGE=disk`; S3 stays possible) and invites people; the first start
+  logs the owner's `owl://join?server=..&code=..` link (`node dist/cli owner-link` prints a new
+  one while there is no owner). Members join by link with a name and get a personal token,
+  kept as the self-hosted sync token, so the existing sync engine does the syncing.
+  Server side: `node:sqlite` members/invites/profile authors in `owl.db`, member tokens and
+  invite codes stored as SHA-256, `POST /v1/join`, `/v1/me`, `/v1/members`, `/v1/invites`,
+  disk transfers at `/v1/blob/<key>` signed by the server, and profile locks at
+  `/v1/profile-locks` in the Donut cloud's lock protocol, in memory with a 120 s TTL and
+  announced on the subscribe stream as `lock` events. `team_lock.rs` sends its calls through
+  `workspace::lock_request`, so a joined server's locks work like the cloud's. A profile shared
+  there carries `shared_by` (member id and name) in its synced metadata; only that member or
+  the owner turns its sharing off or deletes it (`workspace::may_unshare`, and the server
+  refuses another member's `delete-prefix` of `profiles/<id>/`). Shared profiles appear on
+  other members' machines as soon as the server announces them; Firefox lock files and
+  `user.js` are not synced. One server per app at a time; password encryption is not used
+  for it yet.
 - Donut's cloud is switched off in the interface by one flag, `DONUT_CLOUD` in
   `src/lib/cloud-only-pages.ts`, with the lists beside it: the Account page (signing in, sync
   setup), the cloud Cookie Bot and the Agent console are out of the rail, the shortcuts and
@@ -96,9 +115,11 @@ Fork-specific rules:
   `api_client/camoufox.rs`, `camoufox/`, `camoufox_manager.rs`,
   `profile_templates.rs`, `interface_language.rs`, `donut_cloud.rs`,
   `profile/{after_exit,camoufox}.rs`, `ssh_upstream.rs`,
-  `cookie_robot.rs`, `octo_compat_api.rs`, `synchronizer_bidi.rs`, and on the frontend
-  `camoufox-config-dialog.tsx`, `shared-camoufox-config-form.tsx`, `cookie-robot-dialog.tsx`,
-  `profile-template-menu.tsx`, `interface-language-field.tsx`.
+  `cookie_robot.rs`, `octo_compat_api.rs`, `synchronizer_bidi.rs`, `workspace.rs`, and on the
+  frontend `camoufox-config-dialog.tsx`, `shared-camoufox-config-form.tsx`,
+  `cookie-robot-dialog.tsx`, `profile-template-menu.tsx`, `interface-language-field.tsx`,
+  `workspace-page.tsx`, `workspace-share-dialog.tsx`; on the server `donut-sync/src/storage/`,
+  `donut-sync/src/workspace/` and `donut-sync/src/cli.ts`.
 - Keep the AGPL license and upstream copyright notices.
 - Commit only when the user asks.
 
@@ -222,12 +243,13 @@ donutbrowser/
 │   │   ├── group_manager.rs        # Profile group management
 │   │   ├── synchronizer.rs         # Real-time profile synchronizer (pause/resume, hold a follower out, window layouts)
 │   │   ├── synchronizer_bidi.rs    # The synchronizer on Camoufox, over WebDriver BiDi (fork)
+│   │   ├── workspace.rs            # Own Owl server: join by invite, members, invites, locks routing (fork)
 │   │   ├── daemon/                 # Background daemon + tray icon (currently disabled)
 │   │   └── cloud_auth.rs           # Cloud authentication
 │   ├── tests/                      # Integration tests
 │   └── Cargo.toml                  # Rust dependencies
-├── donut-sync/                     # NestJS sync server (self-hostable)
-│   └── src/                        # Controllers, services, auth, S3 sync
+├── donut-sync/                     # NestJS sync server = the Owl server (docker compose up)
+│   └── src/                        # Controllers, services, auth, S3 or disk storage, members/invites/locks
 ├── e2e/                            # Isolated native UI/sync/Wayfern E2E system
 │   ├── app/                        # Test-only Tauri harness that injects the private driver
 │   ├── lib/                        # WebDriver, CDP, fixtures, app-session helpers
@@ -291,14 +313,14 @@ Keep failed artifacts and inspect the per-session app/driver logs and screenshot
 assertions.
 
 The `donut-sync` row is the one suite the root `pnpm test` does not cover (`test:sync-e2e` runs
-the Rust sync harness only). It needs the S3 server in `donut-sync/docker-compose.yml`
+the Rust sync harness only). It needs the S3 server in `donut-sync/docker-compose.test.yml`
 (`rclone serve s3` on port 8987; MinIO no longer publishes community images or binaries).
 `test/test-env.ts` supplies the matching keys:
 
 ```bash
-docker compose -f donut-sync/docker-compose.yml up -d --wait
+docker compose -f donut-sync/docker-compose.test.yml up -d --wait
 pnpm --filter donut-sync test:e2e
-docker compose -f donut-sync/docker-compose.yml down -v
+docker compose -f donut-sync/docker-compose.test.yml down -v
 ```
 
 When adding a Tauri command, assign it exactly once in `e2e/coverage-map.mjs` and add executable

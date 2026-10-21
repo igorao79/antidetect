@@ -2455,7 +2455,17 @@
     "engineRemoved": "CloakBrowser 已从 Owl 中移除，此配置文件无法再启动。请导出其 Cookie 并导入到 Camoufox 配置文件中。",
     "profileTemplateInvalid": "无法保存此模板：名称过长或设置已损坏。",
     "profileTemplateLimit": "模板太多了。请先删除一个再保存。",
-    "profileTemplateNotFound": "此模板已不存在。"
+    "profileTemplateNotFound": "此模板已不存在。",
+    "workspaceNotJoined": "此应用未连接到任何 Owl 服务器。",
+    "workspaceUnreachable": "Owl 服务器没有响应。请检查地址以及服务器是否在运行。",
+    "workspaceAccessRevoked": "你对此 Owl 服务器的访问权限已被移除。请断开连接，或向所有者索取新的邀请。",
+    "workspaceOwnerOnly": "只有服务器所有者可以执行此操作。",
+    "workspaceRequestFailed": "Owl 服务器无法完成此操作。请重试。",
+    "workspaceInviteLinkInvalid": "这不是 Owl 邀请链接。邀请链接以 owl://join 开头。",
+    "workspaceAlreadyJoined": "此应用已连接到一个 Owl 服务器。请先断开连接。",
+    "workspaceInviteInvalid": "此邀请已失效：已被使用、撤销或已过期。请索取新的邀请。",
+    "workspaceTooManyAttempts": "尝试次数过多。请等待一分钟后重试。",
+    "workspaceProfileNotYours": "此配置文件由 {{name}} 共享。只有该成员或服务器所有者可以将其从服务器移除。"
   },
   "rail": {
     "profiles": "配置文件",
@@ -2483,7 +2493,8 @@
     "cookieBotRunning": "Cookie Bot — 正在运行",
     "agent": "智能体",
     "agentWaiting": "智能体，等待处理的请求：{{count}}",
-    "brand": "Owl"
+    "brand": "Owl",
+    "workspace": "服务器"
   },
   "pageTitle": {
     "proxies": "网络",
@@ -2497,7 +2508,8 @@
     "shortcuts": "键盘快捷键",
     "cookieBot": "Cookie Bot",
     "trash": "回收站",
-    "agent": "智能体"
+    "agent": "智能体",
+    "workspace": "Owl 服务器"
   },
   "encryption": {
     "required": {
@@ -3688,5 +3700,51 @@
     "profile": "与配置文件相同",
     "profileHint": "菜单使用配置文件所在国家的语言，就像那里的真实设备一样。网站在各处看到的都是同一种语言。",
     "otherHint": "读起来更方便，但网站可能会察觉：通过表单提示的措辞以及日期和数字格式。重要账号请保持配置文件的语言。"
+  },
+  "workspace": {
+    "title": "Owl 服务器",
+    "joinTitle": "加入服务器",
+    "joinDescription": "粘贴服务器所有者发来的邀请链接。服务器上共享的配置文件会显示在这里，成员轮流使用。",
+    "linkLabel": "邀请链接",
+    "linkPlaceholder": "owl://join?…",
+    "nameLabel": "你的名字",
+    "namePlaceholder": "会显示给其他成员",
+    "join": "加入",
+    "ownServerTitle": "运行自己的服务器",
+    "ownServerBody": "任何人都可以在电脑或 VPS 上用 Docker 运行 Owl 服务器，只邀请自己选择的人。首次启动时会输出所有者的邀请链接。",
+    "connectedAs": "你是 {{name}}，{{role}}",
+    "roles": {
+      "owner": "所有者",
+      "member": "成员"
+    },
+    "members": "成员",
+    "you": "你",
+    "removeMember": "从服务器移除",
+    "removeMemberConfirm": "要将 {{name}} 从服务器移除吗？其访问权限会立即失效。",
+    "memberRemoved": "已移除 {{name}}",
+    "invites": "未使用的邀请",
+    "invite": "邀请",
+    "inviteCreated": "邀请链接已复制。可使用一次，有效期 7 天。",
+    "noInvites": "没有未使用的邀请。",
+    "inviteExpires": "{{date}} 前有效",
+    "revokeInvite": "撤销",
+    "leave": "离开服务器",
+    "leaveDescription": "配置文件会以本地副本形式保留在这台电脑上，不再与服务器同步。",
+    "joined": "已加入 {{name}}",
+    "left": "已离开服务器",
+    "revoked": "你对此服务器的访问权限已被移除。请离开该服务器，或向所有者索取新的邀请。",
+    "ownerOnlyHint": "只有所有者可以邀请和移除成员。",
+    "share": {
+      "titleShare": "在服务器上共享",
+      "titleUnshare": "停止共享",
+      "shareBody": "{{server}} 上的所有人都会看到“{{profile}}”，并可在无人打开时打开它。",
+      "unshareBody": "“{{profile}}”将从服务器上对所有成员移除。它仍保留在这台电脑上。",
+      "sharedBy": "共享者：{{name}}",
+      "notYours": "此配置文件由 {{name}} 共享。只有该成员或服务器所有者可以停止共享。",
+      "share": "共享",
+      "unshare": "停止共享",
+      "shared": "已共享“{{profile}}”",
+      "unshared": "“{{profile}}”已停止共享"
+    }
   }
 }

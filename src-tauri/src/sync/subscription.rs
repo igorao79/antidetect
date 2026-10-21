@@ -384,6 +384,16 @@ impl SyncSubscription {
       return;
     }
 
+    // A joined Owl server announces a profile lock taken or given back.
+    if event.event_type == "lock" {
+      tauri::async_runtime::spawn(async {
+        if let Err(e) = crate::team_lock::PROFILE_LOCK.fetch_locks().await {
+          log::debug!("Could not refresh profile locks after a lock event: {e}");
+        }
+      });
+      return;
+    }
+
     let key = Self::strip_team_prefix(raw_key);
 
     let work_item = if key.starts_with("profiles/") {

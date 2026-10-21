@@ -8,6 +8,7 @@ import {
   realpath,
   writeFile,
 } from "node:fs/promises";
+import { createServer } from "node:http";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import test from "node:test";
@@ -1973,4 +1974,177 @@ test("the hourly profile allowance counts from a window that survives a restart"
       `retry_after_secs ${full.retry_after_secs}`,
     );
   });
+});
+
+/** The Owl server's member and invite calls, as small as the app needs them. */
+async function fakeOwlServer() {
+  const state = {
+    revoked: false,
+    invites: [],
+    removed: [],
+    calls: [],
+  };
+  const member = { id: "m1", name: "Ivan", role: "owner" };
+  const server = createServer((request, response) => {
+    let body = "";
+    request.on("data", (chunk) => {
+      body += chunk;
+    });
+    request.on("end", () => {
+      const send = (status, value) => {
+        response.writeHead(status, { "content-type": "application/json" });
+        response.end(value === undefined ? "" : JSON.stringify(value));
+      };
+      const url = new URL(request.url, "http://owl.test");
+      state.calls.push(`${request.method} ${url.pathname}`);
+      const authorized =
+        request.headers.authorization === "Bearer member-token" &&
+        !state.revoked;
+      if (request.method === "POST" && url.pathname === "/v1/join") {
+        const { code, name } = JSON.parse(body || "{}");
+        if (code !== "good-code") return send(401, { error: "invite_invalid" });
+        return send(200, {
+          token: "member-token",
+          member: { ...member, name },
+          workspace: { name: "Team" },
+        });
+      }
+      if (!authorized) return send(401);
+      if (url.pathname === "/v1/me") {
+        return send(200, { member, workspace: { name: "Team" } });
+      }
+      if (url.pathname === "/v1/members" && request.method === "GET") {
+        return send(200, {
+          members: [member, { id: "m2", name: "Olga", role: "member" }],
+        });
+      }
+      if (url.pathname.startsWith("/v1/members/")) {
+        state.removed.push(url.pathname.split("/").pop());
+        return send(204);
+      }
+      if (url.pathname === "/v1/invites" && request.method === "POST") {
+        const invite = {
+          id: `i${state.invites.length + 1}`,
+          code: "fresh-code",
+          link: "owl://join?server=x&code=fresh-code",
+          expiresAt: "2030-01-01T00:00:00Z",
+        };
+        state.invites.push(invite);
+        return send(200, invite);
+      }
+      if (url.pathname === "/v1/invites" && request.method === "GET") {
+        return send(200, {
+          invites: state.invites.map(({ id, expiresAt }) => ({
+            id,
+            expiresAt,
+          })),
+        });
+      }
+      if (url.pathname.startsWith("/v1/invites/")) {
+        const id = url.pathname.split("/").pop();
+        state.invites = state.invites.filter((invite) => invite.id !== id);
+        return send(204);
+      }
+      if (url.pathname === "/v1/profile-locks") return send(200, []);
+      return send(404);
+    });
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const address = `http://127.0.0.1:${server.address().port}`;
+  return { server, state, address };
+}
+
+test("an Owl server is joined by invite, its members and invites are managed, and it can be left", async () => {
+  const owl = await fakeOwlServer();
+  try {
+    await withApp("entities-workspace", async (app) => {
+      // Spelled out per command: the coverage gate looks for each literal call.
+      assert.equal(await app.invoke("get_workspace"), null);
+      assert.equal(await app.invoke("take_pending_workspace_link"), null);
+      assert.match(
+        await app.invokeError("list_workspace_members"),
+        /"code":"WORKSPACE_NOT_JOINED"/,
+      );
+      assert.match(
+        await app.invokeError("join_workspace", {
+          link: "https://owl.example.com/join",
+          name: "Ivan",
+        }),
+        /"code":"WORKSPACE_INVITE_LINK_INVALID"/,
+      );
+      const link = (code) =>
+        `owl://join?server=${encodeURIComponent(owl.address)}&code=${code}`;
+      assert.match(
+        await app.invokeError("join_workspace", {
+          link: link("good-code"),
+          name: "   ",
+        }),
+        /"code":"NAME_CANNOT_BE_EMPTY"/,
+      );
+      assert.match(
+        await app.invokeError("join_workspace", {
+          link: link("used-code"),
+          name: "Ivan",
+        }),
+        /"code":"WORKSPACE_INVITE_INVALID"/,
+      );
+
+      const joined = await app.invoke("join_workspace", {
+        link: link("good-code"),
+        name: "  Ivan  ",
+      });
+      assert.deepEqual(joined, {
+        server: owl.address,
+        name: "Team",
+        member: { id: "m1", name: "Ivan", role: "owner" },
+      });
+      assert.deepEqual(await app.invoke("get_workspace"), joined);
+      assert.match(
+        await app.invokeError("join_workspace", {
+          server: owl.address,
+          code: "good-code",
+          name: "Ivan",
+        }),
+        /"code":"WORKSPACE_ALREADY_JOINED"/,
+      );
+      assert.deepEqual(await app.invoke("refresh_workspace"), joined);
+
+      const members = await app.invoke("list_workspace_members");
+      assert.deepEqual(
+        members.map((m) => [m.name, m.role]),
+        [
+          ["Ivan", "owner"],
+          ["Olga", "member"],
+        ],
+      );
+      await app.invoke("remove_workspace_member", { memberId: "m2" });
+      assert.deepEqual(owl.state.removed, ["m2"]);
+
+      const invite = await app.invoke("create_workspace_invite");
+      assert.equal(invite.code, "fresh-code");
+      assert.match(invite.link, /^owl:\/\/join\?/);
+      assert.deepEqual(
+        (await app.invoke("list_workspace_invites")).map((i) => i.id),
+        [invite.id],
+      );
+      await app.invoke("revoke_workspace_invite", { inviteId: invite.id });
+      assert.deepEqual(await app.invoke("list_workspace_invites"), []);
+
+      // Removed from the server: every call says so in a translatable code.
+      owl.state.revoked = true;
+      assert.match(
+        await app.invokeError("refresh_workspace"),
+        /"code":"WORKSPACE_ACCESS_REVOKED"/,
+      );
+
+      await app.invoke("leave_workspace");
+      assert.equal(await app.invoke("get_workspace"), null);
+      assert.match(
+        await app.invokeError("list_workspace_invites"),
+        /"code":"WORKSPACE_NOT_JOINED"/,
+      );
+    });
+  } finally {
+    owl.server.close();
+  }
 });

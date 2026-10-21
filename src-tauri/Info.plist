@@ -37,6 +37,14 @@
 				<string>https</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Owl server invite</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>owl</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

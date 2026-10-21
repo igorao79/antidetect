@@ -1,40 +1,46 @@
-# Storage for developing and testing donut-sync itself. It runs an S3 server
-# only, and the sync server is expected to run on the host beside it
-# (`pnpm start:dev`), which is why the port is published and matches the one
-# pinned in test/test-env.ts.
+# Owl server: run your own, invite the people you choose.
 #
-# This is NOT the self-hosting compose file. That one runs donut-sync in a
-# container too, and it must set S3_PUBLIC_ENDPOINT, because a server that signs
-# presigned URLs against a compose-internal host such as `http://minio:9000`
-# hands every device a URL it cannot open, while /health and /readyz stay green.
-# Take the self-hosting compose from https://donutbrowser.com/docs/self-hosting
-# rather than from here.
+#   cp .env.example .env        # set PUBLIC_URL and WORKSPACE_NAME
+#   docker compose up -d --build
+#   docker compose logs owl-server   # the owner's invite link is printed here
+#
+# With a domain name and HTTPS (ports 80 and 443 open, DNS pointing here):
+#   set DOMAIN and PUBLIC_URL=https://<DOMAIN> in .env, then
+#   docker compose --profile https up -d --build
+#
+# Everything the server keeps (members, invites, shared profiles) lives in the
+# owl-data volume. Back that volume up; deleting it deletes the server.
 services:
-  s3:
-    # rclone, not MinIO: MinIO withdrew its community images (quay.io now
-    # answers 401 and Docker Hub denies the pull) as well as its binaries.
-    # `rclone serve s3` is what scripts/sync-test-harness.mjs uses too.
-    image: rclone/rclone:latest
+  owl-server:
+    build:
+      context: ..
+      dockerfile: donut-sync/Dockerfile
+    image: owl-server
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: "12342"
+      DATA_DIR: /data
     ports:
-      - "8987:9000"
-    command:
-      - serve
-      - s3
-      - /data
-      - --addr
-      - :9000
-      - --auth-key
-      - minioadmin,minioadmin
-      - --force-path-style
-      - --vfs-cache-mode
-      - writes
-    healthcheck:
-      test: ["CMD", "nc", "-z", "127.0.0.1", "9000"]
-      interval: 2s
-      timeout: 5s
-      retries: 15
+      - "${OWL_PORT:-12342}:12342"
     volumes:
-      - s3_data:/data
+      - owl-data:/data
+
+  caddy:
+    image: caddy:2
+    profiles: ["https"]
+    restart: unless-stopped
+    depends_on:
+      - owl-server
+    command: caddy reverse-proxy --from ${DOMAIN:?set DOMAIN in .env} --to owl-server:12342
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
 
 volumes:
-  s3_data:
+  owl-data:
+  caddy-data:

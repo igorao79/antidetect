@@ -117,6 +117,7 @@ mod wayfern_manager;
 mod wayfern_persona;
 mod wayfern_terms;
 mod window_decorations;
+mod workspace;
 // mod theme_detector; // removed: theme detection handled in webview via CSS prefers-color-scheme
 mod agent_console;
 pub mod cloud_auth;
@@ -352,6 +353,10 @@ fn headless_automation() -> bool {
 // frontend, so it is intentionally not a `#[tauri::command]`.
 async fn handle_url_open(app: tauri::AppHandle, url: String) -> Result<(), String> {
   log::info!("Handling URL open request");
+  if url.starts_with("owl://") {
+    workspace::open_join_link(&app, url);
+    return Ok(());
+  }
 
   // Check if the main window exists and is ready
   if let Some(window) = app.get_webview_window("main") {
@@ -1851,6 +1856,7 @@ async fn generate_sample_fingerprint(
     proxy_bypass_rules: Vec::new(),
     created_by_id: None,
     created_by_email: None,
+    shared_by: None,
     dns_blocklist: None,
     password_protected: false,
     clear_on_close: false,
@@ -2453,6 +2459,7 @@ pub fn run_with_builder(
   builder.setup(|app| {
       // Recover ephemeral dir mappings from RAM-backed storage (tmpfs/ramdisk)
       ephemeral_dirs::recover_ephemeral_dirs();
+      workspace::init(app.handle().clone());
 
       // Extract icons and metadata for existing extensions that don't have them yet
       {
@@ -3413,6 +3420,16 @@ pub fn run_with_builder(
       update_camoufox_config,
       update_wayfern_config,
       profile_templates::list_profile_templates,
+      workspace::get_workspace,
+      workspace::join_workspace,
+      workspace::refresh_workspace,
+      workspace::list_workspace_members,
+      workspace::remove_workspace_member,
+      workspace::create_workspace_invite,
+      workspace::list_workspace_invites,
+      workspace::revoke_workspace_invite,
+      workspace::leave_workspace,
+      workspace::take_pending_workspace_link,
       profile_templates::save_profile_template,
       profile_templates::delete_profile_template,
       cookie_robot::start_cookie_robot,

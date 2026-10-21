@@ -125,6 +125,7 @@ import { useTablePreferences } from "@/hooks/use-table-preferences";
 import { useTableKeyboard } from "@/hooks/use-table-tools";
 import { useTeamLocks } from "@/hooks/use-team-locks";
 import { useVpnEvents } from "@/hooks/use-vpn-events";
+import { useWorkspace } from "@/hooks/use-workspace";
 import { parseBackendError, translateBackendError } from "@/lib/backend-errors";
 import {
   getBrowserDisplayName,
@@ -1721,7 +1722,12 @@ export function ProfilesDataTable({
   const { storedProxies } = useProxyEvents();
   const { vpnConfigs } = useVpnEvents();
   const { user } = useCloudAuth();
-  const { isProfileLocked, getLockInfo } = useTeamLocks(user?.id);
+  // On a joined Owl server the locks name its members; this member's own
+  // locks are not someone else's.
+  const { workspace } = useWorkspace();
+  const { isProfileLocked, getLockInfo } = useTeamLocks(
+    user?.id ?? workspace?.member.id,
+  );
   // Which profiles cannot be opened on this computer, and why. Event-driven and
   // read from the backend's own gate, so the button state and the refusal the
   // backend would give can never disagree.
@@ -3497,7 +3503,7 @@ export function ProfilesDataTable({
         [
           "created_at",
           ...(cookieBotUnlocked ? [] : ["bot"]),
-          ...(DONUT_CLOUD ? [] : CLOUD_ONLY_COLUMNS),
+          ...(DONUT_CLOUD || workspace ? [] : CLOUD_ONLY_COLUMNS),
         ],
       ),
       columnSizing: view.preferences.sizing,

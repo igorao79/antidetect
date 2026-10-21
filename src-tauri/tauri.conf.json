@@ -78,7 +78,7 @@
   "plugins": {
     "deep-link": {
       "desktop": {
-        "schemes": ["http", "https"]
+        "schemes": ["http", "https", "owl"]
       }
     }
   }

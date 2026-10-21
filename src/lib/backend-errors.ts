@@ -245,6 +245,16 @@ export type BackendErrorCode =
   | "SYNC_DISPLAY_TOO_SMALL"
   | "SYNC_ARRANGE_FAILED"
   | "ENGINE_REMOVED"
+  | "WORKSPACE_NOT_JOINED"
+  | "WORKSPACE_UNREACHABLE"
+  | "WORKSPACE_ACCESS_REVOKED"
+  | "WORKSPACE_OWNER_ONLY"
+  | "WORKSPACE_REQUEST_FAILED"
+  | "WORKSPACE_INVITE_LINK_INVALID"
+  | "WORKSPACE_ALREADY_JOINED"
+  | "WORKSPACE_INVITE_INVALID"
+  | "WORKSPACE_TOO_MANY_ATTEMPTS"
+  | "WORKSPACE_PROFILE_NOT_YOURS"
   | "PROFILE_TEMPLATE_INVALID"
   | "PROFILE_TEMPLATE_LIMIT"
   | "PROFILE_TEMPLATE_NOT_FOUND"
@@ -863,6 +873,28 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       return t("backendErrors.syncArrangeFailed");
     case "ENGINE_REMOVED":
       return t("backendErrors.engineRemoved");
+    case "WORKSPACE_NOT_JOINED":
+      return t("backendErrors.workspaceNotJoined");
+    case "WORKSPACE_UNREACHABLE":
+      return t("backendErrors.workspaceUnreachable");
+    case "WORKSPACE_ACCESS_REVOKED":
+      return t("backendErrors.workspaceAccessRevoked");
+    case "WORKSPACE_OWNER_ONLY":
+      return t("backendErrors.workspaceOwnerOnly");
+    case "WORKSPACE_REQUEST_FAILED":
+      return t("backendErrors.workspaceRequestFailed");
+    case "WORKSPACE_INVITE_LINK_INVALID":
+      return t("backendErrors.workspaceInviteLinkInvalid");
+    case "WORKSPACE_ALREADY_JOINED":
+      return t("backendErrors.workspaceAlreadyJoined");
+    case "WORKSPACE_INVITE_INVALID":
+      return t("backendErrors.workspaceInviteInvalid");
+    case "WORKSPACE_TOO_MANY_ATTEMPTS":
+      return t("backendErrors.workspaceTooManyAttempts");
+    case "WORKSPACE_PROFILE_NOT_YOURS":
+      return t("backendErrors.workspaceProfileNotYours", {
+        name: parsed.params?.name ?? "",
+      });
     case "PROFILE_TEMPLATE_INVALID":
       return t("backendErrors.profileTemplateInvalid");
     case "PROFILE_TEMPLATE_LIMIT":

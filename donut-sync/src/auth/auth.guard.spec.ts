@@ -6,6 +6,7 @@ import {
 } from "@nestjs/common";
 import type { ConfigService } from "@nestjs/config";
 import * as jwt from "jsonwebtoken";
+import type { WorkspaceService } from "../workspace/workspace.service.js";
 import { AuthGuard } from "./auth.guard.js";
 import type { UserContext } from "./user-context.interface.js";
 
@@ -28,7 +29,11 @@ function guardWith(env: Record<string, string | undefined>): AuthGuard {
   const config = {
     get: (key: string) => env[key],
   } as unknown as ConfigService;
-  return new AuthGuard(config);
+  // No member tokens in these tests: every lookup misses.
+  const workspace = {
+    store: { memberByToken: () => null },
+  } as unknown as WorkspaceService;
+  return new AuthGuard(config, workspace);
 }
 
 function cloudGuard(): AuthGuard {
@@ -191,6 +196,35 @@ describe("AuthGuard", () => {
       mode: "self-hosted",
       prefix: "",
       profileLimit: 0,
+      role: "owner",
     });
+  });
+
+  it("accepts a member's own token and names the member", async () => {
+    const config = { get: () => undefined } as unknown as ConfigService;
+    const member = { id: "m1", name: "Olga", role: "member" };
+    const workspace = {
+      store: {
+        memberByToken: (token: string) =>
+          token === "member-token" ? member : null,
+      },
+    } as unknown as WorkspaceService;
+    const guard = new AuthGuard(config, workspace);
+
+    const { context, request } = contextFor("member-token");
+    await expect(guard.canActivate(context)).resolves.toBe(true);
+    expect(request.user).toEqual({
+      mode: "self-hosted",
+      prefix: "",
+      profileLimit: 0,
+      sub: "m1",
+      role: "member",
+      name: "Olga",
+    });
+
+    const refused = contextFor("someone-elses-token");
+    await expect(guard.canActivate(refused.context)).rejects.toBeInstanceOf(
+      UnauthorizedException,
+    );
   });
 });

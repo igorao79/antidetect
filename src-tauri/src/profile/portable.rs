@@ -86,6 +86,7 @@ pub fn exportable_config(profile: &BrowserProfile) -> serde_json::Value {
       "encryption_salt",
       "created_by_id",
       "created_by_email",
+      "shared_by",
       "proxy_id",
       "vpn_id",
       "group_id",
@@ -568,6 +569,7 @@ mod tests {
       process_id: Some(4242),
       last_launch: Some(1000),
       created_by_email: Some("someone@example.com".to_string()),
+      shared_by: None,
       ..BrowserProfile::default()
     }
   }

@@ -2465,7 +2465,17 @@
     "engineRemoved": "CloakBrowser a été retiré d'Owl : ce profil ne démarre plus. Exportez ses cookies et importez-les dans un profil Camoufox.",
     "profileTemplateInvalid": "Ce modèle ne peut pas être enregistré : son nom est trop long ou ses réglages sont endommagés.",
     "profileTemplateLimit": "Il y a trop de modèles. Supprimez-en un avant d’en enregistrer un autre.",
-    "profileTemplateNotFound": "Ce modèle n’existe plus."
+    "profileTemplateNotFound": "Ce modèle n’existe plus.",
+    "workspaceNotJoined": "Cette application n'est connectée à aucun serveur Owl.",
+    "workspaceUnreachable": "Le serveur Owl n'a pas répondu. Vérifiez son adresse et qu'il est démarré.",
+    "workspaceAccessRevoked": "Votre accès à ce serveur Owl a été retiré. Déconnectez-vous ou demandez une nouvelle invitation au propriétaire.",
+    "workspaceOwnerOnly": "Seul le propriétaire du serveur peut faire cela.",
+    "workspaceRequestFailed": "Le serveur Owl n'a pas pu effectuer cette action. Réessayez.",
+    "workspaceInviteLinkInvalid": "Ce n'est pas un lien d'invitation Owl. Il commence par owl://join.",
+    "workspaceAlreadyJoined": "Cette application est déjà connectée à un serveur Owl. Déconnectez-vous d'abord.",
+    "workspaceInviteInvalid": "Cette invitation n'est plus valable : elle a été utilisée, révoquée ou a expiré. Demandez-en une nouvelle.",
+    "workspaceTooManyAttempts": "Trop de tentatives. Attendez une minute et réessayez.",
+    "workspaceProfileNotYours": "{{name}} a partagé ce profil. Seule cette personne ou le propriétaire du serveur peut le retirer du serveur."
   },
   "rail": {
     "profiles": "Profils",
@@ -2493,7 +2503,8 @@
     "cookieBotRunning": "Cookie Bot : en cours d'exécution",
     "agent": "Agent",
     "agentWaiting": "Agent, demandes en attente : {{count}}",
-    "brand": "Owl"
+    "brand": "Owl",
+    "workspace": "Serveur"
   },
   "pageTitle": {
     "proxies": "Réseau",
@@ -2507,7 +2518,8 @@
     "shortcuts": "Raccourcis clavier",
     "cookieBot": "Cookie Bot",
     "trash": "Corbeille",
-    "agent": "Agent"
+    "agent": "Agent",
+    "workspace": "Serveur Owl"
   },
   "encryption": {
     "required": {
@@ -3721,5 +3733,51 @@
     "profile": "Celle du profil",
     "profileHint": "Les menus sont dans la langue du pays du profil, comme sur un vrai appareil de là-bas. Les sites voient partout la même langue.",
     "otherHint": "Plus facile à lire, mais les sites peuvent le remarquer : par les messages des formulaires et par les formats de date et de nombre. Gardez la langue du profil pour les comptes importants."
+  },
+  "workspace": {
+    "title": "Serveur Owl",
+    "joinTitle": "Rejoindre un serveur",
+    "joinDescription": "Collez le lien d'invitation du propriétaire du serveur. Les profils partagés sur le serveur apparaissent ici et les membres les utilisent à tour de rôle.",
+    "linkLabel": "Lien d'invitation",
+    "linkPlaceholder": "owl://join?…",
+    "nameLabel": "Votre nom",
+    "namePlaceholder": "Visible par les autres membres",
+    "join": "Rejoindre",
+    "ownServerTitle": "Votre propre serveur",
+    "ownServerBody": "Tout le monde peut faire tourner un serveur Owl avec Docker sur un ordinateur ou un VPS et n'inviter que qui il veut. Au premier démarrage, il affiche le lien d'invitation du propriétaire.",
+    "connectedAs": "Vous êtes {{name}}, {{role}}",
+    "roles": {
+      "owner": "propriétaire",
+      "member": "membre"
+    },
+    "members": "Membres",
+    "you": "vous",
+    "removeMember": "Retirer du serveur",
+    "removeMemberConfirm": "Retirer {{name}} du serveur ? L'accès est coupé immédiatement.",
+    "memberRemoved": "{{name}} a été retiré",
+    "invites": "Invitations ouvertes",
+    "invite": "Inviter",
+    "inviteCreated": "Lien d'invitation copié. Il fonctionne une fois, pendant 7 jours.",
+    "noInvites": "Aucune invitation ouverte.",
+    "inviteExpires": "Expire le {{date}}",
+    "revokeInvite": "Révoquer",
+    "leave": "Quitter le serveur",
+    "leaveDescription": "Les profils restent sur cet ordinateur en copies locales et ne se synchronisent plus avec le serveur.",
+    "joined": "Vous avez rejoint {{name}}",
+    "left": "Vous avez quitté le serveur",
+    "revoked": "Votre accès à ce serveur a été retiré. Quittez-le ou demandez une nouvelle invitation au propriétaire.",
+    "ownerOnlyHint": "Seul le propriétaire invite et retire des membres.",
+    "share": {
+      "titleShare": "Partager sur le serveur",
+      "titleUnshare": "Ne plus partager",
+      "shareBody": "Tous les membres de {{server}} verront « {{profile}} » et pourront l'ouvrir quand personne d'autre ne l'a ouvert.",
+      "unshareBody": "« {{profile}} » sera retiré du serveur pour tous les membres. Il reste sur cet ordinateur.",
+      "sharedBy": "Partagé par {{name}}",
+      "notYours": "{{name}} a partagé ce profil. Seule cette personne ou le propriétaire du serveur peut arrêter le partage.",
+      "share": "Partager",
+      "unshare": "Ne plus partager",
+      "shared": "« {{profile}} » est partagé",
+      "unshared": "« {{profile}} » n'est plus partagé"
+    }
   }
 }

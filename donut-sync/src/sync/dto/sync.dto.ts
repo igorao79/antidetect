@@ -67,7 +67,8 @@ export class ListResponseDto {
 }
 
 export class SubscribeEventDto {
-  type: "change" | "delete" | "ping";
+  /** `lock`: a profile lock was taken or given back (self-hosted servers). */
+  type: "change" | "delete" | "ping" | "lock";
   key?: string;
   lastModified?: string;
   size?: number;

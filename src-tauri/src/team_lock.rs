@@ -4,7 +4,8 @@ use std::time::{Duration, Instant};
 use tokio::sync::{Mutex, RwLock};
 use tokio::task::JoinHandle;
 
-use crate::cloud_auth::{AuthorizedError, CLOUD_API_URL, CLOUD_AUTH};
+use crate::cloud_auth::AuthorizedError;
+use crate::workspace::lock_request;
 
 pub const LOCK_CHANGED_EVENT: &str = "profile-lock-changed";
 pub const SHUTDOWN_RELEASE_TIMEOUT: Duration = Duration::from_secs(2);
@@ -97,16 +98,14 @@ fn emit_lock_change(profile_id: Option<&str>, action: &str) {
   );
 }
 
-fn lock_url(profile_id: &str) -> String {
-  format!("{CLOUD_API_URL}/api/profile-locks/{profile_id}")
+/// The lock calls go to a joined Owl server or to the Donut cloud
+/// (`workspace::lock_request`); both speak this protocol.
+fn lock_path(profile_id: &str) -> String {
+  format!("/{profile_id}")
 }
 
 async fn release_attempt(profile_id: &str) -> Option<Duration> {
-  let url = lock_url(profile_id);
-  match CLOUD_AUTH
-    .authorized_request(|client, token| client.delete(&url).bearer_auth(token))
-    .await
-  {
+  match lock_request(reqwest::Method::DELETE, &lock_path(profile_id)).await {
     Ok(response) => match release_step(response.status().as_u16()) {
       ReleaseStep::Done => None,
       ReleaseStep::Retry => Some(Duration::ZERO),
@@ -245,9 +244,7 @@ impl ProfileLockManager {
   }
 
   pub async fn acquire_lock(&self, profile_id: &str) -> Result<(), String> {
-    let url = lock_url(profile_id);
-    let response = CLOUD_AUTH
-      .authorized_request(|client, token| client.post(&url).bearer_auth(token))
+    let response = lock_request(reqwest::Method::POST, &lock_path(profile_id))
       .await
       .map_err(|e| {
         self.note_failure(&e);
@@ -278,14 +275,14 @@ impl ProfileLockManager {
     self.held.write().await.insert(profile_id.to_string());
 
     // Update local cache
-    if let Some(user) = CLOUD_AUTH.get_user().await {
+    if let Some((holder_id, holder_name)) = crate::workspace::lock_holder().await {
       let mut locks = self.locks.write().await;
       locks.insert(
         profile_id.to_string(),
         ProfileLockInfo {
           profile_id: profile_id.to_string(),
-          locked_by: user.user.id.clone(),
-          locked_by_email: user.user.email.clone(),
+          locked_by: holder_id,
+          locked_by_email: holder_name,
           locked_at: chrono::Utc::now().to_rfc3339(),
           expires_at: None,
         },
@@ -348,22 +345,18 @@ impl ProfileLockManager {
   pub async fn is_locked_by_another(&self, profile_id: &str) -> bool {
     let locks = self.locks.read().await;
     if let Some(lock) = locks.get(profile_id) {
-      if let Some(user) = CLOUD_AUTH.get_user().await {
-        return lock.locked_by != user.user.id;
+      if let Some((holder_id, _)) = crate::workspace::lock_holder().await {
+        return lock.locked_by != holder_id;
       }
     }
     false
   }
 
   pub(crate) async fn fetch_locks(&self) -> Result<(), String> {
-    let url = format!("{CLOUD_API_URL}/api/profile-locks");
-    let response = CLOUD_AUTH
-      .authorized_request(|client, token| client.get(&url).bearer_auth(token))
-      .await
-      .map_err(|e| {
-        self.note_failure(&e);
-        format!("Failed to fetch locks: {e}")
-      })?;
+    let response = lock_request(reqwest::Method::GET, "").await.map_err(|e| {
+      self.note_failure(&e);
+      format!("Failed to fetch locks: {e}")
+    })?;
 
     if !response.status().is_success() {
       return Err("Failed to fetch locks".to_string());
@@ -392,10 +385,8 @@ impl ProfileLockManager {
   }
 
   async fn renew(&self, profile_id: &str) -> Result<Renewal, AuthorizedError> {
-    let url = format!("{}/heartbeat", lock_url(profile_id));
-    let response = CLOUD_AUTH
-      .authorized_request(|client, token| client.post(&url).bearer_auth(token))
-      .await?;
+    let path = format!("{}/heartbeat", lock_path(profile_id));
+    let response = lock_request(reqwest::Method::POST, &path).await?;
     let status = response.status().as_u16();
     let body = response.text().await.unwrap_or_default();
     Ok(renewal_outcome(status, &body))
@@ -508,7 +499,8 @@ fn lock_conflict_error(
   }
 }
 
-/// Acquire profile lock if profile is sync-enabled and user has a paid subscription.
+/// Acquire profile lock if profile is sync-enabled and its locks apply: on a
+/// joined Owl server, or on the Donut cloud with a paid subscription.
 /// Returns whether a lock was actually taken, so a caller that unwinds a failed
 /// launch releases only what it acquired. Releasing unconditionally would drop
 /// a lock a REST handler up the stack still owns.
@@ -518,7 +510,7 @@ pub async fn acquire_team_lock_if_needed(
   if !profile.is_sync_enabled() {
     return Ok(false);
   }
-  if !CLOUD_AUTH.has_active_paid_subscription().await {
+  if !crate::workspace::locks_apply().await {
     return Ok(false);
   }
 

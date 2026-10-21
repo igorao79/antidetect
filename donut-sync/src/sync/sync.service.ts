@@ -23,6 +23,10 @@ import { ConfigService } from "@nestjs/config";
 import { interval, merge, type Observable, of, Subject } from "rxjs";
 import { catchError, filter, map, startWith, switchMap } from "rxjs/operators";
 import type { UserContext } from "../auth/user-context.interface.js";
+import { DiskObjectStore } from "../storage/disk-object-store.js";
+import { BlobSigner, DiskS3Client } from "../storage/disk-s3-client.js";
+import { dataDir, publicUrl, storageMode } from "../workspace/server-config.js";
+import { WorkspaceService } from "../workspace/workspace.service.js";
 import type {
   DeletePrefixRequestDto,
   DeletePrefixResponseDto,
@@ -65,6 +69,12 @@ function clampExpiresIn(requested: number | undefined): number {
   return Math.min(v, MAX_PRESIGN_EXPIRES_IN);
 }
 
+/** The profile a key belongs to, for keys under `profiles/<id>/`. */
+function profileIdOf(key: string): string | null {
+  const match = /^profiles\/([^/]+)\//.exec(key);
+  return match ? match[1] : null;
+}
+
 /** Only this metadata key is meaningful to sync (LWW conflict resolution).
  * Whitelisting prevents a client from signing arbitrary x-amz-meta-* values. */
 function sanitizeMetadata(
@@ -99,8 +109,32 @@ export class SyncService implements OnModuleInit {
   private s3Ready = false;
   private backendInternalUrl: string | undefined;
   private backendInternalKey: string | undefined;
+  /** Set when objects are kept on this server's own disk (`STORAGE=disk`). */
+  readonly disk: { store: DiskObjectStore; signer: BlobSigner } | null = null;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private workspace: WorkspaceService,
+  ) {
+    this.backendInternalUrl = this.configService.get<string>(
+      "BACKEND_INTERNAL_URL",
+    );
+    this.backendInternalKey = this.configService.get<string>(
+      "BACKEND_INTERNAL_KEY",
+    );
+
+    if (storageMode() === "disk") {
+      const store = new DiskObjectStore(dataDir());
+      this.disk = { store, signer: new BlobSigner(dataDir()) };
+      const client = new DiskS3Client(store) as unknown as S3Client;
+      this.s3Client = client;
+      this.presignClient = client;
+      this.bucket = "owl";
+      this.publicEndpoint = publicUrl();
+      this.publicEndpointWasConfigured = true;
+      return;
+    }
+
     // Fail fast instead of silently falling back to insecure local dev defaults
     // (localhost / minioadmin) — a misconfigured server must not start pointed
     // at an unintended or public-default S3 backend.
@@ -150,13 +184,38 @@ export class SyncService implements OnModuleInit {
             credentials,
             forcePathStyle,
           });
+  }
 
-    this.backendInternalUrl = this.configService.get<string>(
-      "BACKEND_INTERNAL_URL",
-    );
-    this.backendInternalKey = this.configService.get<string>(
-      "BACKEND_INTERNAL_KEY",
-    );
+  /**
+   * A URL a client transfers one object with: an S3 presigned URL, or on disk
+   * storage one signed by this server for its `/v1/blob/` endpoint.
+   */
+  private presign(
+    command: PutObjectCommand | GetObjectCommand,
+    options: { expiresIn: number; unhoistableHeaders?: Set<string> },
+  ): Promise<string> {
+    if (this.disk) {
+      const op = command instanceof GetObjectCommand ? "get" : "put";
+      const key = command.input.Key as string;
+      return Promise.resolve(
+        this.disk.signer.url(publicUrl(), op, key, options.expiresIn),
+      );
+    }
+    return getSignedUrl(this.presignClient, command, options);
+  }
+
+  /**
+   * On a server with members, remember who first put a profile there. The
+   * one who shared it (or the owner) is the one who may take it off.
+   */
+  private recordProfileOwner(ctx: UserContext, keys: string[]): void {
+    if (ctx.mode !== "self-hosted" || !ctx.sub) return;
+    for (const key of keys) {
+      const profileId = profileIdOf(key);
+      if (profileId) {
+        this.workspace.store.recordProfileOwner(profileId, ctx.sub);
+      }
+    }
   }
 
   async onModuleInit() {
@@ -174,6 +233,7 @@ export class SyncService implements OnModuleInit {
    * diagnostic there.
    */
   getDiagnosticStorageEndpoint(): string | undefined {
+    if (this.disk) return publicUrl();
     const isCloud = Boolean(
       this.configService.get<string>("SYNC_JWT_PUBLIC_KEY"),
     );
@@ -189,6 +249,7 @@ export class SyncService implements OnModuleInit {
    * Say it once at boot instead.
    */
   private warnIfPresignEndpointIsServerOnly(): void {
+    if (this.disk) return;
     let host: string;
     try {
       host = new URL(this.publicEndpoint).hostname;
@@ -425,7 +486,7 @@ export class SyncService implements OnModuleInit {
     const metadataHeaders = new Set(
       Object.keys(metadata ?? {}).map((name) => `x-amz-meta-${name}`),
     );
-    const url = await getSignedUrl(this.presignClient, command, {
+    const url = await this.presign(command, {
       expiresIn,
       // The AWS presigner otherwise hoists user metadata into the query string.
       // The client echoes the response metadata as headers, so those headers
@@ -437,6 +498,7 @@ export class SyncService implements OnModuleInit {
     if (ctx.mode === "cloud" && dto.key.startsWith("profiles/")) {
       this.reportProfileUsageAsync(ctx);
     }
+    this.recordProfileOwner(ctx, [dto.key]);
 
     // Notify subscribers via the per-scope manifest. Fire-and-forget; a
     // failure here just means other devices pick up the change on their
@@ -467,7 +529,7 @@ export class SyncService implements OnModuleInit {
       Key: key,
     });
 
-    const url = await getSignedUrl(this.presignClient, command, { expiresIn });
+    const url = await this.presign(command, { expiresIn });
 
     return {
       url,
@@ -598,7 +660,7 @@ export class SyncService implements OnModuleInit {
           ContentType: item.contentType || "application/octet-stream",
         });
 
-        const url = await getSignedUrl(this.presignClient, command, {
+        const url = await this.presign(command, {
           expiresIn,
         });
 
@@ -617,6 +679,10 @@ export class SyncService implements OnModuleInit {
     ) {
       this.reportProfileUsageAsync(ctx);
     }
+    this.recordProfileOwner(
+      ctx,
+      dto.items.map((item) => item.key),
+    );
 
     // One bump per scope touched by this batch (usually one).
     if (items.length > 0) {
@@ -660,7 +726,7 @@ export class SyncService implements OnModuleInit {
           Key: key,
         });
 
-        const url = await getSignedUrl(this.presignClient, command, {
+        const url = await this.presign(command, {
           expiresIn,
         });
 
@@ -687,6 +753,20 @@ export class SyncService implements OnModuleInit {
     // refuse an empty scoped prefix (which would match the whole scope).
     this.validateKeyAccess(ctx, prefix);
     if (ctx.mode === "cloud" && prefix.length === 0) {
+      throw new ForbiddenException("Refusing to delete an empty prefix");
+    }
+    // On a server with members, a whole profile comes off the server only by
+    // the member who shared it or by the owner.
+    const profileId = profileIdOf(prefix);
+    if (ctx.mode === "self-hosted" && ctx.role === "member" && profileId) {
+      const sharer = this.workspace.store.profileOwner(profileId);
+      if (sharer && sharer !== ctx.sub) {
+        throw new ForbiddenException(
+          "Only the member who shared this profile or the owner can remove it",
+        );
+      }
+    }
+    if (ctx.mode === "self-hosted" && ctx.role === "member" && !prefix) {
       throw new ForbiddenException("Refusing to delete an empty prefix");
     }
     let deletedCount = 0;

@@ -1,96 +1,89 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Сервер Owl
 
+Свой сервер для браузера Owl. Его может поднять любой: на рабочем компьютере, на офисном сервере или на VPS. Владелец приглашает только тех, кого хочет. Участники видят профили, которыми поделились на сервере (куки, вкладки, отпечаток, прокси), и работают в них по очереди: пока профиль открыт у одного, остальные видят, кто его держит.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+Профили хранятся на диске самого сервера, в томе Docker `owl-data`. Отдельная база или S3 не нужны.
 
-## Description
+## Как поднять за три шага
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+Нужен компьютер или сервер с [Docker](https://docs.docker.com/get-docker/) (на Mac подойдёт Docker Desktop или OrbStack) и этот репозиторий.
 
-## Project setup
+1. Настройте адрес и название:
+   ```bash
+   cd donut-sync
+   cp .env.example .env
+   ```
+   В `.env` укажите `PUBLIC_URL`: адрес, по которому до сервера достучатся компьютеры участников, например `http://192.168.1.10:12342` в офисной сети. Название сервера задаётся в `WORKSPACE_NAME`.
 
-```bash
-pnpm install
+2. Запустите:
+   ```bash
+   docker compose up -d --build
+   ```
+
+3. Возьмите ссылку владельца:
+   ```bash
+   docker compose logs owl-server
+   ```
+   В журнале будет строка вида `owl://join?server=...&code=...`. Откройте Owl, перейдите на страницу «Сервер», вставьте ссылку и своё имя. Вы станете владельцем.
+
+   Ссылка работает один раз и семь дней. Если она потерялась или истекла, получите новую (только пока владельца нет):
+   ```bash
+   docker compose exec owl-server node dist/cli owner-link
+   ```
+
+## Как пригласить человека
+
+На странице «Сервер» нажмите «Пригласить». Ссылка скопируется в буфер; отправьте её человеку. Он вставляет её у себя на странице «Сервер» вместе со своим именем. Каждая ссылка работает один раз и семь дней, неиспользованную можно отозвать там же.
+
+Удалить участника может только владелец: доступ пропадает сразу, блокировки этого участника снимаются.
+
+## Как делиться профилями
+
+В меню профиля (кнопка «i» в строке профиля) выберите «Поделиться на сервере». Профиль появится у всех участников. Снять его с общего доступа может тот, кто поделился, или владелец сервера.
+
+## Доступ из интернета (HTTPS)
+
+Если участники работают не в одной сети, поднимите сервер на VPS с доменным именем. Порты 80 и 443 должны быть открыты, а DNS домена указывать на сервер. В `.env`:
+
+```
+DOMAIN=owl.example.com
+PUBLIC_URL=https://owl.example.com
 ```
 
-## Compile and run the project
+и запуск с профилем `https`: Caddy сам получит сертификат.
 
 ```bash
-# development
-pnpm run start
-
-# watch mode
-pnpm run start:dev
-
-# production mode
-pnpm run start:prod
+docker compose --profile https up -d --build
 ```
 
-## Run tests
+## Резервная копия и обновление
+
+Всё состояние сервера лежит в томе `owl-data`: участники, приглашения и общие профили. Копируйте его, например:
 
 ```bash
-# unit tests
-pnpm run test
-
-# e2e tests
-pnpm run test:e2e
-
-# test coverage
-pnpm run test:cov
+docker run --rm -v donut-sync_owl-data:/data -v "$PWD":/backup alpine tar czf /backup/owl-data.tgz -C /data .
 ```
 
-## Deployment
+Обновление: `git pull`, затем `docker compose up -d --build`. Данные в томе сохраняются.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Настройки
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+| Переменная | Что задаёт |
+| --- | --- |
+| `PUBLIC_URL` | Адрес сервера для участников. Попадает в ссылки-приглашения и в ссылки на файлы. |
+| `WORKSPACE_NAME` | Название сервера в Owl. |
+| `DOMAIN` | Домен для профиля `https`. |
+| `STORAGE` | `disk` (по умолчанию) или `s3`. Для `s3` нужны `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `S3_BUCKET` и, если хранилище доступно только серверу, `S3_PUBLIC_ENDPOINT`. |
+| `SYNC_TOKEN` | Необязательный общий ключ с правами владельца, для скриптов. Участникам он не нужен. |
+| `OWL_PORT` | Порт на хост-машине, по умолчанию 12342. |
+
+## Разработка
 
 ```bash
-pnpm install -g @nestjs/mau
-mau deploy
+pnpm --filter donut-sync test                       # модульные тесты
+pnpm --filter donut-sync test:e2e -- workspace      # сервер с участниками, без Docker
+docker compose -f donut-sync/docker-compose.test.yml up -d --wait
+pnpm --filter donut-sync test:e2e                   # все e2e, включая режим S3
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Сервер основан на `donut-sync` из [Donut Browser](https://github.com/zhom/donutbrowser) и распространяется по AGPL-3.0.

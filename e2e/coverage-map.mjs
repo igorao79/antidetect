@@ -286,6 +286,22 @@ export const commandCoverage = {
       "profile_templates::delete_profile_template",
     ],
   },
+  workspaceContracts: {
+    suite: "entities",
+    level: "contract",
+    commands: [
+      "workspace::get_workspace",
+      "workspace::join_workspace",
+      "workspace::refresh_workspace",
+      "workspace::list_workspace_members",
+      "workspace::remove_workspace_member",
+      "workspace::create_workspace_invite",
+      "workspace::list_workspace_invites",
+      "workspace::revoke_workspace_invite",
+      "workspace::leave_workspace",
+      "workspace::take_pending_workspace_link",
+    ],
+  },
   cloudContracts: {
     suite: "integrations",
     level: "contract",

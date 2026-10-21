@@ -9,6 +9,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 import type { Request } from "express";
 import * as jwt from "jsonwebtoken";
+import { WorkspaceService } from "../workspace/workspace.service.js";
 import type { UserContext } from "./user-context.interface.js";
 
 /** Constant-time string compare; false on length mismatch (no early return). */
@@ -35,7 +36,10 @@ export class AuthGuard implements CanActivate {
   >();
   private static readonly TEAM_SCOPE_TTL_MS = 30_000;
 
-  constructor(private configService: ConfigService) {
+  constructor(
+    private configService: ConfigService,
+    private workspace: WorkspaceService,
+  ) {
     const publicKey = this.configService.get<string>("SYNC_JWT_PUBLIC_KEY");
     if (publicKey) {
       this.jwtPublicKey = publicKey.replace(/\\n/g, "\n");
@@ -107,6 +111,21 @@ export class AuthGuard implements CanActivate {
         mode: "self-hosted",
         prefix: "",
         profileLimit: 0,
+        role: "owner",
+      } satisfies UserContext;
+      return true;
+    }
+
+    // A member of this server (self-hosted, invite-based).
+    const member = this.workspace.store.memberByToken(token);
+    if (member) {
+      (request as unknown as Record<string, unknown>).user = {
+        mode: "self-hosted",
+        prefix: "",
+        profileLimit: 0,
+        sub: member.id,
+        role: member.role,
+        name: member.name,
       } satisfies UserContext;
       return true;
     }
@@ -169,13 +188,6 @@ export class AuthGuard implements CanActivate {
           `JWT verification failed: ${err instanceof Error ? err.message : err}`,
         );
       }
-    }
-
-    // If SYNC_TOKEN is configured but didn't match, or JWT failed
-    if (!expectedToken && !this.jwtPublicKey) {
-      throw new UnauthorizedException(
-        "No auth method configured on server (set SYNC_TOKEN or SYNC_JWT_PUBLIC_KEY)",
-      );
     }
 
     throw new UnauthorizedException("Invalid sync token or JWT");

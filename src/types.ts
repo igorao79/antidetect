@@ -33,6 +33,8 @@ export interface BrowserProfile {
   note?: string; // User note
   window_color?: string; // Per-profile window frame color "#RRGGBB"; auto-derived from the id when unset
   sync_mode?: SyncMode;
+  /** The member of a joined Owl server who shared this profile there. */
+  shared_by?: { id: string; name: string } | null;
   encryption_salt?: string;
   last_sync?: number; // Timestamp of last successful sync (epoch seconds)
   host_os?: string; // OS where profile was created ("macos", "windows", "linux")

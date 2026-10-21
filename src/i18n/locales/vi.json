@@ -2455,7 +2455,17 @@
     "engineRemoved": "CloakBrowser đã bị gỡ khỏi Owl nên hồ sơ này không còn khởi động được. Hãy xuất cookie của nó và nhập vào một hồ sơ Camoufox.",
     "profileTemplateInvalid": "Không thể lưu mẫu này: tên quá dài hoặc cài đặt bị hỏng.",
     "profileTemplateLimit": "Có quá nhiều mẫu. Hãy xóa một mẫu trước khi lưu mẫu khác.",
-    "profileTemplateNotFound": "Mẫu này không còn tồn tại."
+    "profileTemplateNotFound": "Mẫu này không còn tồn tại.",
+    "workspaceNotJoined": "Ứng dụng này chưa kết nối với máy chủ Owl nào.",
+    "workspaceUnreachable": "Máy chủ Owl không phản hồi. Hãy kiểm tra địa chỉ và máy chủ có đang chạy không.",
+    "workspaceAccessRevoked": "Quyền truy cập của bạn vào máy chủ Owl này đã bị gỡ. Hãy ngắt kết nối hoặc xin chủ sở hữu lời mời mới.",
+    "workspaceOwnerOnly": "Chỉ chủ sở hữu máy chủ mới làm được việc này.",
+    "workspaceRequestFailed": "Máy chủ Owl không thực hiện được việc này. Hãy thử lại.",
+    "workspaceInviteLinkInvalid": "Đây không phải liên kết mời của Owl. Liên kết bắt đầu bằng owl://join.",
+    "workspaceAlreadyJoined": "Ứng dụng này đã kết nối với một máy chủ Owl. Hãy ngắt kết nối trước.",
+    "workspaceInviteInvalid": "Lời mời này không còn hiệu lực: đã được dùng, bị thu hồi hoặc hết hạn. Hãy xin lời mời mới.",
+    "workspaceTooManyAttempts": "Quá nhiều lần thử. Hãy đợi một phút rồi thử lại.",
+    "workspaceProfileNotYours": "{{name}} đã chia sẻ hồ sơ này. Chỉ người đó hoặc chủ máy chủ mới có thể gỡ nó khỏi máy chủ."
   },
   "rail": {
     "profiles": "Profile",
@@ -2483,7 +2493,8 @@
     "cookieBotRunning": "Cookie Bot — đang chạy",
     "agent": "Tác nhân",
     "agentWaiting": "Tác nhân, yêu cầu đang chờ: {{count}}",
-    "brand": "Owl"
+    "brand": "Owl",
+    "workspace": "Máy chủ"
   },
   "pageTitle": {
     "proxies": "Mạng",
@@ -2497,7 +2508,8 @@
     "shortcuts": "Phím tắt",
     "cookieBot": "Cookie Bot",
     "trash": "Thùng rác",
-    "agent": "Tác nhân"
+    "agent": "Tác nhân",
+    "workspace": "Máy chủ Owl"
   },
   "encryption": {
     "required": {
@@ -3688,5 +3700,51 @@
     "profile": "Giống hồ sơ",
     "profileHint": "Menu hiển thị bằng ngôn ngữ của quốc gia hồ sơ, như trên một thiết bị thật ở đó. Trang web thấy cùng một ngôn ngữ ở mọi nơi.",
     "otherHint": "Dễ đọc hơn, nhưng trang web có thể nhận ra: qua lời nhắc trong biểu mẫu và qua định dạng ngày và số. Hãy giữ ngôn ngữ của hồ sơ cho các tài khoản quan trọng."
+  },
+  "workspace": {
+    "title": "Máy chủ Owl",
+    "joinTitle": "Tham gia máy chủ",
+    "joinDescription": "Dán liên kết mời từ chủ máy chủ. Các hồ sơ được chia sẻ trên máy chủ sẽ hiện ở đây và các thành viên dùng chúng lần lượt.",
+    "linkLabel": "Liên kết mời",
+    "linkPlaceholder": "owl://join?…",
+    "nameLabel": "Tên của bạn",
+    "namePlaceholder": "Hiển thị cho các thành viên khác",
+    "join": "Tham gia",
+    "ownServerTitle": "Máy chủ của riêng bạn",
+    "ownServerBody": "Bất kỳ ai cũng có thể chạy máy chủ Owl bằng Docker trên máy tính hoặc VPS và chỉ mời người mình muốn. Lần khởi động đầu tiên sẽ in ra liên kết mời của chủ sở hữu.",
+    "connectedAs": "Bạn là {{name}}, {{role}}",
+    "roles": {
+      "owner": "chủ sở hữu",
+      "member": "thành viên"
+    },
+    "members": "Thành viên",
+    "you": "bạn",
+    "removeMember": "Gỡ khỏi máy chủ",
+    "removeMemberConfirm": "Gỡ {{name}} khỏi máy chủ? Người này sẽ mất quyền truy cập ngay.",
+    "memberRemoved": "Đã gỡ {{name}}",
+    "invites": "Lời mời đang mở",
+    "invite": "Mời",
+    "inviteCreated": "Đã sao chép liên kết mời. Liên kết dùng được một lần, trong 7 ngày.",
+    "noInvites": "Không có lời mời nào đang mở.",
+    "inviteExpires": "Hết hạn {{date}}",
+    "revokeInvite": "Thu hồi",
+    "leave": "Rời máy chủ",
+    "leaveDescription": "Các hồ sơ vẫn ở trên máy tính này dưới dạng bản sao cục bộ và không còn đồng bộ với máy chủ.",
+    "joined": "Đã tham gia {{name}}",
+    "left": "Đã rời máy chủ",
+    "revoked": "Quyền truy cập của bạn vào máy chủ này đã bị gỡ. Hãy rời máy chủ hoặc xin chủ sở hữu lời mời mới.",
+    "ownerOnlyHint": "Chỉ chủ sở hữu mới mời và gỡ thành viên.",
+    "share": {
+      "titleShare": "Chia sẻ lên máy chủ",
+      "titleUnshare": "Ngừng chia sẻ",
+      "shareBody": "Mọi người trên {{server}} sẽ thấy “{{profile}}” và có thể mở khi không ai khác đang mở.",
+      "unshareBody": "“{{profile}}” sẽ bị gỡ khỏi máy chủ với mọi thành viên. Hồ sơ vẫn ở trên máy tính này.",
+      "sharedBy": "Được chia sẻ bởi {{name}}",
+      "notYours": "{{name}} đã chia sẻ hồ sơ này. Chỉ người đó hoặc chủ máy chủ mới có thể ngừng chia sẻ.",
+      "share": "Chia sẻ",
+      "unshare": "Ngừng chia sẻ",
+      "shared": "Đã chia sẻ “{{profile}}”",
+      "unshared": "“{{profile}}” không còn được chia sẻ"
+    }
   }
 }

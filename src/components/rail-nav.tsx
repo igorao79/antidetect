@@ -15,6 +15,7 @@ import {
   LuLightbulb,
   LuPlug,
   LuPuzzle,
+  LuServer,
   LuTrash2,
   LuUser,
   LuUsers,
@@ -38,6 +39,7 @@ export type AppPage =
   | "settings"
   | "integrations"
   | "account"
+  | "workspace"
   | "import"
   | "shortcuts"
   | "trash";
@@ -275,6 +277,7 @@ const ALL_TOP_ITEMS: RailItem[] = [
   { page: "cookieBot", Icon: LuCookie, labelKey: "rail.cookieBot" },
   { page: "agent", Icon: LuBot, labelKey: "rail.agent" },
   { page: "integrations", Icon: LuPlug, labelKey: "rail.integrations" },
+  { page: "workspace", Icon: LuServer, labelKey: "rail.workspace" },
   { page: "account", Icon: LuCloud, labelKey: "rail.account" },
 ];
 

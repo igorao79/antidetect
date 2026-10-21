@@ -2455,7 +2455,17 @@
     "engineRemoved": "CloakBrowser가 Owl에서 제거되어 이 프로필은 더 이상 시작되지 않습니다. 쿠키를 내보내 Camoufox 프로필로 가져오세요.",
     "profileTemplateInvalid": "이 템플릿을 저장할 수 없습니다. 이름이 너무 길거나 설정이 손상되었습니다.",
     "profileTemplateLimit": "템플릿이 너무 많습니다. 하나를 삭제한 뒤 저장하세요.",
-    "profileTemplateNotFound": "이 템플릿은 더 이상 없습니다."
+    "profileTemplateNotFound": "이 템플릿은 더 이상 없습니다.",
+    "workspaceNotJoined": "이 앱은 어떤 Owl 서버에도 연결되어 있지 않습니다.",
+    "workspaceUnreachable": "Owl 서버가 응답하지 않았습니다. 주소와 서버 실행 여부를 확인하세요.",
+    "workspaceAccessRevoked": "이 Owl 서버에 대한 접근 권한이 삭제되었습니다. 연결을 해제하거나 소유자에게 새 초대를 요청하세요.",
+    "workspaceOwnerOnly": "서버 소유자만 할 수 있습니다.",
+    "workspaceRequestFailed": "Owl 서버가 이 작업을 수행하지 못했습니다. 다시 시도하세요.",
+    "workspaceInviteLinkInvalid": "Owl 초대 링크가 아닙니다. 초대 링크는 owl://join으로 시작합니다.",
+    "workspaceAlreadyJoined": "이 앱은 이미 Owl 서버에 연결되어 있습니다. 먼저 연결을 해제하세요.",
+    "workspaceInviteInvalid": "이 초대는 더 이상 유효하지 않습니다. 이미 사용되었거나 취소되었거나 만료되었습니다. 새 초대를 요청하세요.",
+    "workspaceTooManyAttempts": "시도 횟수가 너무 많습니다. 1분 후에 다시 시도하세요.",
+    "workspaceProfileNotYours": "{{name}}님이 이 프로필을 공유했습니다. 서버에서 내릴 수 있는 사람은 그 사람이나 서버 소유자뿐입니다."
   },
   "rail": {
     "profiles": "프로필",
@@ -2483,7 +2493,8 @@
     "cookieBotRunning": "Cookie Bot — 실행 중",
     "agent": "에이전트",
     "agentWaiting": "에이전트, 기다리는 요청: {{count}}",
-    "brand": "Owl"
+    "brand": "Owl",
+    "workspace": "서버"
   },
   "pageTitle": {
     "proxies": "네트워크",
@@ -2497,7 +2508,8 @@
     "shortcuts": "키보드 단축키",
     "cookieBot": "Cookie Bot",
     "trash": "휴지통",
-    "agent": "에이전트"
+    "agent": "에이전트",
+    "workspace": "Owl 서버"
   },
   "encryption": {
     "required": {
@@ -3688,5 +3700,51 @@
     "profile": "프로필과 동일",
     "profileHint": "메뉴가 프로필 국가의 언어로 표시됩니다. 그 나라의 실제 기기와 같습니다. 사이트에는 어디서나 하나의 언어만 보입니다.",
     "otherHint": "읽기는 편하지만 사이트가 알아챌 수 있습니다. 양식 메시지의 문구와 날짜·숫자 형식으로 드러납니다. 중요한 계정에는 프로필의 언어를 유지하세요."
+  },
+  "workspace": {
+    "title": "Owl 서버",
+    "joinTitle": "서버 참여",
+    "joinDescription": "서버 소유자에게 받은 초대 링크를 붙여 넣으세요. 서버에서 공유된 프로필이 여기에 표시되며 멤버들이 번갈아 사용합니다.",
+    "linkLabel": "초대 링크",
+    "linkPlaceholder": "owl://join?…",
+    "nameLabel": "이름",
+    "namePlaceholder": "다른 멤버에게 표시됩니다",
+    "join": "참여",
+    "ownServerTitle": "내 서버 운영",
+    "ownServerBody": "누구나 컴퓨터나 VPS에서 Docker로 Owl 서버를 실행하고 원하는 사람만 초대할 수 있습니다. 처음 시작할 때 소유자 초대 링크가 표시됩니다.",
+    "connectedAs": "{{name}}님, {{role}}",
+    "roles": {
+      "owner": "소유자",
+      "member": "멤버"
+    },
+    "members": "멤버",
+    "you": "나",
+    "removeMember": "서버에서 제거",
+    "removeMemberConfirm": "{{name}}님을 서버에서 제거할까요? 즉시 접근할 수 없게 됩니다.",
+    "memberRemoved": "{{name}}님을 제거했습니다",
+    "invites": "열린 초대",
+    "invite": "초대",
+    "inviteCreated": "초대 링크를 복사했습니다. 한 번, 7일 동안 사용할 수 있습니다.",
+    "noInvites": "열린 초대가 없습니다.",
+    "inviteExpires": "{{date}}까지 유효",
+    "revokeInvite": "취소",
+    "leave": "서버 나가기",
+    "leaveDescription": "프로필은 이 컴퓨터에 로컬 사본으로 남고 서버와 더 이상 동기화되지 않습니다.",
+    "joined": "{{name}}에 참여했습니다",
+    "left": "서버에서 나갔습니다",
+    "revoked": "이 서버에 대한 접근 권한이 삭제되었습니다. 서버에서 나가거나 소유자에게 새 초대를 요청하세요.",
+    "ownerOnlyHint": "멤버 초대와 제거는 소유자만 할 수 있습니다.",
+    "share": {
+      "titleShare": "서버에 공유",
+      "titleUnshare": "공유 중지",
+      "shareBody": "{{server}}의 모든 멤버가 “{{profile}}”을 보고, 다른 사람이 열어 두지 않았을 때 열 수 있습니다.",
+      "unshareBody": "“{{profile}}”이 모든 멤버의 서버에서 제거됩니다. 이 컴퓨터에는 남아 있습니다.",
+      "sharedBy": "공유한 사람: {{name}}",
+      "notYours": "이 프로필은 {{name}}님이 공유했습니다. 공유를 중지할 수 있는 사람은 그 사람이나 서버 소유자뿐입니다.",
+      "share": "공유",
+      "unshare": "공유 중지",
+      "shared": "“{{profile}}”을 공유했습니다",
+      "unshared": "“{{profile}}”을 더 이상 공유하지 않습니다"
+    }
   }
 }

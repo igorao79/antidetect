@@ -85,6 +85,7 @@ import {
 import { LaunchArgumentsEditor } from "@/components/wayfern-config-form";
 import { WindowDragArea } from "@/components/window-drag-area";
 import { useInputModality } from "@/hooks/use-input-modality";
+import { useWorkspace } from "@/hooks/use-workspace";
 import { translateBackendError } from "@/lib/backend-errors";
 import { getProfileIcon, supportsSynchronizer } from "@/lib/browser-utils";
 import { DONUT_CLOUD } from "@/lib/cloud-only-pages";
@@ -600,6 +601,8 @@ function ProfileInfoContents({
   onSectionChange: (section: ProfileSection) => void;
 }) {
   const { t } = useTranslation();
+  // On a joined Owl server the sync action shares the profile there.
+  const { workspace } = useWorkspace();
   const [copied, setCopied] = React.useState(false);
   const [groupName, setGroupName] = React.useState<string | null>(null);
   const [extensionGroupName, setExtensionGroupName] = React.useState<
@@ -727,7 +730,14 @@ function ProfileInfoContents({
     {
       id: "sync",
       icon: <LuRefreshCw className="size-4" />,
-      label: t("profiles.actions.syncSettings"),
+      label:
+        workspace && !DONUT_CLOUD
+          ? t(
+              profile.sync_mode && profile.sync_mode !== "Disabled"
+                ? "workspace.share.titleUnshare"
+                : "workspace.share.titleShare",
+            )
+          : t("profiles.actions.syncSettings"),
       onClick: () => {
         handleAction(() => onOpenProfileSyncDialog?.(profile));
       },

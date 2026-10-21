@@ -2455,7 +2455,17 @@
     "engineRemoved": "CloakBrowser has been removed from Owl, so this profile no longer starts. Export its cookies and import them into a Camoufox profile.",
     "profileTemplateInvalid": "This template cannot be saved: its name is too long or its settings are damaged.",
     "profileTemplateLimit": "There are too many templates. Delete one before saving another.",
-    "profileTemplateNotFound": "This template no longer exists."
+    "profileTemplateNotFound": "This template no longer exists.",
+    "workspaceNotJoined": "This app is not connected to an Owl server.",
+    "workspaceUnreachable": "The Owl server did not answer. Check its address and that it is running.",
+    "workspaceAccessRevoked": "Your access to this Owl server was removed. Leave it, or ask its owner for a new invite.",
+    "workspaceOwnerOnly": "Only the owner of the server can do this.",
+    "workspaceRequestFailed": "The Owl server could not do this. Try again.",
+    "workspaceInviteLinkInvalid": "This is not an Owl invite link. It starts with owl://join.",
+    "workspaceAlreadyJoined": "This app is already connected to an Owl server. Leave it first.",
+    "workspaceInviteInvalid": "This invite no longer works: it was used, revoked or has expired. Ask for a new one.",
+    "workspaceTooManyAttempts": "Too many attempts. Wait a minute and try again.",
+    "workspaceProfileNotYours": "{{name}} shared this profile. Only they or the server owner can take it off the server."
   },
   "rail": {
     "profiles": "Profiles",
@@ -2483,7 +2493,8 @@
     "cookieBotRunning": "Cookie Bot — running now",
     "agent": "Agent",
     "agentWaiting": "Agent, requests waiting: {{count}}",
-    "brand": "Owl"
+    "brand": "Owl",
+    "workspace": "Server"
   },
   "pageTitle": {
     "proxies": "Network",
@@ -2497,7 +2508,8 @@
     "shortcuts": "Keyboard shortcuts",
     "cookieBot": "Cookie Bot",
     "trash": "Trash",
-    "agent": "Agent"
+    "agent": "Agent",
+    "workspace": "Owl server"
   },
   "encryption": {
     "required": {
@@ -3688,5 +3700,51 @@
     "profile": "Same as the profile",
     "profileHint": "Menus are in the language of the profile's country, as on a real device there. Sites see one language everywhere.",
     "otherHint": "Easier to read, but sites can notice it: by the wording of form messages and by date and number formats. Keep the profile's language for accounts that matter."
+  },
+  "workspace": {
+    "title": "Owl server",
+    "joinTitle": "Join a server",
+    "joinDescription": "Paste the invite link from the server's owner. Profiles shared on the server appear here, and members take turns in them.",
+    "linkLabel": "Invite link",
+    "linkPlaceholder": "owl://join?…",
+    "nameLabel": "Your name",
+    "namePlaceholder": "Shown to the other members",
+    "join": "Join",
+    "ownServerTitle": "Run your own server",
+    "ownServerBody": "Anyone can run an Owl server with Docker on a computer or a VPS and invite only the people they choose. Its first start prints the owner's invite link.",
+    "connectedAs": "You are {{name}}, {{role}}",
+    "roles": {
+      "owner": "owner",
+      "member": "member"
+    },
+    "members": "Members",
+    "you": "you",
+    "removeMember": "Remove from the server",
+    "removeMemberConfirm": "Remove {{name}} from the server? They lose access at once.",
+    "memberRemoved": "{{name}} was removed",
+    "invites": "Open invites",
+    "invite": "Invite",
+    "inviteCreated": "Invite link copied. It works once, for 7 days.",
+    "noInvites": "No open invites.",
+    "inviteExpires": "Expires {{date}}",
+    "revokeInvite": "Revoke",
+    "leave": "Leave server",
+    "leaveDescription": "Profiles stay on this computer as local copies and stop syncing with the server.",
+    "joined": "Joined {{name}}",
+    "left": "Left the server",
+    "revoked": "Your access to this server was removed. Leave it, or ask its owner for a new invite.",
+    "ownerOnlyHint": "Only the owner invites and removes members.",
+    "share": {
+      "titleShare": "Share on the server",
+      "titleUnshare": "Stop sharing",
+      "shareBody": "Everyone on {{server}} will see “{{profile}}” and can open it while nobody else has it open.",
+      "unshareBody": "“{{profile}}” is removed from the server for every member. It stays on this computer.",
+      "sharedBy": "Shared by {{name}}",
+      "notYours": "{{name}} shared this profile. Only they or the server owner can stop sharing it.",
+      "share": "Share",
+      "unshare": "Stop sharing",
+      "shared": "“{{profile}}” is shared",
+      "unshared": "“{{profile}}” is no longer shared"
+    }
   }
 }

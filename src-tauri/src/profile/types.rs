@@ -76,6 +76,10 @@ pub struct BrowserProfile {
   pub created_by_id: Option<String>,
   #[serde(default)]
   pub created_by_email: Option<String>,
+  /// The member of a joined Owl server who shared this profile there (fork,
+  /// `workspace.rs`). Synced with the metadata, so every member sees it.
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub shared_by: Option<crate::workspace::SharedBy>,
   #[serde(default)]
   pub dns_blocklist: Option<String>,
   /// True when the on-disk profile dir is encrypted with a per-profile password.

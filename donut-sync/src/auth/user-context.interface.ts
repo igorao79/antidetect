@@ -6,5 +6,8 @@ export interface UserContext {
   // backend (never carried in the JWT). All key scoping uses this directly.
   prefix: string;
   profileLimit: number; // 0 for unlimited (self-hosted); effective (team) limit for team members
-  sub?: string; // the authenticated user id (cloud only)
+  sub?: string; // the authenticated user id (cloud), or member id (self-hosted)
+  // Self-hosted servers with members: the member's role and name.
+  role?: "owner" | "member";
+  name?: string;
 }

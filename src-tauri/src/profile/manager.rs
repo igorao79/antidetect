@@ -269,6 +269,7 @@ impl ProfileManager {
           proxy_bypass_rules: Vec::new(),
           created_by_id: None,
           created_by_email: None,
+          shared_by: None,
           dns_blocklist: None,
           password_protected: false,
           created_at: None,
@@ -420,6 +421,7 @@ impl ProfileManager {
           proxy_bypass_rules: Vec::new(),
           created_by_id: None,
           created_by_email: None,
+          shared_by: None,
           dns_blocklist: None,
           password_protected: false,
           clear_on_close: false,
@@ -539,6 +541,7 @@ impl ProfileManager {
       proxy_bypass_rules: Vec::new(),
       created_by_id: None,
       created_by_email: None,
+      shared_by: None,
       dns_blocklist,
       password_protected: false,
       clear_on_close: false,
@@ -870,6 +873,7 @@ impl ProfileManager {
     if crate::profile::trash::is_running_locally(&profile) {
       return Err(crate::backend_error("PROFILE_RUNNING").into());
     }
+    crate::workspace::may_unshare(&profile)?;
 
     // An ephemeral profile keeps its data in RAM; there is nothing to trash.
     // "Delete at once" (a retention of 0 days) turns the trash off: the
@@ -1596,6 +1600,7 @@ impl ProfileManager {
       proxy_bypass_rules: source.proxy_bypass_rules,
       created_by_id: None,
       created_by_email: None,
+      shared_by: None,
       dns_blocklist: source.dns_blocklist,
       password_protected: false,
       clear_on_close: false,

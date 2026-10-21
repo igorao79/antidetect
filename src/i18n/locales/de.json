@@ -2455,7 +2455,17 @@
     "engineRemoved": "CloakBrowser wurde aus Owl entfernt, daher startet dieses Profil nicht mehr. Exportieren Sie seine Cookies und importieren Sie sie in ein Camoufox-Profil.",
     "profileTemplateInvalid": "Diese Vorlage kann nicht gespeichert werden: Der Name ist zu lang oder die Einstellungen sind beschädigt.",
     "profileTemplateLimit": "Es gibt zu viele Vorlagen. Löschen Sie eine, bevor Sie eine weitere speichern.",
-    "profileTemplateNotFound": "Diese Vorlage existiert nicht mehr."
+    "profileTemplateNotFound": "Diese Vorlage existiert nicht mehr.",
+    "workspaceNotJoined": "Diese App ist mit keinem Owl-Server verbunden.",
+    "workspaceUnreachable": "Der Owl-Server hat nicht geantwortet. Prüfen Sie die Adresse und ob er läuft.",
+    "workspaceAccessRevoked": "Ihr Zugang zu diesem Owl-Server wurde entfernt. Trennen Sie die Verbindung oder bitten Sie den Besitzer um eine neue Einladung.",
+    "workspaceOwnerOnly": "Das kann nur der Besitzer des Servers.",
+    "workspaceRequestFailed": "Der Owl-Server konnte das nicht ausführen. Versuchen Sie es erneut.",
+    "workspaceInviteLinkInvalid": "Das ist kein Owl-Einladungslink. Er beginnt mit owl://join.",
+    "workspaceAlreadyJoined": "Diese App ist bereits mit einem Owl-Server verbunden. Trennen Sie zuerst die Verbindung.",
+    "workspaceInviteInvalid": "Diese Einladung gilt nicht mehr: Sie wurde benutzt, widerrufen oder ist abgelaufen. Bitten Sie um eine neue.",
+    "workspaceTooManyAttempts": "Zu viele Versuche. Warten Sie eine Minute und versuchen Sie es erneut.",
+    "workspaceProfileNotYours": "{{name}} hat dieses Profil geteilt. Nur diese Person oder der Server-Besitzer kann es vom Server nehmen."
   },
   "rail": {
     "profiles": "Profile",
@@ -2483,7 +2493,8 @@
     "cookieBotRunning": "Cookie Bot: läuft gerade",
     "agent": "Agent",
     "agentWaiting": "Agent, wartende Anfragen: {{count}}",
-    "brand": "Owl"
+    "brand": "Owl",
+    "workspace": "Server"
   },
   "pageTitle": {
     "proxies": "Netzwerk",
@@ -2497,7 +2508,8 @@
     "shortcuts": "Tastenkürzel",
     "cookieBot": "Cookie Bot",
     "trash": "Papierkorb",
-    "agent": "Agent"
+    "agent": "Agent",
+    "workspace": "Owl-Server"
   },
   "encryption": {
     "required": {
@@ -3688,5 +3700,51 @@
     "profile": "Wie das Profil",
     "profileHint": "Die Menüs erscheinen in der Sprache des Profil-Landes, wie auf einem echten Gerät dort. Websites sehen überall dieselbe Sprache.",
     "otherHint": "Leichter zu lesen, aber Websites können es bemerken: an Formularmeldungen sowie an Datums- und Zahlenformaten. Für wichtige Konten die Sprache des Profils beibehalten."
+  },
+  "workspace": {
+    "title": "Owl-Server",
+    "joinTitle": "Einem Server beitreten",
+    "joinDescription": "Fügen Sie den Einladungslink des Server-Besitzers ein. Auf dem Server geteilte Profile erscheinen hier, und die Mitglieder nutzen sie abwechselnd.",
+    "linkLabel": "Einladungslink",
+    "linkPlaceholder": "owl://join?…",
+    "nameLabel": "Ihr Name",
+    "namePlaceholder": "Für die anderen Mitglieder sichtbar",
+    "join": "Beitreten",
+    "ownServerTitle": "Eigenen Server betreiben",
+    "ownServerBody": "Jeder kann einen Owl-Server mit Docker auf einem Computer oder VPS betreiben und nur die Personen einladen, die er möchte. Beim ersten Start gibt er den Einladungslink des Besitzers aus.",
+    "connectedAs": "Sie sind {{name}}, {{role}}",
+    "roles": {
+      "owner": "Besitzer",
+      "member": "Mitglied"
+    },
+    "members": "Mitglieder",
+    "you": "Sie",
+    "removeMember": "Vom Server entfernen",
+    "removeMemberConfirm": "{{name}} vom Server entfernen? Der Zugang endet sofort.",
+    "memberRemoved": "{{name}} wurde entfernt",
+    "invites": "Offene Einladungen",
+    "invite": "Einladen",
+    "inviteCreated": "Einladungslink kopiert. Er gilt einmal, 7 Tage lang.",
+    "noInvites": "Keine offenen Einladungen.",
+    "inviteExpires": "Gültig bis {{date}}",
+    "revokeInvite": "Widerrufen",
+    "leave": "Server verlassen",
+    "leaveDescription": "Die Profile bleiben als lokale Kopien auf diesem Computer und werden nicht mehr mit dem Server synchronisiert.",
+    "joined": "{{name}} beigetreten",
+    "left": "Server verlassen",
+    "revoked": "Ihr Zugang zu diesem Server wurde entfernt. Verlassen Sie ihn oder bitten Sie den Besitzer um eine neue Einladung.",
+    "ownerOnlyHint": "Nur der Besitzer lädt Mitglieder ein und entfernt sie.",
+    "share": {
+      "titleShare": "Auf dem Server teilen",
+      "titleUnshare": "Nicht mehr teilen",
+      "shareBody": "Alle auf {{server}} sehen „{{profile}}“ und können es öffnen, solange es niemand sonst geöffnet hat.",
+      "unshareBody": "„{{profile}}“ wird für alle Mitglieder vom Server entfernt. Auf diesem Computer bleibt es erhalten.",
+      "sharedBy": "Geteilt von {{name}}",
+      "notYours": "{{name}} hat dieses Profil geteilt. Nur diese Person oder der Server-Besitzer kann das Teilen beenden.",
+      "share": "Teilen",
+      "unshare": "Nicht mehr teilen",
+      "shared": "„{{profile}}“ wird geteilt",
+      "unshared": "„{{profile}}“ wird nicht mehr geteilt"
+    }
   }
 }

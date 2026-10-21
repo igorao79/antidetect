@@ -2465,7 +2465,17 @@
     "engineRemoved": "O CloakBrowser foi removido do Owl, por isso este perfil não inicia mais. Exporte os cookies dele e importe-os em um perfil Camoufox.",
     "profileTemplateInvalid": "Não é possível salvar este modelo: o nome é longo demais ou as configurações estão danificadas.",
     "profileTemplateLimit": "Há modelos demais. Exclua um antes de salvar outro.",
-    "profileTemplateNotFound": "Este modelo não existe mais."
+    "profileTemplateNotFound": "Este modelo não existe mais.",
+    "workspaceNotJoined": "Este aplicativo não está conectado a nenhum servidor Owl.",
+    "workspaceUnreachable": "O servidor Owl não respondeu. Verifique o endereço e se ele está em execução.",
+    "workspaceAccessRevoked": "Seu acesso a este servidor Owl foi removido. Desconecte-se ou peça um novo convite ao proprietário.",
+    "workspaceOwnerOnly": "Somente o proprietário do servidor pode fazer isso.",
+    "workspaceRequestFailed": "O servidor Owl não conseguiu fazer isso. Tente novamente.",
+    "workspaceInviteLinkInvalid": "Este não é um link de convite do Owl. Ele começa com owl://join.",
+    "workspaceAlreadyJoined": "Este aplicativo já está conectado a um servidor Owl. Desconecte-se primeiro.",
+    "workspaceInviteInvalid": "Este convite não vale mais: foi usado, revogado ou expirou. Peça um novo.",
+    "workspaceTooManyAttempts": "Tentativas demais. Aguarde um minuto e tente novamente.",
+    "workspaceProfileNotYours": "{{name}} compartilhou este perfil. Somente essa pessoa ou o proprietário do servidor pode retirá-lo do servidor."
   },
   "rail": {
     "profiles": "Perfis",
@@ -2493,7 +2503,8 @@
     "cookieBotRunning": "Cookie Bot: em execução agora",
     "agent": "Agente",
     "agentWaiting": "Agente, pedidos à espera: {{count}}",
-    "brand": "Owl"
+    "brand": "Owl",
+    "workspace": "Servidor"
   },
   "pageTitle": {
     "proxies": "Rede",
@@ -2507,7 +2518,8 @@
     "shortcuts": "Atalhos de teclado",
     "cookieBot": "Cookie Bot",
     "trash": "Lixeira",
-    "agent": "Agente"
+    "agent": "Agente",
+    "workspace": "Servidor Owl"
   },
   "encryption": {
     "required": {
@@ -3721,5 +3733,51 @@
     "profile": "O do perfil",
     "profileHint": "Os menus aparecem no idioma do país do perfil, como num dispositivo real de lá. Os sites veem um único idioma em toda parte.",
     "otherHint": "Mais fácil de ler, mas os sites podem perceber: pelas mensagens dos formulários e pelos formatos de data e número. Mantenha o idioma do perfil nas contas importantes."
+  },
+  "workspace": {
+    "title": "Servidor Owl",
+    "joinTitle": "Entrar em um servidor",
+    "joinDescription": "Cole o link de convite do proprietário do servidor. Os perfis compartilhados no servidor aparecem aqui e os membros os usam em turnos.",
+    "linkLabel": "Link de convite",
+    "linkPlaceholder": "owl://join?…",
+    "nameLabel": "Seu nome",
+    "namePlaceholder": "Visível para os outros membros",
+    "join": "Entrar",
+    "ownServerTitle": "Seu próprio servidor",
+    "ownServerBody": "Qualquer pessoa pode rodar um servidor Owl com Docker em um computador ou VPS e convidar só quem quiser. Na primeira inicialização ele mostra o link de convite do proprietário.",
+    "connectedAs": "Você é {{name}}, {{role}}",
+    "roles": {
+      "owner": "proprietário",
+      "member": "membro"
+    },
+    "members": "Membros",
+    "you": "você",
+    "removeMember": "Remover do servidor",
+    "removeMemberConfirm": "Remover {{name}} do servidor? O acesso é perdido na hora.",
+    "memberRemoved": "{{name}} foi removido",
+    "invites": "Convites abertos",
+    "invite": "Convidar",
+    "inviteCreated": "Link de convite copiado. Ele funciona uma vez, por 7 dias.",
+    "noInvites": "Nenhum convite aberto.",
+    "inviteExpires": "Expira em {{date}}",
+    "revokeInvite": "Revogar",
+    "leave": "Sair do servidor",
+    "leaveDescription": "Os perfis continuam neste computador como cópias locais e deixam de sincronizar com o servidor.",
+    "joined": "Você entrou em {{name}}",
+    "left": "Você saiu do servidor",
+    "revoked": "Seu acesso a este servidor foi removido. Saia dele ou peça um novo convite ao proprietário.",
+    "ownerOnlyHint": "Somente o proprietário convida e remove membros.",
+    "share": {
+      "titleShare": "Compartilhar no servidor",
+      "titleUnshare": "Parar de compartilhar",
+      "shareBody": "Todos em {{server}} verão “{{profile}}” e poderão abri-lo enquanto ninguém mais o tiver aberto.",
+      "unshareBody": "“{{profile}}” será removido do servidor para todos os membros. Ele continua neste computador.",
+      "sharedBy": "Compartilhado por {{name}}",
+      "notYours": "{{name}} compartilhou este perfil. Somente essa pessoa ou o proprietário do servidor pode parar de compartilhá-lo.",
+      "share": "Compartilhar",
+      "unshare": "Parar de compartilhar",
+      "shared": "“{{profile}}” está compartilhado",
+      "unshared": "“{{profile}}” não está mais compartilhado"
+    }
   }
 }

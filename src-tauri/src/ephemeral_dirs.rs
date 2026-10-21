@@ -437,6 +437,7 @@ mod tests {
       proxy_bypass_rules: Vec::new(),
       created_by_id: None,
       created_by_email: None,
+      shared_by: None,
       dns_blocklist: None,
       password_protected: false,
       clear_on_close: false,

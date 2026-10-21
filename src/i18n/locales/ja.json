@@ -2455,7 +2455,17 @@
     "engineRemoved": "CloakBrowser は Owl から削除されたため、このプロファイルは起動できません。Cookie をエクスポートして Camoufox プロファイルにインポートしてください。",
     "profileTemplateInvalid": "このテンプレートは保存できません。名前が長すぎるか、設定が壊れています。",
     "profileTemplateLimit": "テンプレートが多すぎます。1 つ削除してから保存してください。",
-    "profileTemplateNotFound": "このテンプレートはもう存在しません。"
+    "profileTemplateNotFound": "このテンプレートはもう存在しません。",
+    "workspaceNotJoined": "このアプリはどの Owl サーバーにも接続されていません。",
+    "workspaceUnreachable": "Owl サーバーが応答しませんでした。アドレスとサーバーが起動しているかを確認してください。",
+    "workspaceAccessRevoked": "この Owl サーバーへのアクセス権が削除されました。接続を解除するか、所有者に新しい招待を依頼してください。",
+    "workspaceOwnerOnly": "この操作はサーバーの所有者だけが行えます。",
+    "workspaceRequestFailed": "Owl サーバーでこの操作を実行できませんでした。もう一度お試しください。",
+    "workspaceInviteLinkInvalid": "これは Owl の招待リンクではありません。招待リンクは owl://join で始まります。",
+    "workspaceAlreadyJoined": "このアプリはすでに Owl サーバーに接続されています。先に接続を解除してください。",
+    "workspaceInviteInvalid": "この招待は無効です。使用済み、取り消し済み、または期限切れです。新しい招待を依頼してください。",
+    "workspaceTooManyAttempts": "試行回数が多すぎます。1 分待ってからもう一度お試しください。",
+    "workspaceProfileNotYours": "このプロファイルは {{name}} が共有しました。サーバーから外せるのはその人かサーバーの所有者だけです。"
   },
   "rail": {
     "profiles": "プロファイル",
@@ -2483,7 +2493,8 @@
     "cookieBotRunning": "Cookie Bot — 実行中",
     "agent": "エージェント",
     "agentWaiting": "エージェント、対応待ちのリクエスト: {{count}}",
-    "brand": "Owl"
+    "brand": "Owl",
+    "workspace": "サーバー"
   },
   "pageTitle": {
     "proxies": "ネットワーク",
@@ -2497,7 +2508,8 @@
     "shortcuts": "キーボードショートカット",
     "cookieBot": "Cookie Bot",
     "trash": "ゴミ箱",
-    "agent": "エージェント"
+    "agent": "エージェント",
+    "workspace": "Owl サーバー"
   },
   "encryption": {
     "required": {
@@ -3688,5 +3700,51 @@
     "profile": "プロファイルと同じ",
     "profileHint": "メニューはプロファイルの国の言語で表示されます。その国の実際の端末と同じです。サイトから見える言語はどこでも 1 つです。",
     "otherHint": "読みやすくなりますが、サイトに気づかれる可能性があります。フォームのメッセージの文言や、日付や数値の形式から分かります。大切なアカウントではプロファイルの言語のままにしてください。"
+  },
+  "workspace": {
+    "title": "Owl サーバー",
+    "joinTitle": "サーバーに参加",
+    "joinDescription": "サーバーの所有者からもらった招待リンクを貼り付けてください。サーバーで共有されたプロファイルがここに表示され、メンバーが交代で使います。",
+    "linkLabel": "招待リンク",
+    "linkPlaceholder": "owl://join?…",
+    "nameLabel": "あなたの名前",
+    "namePlaceholder": "ほかのメンバーに表示されます",
+    "join": "参加",
+    "ownServerTitle": "自分のサーバー",
+    "ownServerBody": "誰でも Docker を使ってパソコンや VPS で Owl サーバーを動かし、選んだ人だけを招待できます。初回起動時に所有者の招待リンクが表示されます。",
+    "connectedAs": "あなたは {{name}}（{{role}}）です",
+    "roles": {
+      "owner": "所有者",
+      "member": "メンバー"
+    },
+    "members": "メンバー",
+    "you": "あなた",
+    "removeMember": "サーバーから削除",
+    "removeMemberConfirm": "{{name}} をサーバーから削除しますか？ すぐにアクセスできなくなります。",
+    "memberRemoved": "{{name}} を削除しました",
+    "invites": "有効な招待",
+    "invite": "招待",
+    "inviteCreated": "招待リンクをコピーしました。1 回だけ、7 日間有効です。",
+    "noInvites": "有効な招待はありません。",
+    "inviteExpires": "{{date}} まで有効",
+    "revokeInvite": "取り消す",
+    "leave": "サーバーから退出",
+    "leaveDescription": "プロファイルはローカルコピーとしてこのパソコンに残り、サーバーとは同期しなくなります。",
+    "joined": "{{name}} に参加しました",
+    "left": "サーバーから退出しました",
+    "revoked": "このサーバーへのアクセス権が削除されました。退出するか、所有者に新しい招待を依頼してください。",
+    "ownerOnlyHint": "メンバーの招待と削除は所有者だけが行えます。",
+    "share": {
+      "titleShare": "サーバーで共有",
+      "titleUnshare": "共有をやめる",
+      "shareBody": "{{server}} の全員が「{{profile}}」を見られるようになり、ほかの人が開いていないときに開けます。",
+      "unshareBody": "「{{profile}}」はすべてのメンバーのサーバーから削除されます。このパソコンには残ります。",
+      "sharedBy": "共有者：{{name}}",
+      "notYours": "このプロファイルは {{name}} が共有しました。共有をやめられるのはその人かサーバーの所有者だけです。",
+      "share": "共有",
+      "unshare": "共有をやめる",
+      "shared": "「{{profile}}」を共有しました",
+      "unshared": "「{{profile}}」の共有をやめました"
+    }
   }
 }

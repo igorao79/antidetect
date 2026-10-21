@@ -63,6 +63,11 @@ import { WayfernConfigDialog } from "@/components/wayfern-config-dialog";
 import { WayfernTermsDialog } from "@/components/wayfern-terms-dialog";
 import { WelcomeDialog } from "@/components/welcome-dialog";
 import { WindowResizeWarningDialog } from "@/components/window-resize-warning-dialog";
+import {
+  useWorkspaceJoinLink,
+  WorkspacePage,
+} from "@/components/workspace-page";
+import { WorkspaceShareDialog } from "@/components/workspace-share-dialog";
 import { useAgentConsole } from "@/hooks/use-agent-console";
 import { useAppUpdateNotifications } from "@/hooks/use-app-update-notifications";
 import { useCloudAuth } from "@/hooks/use-cloud-auth";
@@ -81,6 +86,7 @@ import { useUpdateNotifications } from "@/hooks/use-update-notifications";
 import { useVersionUpdater } from "@/hooks/use-version-updater";
 import { useVpnEvents } from "@/hooks/use-vpn-events";
 import { useWayfernTerms } from "@/hooks/use-wayfern-terms";
+import { useWorkspace } from "@/hooks/use-workspace";
 import { parseBackendError, translateBackendError } from "@/lib/backend-errors";
 import { DONUT_CLOUD } from "@/lib/cloud-only-pages";
 import { fireSprinkleConfetti } from "@/lib/confetti";
@@ -467,6 +473,13 @@ export default function Home() {
     string | null
   >(null);
   const [trashPageOpen, setTrashPageOpen] = useState(false);
+  const [workspacePageOpen, setWorkspacePageOpen] = useState(false);
+  const [workspaceJoinLink, setWorkspaceJoinLink] = useState<string | null>(
+    null,
+  );
+  const [workspaceShareProfile, setWorkspaceShareProfile] =
+    useState<BrowserProfile | null>(null);
+  const { workspace } = useWorkspace();
   const [integrationsDialogOpen, setIntegrationsDialogOpen] = useState(false);
   const [importProfileDialogOpen, setImportProfileDialogOpen] = useState(false);
   const [proxyManagementDialogOpen, setProxyManagementDialogOpen] =
@@ -604,6 +617,7 @@ export default function Home() {
     setCookieBotDialogOpen(false);
     setAgentDialogOpen(false);
     setTrashPageOpen(false);
+    setWorkspacePageOpen(false);
     setSettingsInitialSection(null);
 
     setCurrentPage(page);
@@ -647,11 +661,24 @@ export default function Home() {
       case "trash":
         setTrashPageOpen(true);
         break;
+      case "workspace":
+        setWorkspacePageOpen(true);
+        break;
       case "shortcuts":
         // Plain page render — nothing else to open.
         break;
     }
   }, []);
+
+  useWorkspaceJoinLink(
+    useCallback(
+      (link: string) => {
+        setWorkspaceJoinLink(link);
+        handleRailNavigate("workspace");
+      },
+      [handleRailNavigate],
+    ),
+  );
 
   const openAgentConversation = useCallback(() => {
     setAgentInitialTab("conversation");
@@ -2423,7 +2450,11 @@ export default function Home() {
                   }
                   onAssignExtensionGroup={handleAssignExtensionGroup}
                   onOpenProfileSyncDialog={
-                    DONUT_CLOUD ? handleOpenProfileSyncDialog : undefined
+                    DONUT_CLOUD
+                      ? handleOpenProfileSyncDialog
+                      : workspace
+                        ? setWorkspaceShareProfile
+                        : undefined
                   }
                   onToggleProfileSync={
                     DONUT_CLOUD ? handleToggleProfileSync : undefined
@@ -2591,6 +2622,26 @@ export default function Home() {
                   setCurrentPage("profiles");
                 }}
                 subPage={currentPage === "trash"}
+              />
+            )}
+
+            {workspacePageOpen && (
+              <WorkspacePage
+                isOpen={workspacePageOpen}
+                onClose={() => {
+                  setWorkspacePageOpen(false);
+                  setCurrentPage("profiles");
+                }}
+                subPage={currentPage === "workspace"}
+                initialLink={workspaceJoinLink}
+              />
+            )}
+
+            {workspace && workspaceShareProfile && (
+              <WorkspaceShareDialog
+                profile={workspaceShareProfile}
+                workspace={workspace}
+                onClose={() => setWorkspaceShareProfile(null)}
               />
             )}
           </main>

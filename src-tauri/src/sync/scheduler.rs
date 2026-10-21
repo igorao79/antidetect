@@ -535,8 +535,11 @@ impl SyncScheduler {
         };
 
         let Some(profile) = profile_to_sync else {
-          let mut inf = in_flight.lock().await;
-          inf.remove(&profile_id);
+          in_flight.lock().await.remove(&profile_id);
+          // Another member shared a profile this computer has not seen yet.
+          if !profile_exists_locally(&profile_id) {
+            fetch_new_remote_profiles(app.clone());
+          }
           return;
         };
 
@@ -1004,6 +1007,42 @@ impl SyncScheduler {
       }
     }
   }
+}
+
+fn profile_exists_locally(profile_id: &str) -> bool {
+  ProfileManager::instance()
+    .list_profiles()
+    .is_ok_and(|profiles| profiles.iter().any(|p| p.id.to_string() == profile_id))
+}
+
+static FETCHING_NEW: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static FETCH_AGAIN: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Download profiles that appeared on the server since the last full check.
+/// One pass at a time; events arriving during a pass ask for one more.
+fn fetch_new_remote_profiles(app_handle: tauri::AppHandle) {
+  use std::sync::atomic::Ordering;
+  if FETCHING_NEW.swap(true, Ordering::SeqCst) {
+    FETCH_AGAIN.store(true, Ordering::SeqCst);
+    return;
+  }
+  tauri::async_runtime::spawn(async move {
+    loop {
+      FETCH_AGAIN.store(false, Ordering::SeqCst);
+      match SyncEngine::create_from_settings(&app_handle).await {
+        Ok(engine) => {
+          if let Err(e) = engine.check_for_missing_synced_profiles(&app_handle).await {
+            log::warn!("Could not fetch newly shared profiles: {e}");
+          }
+        }
+        Err(e) => log::debug!("Sync not configured, not fetching new profiles: {e}"),
+      }
+      if !FETCH_AGAIN.load(Ordering::SeqCst) {
+        break;
+      }
+    }
+    FETCHING_NEW.store(false, Ordering::SeqCst);
+  });
 }
 
 #[cfg(test)]
