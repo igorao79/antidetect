@@ -38,8 +38,8 @@ def still_open():
     return [p["uuid"] for p in api("GET", "/api/profiles/active")[1] if p["uuid"] in created]
 
 try:
-    for browser in ("camoufox",):
-        created.append(create(f"S9 {browser}", "win", browser=browser))
+    for name in ("camoufox a", "camoufox b"):
+        created.append(create(f"S9 {name}", "win", browser="camoufox"))
 
     status, r = api("POST", ROBOT, {"uuids": created, "urls": ["ftp://files.example"]})
     check("a site that is not a web address is refused", status == 400 and "COOKIE_ROBOT_INVALID_URL" in str(r), f"{status} {str(r)[:120]}")
@@ -56,7 +56,7 @@ try:
     for p in done["profiles"]:
         check(f"{p['name']}: finished", p["state"] == "done", f"{p['state']} {p.get('error')}")
         check(f"{p['name']}: two sites opened, one did not", (p["visited"], p["unreachable"]) == (2, 1), f"visited {p['visited']}, unreachable {p['unreachable']}")
-    check("each profile reached both pages", sum("/first" in h for h in hits) >= 2 and sum("/second" in h for h in hits) >= 2, f"{len(hits)} requests")
+    check("each profile reached both pages", sum("/first" in h for h in hits) >= len(created) and sum("/second" in h for h in hits) >= len(created), f"{len(hits)} requests: {hits}")
     check("the robot closed the profiles it opened", not still_open(), str(still_open()))
 
     for u in created:

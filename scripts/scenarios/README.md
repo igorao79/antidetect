@@ -34,6 +34,7 @@ python3 s1_camoufox_fingerprints.py
 | `s13_fingerprint_surfaces.py` | Two Camoufox profiles side by side: `toDataURL`/`toBlob` not shared (Firefox's per-session randomization), audio each profile's own and stable; reports which canvas, WebGL and text surfaces are this machine's. |
 | `s14_interface_language.py` | A page reads one language everywhere (`navigator.languages`, `Intl`, number format, form messages) when the interface follows the profile and across a restart. With `interface_language` set, `navigator.languages` stay the profile's and the interface shows through form messages and through `Intl`. Says most with `SCN_REMOTE_PROXY` pointing at an exit in another language. |
 | `s16_session_restore.py` | A profile reopens the tabs it had, with their session storage, after a stop, without the restore prompt. `SCN_DEBUG=1` prints every reading. |
+| `s17_detection_sites.py` | A Windows and a macOS profile on bot.sannysoft.com, browserscan.net, CreepJS and browserleaks' WebRTC page: no failed bot test, and with `SCN_REMOTE_PROXY` set every page shows the proxy's address and none of this machine's. Prints what each site reports. |
 | `s8_remote_exit.py` | Through a real remote proxy (`SCN_REMOTE_PROXY=http://user:password@host:port`): sites see the proxy's address and timezone, WebRTC shows nothing of this machine, the language is the same at every launch, and a profile whose exit moves follows it at the next launch. Skipped without the variable. |
 
 `EXPECT_TZ` and `EXPECT_LANG` (comma-separated) add geolocation assertions to

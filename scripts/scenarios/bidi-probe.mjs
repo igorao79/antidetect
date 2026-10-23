@@ -4,9 +4,10 @@ const [endpoint, url, ...rest] = process.argv.slice(2);
 const setCookie = rest[0] === "--set-cookie" ? rest[1] : null;
 const ws = new WebSocket(endpoint);
 let id = 0; const pending = new Map();
-const send = (method, params = {}) => new Promise((resolve, reject) => {
+const send = (method, params = {}, timeout = 60000) => new Promise((resolve, reject) => {
   const mid = ++id; pending.set(mid, { resolve, reject });
   ws.send(JSON.stringify({ id: mid, method, params }));
+  setTimeout(() => { if (pending.delete(mid)) reject(new Error("timed out: " + method)); }, timeout);
 });
 ws.onmessage = (ev) => {
   const msg = JSON.parse(ev.data);
@@ -21,7 +22,12 @@ try {
   sessionOpen = true;
   const tree = await send("browsingContext.getTree", {});
   const context = tree.contexts[0].context;
-  if (url) await send("browsingContext.navigate", { context, url, wait: "complete" });
+  // A navigation sent while the browser is still on its own startup load can
+  // be dropped without an answer; one retry covers it.
+  if (url) {
+    try { await send("browsingContext.navigate", { context, url, wait: "complete" }, 20000); }
+    catch { await send("browsingContext.navigate", { context, url, wait: "complete" }, 30000); }
+  }
   if (setCookie) {
     await send("script.evaluate", { expression: `document.cookie = ${JSON.stringify(setCookie + "; max-age=86400; path=/")}`, target: { context }, awaitPromise: false });
   }
