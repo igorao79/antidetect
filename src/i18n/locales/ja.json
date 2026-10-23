@@ -2476,7 +2476,8 @@
     "workspaceDeployFailed": "インストールに失敗しました: {{detail}}。詳細は Owl のログにあります。",
     "workspaceDeployFailedNoDetail": "インストールに失敗しました。詳細は Owl のログにあります。",
     "workspaceDeployHttpsFailed": "サーバーは動いていますが、{{domain}} の HTTPS が有効になりませんでした。ホスティングの管理画面でポート 80 と 443 が開いていることを確認し、もう一度インストールしてください。",
-    "workspaceDeployHasOwner": "このサーバーにはすでに所有者がいます。所有者に招待を依頼してください。"
+    "workspaceDeployHasOwner": "このサーバーにはすでに所有者がいます。所有者に招待を依頼してください。",
+    "workspaceDeployPortsBusy": "このサーバーのポート 80 と 443 は {{process}} が使用しています。Owl は nginx と併用するか、これらのポートが空いているサーバーで動作します。"
   },
   "rail": {
     "profiles": "プロファイル",

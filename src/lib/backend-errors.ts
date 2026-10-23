@@ -265,6 +265,7 @@ export type BackendErrorCode =
   | "WORKSPACE_DEPLOY_FAILED"
   | "WORKSPACE_DEPLOY_HTTPS_FAILED"
   | "WORKSPACE_DEPLOY_HAS_OWNER"
+  | "WORKSPACE_DEPLOY_PORTS_BUSY"
   | "PROFILE_TEMPLATE_INVALID"
   | "PROFILE_TEMPLATE_LIMIT"
   | "PROFILE_TEMPLATE_NOT_FOUND"
@@ -937,6 +938,10 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       });
     case "WORKSPACE_DEPLOY_HAS_OWNER":
       return t("backendErrors.workspaceDeployHasOwner");
+    case "WORKSPACE_DEPLOY_PORTS_BUSY":
+      return t("backendErrors.workspaceDeployPortsBusy", {
+        process: parsed.params?.process ?? "",
+      });
     case "PROFILE_TEMPLATE_INVALID":
       return t("backendErrors.profileTemplateInvalid");
     case "PROFILE_TEMPLATE_LIMIT":

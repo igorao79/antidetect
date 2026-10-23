@@ -90,9 +90,14 @@ Fork-specific rules:
   runs `workspace_deploy.sh` as root. The script needs Debian or Ubuntu, installs Docker
   (get.docker.com, the distribution's packages when that refuses a release), writes
   `/opt/owl-server/donut-sync/.env` (keeping settings it does not manage), opens ufw, starts
-  the compose file with the `https` profile and prints the owner link. Without a domain the
-  server is named `<ip-with-dashes>.sslip.io`, so Caddy gets a certificate with no DNS setup;
-  a private address is refused. The app then waits for HTTPS and joins as the owner. Running it
+  the compose file with the `https` profile and prints the owner link. When nginx already
+  holds ports 80/443 (a VPS with a site on it), Caddy stays off: the script adds its own
+  nginx site for the domain (`owl-server.conf`, kept only if `nginx -t` accepts it) and runs
+  `certbot --nginx` for it, leaving the other sites alone; any other program on those ports is
+  refused before anything is installed (`WORKSPACE_DEPLOY_PORTS_BUSY`). What it installed
+  (Docker, certbot, the nginx site, the certificate) is listed in `/opt/owl-server/installed`.
+  Without a domain the server is named `<ip-with-dashes>.sslip.io`, so a certificate comes
+  with no DNS setup; a private address is refused. The app then waits for HTTPS and joins as the owner. Running it
   again updates the server and keeps its data (`WORKSPACE_DEPLOY_HAS_OWNER` once it has an
   owner). Host keys are accepted and logged, not pinned. The E2E test of a real install runs
   only with `OWL_DEPLOY_SSH`/`OWL_DEPLOY_KEY` pointing at a disposable machine (a Lima VM),
@@ -110,6 +115,14 @@ Fork-specific rules:
   `get_supported_browsers`; the create dialog asks that command). With none installed the
   app no longer asks donutbrowser.com for the Wayfern version at every start. Signed out,
   nothing else in the backend calls Donut's servers.
+- Owl updates itself from the fork's GitHub releases (`RELEASES_REPO` in
+  `app_auto_updater.rs`; upstream's updater, which checks at start and every 3 hours, downloads
+  the .dmg, verifies it against the release's `SHA256SUMS.txt` and offers a restart). Only a
+  build made with `STABLE_RELEASE` (version `v<x.y.z>`) takes updates; a plain `pnpm tauri
+  build` calls itself `dev-<x.y.z>` and never updates. To ship: bump the version in
+  `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`, commit, push, and run
+  `scripts/release-macos.sh`, which builds, writes `SHA256SUMS.txt` and publishes the release.
+  Publishing is public (the repository is public): ask before running it.
 - The camera and microphone prompt at launch is offered once (`src/lib/permission-prompt.ts`);
   Settings requests them afterwards. An ad-hoc signed build is a new app to macOS after every
   rebuild, so a grant given to an earlier build does not carry over.

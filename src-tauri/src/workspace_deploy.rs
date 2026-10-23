@@ -1,8 +1,9 @@
 //! Install an Owl server on a VPS from the Server page: the app logs in over
 //! SSH, uploads the server's sources it carries (`build_owl_server.rs`), runs
 //! `workspace_deploy.sh` as root, which installs Docker and starts the server
-//! behind Caddy, and then joins it as the owner. Running it again on the same
-//! machine updates the server and keeps its data.
+//! behind Caddy (or the nginx already on the machine), and then joins it as
+//! the owner. Running it again on the same machine updates the server and
+//! keeps its data.
 
 use russh::client;
 use russh::keys::PrivateKeyWithHashAlg;
@@ -396,6 +397,8 @@ async fn install(
   let mut link = None;
   let mut has_owner = false;
   let mut unsupported = None;
+  let mut ports_taken_by = None;
+  let mut no_certificate = false;
   let ran = tokio::time::timeout(
     INSTALL_TIMEOUT,
     run(
@@ -407,6 +410,7 @@ async fn install(
           match step.trim() {
             "docker" => progress(Step::Docker),
             "server" => progress(Step::Server),
+            "https" => progress(Step::Https),
             _ => {}
           }
         } else if let Some(value) = line.strip_prefix("OWL_LINK ") {
@@ -415,6 +419,10 @@ async fn install(
           has_owner = true;
         } else if let Some(os) = line.strip_prefix("OWL_ERROR unsupported_os ") {
           unsupported = Some(os.trim().to_string());
+        } else if let Some(process) = line.strip_prefix("OWL_ERROR ports_busy ") {
+          ports_taken_by = Some(process.trim().to_string());
+        } else if line.trim() == "OWL_ERROR certificate" {
+          no_certificate = true;
         }
       },
     ),
@@ -429,6 +437,22 @@ async fn install(
     return Err(error_with(
       "WORKSPACE_DEPLOY_UNSUPPORTED_OS",
       serde_json::json!({ "os": os }),
+    ));
+  }
+  if let Some(process) = ports_taken_by {
+    return Err(error_with(
+      "WORKSPACE_DEPLOY_PORTS_BUSY",
+      serde_json::json!({ "process": process }),
+    ));
+  }
+  if no_certificate {
+    log::warn!(
+      "Owl server install on {host}: certbot failed:\n{}",
+      ran.lines.join("\n")
+    );
+    return Err(error_with(
+      "WORKSPACE_DEPLOY_HTTPS_FAILED",
+      serde_json::json!({ "domain": domain }),
     ));
   }
   if !ran.ok() {

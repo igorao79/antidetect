@@ -2476,7 +2476,8 @@
     "workspaceDeployFailed": "Die Installation ist fehlgeschlagen: {{detail}}. Details stehen im Owl-Protokoll.",
     "workspaceDeployFailedNoDetail": "Die Installation ist fehlgeschlagen. Details stehen im Owl-Protokoll.",
     "workspaceDeployHttpsFailed": "Der Server läuft, aber HTTPS für {{domain}} wurde nicht aktiv. Prüfen Sie, ob die Ports 80 und 443 im Hosting-Panel offen sind, und starten Sie die Einrichtung erneut.",
-    "workspaceDeployHasOwner": "Dieser Server hat bereits einen Eigentümer. Bitten Sie ihn um eine Einladung."
+    "workspaceDeployHasOwner": "Dieser Server hat bereits einen Eigentümer. Bitten Sie ihn um eine Einladung.",
+    "workspaceDeployPortsBusy": "Die Ports 80 und 443 dieses Servers sind von {{process}} belegt. Owl läuft neben nginx oder auf einem Server, auf dem sie frei sind."
   },
   "rail": {
     "profiles": "Profile",

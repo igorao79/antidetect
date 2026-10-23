@@ -2476,7 +2476,8 @@
     "workspaceDeployFailed": "설치에 실패했습니다: {{detail}}. 자세한 내용은 Owl 로그에 있습니다.",
     "workspaceDeployFailedNoDetail": "설치에 실패했습니다. 자세한 내용은 Owl 로그에 있습니다.",
     "workspaceDeployHttpsFailed": "서버는 실행 중이지만 {{domain}}의 HTTPS가 켜지지 않았습니다. 호스팅 관리 화면에서 80번과 443번 포트가 열려 있는지 확인한 뒤 설치를 다시 실행하세요.",
-    "workspaceDeployHasOwner": "이 서버에는 이미 소유자가 있습니다. 소유자에게 초대를 요청하세요."
+    "workspaceDeployHasOwner": "이 서버에는 이미 소유자가 있습니다. 소유자에게 초대를 요청하세요.",
+    "workspaceDeployPortsBusy": "이 서버의 80번과 443번 포트를 {{process}}이(가) 사용 중입니다. Owl은 nginx와 함께 쓰거나 이 포트가 비어 있는 서버에서 작동합니다."
   },
   "rail": {
     "profiles": "프로필",

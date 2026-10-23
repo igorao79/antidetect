@@ -2486,7 +2486,8 @@
     "workspaceDeployFailed": "A instalação falhou: {{detail}}. O registro do Owl tem os detalhes.",
     "workspaceDeployFailedNoDetail": "A instalação falhou. O registro do Owl tem os detalhes.",
     "workspaceDeployHttpsFailed": "O servidor está rodando, mas o HTTPS para {{domain}} não subiu. Confira se as portas 80 e 443 estão abertas no painel da hospedagem e execute a instalação de novo.",
-    "workspaceDeployHasOwner": "Este servidor já tem um proprietário. Peça um convite a ele."
+    "workspaceDeployHasOwner": "Este servidor já tem um proprietário. Peça um convite a ele.",
+    "workspaceDeployPortsBusy": "As portas 80 e 443 deste servidor estão ocupadas por {{process}}. O Owl funciona ao lado do nginx ou em um servidor onde elas estejam livres."
   },
   "rail": {
     "profiles": "Perfis",

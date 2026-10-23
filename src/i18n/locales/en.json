@@ -2476,7 +2476,8 @@
     "workspaceDeployFailed": "The installation failed: {{detail}}. The Owl log has the details.",
     "workspaceDeployFailedNoDetail": "The installation failed. The Owl log has the details.",
     "workspaceDeployHttpsFailed": "The server is running, but HTTPS for {{domain}} did not come up. Make sure ports 80 and 443 are open in your hosting panel, then run the setup again.",
-    "workspaceDeployHasOwner": "This server already has an owner. Ask them for an invite."
+    "workspaceDeployHasOwner": "This server already has an owner. Ask them for an invite.",
+    "workspaceDeployPortsBusy": "Ports 80 and 443 on this server are taken by {{process}}. Owl can work next to nginx or on a server where they are free."
   },
   "rail": {
     "profiles": "Profiles",

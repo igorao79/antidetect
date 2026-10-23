@@ -126,8 +126,11 @@ pub struct AppUpdateInfo {
   pub asset_digest: Option<String>,
 }
 
-/// Whether to offer upstream Donut Browser releases as app updates.
-const UPSTREAM_SELF_UPDATE_ENABLED: bool = false;
+/// Where Owl's own releases are published (fork). Upstream's are Donut
+/// Browser builds and would replace this app. Only builds made with
+/// `STABLE_RELEASE` (a `v<version>` build) take updates; local `dev-` builds
+/// never do.
+const RELEASES_REPO: &str = "igorao79/antidetect";
 
 pub struct AppAutoUpdater {
   client: Client,
@@ -174,13 +177,6 @@ impl AppAutoUpdater {
   pub async fn check_for_updates(
     &self,
   ) -> Result<Option<AppUpdateInfo>, Box<dyn std::error::Error + Send + Sync>> {
-    // Antidetect fork: upstream's releases are Donut Browser builds and would
-    // replace this app, so self-update stays off until the fork has its own
-    // release channel.
-    if !UPSTREAM_SELF_UPDATE_ENABLED {
-      return Ok(None);
-    }
-
     let current_version = Self::get_current_version();
     let is_nightly = Self::is_nightly_build();
 
@@ -230,7 +226,7 @@ impl AppAutoUpdater {
 
       // Build the release page URL
       let release_page_url = format!(
-        "https://github.com/zhom/donutbrowser/releases/tag/{}",
+        "https://github.com/{RELEASES_REPO}/releases/tag/{}",
         latest_release.tag_name
       );
 
@@ -334,7 +330,7 @@ impl AppAutoUpdater {
   async fn fetch_app_releases(
     &self,
   ) -> Result<Vec<AppRelease>, Box<dyn std::error::Error + Send + Sync>> {
-    let url = "https://api.github.com/repos/zhom/donutbrowser/releases?per_page=100";
+    let url = format!("https://api.github.com/repos/{RELEASES_REPO}/releases?per_page=100");
     let response = self
       .client
       .get(url)

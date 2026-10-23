@@ -2476,7 +2476,8 @@
     "workspaceDeployFailed": "安装失败：{{detail}}。详情见 Owl 日志。",
     "workspaceDeployFailedNoDetail": "安装失败。详情见 Owl 日志。",
     "workspaceDeployHttpsFailed": "服务器已运行，但 {{domain}} 的 HTTPS 未能启用。请确认主机面板中已开放 80 和 443 端口，然后重新运行安装。",
-    "workspaceDeployHasOwner": "此服务器已有所有者。请向其索取邀请。"
+    "workspaceDeployHasOwner": "此服务器已有所有者。请向其索取邀请。",
+    "workspaceDeployPortsBusy": "此服务器的 80 和 443 端口被 {{process}} 占用。Owl 可以与 nginx 共存，或在这两个端口空闲的服务器上运行。"
   },
   "rail": {
     "profiles": "配置文件",

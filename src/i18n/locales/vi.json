@@ -2476,7 +2476,8 @@
     "workspaceDeployFailed": "Cài đặt thất bại: {{detail}}. Chi tiết có trong nhật ký Owl.",
     "workspaceDeployFailedNoDetail": "Cài đặt thất bại. Chi tiết có trong nhật ký Owl.",
     "workspaceDeployHttpsFailed": "Máy chủ đã chạy nhưng HTTPS cho {{domain}} chưa bật được. Hãy kiểm tra cổng 80 và 443 đã mở trong bảng điều khiển hosting, rồi chạy cài đặt lại.",
-    "workspaceDeployHasOwner": "Máy chủ này đã có chủ sở hữu. Hãy xin họ lời mời."
+    "workspaceDeployHasOwner": "Máy chủ này đã có chủ sở hữu. Hãy xin họ lời mời.",
+    "workspaceDeployPortsBusy": "Cổng 80 và 443 trên máy chủ này đang bị {{process}} chiếm. Owl chạy được cạnh nginx hoặc trên máy chủ còn trống các cổng này."
   },
   "rail": {
     "profiles": "Profile",
