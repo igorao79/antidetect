@@ -2485,7 +2485,18 @@
     "workspaceAlreadyJoined": "Приложение уже подключено к серверу Owl. Сначала отключитесь от него.",
     "workspaceInviteInvalid": "Приглашение больше не действует: его уже использовали, отозвали или срок истёк. Попросите новое.",
     "workspaceTooManyAttempts": "Слишком много попыток. Подождите минуту и попробуйте снова.",
-    "workspaceProfileNotYours": "Этим профилем поделился {{name}}. Снять его с сервера может только он или владелец сервера."
+    "workspaceProfileNotYours": "Этим профилем поделился {{name}}. Снять его с сервера может только он или владелец сервера.",
+    "workspaceDeployUnreachable": "Не удалось подключиться к {{host}} по SSH. Проверьте адрес и порт.",
+    "workspaceDeployLoginRejected": "Сервер не принял пользователя и пароль или ключ.",
+    "workspaceDeployKeyUnreadable": "Не удалось прочитать SSH-ключ. Проверьте путь к файлу и пароль от ключа.",
+    "workspaceDeployNoRoot": "У этого пользователя нет прав root. Войдите как root или пользователем с sudo.",
+    "workspaceDeployUnsupportedOs": "Установка поддерживает Ubuntu и Debian, а на этом сервере {{os}}.",
+    "workspaceDeployPrivateAddress": "{{host}} — адрес в локальной сети, сертификаты HTTPS на него не выдают. Укажите внешний IP VPS или домен.",
+    "workspaceDeployDomainInvalid": "Укажите домен именем, например owl.example.com.",
+    "workspaceDeployFailed": "Установка не удалась: {{detail}}. Подробности в журнале Owl.",
+    "workspaceDeployFailedNoDetail": "Установка не удалась. Подробности в журнале Owl.",
+    "workspaceDeployHttpsFailed": "Сервер запущен, но HTTPS для {{domain}} не включился. Проверьте, что порты 80 и 443 открыты в панели хостинга, и запустите установку ещё раз.",
+    "workspaceDeployHasOwner": "У этого сервера уже есть владелец. Попросите у него приглашение."
   },
   "rail": {
     "profiles": "Профили",
@@ -3776,8 +3787,6 @@
     "nameLabel": "Ваше имя",
     "namePlaceholder": "Его увидят другие участники",
     "join": "Подключиться",
-    "ownServerTitle": "Свой сервер",
-    "ownServerBody": "Любой может запустить сервер Owl в Docker на компьютере или VPS и пригласить только тех, кого захочет. При первом запуске сервер выводит ссылку-приглашение владельца.",
     "connectedAs": "Вы — {{name}}, {{role}}",
     "roles": {
       "owner": "владелец",
@@ -3813,6 +3822,31 @@
       "unshared": "«{{profile}}» больше не общий",
       "sharedState": "Профиль общий на сервере {{server}}: любой участник может открыть его, когда он не открыт у другого.",
       "notSharedState": "Этот профиль есть только на этом компьютере. Поделитесь им, чтобы его могли открыть все участники сервера {{server}}."
+    },
+    "deploy": {
+      "title": "Поднять свой сервер",
+      "description": "Owl сам установит сервер на ваш VPS по SSH: Docker, HTTPS и вас владельцем. Нужен VPS на Ubuntu или Debian и вход под root.",
+      "hostLabel": "Адрес VPS",
+      "portLabel": "Порт SSH",
+      "userLabel": "Пользователь",
+      "passwordLabel": "Пароль",
+      "keyLabel": "SSH-ключ (необязательно)",
+      "keyPassphraseLabel": "Пароль от ключа",
+      "domainLabel": "Домен (необязательно)",
+      "domainHint": "Без домена сервер получит адрес вида 203-0-113-7.sslip.io с HTTPS.",
+      "serverNameLabel": "Название сервера",
+      "serverNamePlaceholder": "Наша команда",
+      "submit": "Поднять сервер",
+      "running": "Это займёт 5–10 минут. Не закрывайте Owl.",
+      "done": "Сервер {{name}} поднят, вы его владелец",
+      "manual": "Сервер можно поднять и вручную в Docker на любом компьютере: инструкция в donut-sync/README.md в репозитории.",
+      "steps": {
+        "connect": "Вход по SSH",
+        "docker": "Docker",
+        "server": "Сервер",
+        "https": "HTTPS",
+        "owner": "Владелец"
+      }
     }
   }
 }

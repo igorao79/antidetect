@@ -1,3 +1,6 @@
+#[path = "build_owl_server.rs"]
+mod owl_server_bundle;
+
 fn main() {
   println!("cargo::rustc-check-cfg=cfg(mobile)");
   let build_target = std::env::var("TARGET").expect("Cargo must provide TARGET");
@@ -50,6 +53,9 @@ fn main() {
   )
   .expect("write the legacy vault password for include_str!");
   println!("cargo:rerun-if-env-changed=DONUT_BROWSER_VAULT_PASSWORD");
+
+  // The Owl server's sources, which the app installs on a VPS (fork).
+  owl_server_bundle::write(std::path::Path::new(&out_dir));
 
   // Tell Cargo to rebuild if the proxy binary source changes
   println!("cargo:rerun-if-changed=src/bin/proxy_server.rs");

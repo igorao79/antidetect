@@ -255,6 +255,16 @@ export type BackendErrorCode =
   | "WORKSPACE_INVITE_INVALID"
   | "WORKSPACE_TOO_MANY_ATTEMPTS"
   | "WORKSPACE_PROFILE_NOT_YOURS"
+  | "WORKSPACE_DEPLOY_UNREACHABLE"
+  | "WORKSPACE_DEPLOY_LOGIN_REJECTED"
+  | "WORKSPACE_DEPLOY_KEY_UNREADABLE"
+  | "WORKSPACE_DEPLOY_NO_ROOT"
+  | "WORKSPACE_DEPLOY_UNSUPPORTED_OS"
+  | "WORKSPACE_DEPLOY_PRIVATE_ADDRESS"
+  | "WORKSPACE_DEPLOY_DOMAIN_INVALID"
+  | "WORKSPACE_DEPLOY_FAILED"
+  | "WORKSPACE_DEPLOY_HTTPS_FAILED"
+  | "WORKSPACE_DEPLOY_HAS_OWNER"
   | "PROFILE_TEMPLATE_INVALID"
   | "PROFILE_TEMPLATE_LIMIT"
   | "PROFILE_TEMPLATE_NOT_FOUND"
@@ -895,6 +905,38 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       return t("backendErrors.workspaceProfileNotYours", {
         name: parsed.params?.name ?? "",
       });
+    case "WORKSPACE_DEPLOY_UNREACHABLE":
+      return t("backendErrors.workspaceDeployUnreachable", {
+        host: parsed.params?.host ?? "",
+      });
+    case "WORKSPACE_DEPLOY_LOGIN_REJECTED":
+      return t("backendErrors.workspaceDeployLoginRejected");
+    case "WORKSPACE_DEPLOY_KEY_UNREADABLE":
+      return t("backendErrors.workspaceDeployKeyUnreadable");
+    case "WORKSPACE_DEPLOY_NO_ROOT":
+      return t("backendErrors.workspaceDeployNoRoot");
+    case "WORKSPACE_DEPLOY_UNSUPPORTED_OS":
+      return t("backendErrors.workspaceDeployUnsupportedOs", {
+        os: parsed.params?.os ?? "",
+      });
+    case "WORKSPACE_DEPLOY_PRIVATE_ADDRESS":
+      return t("backendErrors.workspaceDeployPrivateAddress", {
+        host: parsed.params?.host ?? "",
+      });
+    case "WORKSPACE_DEPLOY_DOMAIN_INVALID":
+      return t("backendErrors.workspaceDeployDomainInvalid");
+    case "WORKSPACE_DEPLOY_FAILED":
+      return parsed.params?.detail
+        ? t("backendErrors.workspaceDeployFailed", {
+            detail: parsed.params.detail,
+          })
+        : t("backendErrors.workspaceDeployFailedNoDetail");
+    case "WORKSPACE_DEPLOY_HTTPS_FAILED":
+      return t("backendErrors.workspaceDeployHttpsFailed", {
+        domain: parsed.params?.domain ?? "",
+      });
+    case "WORKSPACE_DEPLOY_HAS_OWNER":
+      return t("backendErrors.workspaceDeployHasOwner");
     case "PROFILE_TEMPLATE_INVALID":
       return t("backendErrors.profileTemplateInvalid");
     case "PROFILE_TEMPLATE_LIMIT":

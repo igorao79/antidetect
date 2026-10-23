@@ -29,6 +29,7 @@ import {
   SECTION_LABEL_CLASS,
   SettingsPanel,
 } from "@/components/ui/settings-panel";
+import { WorkspaceDeployForm } from "@/components/workspace-deploy-form";
 import {
   useWorkspace,
   type WorkspaceInvite,
@@ -169,19 +170,7 @@ function JoinForm({ initialLink }: { initialLink: string | null }) {
           </div>
         </form>
       </SettingsPanel>
-      <SettingsPanel className="flex items-start gap-3">
-        <FeatureIcon active={false}>
-          <LuServer />
-        </FeatureIcon>
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h3 className="text-sm font-medium">
-            {t("workspace.ownServerTitle")}
-          </h3>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            {t("workspace.ownServerBody")}
-          </p>
-        </div>
-      </SettingsPanel>
+      <WorkspaceDeployForm />
     </>
   );
 }

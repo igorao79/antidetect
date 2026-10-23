@@ -27,6 +27,8 @@ path = "src/bin/proxy_server.rs"
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
 resvg = "0.48"
+# Packs the Owl server for `workspace_deploy.rs`.
+tar = "0"
 
 [dependencies]
 serde_json = "1"

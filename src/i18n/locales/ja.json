@@ -2465,7 +2465,18 @@
     "workspaceAlreadyJoined": "このアプリはすでに Owl サーバーに接続されています。先に接続を解除してください。",
     "workspaceInviteInvalid": "この招待は無効です。使用済み、取り消し済み、または期限切れです。新しい招待を依頼してください。",
     "workspaceTooManyAttempts": "試行回数が多すぎます。1 分待ってからもう一度お試しください。",
-    "workspaceProfileNotYours": "このプロファイルは {{name}} が共有しました。サーバーから外せるのはその人かサーバーの所有者だけです。"
+    "workspaceProfileNotYours": "このプロファイルは {{name}} が共有しました。サーバーから外せるのはその人かサーバーの所有者だけです。",
+    "workspaceDeployUnreachable": "{{host}} に SSH で接続できませんでした。アドレスとポートを確認してください。",
+    "workspaceDeployLoginRejected": "サーバーがこのユーザーとパスワードまたは鍵を受け付けませんでした。",
+    "workspaceDeployKeyUnreadable": "SSH 鍵を読み込めませんでした。ファイルのパスと鍵のパスフレーズを確認してください。",
+    "workspaceDeployNoRoot": "このユーザーには root 権限がありません。root または sudo を使えるユーザーでログインしてください。",
+    "workspaceDeployUnsupportedOs": "インストーラーは Ubuntu と Debian に対応しています。このサーバーは {{os}} です。",
+    "workspaceDeployPrivateAddress": "{{host}} はローカルネットワークのアドレスのため、HTTPS 証明書は発行されません。VPS のパブリック IP かドメインを入力してください。",
+    "workspaceDeployDomainInvalid": "ドメインは owl.example.com のような名前で入力してください。",
+    "workspaceDeployFailed": "インストールに失敗しました: {{detail}}。詳細は Owl のログにあります。",
+    "workspaceDeployFailedNoDetail": "インストールに失敗しました。詳細は Owl のログにあります。",
+    "workspaceDeployHttpsFailed": "サーバーは動いていますが、{{domain}} の HTTPS が有効になりませんでした。ホスティングの管理画面でポート 80 と 443 が開いていることを確認し、もう一度インストールしてください。",
+    "workspaceDeployHasOwner": "このサーバーにはすでに所有者がいます。所有者に招待を依頼してください。"
   },
   "rail": {
     "profiles": "プロファイル",
@@ -3710,8 +3721,6 @@
     "nameLabel": "あなたの名前",
     "namePlaceholder": "ほかのメンバーに表示されます",
     "join": "参加",
-    "ownServerTitle": "自分のサーバー",
-    "ownServerBody": "誰でも Docker を使ってパソコンや VPS で Owl サーバーを動かし、選んだ人だけを招待できます。初回起動時に所有者の招待リンクが表示されます。",
     "connectedAs": "あなたは {{name}}（{{role}}）です",
     "roles": {
       "owner": "所有者",
@@ -3747,6 +3756,31 @@
       "unshared": "「{{profile}}」の共有をやめました",
       "sharedState": "このプロファイルは {{server}} で共有されています。ほかの人が開いていなければ、どのメンバーも開けます。",
       "notSharedState": "このプロファイルはこのパソコンにしかありません。共有すると {{server}} の全メンバーが開けるようになります。"
+    },
+    "deploy": {
+      "title": "自分のサーバーを立てる",
+      "description": "Owl が SSH で VPS にサーバーをインストールします。Docker、HTTPS を設定し、あなたが所有者になります。Ubuntu または Debian の VPS と root ログインが必要です。",
+      "hostLabel": "VPS のアドレス",
+      "portLabel": "SSH ポート",
+      "userLabel": "ユーザー",
+      "passwordLabel": "パスワード",
+      "keyLabel": "SSH 鍵（任意）",
+      "keyPassphraseLabel": "鍵のパスフレーズ",
+      "domainLabel": "ドメイン（任意）",
+      "domainHint": "ドメインがない場合、サーバーには 203-0-113-7.sslip.io のようなアドレスが HTTPS 付きで割り当てられます。",
+      "serverNameLabel": "サーバー名",
+      "serverNamePlaceholder": "私たちのチーム",
+      "submit": "サーバーを立てる",
+      "running": "5〜10 分かかります。Owl を開いたままにしてください。",
+      "done": "{{name}} が起動し、あなたが所有者になりました",
+      "manual": "任意のコンピューターで Docker を使ってサーバーを自分で動かすこともできます。リポジトリの donut-sync/README.md を参照してください。",
+      "steps": {
+        "connect": "SSH ログイン",
+        "docker": "Docker",
+        "server": "サーバー",
+        "https": "HTTPS",
+        "owner": "所有者"
+      }
     }
   }
 }

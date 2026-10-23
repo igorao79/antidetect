@@ -83,6 +83,20 @@ Fork-specific rules:
   other members' machines as soon as the server announces them; Firefox lock files and
   `user.js` are not synced. One server per app at a time; password encryption is not used
   for it yet.
+- The Server page also installs an Owl server on a VPS (`workspace_deploy.rs`,
+  `workspace-deploy-form.tsx`): the app logs in over SSH (password, or a key file; root, or
+  sudo with or without the password), uploads the server's sources it carries
+  (`build_owl_server.rs` packs `donut-sync/` into `OUT_DIR/owl-server.tar` at build time) and
+  runs `workspace_deploy.sh` as root. The script needs Debian or Ubuntu, installs Docker
+  (get.docker.com, the distribution's packages when that refuses a release), writes
+  `/opt/owl-server/donut-sync/.env` (keeping settings it does not manage), opens ufw, starts
+  the compose file with the `https` profile and prints the owner link. Without a domain the
+  server is named `<ip-with-dashes>.sslip.io`, so Caddy gets a certificate with no DNS setup;
+  a private address is refused. The app then waits for HTTPS and joins as the owner. Running it
+  again updates the server and keeps its data (`WORKSPACE_DEPLOY_HAS_OWNER` once it has an
+  owner). Host keys are accepted and logged, not pinned. The E2E test of a real install runs
+  only with `OWL_DEPLOY_SSH`/`OWL_DEPLOY_KEY` pointing at a disposable machine (a Lima VM),
+  over plain HTTP, which only debug builds allow.
 - Donut's cloud is switched off in the interface by one flag, `DONUT_CLOUD` in
   `src/lib/cloud-only-pages.ts`, with the lists beside it: the Account page (signing in, sync
   setup), the cloud Cookie Bot and the Agent console are out of the rail, the shortcuts and
@@ -115,10 +129,11 @@ Fork-specific rules:
   `api_client/camoufox.rs`, `camoufox/`, `camoufox_manager.rs`,
   `profile_templates.rs`, `interface_language.rs`, `donut_cloud.rs`,
   `profile/{after_exit,camoufox}.rs`, `ssh_upstream.rs`,
-  `cookie_robot.rs`, `octo_compat_api.rs`, `synchronizer_bidi.rs`, `workspace.rs`, and on the
+  `cookie_robot.rs`, `octo_compat_api.rs`, `synchronizer_bidi.rs`, `workspace.rs`,
+  `workspace_deploy.rs` (with `workspace_deploy.sh` and `build_owl_server.rs`), and on the
   frontend `camoufox-config-dialog.tsx`, `shared-camoufox-config-form.tsx`,
   `cookie-robot-dialog.tsx`, `profile-template-menu.tsx`, `interface-language-field.tsx`,
-  `workspace-page.tsx`, `workspace-share-dialog.tsx`; on the server `donut-sync/src/storage/`,
+  `workspace-page.tsx`, `workspace-share-dialog.tsx`, `workspace-deploy-form.tsx`; on the server `donut-sync/src/storage/`,
   `donut-sync/src/workspace/` and `donut-sync/src/cli.ts`.
 - Keep the AGPL license and upstream copyright notices.
 - Commit only when the user asks.
@@ -244,6 +259,7 @@ donutbrowser/
 │   │   ├── synchronizer.rs         # Real-time profile synchronizer (pause/resume, hold a follower out, window layouts)
 │   │   ├── synchronizer_bidi.rs    # The synchronizer on Camoufox, over WebDriver BiDi (fork)
 │   │   ├── workspace.rs            # Own Owl server: join by invite, members, invites, locks routing (fork)
+│   │   ├── workspace_deploy.rs     # Install an Owl server on a VPS over SSH and join it as owner (fork)
 │   │   ├── daemon/                 # Background daemon + tray icon (currently disabled)
 │   │   └── cloud_auth.rs           # Cloud authentication
 │   ├── tests/                      # Integration tests

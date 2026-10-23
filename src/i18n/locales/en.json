@@ -2465,7 +2465,18 @@
     "workspaceAlreadyJoined": "This app is already connected to an Owl server. Leave it first.",
     "workspaceInviteInvalid": "This invite no longer works: it was used, revoked or has expired. Ask for a new one.",
     "workspaceTooManyAttempts": "Too many attempts. Wait a minute and try again.",
-    "workspaceProfileNotYours": "{{name}} shared this profile. Only they or the server owner can take it off the server."
+    "workspaceProfileNotYours": "{{name}} shared this profile. Only they or the server owner can take it off the server.",
+    "workspaceDeployUnreachable": "Could not connect to {{host}} over SSH. Check the address and the port.",
+    "workspaceDeployLoginRejected": "The server did not accept this user and password or key.",
+    "workspaceDeployKeyUnreadable": "Could not read the SSH key. Check the file path and the key passphrase.",
+    "workspaceDeployNoRoot": "This user has no root rights. Log in as root or as a user with sudo.",
+    "workspaceDeployUnsupportedOs": "The installer supports Ubuntu and Debian; this server runs {{os}}.",
+    "workspaceDeployPrivateAddress": "{{host}} is an address on a local network, and HTTPS certificates are not issued for it. Enter the VPS's public IP or a domain.",
+    "workspaceDeployDomainInvalid": "Enter the domain as a name, for example owl.example.com.",
+    "workspaceDeployFailed": "The installation failed: {{detail}}. The Owl log has the details.",
+    "workspaceDeployFailedNoDetail": "The installation failed. The Owl log has the details.",
+    "workspaceDeployHttpsFailed": "The server is running, but HTTPS for {{domain}} did not come up. Make sure ports 80 and 443 are open in your hosting panel, then run the setup again.",
+    "workspaceDeployHasOwner": "This server already has an owner. Ask them for an invite."
   },
   "rail": {
     "profiles": "Profiles",
@@ -3710,8 +3721,6 @@
     "nameLabel": "Your name",
     "namePlaceholder": "Shown to the other members",
     "join": "Join",
-    "ownServerTitle": "Run your own server",
-    "ownServerBody": "Anyone can run an Owl server with Docker on a computer or a VPS and invite only the people they choose. Its first start prints the owner's invite link.",
     "connectedAs": "You are {{name}}, {{role}}",
     "roles": {
       "owner": "owner",
@@ -3747,6 +3756,31 @@
       "unshared": "“{{profile}}” is no longer shared",
       "sharedState": "This profile is shared on {{server}}: every member can open it while nobody else has it open.",
       "notSharedState": "Only this computer has this profile. Share it so every member of {{server}} can open it."
+    },
+    "deploy": {
+      "title": "Set up your own server",
+      "description": "Owl installs the server on your VPS over SSH: Docker, HTTPS, and you as its owner. You need a VPS running Ubuntu or Debian and its root login.",
+      "hostLabel": "VPS address",
+      "portLabel": "SSH port",
+      "userLabel": "User",
+      "passwordLabel": "Password",
+      "keyLabel": "SSH key (optional)",
+      "keyPassphraseLabel": "Key passphrase",
+      "domainLabel": "Domain (optional)",
+      "domainHint": "Without a domain the server gets an address like 203-0-113-7.sslip.io, with HTTPS.",
+      "serverNameLabel": "Server name",
+      "serverNamePlaceholder": "Our team",
+      "submit": "Set up server",
+      "running": "This takes 5 to 10 minutes. Keep Owl open.",
+      "done": "{{name}} is up and you are its owner",
+      "manual": "You can also run the server yourself with Docker on any computer: see donut-sync/README.md in the repository.",
+      "steps": {
+        "connect": "SSH login",
+        "docker": "Docker",
+        "server": "Server",
+        "https": "HTTPS",
+        "owner": "Owner"
+      }
     }
   }
 }

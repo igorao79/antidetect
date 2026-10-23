@@ -2465,7 +2465,18 @@
     "workspaceAlreadyJoined": "此应用已连接到一个 Owl 服务器。请先断开连接。",
     "workspaceInviteInvalid": "此邀请已失效：已被使用、撤销或已过期。请索取新的邀请。",
     "workspaceTooManyAttempts": "尝试次数过多。请等待一分钟后重试。",
-    "workspaceProfileNotYours": "此配置文件由 {{name}} 共享。只有该成员或服务器所有者可以将其从服务器移除。"
+    "workspaceProfileNotYours": "此配置文件由 {{name}} 共享。只有该成员或服务器所有者可以将其从服务器移除。",
+    "workspaceDeployUnreachable": "无法通过 SSH 连接到 {{host}}。请检查地址和端口。",
+    "workspaceDeployLoginRejected": "服务器不接受此用户和密码或密钥。",
+    "workspaceDeployKeyUnreadable": "无法读取 SSH 密钥。请检查文件路径和密钥口令。",
+    "workspaceDeployNoRoot": "此用户没有 root 权限。请以 root 或具有 sudo 权限的用户登录。",
+    "workspaceDeployUnsupportedOs": "安装程序支持 Ubuntu 和 Debian；此服务器运行的是 {{os}}。",
+    "workspaceDeployPrivateAddress": "{{host}} 是局域网地址，无法为其签发 HTTPS 证书。请填写 VPS 的公网 IP 或域名。",
+    "workspaceDeployDomainInvalid": "请以名称形式填写域名，例如 owl.example.com。",
+    "workspaceDeployFailed": "安装失败：{{detail}}。详情见 Owl 日志。",
+    "workspaceDeployFailedNoDetail": "安装失败。详情见 Owl 日志。",
+    "workspaceDeployHttpsFailed": "服务器已运行，但 {{domain}} 的 HTTPS 未能启用。请确认主机面板中已开放 80 和 443 端口，然后重新运行安装。",
+    "workspaceDeployHasOwner": "此服务器已有所有者。请向其索取邀请。"
   },
   "rail": {
     "profiles": "配置文件",
@@ -3710,8 +3721,6 @@
     "nameLabel": "你的名字",
     "namePlaceholder": "会显示给其他成员",
     "join": "加入",
-    "ownServerTitle": "运行自己的服务器",
-    "ownServerBody": "任何人都可以在电脑或 VPS 上用 Docker 运行 Owl 服务器，只邀请自己选择的人。首次启动时会输出所有者的邀请链接。",
     "connectedAs": "你是 {{name}}，{{role}}",
     "roles": {
       "owner": "所有者",
@@ -3747,6 +3756,31 @@
       "unshared": "“{{profile}}”已停止共享",
       "sharedState": "此配置文件已在 {{server}} 上共享：无人打开时，任何成员都可以打开。",
       "notSharedState": "此配置文件只在这台电脑上。共享后，{{server}} 的所有成员都可以打开。"
+    },
+    "deploy": {
+      "title": "搭建自己的服务器",
+      "description": "Owl 会通过 SSH 在你的 VPS 上安装服务器：Docker、HTTPS，并把你设为所有者。需要一台运行 Ubuntu 或 Debian 的 VPS 和 root 登录。",
+      "hostLabel": "VPS 地址",
+      "portLabel": "SSH 端口",
+      "userLabel": "用户",
+      "passwordLabel": "密码",
+      "keyLabel": "SSH 密钥（可选）",
+      "keyPassphraseLabel": "密钥口令",
+      "domainLabel": "域名（可选）",
+      "domainHint": "没有域名时，服务器会获得类似 203-0-113-7.sslip.io 的地址，并启用 HTTPS。",
+      "serverNameLabel": "服务器名称",
+      "serverNamePlaceholder": "我们的团队",
+      "submit": "搭建服务器",
+      "running": "需要 5 到 10 分钟。请保持 Owl 打开。",
+      "done": "{{name}} 已运行，你是它的所有者",
+      "manual": "你也可以在任何电脑上用 Docker 自行运行服务器：参见仓库中的 donut-sync/README.md。",
+      "steps": {
+        "connect": "SSH 登录",
+        "docker": "Docker",
+        "server": "服务器",
+        "https": "HTTPS",
+        "owner": "所有者"
+      }
     }
   }
 }

@@ -2475,7 +2475,18 @@
     "workspaceAlreadyJoined": "Este aplicativo já está conectado a um servidor Owl. Desconecte-se primeiro.",
     "workspaceInviteInvalid": "Este convite não vale mais: foi usado, revogado ou expirou. Peça um novo.",
     "workspaceTooManyAttempts": "Tentativas demais. Aguarde um minuto e tente novamente.",
-    "workspaceProfileNotYours": "{{name}} compartilhou este perfil. Somente essa pessoa ou o proprietário do servidor pode retirá-lo do servidor."
+    "workspaceProfileNotYours": "{{name}} compartilhou este perfil. Somente essa pessoa ou o proprietário do servidor pode retirá-lo do servidor.",
+    "workspaceDeployUnreachable": "Não foi possível conectar a {{host}} por SSH. Verifique o endereço e a porta.",
+    "workspaceDeployLoginRejected": "O servidor não aceitou este usuário e a senha ou a chave.",
+    "workspaceDeployKeyUnreadable": "Não foi possível ler a chave SSH. Verifique o caminho do arquivo e a senha da chave.",
+    "workspaceDeployNoRoot": "Este usuário não tem permissões de root. Entre como root ou com um usuário com sudo.",
+    "workspaceDeployUnsupportedOs": "O instalador suporta Ubuntu e Debian; este servidor usa {{os}}.",
+    "workspaceDeployPrivateAddress": "{{host}} é um endereço de rede local, e certificados HTTPS não são emitidos para ele. Informe o IP público do VPS ou um domínio.",
+    "workspaceDeployDomainInvalid": "Informe o domínio como nome, por exemplo owl.example.com.",
+    "workspaceDeployFailed": "A instalação falhou: {{detail}}. O registro do Owl tem os detalhes.",
+    "workspaceDeployFailedNoDetail": "A instalação falhou. O registro do Owl tem os detalhes.",
+    "workspaceDeployHttpsFailed": "O servidor está rodando, mas o HTTPS para {{domain}} não subiu. Confira se as portas 80 e 443 estão abertas no painel da hospedagem e execute a instalação de novo.",
+    "workspaceDeployHasOwner": "Este servidor já tem um proprietário. Peça um convite a ele."
   },
   "rail": {
     "profiles": "Perfis",
@@ -3743,8 +3754,6 @@
     "nameLabel": "Seu nome",
     "namePlaceholder": "Visível para os outros membros",
     "join": "Entrar",
-    "ownServerTitle": "Seu próprio servidor",
-    "ownServerBody": "Qualquer pessoa pode rodar um servidor Owl com Docker em um computador ou VPS e convidar só quem quiser. Na primeira inicialização ele mostra o link de convite do proprietário.",
     "connectedAs": "Você é {{name}}, {{role}}",
     "roles": {
       "owner": "proprietário",
@@ -3780,6 +3789,31 @@
       "unshared": "“{{profile}}” não está mais compartilhado",
       "sharedState": "Este perfil está compartilhado em {{server}}: qualquer membro pode abri-lo enquanto ninguém mais o tiver aberto.",
       "notSharedState": "Só este computador tem este perfil. Compartilhe-o para que todos os membros de {{server}} possam abri-lo."
+    },
+    "deploy": {
+      "title": "Montar seu próprio servidor",
+      "description": "O Owl instala o servidor no seu VPS por SSH: Docker, HTTPS e você como proprietário. É preciso um VPS com Ubuntu ou Debian e o acesso root.",
+      "hostLabel": "Endereço do VPS",
+      "portLabel": "Porta SSH",
+      "userLabel": "Usuário",
+      "passwordLabel": "Senha",
+      "keyLabel": "Chave SSH (opcional)",
+      "keyPassphraseLabel": "Senha da chave",
+      "domainLabel": "Domínio (opcional)",
+      "domainHint": "Sem domínio, o servidor recebe um endereço como 203-0-113-7.sslip.io, com HTTPS.",
+      "serverNameLabel": "Nome do servidor",
+      "serverNamePlaceholder": "Nossa equipe",
+      "submit": "Montar servidor",
+      "running": "Leva de 5 a 10 minutos. Mantenha o Owl aberto.",
+      "done": "{{name}} está no ar e você é o proprietário",
+      "manual": "Você também pode rodar o servidor por conta própria com Docker em qualquer computador: veja donut-sync/README.md no repositório.",
+      "steps": {
+        "connect": "Login SSH",
+        "docker": "Docker",
+        "server": "Servidor",
+        "https": "HTTPS",
+        "owner": "Proprietário"
+      }
     }
   }
 }

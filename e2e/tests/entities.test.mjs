@@ -2072,6 +2072,35 @@ test("an Owl server is joined by invite, its members and invites are managed, an
         }),
         /"code":"WORKSPACE_INVITE_LINK_INVALID"/,
       );
+      // Installing a server on a VPS is refused before any SSH connection
+      // for input that cannot work.
+      const deploy = (request) =>
+        app.invokeError("deploy_workspace_server", {
+          request: {
+            host: "203.0.113.7",
+            user: "root",
+            password: "secret",
+            serverName: "Team",
+            memberName: "Ivan",
+            ...request,
+          },
+        });
+      assert.match(
+        await deploy({ host: "  " }),
+        /"code":"WORKSPACE_DEPLOY_UNREACHABLE"/,
+      );
+      assert.match(
+        await deploy({ memberName: " " }),
+        /"code":"NAME_CANNOT_BE_EMPTY"/,
+      );
+      assert.match(
+        await deploy({ domain: "owl example" }),
+        /"code":"WORKSPACE_DEPLOY_DOMAIN_INVALID"/,
+      );
+      assert.match(
+        await deploy({ host: "192.168.1.10" }),
+        /"code":"WORKSPACE_DEPLOY_PRIVATE_ADDRESS"/,
+      );
       const link = (code) =>
         `owl://join?server=${encodeURIComponent(owl.address)}&code=${code}`;
       assert.match(
@@ -2107,6 +2136,7 @@ test("an Owl server is joined by invite, its members and invites are managed, an
         }),
         /"code":"WORKSPACE_ALREADY_JOINED"/,
       );
+      assert.match(await deploy({}), /"code":"WORKSPACE_ALREADY_JOINED"/);
       assert.deepEqual(await app.invoke("refresh_workspace"), joined);
 
       const members = await app.invoke("list_workspace_members");
@@ -2147,4 +2177,46 @@ test("an Owl server is joined by invite, its members and invites are managed, an
   } finally {
     owl.server.close();
   }
+});
+
+// A real install over SSH on a disposable Debian or Ubuntu machine, such as a
+// Lima VM: OWL_DEPLOY_SSH=user@host:port, OWL_DEPLOY_KEY=<private key>. The
+// server is served over plain HTTP (debug builds only), since no certificate
+// authority reaches a test machine.
+const deployTarget = process.env.OWL_DEPLOY_SSH?.match(/^([^@]+)@(.+):(\d+)$/);
+test("an Owl server is installed on a machine over SSH and joined as its owner", {
+  skip: !deployTarget && "set OWL_DEPLOY_SSH and OWL_DEPLOY_KEY",
+}, async () => {
+  const [, user, host, port] = deployTarget;
+  const request = {
+    host,
+    port: Number(port),
+    user,
+    keyPath: process.env.OWL_DEPLOY_KEY,
+    serverName: "Test server",
+    memberName: "Ivan",
+    plainHttp: true,
+  };
+  await withApp("entities-workspace-deploy", async (app) => {
+    const joined = await app.invoke(
+      "deploy_workspace_server",
+      { request },
+      1_800_000,
+    );
+    assert.equal(joined.name, "Test server");
+    assert.equal(joined.member.role, "owner");
+    assert.equal(joined.server, `http://${host}:12342`);
+    const invite = await app.invoke("create_workspace_invite");
+    assert.match(invite.link, /^owl:\/\/join\?/);
+    await app.invoke("leave_workspace");
+
+    // Run again on the same machine: the server is updated in place and
+    // keeps its owner, so no second owner is made.
+    assert.match(
+      await app
+        .invoke("deploy_workspace_server", { request }, 1_800_000)
+        .catch(String),
+      /"code":"WORKSPACE_DEPLOY_HAS_OWNER"/,
+    );
+  });
 });

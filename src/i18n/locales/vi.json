@@ -2465,7 +2465,18 @@
     "workspaceAlreadyJoined": "Ứng dụng này đã kết nối với một máy chủ Owl. Hãy ngắt kết nối trước.",
     "workspaceInviteInvalid": "Lời mời này không còn hiệu lực: đã được dùng, bị thu hồi hoặc hết hạn. Hãy xin lời mời mới.",
     "workspaceTooManyAttempts": "Quá nhiều lần thử. Hãy đợi một phút rồi thử lại.",
-    "workspaceProfileNotYours": "{{name}} đã chia sẻ hồ sơ này. Chỉ người đó hoặc chủ máy chủ mới có thể gỡ nó khỏi máy chủ."
+    "workspaceProfileNotYours": "{{name}} đã chia sẻ hồ sơ này. Chỉ người đó hoặc chủ máy chủ mới có thể gỡ nó khỏi máy chủ.",
+    "workspaceDeployUnreachable": "Không kết nối được tới {{host}} qua SSH. Hãy kiểm tra địa chỉ và cổng.",
+    "workspaceDeployLoginRejected": "Máy chủ không chấp nhận người dùng và mật khẩu hoặc khóa này.",
+    "workspaceDeployKeyUnreadable": "Không đọc được khóa SSH. Hãy kiểm tra đường dẫn tệp và mật khẩu của khóa.",
+    "workspaceDeployNoRoot": "Người dùng này không có quyền root. Hãy đăng nhập bằng root hoặc người dùng có sudo.",
+    "workspaceDeployUnsupportedOs": "Trình cài đặt hỗ trợ Ubuntu và Debian; máy chủ này chạy {{os}}.",
+    "workspaceDeployPrivateAddress": "{{host}} là địa chỉ mạng nội bộ, không được cấp chứng chỉ HTTPS. Hãy nhập IP công khai của VPS hoặc một tên miền.",
+    "workspaceDeployDomainInvalid": "Hãy nhập tên miền dạng tên, ví dụ owl.example.com.",
+    "workspaceDeployFailed": "Cài đặt thất bại: {{detail}}. Chi tiết có trong nhật ký Owl.",
+    "workspaceDeployFailedNoDetail": "Cài đặt thất bại. Chi tiết có trong nhật ký Owl.",
+    "workspaceDeployHttpsFailed": "Máy chủ đã chạy nhưng HTTPS cho {{domain}} chưa bật được. Hãy kiểm tra cổng 80 và 443 đã mở trong bảng điều khiển hosting, rồi chạy cài đặt lại.",
+    "workspaceDeployHasOwner": "Máy chủ này đã có chủ sở hữu. Hãy xin họ lời mời."
   },
   "rail": {
     "profiles": "Profile",
@@ -3710,8 +3721,6 @@
     "nameLabel": "Tên của bạn",
     "namePlaceholder": "Hiển thị cho các thành viên khác",
     "join": "Tham gia",
-    "ownServerTitle": "Máy chủ của riêng bạn",
-    "ownServerBody": "Bất kỳ ai cũng có thể chạy máy chủ Owl bằng Docker trên máy tính hoặc VPS và chỉ mời người mình muốn. Lần khởi động đầu tiên sẽ in ra liên kết mời của chủ sở hữu.",
     "connectedAs": "Bạn là {{name}}, {{role}}",
     "roles": {
       "owner": "chủ sở hữu",
@@ -3747,6 +3756,31 @@
       "unshared": "“{{profile}}” không còn được chia sẻ",
       "sharedState": "Hồ sơ này đang được chia sẻ trên {{server}}: mọi thành viên đều có thể mở khi không ai khác đang mở.",
       "notSharedState": "Chỉ máy tính này có hồ sơ này. Hãy chia sẻ để mọi thành viên của {{server}} có thể mở."
+    },
+    "deploy": {
+      "title": "Tự dựng máy chủ",
+      "description": "Owl cài máy chủ lên VPS của bạn qua SSH: Docker, HTTPS và bạn là chủ sở hữu. Cần một VPS chạy Ubuntu hoặc Debian và quyền đăng nhập root.",
+      "hostLabel": "Địa chỉ VPS",
+      "portLabel": "Cổng SSH",
+      "userLabel": "Người dùng",
+      "passwordLabel": "Mật khẩu",
+      "keyLabel": "Khóa SSH (không bắt buộc)",
+      "keyPassphraseLabel": "Mật khẩu của khóa",
+      "domainLabel": "Tên miền (không bắt buộc)",
+      "domainHint": "Không có tên miền, máy chủ nhận địa chỉ dạng 203-0-113-7.sslip.io, có HTTPS.",
+      "serverNameLabel": "Tên máy chủ",
+      "serverNamePlaceholder": "Nhóm của chúng tôi",
+      "submit": "Dựng máy chủ",
+      "running": "Việc này mất 5 đến 10 phút. Hãy để Owl mở.",
+      "done": "{{name}} đã chạy và bạn là chủ sở hữu",
+      "manual": "Bạn cũng có thể tự chạy máy chủ bằng Docker trên bất kỳ máy tính nào: xem donut-sync/README.md trong kho mã.",
+      "steps": {
+        "connect": "Đăng nhập SSH",
+        "docker": "Docker",
+        "server": "Máy chủ",
+        "https": "HTTPS",
+        "owner": "Chủ sở hữu"
+      }
     }
   }
 }

@@ -2465,7 +2465,18 @@
     "workspaceAlreadyJoined": "Diese App ist bereits mit einem Owl-Server verbunden. Trennen Sie zuerst die Verbindung.",
     "workspaceInviteInvalid": "Diese Einladung gilt nicht mehr: Sie wurde benutzt, widerrufen oder ist abgelaufen. Bitten Sie um eine neue.",
     "workspaceTooManyAttempts": "Zu viele Versuche. Warten Sie eine Minute und versuchen Sie es erneut.",
-    "workspaceProfileNotYours": "{{name}} hat dieses Profil geteilt. Nur diese Person oder der Server-Besitzer kann es vom Server nehmen."
+    "workspaceProfileNotYours": "{{name}} hat dieses Profil geteilt. Nur diese Person oder der Server-Besitzer kann es vom Server nehmen.",
+    "workspaceDeployUnreachable": "Keine SSH-Verbindung zu {{host}}. Prüfen Sie Adresse und Port.",
+    "workspaceDeployLoginRejected": "Der Server hat Benutzer und Passwort oder Schlüssel nicht akzeptiert.",
+    "workspaceDeployKeyUnreadable": "Der SSH-Schlüssel ließ sich nicht lesen. Prüfen Sie Dateipfad und Passphrase.",
+    "workspaceDeployNoRoot": "Dieser Benutzer hat keine Root-Rechte. Melden Sie sich als root oder als Benutzer mit sudo an.",
+    "workspaceDeployUnsupportedOs": "Die Installation unterstützt Ubuntu und Debian; auf diesem Server läuft {{os}}.",
+    "workspaceDeployPrivateAddress": "{{host}} ist eine Adresse im lokalen Netz, dafür werden keine HTTPS-Zertifikate ausgestellt. Geben Sie die öffentliche IP des VPS oder eine Domain an.",
+    "workspaceDeployDomainInvalid": "Geben Sie die Domain als Namen an, zum Beispiel owl.example.com.",
+    "workspaceDeployFailed": "Die Installation ist fehlgeschlagen: {{detail}}. Details stehen im Owl-Protokoll.",
+    "workspaceDeployFailedNoDetail": "Die Installation ist fehlgeschlagen. Details stehen im Owl-Protokoll.",
+    "workspaceDeployHttpsFailed": "Der Server läuft, aber HTTPS für {{domain}} wurde nicht aktiv. Prüfen Sie, ob die Ports 80 und 443 im Hosting-Panel offen sind, und starten Sie die Einrichtung erneut.",
+    "workspaceDeployHasOwner": "Dieser Server hat bereits einen Eigentümer. Bitten Sie ihn um eine Einladung."
   },
   "rail": {
     "profiles": "Profile",
@@ -3710,8 +3721,6 @@
     "nameLabel": "Ihr Name",
     "namePlaceholder": "Für die anderen Mitglieder sichtbar",
     "join": "Beitreten",
-    "ownServerTitle": "Eigenen Server betreiben",
-    "ownServerBody": "Jeder kann einen Owl-Server mit Docker auf einem Computer oder VPS betreiben und nur die Personen einladen, die er möchte. Beim ersten Start gibt er den Einladungslink des Besitzers aus.",
     "connectedAs": "Sie sind {{name}}, {{role}}",
     "roles": {
       "owner": "Besitzer",
@@ -3747,6 +3756,31 @@
       "unshared": "„{{profile}}“ wird nicht mehr geteilt",
       "sharedState": "Dieses Profil ist auf {{server}} geteilt: Jedes Mitglied kann es öffnen, solange es niemand sonst geöffnet hat.",
       "notSharedState": "Nur dieser Computer hat dieses Profil. Teilen Sie es, damit alle Mitglieder von {{server}} es öffnen können."
+    },
+    "deploy": {
+      "title": "Eigenen Server einrichten",
+      "description": "Owl installiert den Server per SSH auf Ihrem VPS: Docker, HTTPS und Sie als Eigentümer. Sie brauchen einen VPS mit Ubuntu oder Debian und den Root-Zugang.",
+      "hostLabel": "VPS-Adresse",
+      "portLabel": "SSH-Port",
+      "userLabel": "Benutzer",
+      "passwordLabel": "Passwort",
+      "keyLabel": "SSH-Schlüssel (optional)",
+      "keyPassphraseLabel": "Schlüssel-Passphrase",
+      "domainLabel": "Domain (optional)",
+      "domainHint": "Ohne Domain erhält der Server eine Adresse wie 203-0-113-7.sslip.io, mit HTTPS.",
+      "serverNameLabel": "Servername",
+      "serverNamePlaceholder": "Unser Team",
+      "submit": "Server einrichten",
+      "running": "Das dauert 5 bis 10 Minuten. Lassen Sie Owl geöffnet.",
+      "done": "{{name}} läuft, und Sie sind der Eigentümer",
+      "manual": "Sie können den Server auch selbst mit Docker auf einem beliebigen Computer betreiben: siehe donut-sync/README.md im Repository.",
+      "steps": {
+        "connect": "SSH-Anmeldung",
+        "docker": "Docker",
+        "server": "Server",
+        "https": "HTTPS",
+        "owner": "Eigentümer"
+      }
     }
   }
 }

@@ -70,8 +70,8 @@ fn credentials(upstream: &Url) -> (String, String) {
   )
 }
 
-async fn authenticate(
-  handle: &mut client::Handle<Handler>,
+pub(crate) async fn authenticate<H: client::Handler>(
+  handle: &mut client::Handle<H>,
   user: &str,
   password: &str,
 ) -> Result<(), String> {

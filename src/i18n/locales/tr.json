@@ -2465,7 +2465,18 @@
     "workspaceAlreadyJoined": "Bu uygulama zaten bir Owl sunucusuna bağlı. Önce bağlantıyı kesin.",
     "workspaceInviteInvalid": "Bu davet artık geçerli değil: kullanılmış, iptal edilmiş veya süresi dolmuş. Yeni bir tane isteyin.",
     "workspaceTooManyAttempts": "Çok fazla deneme. Bir dakika bekleyip tekrar deneyin.",
-    "workspaceProfileNotYours": "Bu profili {{name}} paylaştı. Sunucudan yalnızca o kişi veya sunucu sahibi kaldırabilir."
+    "workspaceProfileNotYours": "Bu profili {{name}} paylaştı. Sunucudan yalnızca o kişi veya sunucu sahibi kaldırabilir.",
+    "workspaceDeployUnreachable": "{{host}} adresine SSH ile bağlanılamadı. Adresi ve bağlantı noktasını kontrol edin.",
+    "workspaceDeployLoginRejected": "Sunucu bu kullanıcıyı ve parolayı veya anahtarı kabul etmedi.",
+    "workspaceDeployKeyUnreadable": "SSH anahtarı okunamadı. Dosya yolunu ve anahtar parolasını kontrol edin.",
+    "workspaceDeployNoRoot": "Bu kullanıcının root yetkisi yok. root olarak veya sudo yetkili bir kullanıcıyla giriş yapın.",
+    "workspaceDeployUnsupportedOs": "Kurulum Ubuntu ve Debian'ı destekler; bu sunucuda {{os}} çalışıyor.",
+    "workspaceDeployPrivateAddress": "{{host}} yerel ağ adresidir ve bunun için HTTPS sertifikası verilmez. VPS'in genel IP adresini veya bir alan adını girin.",
+    "workspaceDeployDomainInvalid": "Alan adını ad olarak girin, örneğin owl.example.com.",
+    "workspaceDeployFailed": "Kurulum başarısız oldu: {{detail}}. Ayrıntılar Owl günlüğünde.",
+    "workspaceDeployFailedNoDetail": "Kurulum başarısız oldu. Ayrıntılar Owl günlüğünde.",
+    "workspaceDeployHttpsFailed": "Sunucu çalışıyor ancak {{domain}} için HTTPS açılmadı. Barındırma panelinde 80 ve 443 numaralı bağlantı noktalarının açık olduğundan emin olun ve kurulumu yeniden çalıştırın.",
+    "workspaceDeployHasOwner": "Bu sunucunun zaten bir sahibi var. Ondan davet isteyin."
   },
   "rail": {
     "profiles": "Profiller",
@@ -3710,8 +3721,6 @@
     "nameLabel": "Adınız",
     "namePlaceholder": "Diğer üyelere gösterilir",
     "join": "Katıl",
-    "ownServerTitle": "Kendi sunucunuz",
-    "ownServerBody": "Herkes bir bilgisayarda veya VPS'te Docker ile bir Owl sunucusu çalıştırabilir ve yalnızca istediği kişileri davet edebilir. İlk açılışta sahibin davet bağlantısını yazdırır.",
     "connectedAs": "Siz {{name}}, {{role}}",
     "roles": {
       "owner": "sahip",
@@ -3747,6 +3756,31 @@
       "unshared": "“{{profile}}” artık paylaşılmıyor",
       "sharedState": "Bu profil {{server}} üzerinde paylaşılıyor: başka kimse açmadığında her üye açabilir.",
       "notSharedState": "Bu profil yalnızca bu bilgisayarda. {{server}} sunucusunun tüm üyeleri açabilsin diye paylaşın."
+    },
+    "deploy": {
+      "title": "Kendi sunucunuzu kurun",
+      "description": "Owl sunucuyu SSH ile VPS'inize kurar: Docker, HTTPS ve sahibi olarak siz. Ubuntu veya Debian çalıştıran bir VPS ve root girişi gerekir.",
+      "hostLabel": "VPS adresi",
+      "portLabel": "SSH bağlantı noktası",
+      "userLabel": "Kullanıcı",
+      "passwordLabel": "Parola",
+      "keyLabel": "SSH anahtarı (isteğe bağlı)",
+      "keyPassphraseLabel": "Anahtar parolası",
+      "domainLabel": "Alan adı (isteğe bağlı)",
+      "domainHint": "Alan adı olmadan sunucu, HTTPS ile 203-0-113-7.sslip.io gibi bir adres alır.",
+      "serverNameLabel": "Sunucu adı",
+      "serverNamePlaceholder": "Ekibimiz",
+      "submit": "Sunucuyu kur",
+      "running": "Bu 5 ila 10 dakika sürer. Owl'u açık tutun.",
+      "done": "{{name}} çalışıyor ve sahibi sizsiniz",
+      "manual": "Sunucuyu herhangi bir bilgisayarda Docker ile kendiniz de çalıştırabilirsiniz: depodaki donut-sync/README.md dosyasına bakın.",
+      "steps": {
+        "connect": "SSH girişi",
+        "docker": "Docker",
+        "server": "Sunucu",
+        "https": "HTTPS",
+        "owner": "Sahip"
+      }
     }
   }
 }

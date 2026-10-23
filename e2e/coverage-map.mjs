@@ -300,6 +300,7 @@ export const commandCoverage = {
       "workspace::revoke_workspace_invite",
       "workspace::leave_workspace",
       "workspace::take_pending_workspace_link",
+      "workspace_deploy::deploy_workspace_server",
     ],
   },
   cloudContracts: {
