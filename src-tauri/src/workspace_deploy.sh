@@ -45,6 +45,13 @@ if [ -n "$domain" ]; then
     esac
   done
 fi
+# Owl's nginx site takes IPv6 only where nginx already does. Otherwise its
+# IPv6 listener (and the one certbot adds for 443) would be the only one, and
+# so the default server for every IPv6 visitor of the machine's other sites.
+listen6=""
+if [ "$web" = nginx ] && ss -ltnH '( sport = :80 )' 2> /dev/null | awk '{print $4}' | grep -qx '\[::\]:80'; then
+  listen6="    listen [::]:80;"
+fi
 mkdir -p "$dir"
 
 echo "OWL_STEP docker"
@@ -133,7 +140,7 @@ if [ "$web" = nginx ]; then
 # Owl server, added by Owl (workspace_deploy.sh). Remove it with the server.
 server {
     listen 80;
-    listen [::]:80;
+$listen6
     server_name $domain;
 
     # Profile files of any size; the event stream stays open for hours.
