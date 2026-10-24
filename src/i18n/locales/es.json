@@ -975,6 +975,37 @@
       "credentialClientsFailed": "La credencial se guardó, pero no se pudieron actualizar estos clientes: {{clients}}. Vuelve a rotar para reintentar.",
       "fxHint": "fx lee la credencial de DONUT_MCP_TOKEN. Expórtala en la shell que inicia fx.",
       "fxExportCopied": "Línea de exportación copiada"
+    },
+    "tabServer": "API del servidor",
+    "server": {
+      "title": "API del servidor Owl",
+      "notJoined": "Únete a un servidor Owl en la página Servidor para usar su API.",
+      "description": "Los scripts gestionan el equipo {{name}} mediante la API del servidor: miembros, invitaciones, los perfiles compartidos y quién tiene abierto cada uno. Una clave nunca llega a los datos sincronizados de los perfiles.",
+      "addressCopied": "Dirección del servidor copiada",
+      "keys": "Claves de API",
+      "ownerOnly": "Las claves de API las crea el propietario del servidor.",
+      "noKeys": "Aún no hay claves de API.",
+      "keyUsed": "Creada {{created}}, último uso {{used}}",
+      "keyUnused": "Creada {{created}}, sin usar todavía",
+      "copyKey": "Copiar",
+      "revokeKey": "Revocar clave",
+      "revokeConfirm": "¿Revocar {{name}}? Los scripts que la usan pierden el acceso al instante.",
+      "keyName": "Nombre de la clave",
+      "keyNamePlaceholder": "Por ejemplo, sincronización con el CRM",
+      "createKey": "Crear clave",
+      "keyCreated": "Clave creada y copiada. Este equipo la guarda, así que puedes volver a copiarla.",
+      "keyCopied": "Clave copiada",
+      "endpoints": "Qué puede hacer una clave",
+      "scope": "Envía la clave como Authorization: Bearer. Se rechaza para los archivos sincronizados y para tomar un perfil.",
+      "endpoint": {
+        "members": "Listar miembros",
+        "removeMember": "Quitar un miembro",
+        "createInvite": "Crear un enlace de invitación",
+        "invites": "Listar invitaciones abiertas",
+        "revokeInvite": "Revocar una invitación",
+        "profiles": "Perfiles compartidos, quién los compartió y quién los tiene abiertos",
+        "locks": "Quién tiene abierto cada perfil"
+      }
     }
   },
   "import": {
@@ -2489,7 +2520,8 @@
     "workspaceDeployPortsBusy": "Los puertos 80 y 443 de este servidor los ocupa {{process}}. Owl funciona junto a nginx o en un servidor donde estén libres.",
     "workspaceProfilesRunning": "Cierra los perfiles compartidos que están abiertos y vuelve a intentarlo.",
     "workspaceSavedNotFound": "Este servidor ya no está en tu lista. Vuelve a unirte con una invitación.",
-    "workspaceSavedIsActive": "Estás conectado a este servidor. Usa «Salir del servidor» en su lugar."
+    "workspaceSavedIsActive": "Estás conectado a este servidor. Usa «Salir del servidor» en su lugar.",
+    "workspaceApiKeyNotStored": "Este equipo no guarda esa clave. Revócala y crea una nueva."
   },
   "rail": {
     "profiles": "Perfiles",
@@ -3248,7 +3280,8 @@
     "confirmed": "Sí",
     "unavailable": "No",
     "apiProbeScope": "Comprueba la API local activa con la credencial guardada. No se inicia ningún perfil.",
-    "remoteProbeScope": "Comprueba la credencial MCP guardada. El control remoto también requiere un dispositivo conectado y un plan compatible; un cliente configurado no es una sesión activa."
+    "remoteProbeScope": "Comprueba la credencial MCP guardada. El control remoto también requiere un dispositivo conectado y un plan compatible; un cliente configurado no es una sesión activa.",
+    "serverApiProbeScope": "Comprueba la clave de API elegida en el servidor. En el servidor no cambia nada."
   },
   "easterEgg": {
     "konami": {

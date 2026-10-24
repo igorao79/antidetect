@@ -971,6 +971,37 @@
       "credentialClientsFailed": "Thông tin xác thực đã được lưu, nhưng không thể cập nhật các ứng dụng khách sau: {{clients}}. Xoay vòng lại để thử lại.",
       "fxHint": "fx đọc thông tin xác thực từ DONUT_MCP_TOKEN. Hãy export biến này trong shell khởi chạy fx.",
       "fxExportCopied": "Đã sao chép dòng export"
+    },
+    "tabServer": "API máy chủ",
+    "server": {
+      "title": "API máy chủ Owl",
+      "notJoined": "Hãy tham gia một máy chủ Owl ở trang Máy chủ để dùng API của nó.",
+      "description": "Script quản lý nhóm {{name}} qua API của máy chủ: thành viên, lời mời, các hồ sơ dùng chung và ai đang mở hồ sơ nào. Khóa không bao giờ chạm tới dữ liệu hồ sơ đã đồng bộ.",
+      "addressCopied": "Đã sao chép địa chỉ máy chủ",
+      "keys": "Khóa API",
+      "ownerOnly": "Khóa API do chủ sở hữu máy chủ tạo.",
+      "noKeys": "Chưa có khóa API.",
+      "keyUsed": "Tạo {{created}}, dùng lần cuối {{used}}",
+      "keyUnused": "Tạo {{created}}, chưa được dùng",
+      "copyKey": "Sao chép",
+      "revokeKey": "Thu hồi khóa",
+      "revokeConfirm": "Thu hồi {{name}}? Các script dùng khóa này sẽ mất quyền truy cập ngay.",
+      "keyName": "Tên khóa",
+      "keyNamePlaceholder": "Ví dụ: đồng bộ CRM",
+      "createKey": "Tạo khóa",
+      "keyCreated": "Đã tạo và sao chép khóa. Máy tính này lưu khóa nên bạn có thể sao chép lại.",
+      "keyCopied": "Đã sao chép khóa",
+      "endpoints": "Khóa có thể làm gì",
+      "scope": "Gửi khóa dưới dạng Authorization: Bearer. Khóa bị từ chối với các tệp đã đồng bộ và khi giữ một hồ sơ.",
+      "endpoint": {
+        "members": "Liệt kê thành viên",
+        "removeMember": "Xóa một thành viên",
+        "createInvite": "Tạo liên kết mời",
+        "invites": "Liệt kê lời mời còn hiệu lực",
+        "revokeInvite": "Thu hồi một lời mời",
+        "profiles": "Hồ sơ dùng chung, ai đã chia sẻ và ai đang mở",
+        "locks": "Ai đang mở hồ sơ nào"
+      }
     }
   },
   "import": {
@@ -2479,7 +2510,8 @@
     "workspaceDeployPortsBusy": "Cổng 80 và 443 trên máy chủ này đang bị {{process}} chiếm. Owl chạy được cạnh nginx hoặc trên máy chủ còn trống các cổng này.",
     "workspaceProfilesRunning": "Hãy đóng các hồ sơ dùng chung đang mở rồi thử lại.",
     "workspaceSavedNotFound": "Máy chủ này không còn trong danh sách. Hãy tham gia lại bằng lời mời.",
-    "workspaceSavedIsActive": "Bạn đang kết nối với máy chủ này. Hãy dùng «Rời máy chủ» thay thế."
+    "workspaceSavedIsActive": "Bạn đang kết nối với máy chủ này. Hãy dùng «Rời máy chủ» thay thế.",
+    "workspaceApiKeyNotStored": "Máy tính này không lưu khóa đó. Hãy thu hồi và tạo khóa mới."
   },
   "rail": {
     "profiles": "Profile",
@@ -3218,7 +3250,8 @@
     "confirmed": "Có",
     "unavailable": "Không",
     "apiProbeScope": "Kiểm tra API cục bộ đang chạy bằng thông tin xác thực đã lưu. Không khởi chạy hồ sơ.",
-    "remoteProbeScope": "Kiểm tra thông tin xác thực MCP đã lưu. Điều khiển từ xa cũng cần thiết bị được kết nối và gói phù hợp; máy khách đã cấu hình không phải phiên đang hoạt động."
+    "remoteProbeScope": "Kiểm tra thông tin xác thực MCP đã lưu. Điều khiển từ xa cũng cần thiết bị được kết nối và gói phù hợp; máy khách đã cấu hình không phải phiên đang hoạt động.",
+    "serverApiProbeScope": "Kiểm tra khóa API đã chọn trên máy chủ. Không có gì thay đổi trên máy chủ."
   },
   "easterEgg": {
     "konami": {

@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import {
   type CanActivate,
   type ExecutionContext,
+  ForbiddenException,
   Injectable,
   Logger,
   UnauthorizedException,
@@ -126,6 +127,32 @@ export class AuthGuard implements CanActivate {
         sub: member.id,
         role: member.role,
         name: member.name,
+      } satisfies UserContext;
+      return true;
+    }
+
+    // A script with one of this server's API keys: the owner's view of the
+    // team, but no synced data, no locks taken and no keys made.
+    const apiKey = this.workspace.store.apiKeyByToken(token);
+    if (apiKey) {
+      const path = request.path ?? request.url ?? "";
+      const readOnlyLocks =
+        path.startsWith("/v1/profile-locks") && request.method !== "GET";
+      if (
+        path.startsWith("/v1/objects") ||
+        path.startsWith("/v1/api-keys") ||
+        readOnlyLocks
+      ) {
+        throw new ForbiddenException("API keys cannot do this");
+      }
+      (request as unknown as Record<string, unknown>).user = {
+        mode: "self-hosted",
+        prefix: "",
+        profileLimit: 0,
+        sub: `api:${apiKey.id}`,
+        role: "owner",
+        name: apiKey.name,
+        apiKey: apiKey.id,
       } satisfies UserContext;
       return true;
     }

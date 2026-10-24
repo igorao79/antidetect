@@ -31,7 +31,7 @@ function guardWith(env: Record<string, string | undefined>): AuthGuard {
   } as unknown as ConfigService;
   // No member tokens in these tests: every lookup misses.
   const workspace = {
-    store: { memberByToken: () => null },
+    store: { memberByToken: () => null, apiKeyByToken: () => null },
   } as unknown as WorkspaceService;
   return new AuthGuard(config, workspace);
 }
@@ -207,6 +207,7 @@ describe("AuthGuard", () => {
       store: {
         memberByToken: (token: string) =>
           token === "member-token" ? member : null,
+        apiKeyByToken: () => null,
       },
     } as unknown as WorkspaceService;
     const guard = new AuthGuard(config, workspace);

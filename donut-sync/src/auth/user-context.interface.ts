@@ -10,4 +10,7 @@ export interface UserContext {
   // Self-hosted servers with members: the member's role and name.
   role?: "owner" | "member";
   name?: string;
+  // Set when the request carries an API key: team management only, never the
+  // synced data or the locks.
+  apiKey?: string;
 }

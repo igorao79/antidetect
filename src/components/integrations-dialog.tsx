@@ -48,6 +48,7 @@ import {
   SettingsRow,
   StatusLight,
 } from "@/components/ui/settings-panel";
+import { WorkspaceApiPanel } from "@/components/workspace-api-panel";
 import { useCloudAuth } from "@/hooks/use-cloud-auth";
 import { useWayfernTerms } from "@/hooks/use-wayfern-terms";
 import {
@@ -85,7 +86,7 @@ interface AppSettings {
   mcp_remote_key?: string | null;
 }
 
-type IntegrationsTab = "api" | "remote";
+type IntegrationsTab = "api" | "server" | "remote";
 
 interface IntegrationsDialogProps {
   isOpen: boolean;
@@ -722,6 +723,9 @@ export function IntegrationsDialog({
                 <AnimatedTabsTrigger value="api">
                   {t("integrations.tabApi")}
                 </AnimatedTabsTrigger>
+                <AnimatedTabsTrigger value="server">
+                  {t("integrations.tabServer")}
+                </AnimatedTabsTrigger>
                 {remoteTabShown && (
                   <AnimatedTabsTrigger value="remote">
                     <LuCloud className="size-3.5" />
@@ -729,6 +733,10 @@ export function IntegrationsDialog({
                   </AnimatedTabsTrigger>
                 )}
               </AnimatedTabsList>
+
+              <AnimatedTabsContent value="server" className="mt-4">
+                <WorkspaceApiPanel />
+              </AnimatedTabsContent>
 
               <AnimatedTabsContent value="api" className="@container mt-4">
                 <SettingsPanel>

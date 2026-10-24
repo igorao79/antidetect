@@ -25,9 +25,12 @@ interface Diagnostic {
  */
 export function IntegrationDiagnostics({
   target,
+  serverKeyId,
   className,
 }: {
-  target: "api" | "remote";
+  target: "api" | "remote" | "server";
+  /** For `server`: the Owl server API key to check (fork). */
+  serverKeyId?: string;
   className?: string;
 }) {
   const { t } = useTranslation();
@@ -40,7 +43,13 @@ export function IntegrationDiagnostics({
     setError(null);
     try {
       setResult(
-        await invoke<Diagnostic>("check_integration_connection", { target }),
+        target === "server"
+          ? await invoke<Diagnostic>("check_workspace_api_key", {
+              id: serverKeyId,
+            })
+          : await invoke<Diagnostic>("check_integration_connection", {
+              target,
+            }),
       );
     } catch (err) {
       setError(translateBackendError(t, err));
@@ -70,7 +79,9 @@ export function IntegrationDiagnostics({
             {t(
               target === "api"
                 ? "appFeedback.apiProbeScope"
-                : "appFeedback.remoteProbeScope",
+                : target === "server"
+                  ? "appFeedback.serverApiProbeScope"
+                  : "appFeedback.remoteProbeScope",
             )}
           </p>
         </div>

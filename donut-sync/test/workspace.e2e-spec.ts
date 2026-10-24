@@ -310,6 +310,99 @@ describe("Owl server with members (disk storage)", () => {
     expect((await call("GET", "/v1/me", member)).status).toBe(401);
   });
 
+  it("gives scripts an API key for the team, never for the synced data", async () => {
+    const invite = await call("POST", "/v1/invites", owner, {});
+    const olga = await call("POST", "/v1/join", undefined, {
+      code: invite.body.code,
+      name: "Olga",
+    });
+    const memberToken = olga.body.token as string;
+    expect(
+      (await call("POST", "/v1/api-keys", memberToken, { name: "x" })).status,
+    ).toBe(403);
+    expect(
+      (await call("POST", "/v1/api-keys", owner, { name: " " })).status,
+    ).toBe(400);
+
+    const created = await call("POST", "/v1/api-keys", owner, { name: "CRM" });
+    expect(created.status).toBe(200);
+    const key = created.body.key as string;
+    expect(key.startsWith("owlk_")).toBe(true);
+    const listed = await call("GET", "/v1/api-keys", owner);
+    expect(listed.body).toEqual({
+      keys: [expect.objectContaining({ id: created.body.id, name: "CRM" })],
+    });
+
+    // A shared profile, open on the owner's computer.
+    const ownerId = (
+      (await call("GET", "/v1/me", owner)).body.member as { id: string }
+    ).id;
+    const metadata = JSON.stringify({
+      id: "p9",
+      name: "Shop",
+      browser: "camoufox",
+      tags: ["eu", 7],
+      shared_by: { id: ownerId, name: "Ivan" },
+      updated_at: 1792800000,
+    });
+    const upload = await call("POST", "/v1/objects/presign-upload", owner, {
+      key: "profiles/p9/metadata.json",
+      contentType: "application/json",
+    });
+    await fetch(upload.body.url as string, {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: metadata,
+    });
+    await call("POST", "/v1/profile-locks/p9", owner);
+
+    // What the key may do: the team, the profiles, the locks to read.
+    expect((await call("GET", "/v1/members", key)).status).toBe(200);
+    const profiles = await call("GET", "/v1/profiles", key);
+    expect(profiles.body).toEqual({
+      profiles: [
+        {
+          id: "p9",
+          name: "Shop",
+          browser: "camoufox",
+          tags: ["eu"],
+          sharedBy: { id: ownerId, name: "Ivan" },
+          updatedAt: 1792800000,
+          encrypted: false,
+          openBy: "Ivan",
+        },
+      ],
+    });
+    expect((await call("GET", "/v1/profile-locks", key)).status).toBe(200);
+    const keyInvite = await call("POST", "/v1/invites", key, {});
+    expect(keyInvite.status).toBe(200);
+
+    // What it may not: synced data, locks, more keys.
+    for (const [method, path] of [
+      ["POST", "/v1/objects/list"],
+      ["POST", "/v1/objects/presign-download"],
+      ["POST", "/v1/profile-locks/p9"],
+      ["GET", "/v1/api-keys"],
+      ["POST", "/v1/api-keys"],
+    ] as const) {
+      expect([
+        method,
+        path,
+        (await call(method, path, key, method === "GET" ? undefined : {}))
+          .status,
+      ]).toEqual([method, path, 403]);
+    }
+
+    expect(
+      (await call("DELETE", `/v1/api-keys/${created.body.id}`, owner)).status,
+    ).toBe(204);
+    expect((await call("GET", "/v1/members", key)).status).toBe(401);
+    await call("DELETE", "/v1/profile-locks/p9", owner);
+    await call("POST", "/v1/objects/delete-prefix", owner, {
+      prefix: "profiles/p9/",
+    });
+  });
+
   it("reports this server as its storage endpoint", async () => {
     const ready = await call("GET", "/readyz");
     expect(ready.body).toEqual({

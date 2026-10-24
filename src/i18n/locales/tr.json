@@ -971,6 +971,37 @@
       "credentialClientsFailed": "Kimlik bilgisi kaydedildi ancak şu istemciler güncellenemedi: {{clients}}. Yeniden denemek için tekrar döndürün.",
       "fxHint": "fx kimlik bilgisini DONUT_MCP_TOKEN'dan okur. fx'i başlatan kabukta dışa aktarın.",
       "fxExportCopied": "Dışa aktarma satırı kopyalandı"
+    },
+    "tabServer": "Sunucu API'si",
+    "server": {
+      "title": "Owl sunucu API'si",
+      "notJoined": "API'sini kullanmak için Sunucu sayfasından bir Owl sunucusuna katılın.",
+      "description": "Betikler {{name}} ekibini sunucunun API'si üzerinden yönetir: üyeler, davetler, paylaşılan profiller ve hangisini kimin açtığı. Anahtar, eşitlenen profil verilerine asla ulaşmaz.",
+      "addressCopied": "Sunucu adresi kopyalandı",
+      "keys": "API anahtarları",
+      "ownerOnly": "API anahtarlarını sunucunun sahibi oluşturur.",
+      "noKeys": "Henüz API anahtarı yok.",
+      "keyUsed": "Oluşturulma {{created}}, son kullanım {{used}}",
+      "keyUnused": "Oluşturulma {{created}}, henüz kullanılmadı",
+      "copyKey": "Kopyala",
+      "revokeKey": "Anahtarı iptal et",
+      "revokeConfirm": "{{name}} iptal edilsin mi? Bu anahtarı kullanan betikler erişimini hemen kaybeder.",
+      "keyName": "Anahtar adı",
+      "keyNamePlaceholder": "Örneğin, CRM eşitleme",
+      "createKey": "Anahtar oluştur",
+      "keyCreated": "Anahtar oluşturuldu ve kopyalandı. Bu bilgisayar onu saklar, yeniden kopyalayabilirsiniz.",
+      "keyCopied": "Anahtar kopyalandı",
+      "endpoints": "Bir anahtarla neler yapılabilir",
+      "scope": "Anahtarı Authorization: Bearer olarak gönderin. Eşitlenen dosyalar ve bir profili almak için reddedilir.",
+      "endpoint": {
+        "members": "Üyeleri listele",
+        "removeMember": "Bir üyeyi kaldır",
+        "createInvite": "Davet bağlantısı oluştur",
+        "invites": "Açık davetleri listele",
+        "revokeInvite": "Bir daveti iptal et",
+        "profiles": "Paylaşılan profiller, kimin paylaştığı ve kimin açtığı",
+        "locks": "Hangi profili kimin açtığı"
+      }
     }
   },
   "import": {
@@ -2479,7 +2510,8 @@
     "workspaceDeployPortsBusy": "Bu sunucuda 80 ve 443 numaralı bağlantı noktalarını {{process}} kullanıyor. Owl, nginx'in yanında veya bunların boş olduğu bir sunucuda çalışabilir.",
     "workspaceProfilesRunning": "Açık olan paylaşılan profilleri kapatıp yeniden deneyin.",
     "workspaceSavedNotFound": "Bu sunucu artık listenizde değil. Bir davetle yeniden katılın.",
-    "workspaceSavedIsActive": "Şu anda bu sunucuya bağlısınız. Bunun yerine «Sunucudan ayrıl» seçeneğini kullanın."
+    "workspaceSavedIsActive": "Şu anda bu sunucuya bağlısınız. Bunun yerine «Sunucudan ayrıl» seçeneğini kullanın.",
+    "workspaceApiKeyNotStored": "Bu bilgisayar o anahtarı saklamıyor. İptal edip yeni bir anahtar oluşturun."
   },
   "rail": {
     "profiles": "Profiller",
@@ -3218,7 +3250,8 @@
     "confirmed": "Evet",
     "unavailable": "Hayır",
     "apiProbeScope": "Çalışan yerel API kayıtlı kimlik bilgisiyle kontrol edilir. Profil başlatılmaz.",
-    "remoteProbeScope": "Kayıtlı MCP kimlik bilgisi kontrol edilir. Uzaktan kontrol için bağlı bir cihaz ve uygun plan da gerekir; yapılandırılmış istemci etkin oturum anlamına gelmez."
+    "remoteProbeScope": "Kayıtlı MCP kimlik bilgisi kontrol edilir. Uzaktan kontrol için bağlı bir cihaz ve uygun plan da gerekir; yapılandırılmış istemci etkin oturum anlamına gelmez.",
+    "serverApiProbeScope": "Seçilen API anahtarını sunucuda denetler. Sunucuda hiçbir şey değişmez."
   },
   "easterEgg": {
     "konami": {

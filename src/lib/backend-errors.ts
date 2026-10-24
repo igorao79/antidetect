@@ -268,6 +268,7 @@ export type BackendErrorCode =
   | "WORKSPACE_PROFILES_RUNNING"
   | "WORKSPACE_SAVED_NOT_FOUND"
   | "WORKSPACE_SAVED_IS_ACTIVE"
+  | "WORKSPACE_API_KEY_NOT_STORED"
   | "PROFILE_TEMPLATE_INVALID"
   | "PROFILE_TEMPLATE_LIMIT"
   | "PROFILE_TEMPLATE_NOT_FOUND"
@@ -944,6 +945,8 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       return t("backendErrors.workspaceSavedNotFound");
     case "WORKSPACE_SAVED_IS_ACTIVE":
       return t("backendErrors.workspaceSavedIsActive");
+    case "WORKSPACE_API_KEY_NOT_STORED":
+      return t("backendErrors.workspaceApiKeyNotStored");
     case "WORKSPACE_DEPLOY_PORTS_BUSY":
       return t("backendErrors.workspaceDeployPortsBusy", {
         process: parsed.params?.process ?? "",

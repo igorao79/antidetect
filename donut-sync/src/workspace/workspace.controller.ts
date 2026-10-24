@@ -18,6 +18,7 @@ import {
 import type { Request } from "express";
 import { AuthGuard } from "../auth/auth.guard.js";
 import type { UserContext } from "../auth/user-context.interface.js";
+import { SyncService } from "../sync/sync.service.js";
 import { LocksService } from "./locks.service.js";
 import { inviteLink, workspaceName } from "./server-config.js";
 import { WorkspaceService } from "./workspace.service.js";
@@ -83,13 +84,15 @@ export class JoinController {
   }
 }
 
-/** Who is on this server, and the invites that let someone join. */
+/** Who is on this server, the invites that let someone join, the shared
+ * profiles, and the API keys scripts use for all of that. */
 @Controller("v1")
 @UseGuards(AuthGuard)
 export class WorkspaceController {
   constructor(
     private readonly workspace: WorkspaceService,
     private readonly locks: LocksService,
+    private readonly sync: SyncService,
   ) {}
 
   @Get("me")
@@ -145,6 +148,62 @@ export class WorkspaceController {
         .listInvites()
         .map(({ id, createdAt, expiresAt }) => ({ id, createdAt, expiresAt })),
     };
+  }
+
+  /** The profiles shared here, who shared them, and who has each one open. */
+  @Get("profiles")
+  async profiles() {
+    const openBy = new Map(
+      this.locks.list().map((lock) => [lock.profileId, lock.lockedByEmail]),
+    );
+    const shared = await this.sync.sharedProfiles();
+    return {
+      profiles: shared.map(({ id, metadata }) => {
+        const m = metadata ?? {};
+        const by = m.shared_by as { id?: unknown; name?: unknown } | undefined;
+        return {
+          id,
+          name: typeof m.name === "string" ? m.name : null,
+          browser: typeof m.browser === "string" ? m.browser : null,
+          tags: Array.isArray(m.tags)
+            ? m.tags.filter((tag) => typeof tag === "string")
+            : [],
+          sharedBy:
+            by && typeof by.id === "string" && typeof by.name === "string"
+              ? { id: by.id, name: by.name }
+              : null,
+          updatedAt: typeof m.updated_at === "number" ? m.updated_at : null,
+          encrypted: metadata === null,
+          openBy: openBy.get(id) ?? null,
+        };
+      }),
+    };
+  }
+
+  @Get("api-keys")
+  apiKeys(@Req() req: Request) {
+    requireOwner(userOf(req));
+    return { keys: this.workspace.store.listApiKeys() };
+  }
+
+  @Post("api-keys")
+  @HttpCode(200)
+  createApiKey(@Body() body: { name?: unknown }, @Req() req: Request) {
+    const ctx = userOf(req);
+    requireOwner(ctx);
+    const name =
+      typeof body?.name === "string"
+        ? body.name.trim().slice(0, MAX_NAME_LENGTH)
+        : "";
+    if (!name) throw new BadRequestException("name is required");
+    return this.workspace.store.createApiKey(name, ctx.sub ?? null);
+  }
+
+  @Delete("api-keys/:id")
+  @HttpCode(204)
+  revokeApiKey(@Param("id") id: string, @Req() req: Request): void {
+    requireOwner(userOf(req));
+    if (!this.workspace.store.revokeApiKey(id)) throw new NotFoundException();
   }
 
   @Delete("invites/:id")

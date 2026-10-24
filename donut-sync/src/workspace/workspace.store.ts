@@ -19,6 +19,22 @@ export interface Invite {
   expiresAt: string;
 }
 
+/** A key scripts use for the server's API. The key itself is never stored. */
+export interface ApiKey {
+  id: string;
+  name: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+}
+
+/** An API key as it is created: the key exists only in this answer. */
+export interface CreatedApiKey extends ApiKey {
+  key: string;
+}
+
+/** API keys start with this, so a leaked one is easy to recognise. */
+export const API_KEY_PREFIX = "owlk_";
+
 /** An invite as it is created: the code exists only in this answer. */
 export interface CreatedInvite extends Invite {
   code: string;
@@ -37,8 +53,9 @@ function secret(): string {
 
 /**
  * Who belongs to this server: members with their personal tokens, the
- * invites that let someone join, and which member first shared each profile.
- * Tokens and invite codes are stored only as SHA-256 hashes.
+ * invites that let someone join, which member first shared each profile, and
+ * the API keys scripts use. Tokens, invite codes and keys are stored only as
+ * SHA-256 hashes.
  */
 export class WorkspaceStore {
   private readonly db: DatabaseSync;
@@ -69,6 +86,15 @@ export class WorkspaceStore {
       CREATE TABLE IF NOT EXISTS profile_owners (
         profile_id TEXT PRIMARY KEY,
         member_id TEXT NOT NULL
+      );
+      CREATE TABLE IF NOT EXISTS api_keys (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        key_hash TEXT NOT NULL UNIQUE,
+        created_by TEXT,
+        created_at TEXT NOT NULL,
+        last_used_at TEXT,
+        revoked_at TEXT
       );
     `);
   }
@@ -214,6 +240,56 @@ export class WorkspaceStore {
       .prepare("UPDATE members SET revoked_at = ? WHERE id = ?")
       .run(new Date().toISOString(), id);
     return "removed";
+  }
+
+  createApiKey(name: string, createdBy: string | null): CreatedApiKey {
+    const key = `${API_KEY_PREFIX}${secret()}`;
+    const created: CreatedApiKey = {
+      id: randomUUID(),
+      name,
+      key,
+      createdAt: new Date().toISOString(),
+      lastUsedAt: null,
+    };
+    this.db
+      .prepare(
+        "INSERT INTO api_keys (id, name, key_hash, created_by, created_at) VALUES (?, ?, ?, ?, ?)",
+      )
+      .run(created.id, name, hash(key), createdBy, created.createdAt);
+    return created;
+  }
+
+  listApiKeys(): ApiKey[] {
+    return this.db
+      .prepare(
+        `SELECT id, name, created_at AS createdAt, last_used_at AS lastUsedAt FROM api_keys
+         WHERE revoked_at IS NULL ORDER BY created_at`,
+      )
+      .all() as unknown as ApiKey[];
+  }
+
+  revokeApiKey(id: string): boolean {
+    const result = this.db
+      .prepare(
+        "UPDATE api_keys SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL",
+      )
+      .run(new Date().toISOString(), id);
+    return Number(result.changes) > 0;
+  }
+
+  /** The key a request carries, recording that it was used. */
+  apiKeyByToken(token: string): ApiKey | null {
+    if (!token.startsWith(API_KEY_PREFIX)) return null;
+    const row = this.db
+      .prepare(
+        "SELECT id, name, created_at AS createdAt, last_used_at AS lastUsedAt FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL",
+      )
+      .get(hash(token)) as unknown as ApiKey | undefined;
+    if (!row) return null;
+    this.db
+      .prepare("UPDATE api_keys SET last_used_at = ? WHERE id = ?")
+      .run(new Date().toISOString(), row.id);
+    return row;
   }
 
   /** Remember who first put a profile on the server. Later uploads change nothing. */

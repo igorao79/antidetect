@@ -1574,7 +1574,7 @@ test("soft table and creation surfaces stay quiet and readable in every theme", 
     { seedDownloadedBrowser: true },
   );
 });
-test("the integrations page ships only the Local API tab and never names remote control for a regular desktop", async () => {
+test("the integrations page ships the Local API and Server API tabs and never names remote control for a regular desktop", async () => {
   await withApp("ui-integrations", async (app) => {
     const modifier =
       process.platform === "darwin" ? { meta: true } : { ctrl: true };
@@ -1583,12 +1583,14 @@ test("the integrations page ships only the Local API tab and never names remote 
 
     // Local MCP is gone, and remote control is an Enterprise feature that a
     // desktop without the entitlement is never told about. This session is
-    // signed out, so a second tab here means the gate opened for everyone.
+    // signed out, so a Remote MCP tab here means the gate opened for
+    // everyone. The Owl server's API (fork) sits beside the Local API.
     const tabs = async () =>
       app.execute(
         `return [...document.querySelectorAll('[role="tab"]')].map((node) => node.textContent.trim());`,
       );
-    assert.deepEqual(await tabs(), [en.integrations.tabApi]);
+    const offered = [en.integrations.tabApi, en.integrations.tabServer];
+    assert.deepEqual(await tabs(), offered);
     // The whole document, not just the painted text: a hidden trigger or an
     // unmounted-looking panel is still a mention.
     const html = await app.html();
@@ -1619,7 +1621,11 @@ test("the integrations page ships only the Local API tab and never names remote 
     await app.pressShortcut({ key: "i", ...modifier });
     await new Promise((resolve) => setTimeout(resolve, 500));
     assert.equal(await activeTab(), en.integrations.tabApi);
-    assert.deepEqual(await tabs(), [en.integrations.tabApi]);
+    assert.deepEqual(await tabs(), offered);
+
+    // Without a joined server the Server API tab says where to join one.
+    await app.clickText(en.integrations.tabServer, { roles: ["tab"] });
+    await app.waitForText(en.integrations.server.notJoined);
 
     await dismissSurface(app);
   });

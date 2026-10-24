@@ -589,6 +589,58 @@ export class SyncService implements OnModuleInit {
     return { deleted, tombstoneCreated };
   }
 
+  /**
+   * The profiles shared on a server with members, each with its synced
+   * metadata, or null where that is missing or sealed (encrypted sync).
+   */
+  async sharedProfiles(): Promise<
+    Array<{ id: string; metadata: Record<string, unknown> | null }>
+  > {
+    const ids: string[] = [];
+    let continuationToken: string | undefined;
+    do {
+      const response = await this.s3Client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucket,
+          Prefix: "profiles/",
+          Delimiter: "/",
+          ContinuationToken: continuationToken,
+        }),
+      );
+      for (const common of response.CommonPrefixes ?? []) {
+        const id = common.Prefix?.slice("profiles/".length, -1);
+        if (id) ids.push(id);
+      }
+      continuationToken = response.IsTruncated
+        ? response.NextContinuationToken
+        : undefined;
+    } while (continuationToken);
+    return Promise.all(
+      ids.map(async (id) => ({
+        id,
+        metadata: await this.readJson(`profiles/${id}/metadata.json`),
+      })),
+    );
+  }
+
+  private async readJson(key: string): Promise<Record<string, unknown> | null> {
+    try {
+      const response = await this.s3Client.send(
+        new GetObjectCommand({ Bucket: this.bucket, Key: key }),
+      );
+      const chunks: Buffer[] = [];
+      for await (const chunk of response.Body as AsyncIterable<Uint8Array>) {
+        chunks.push(Buffer.from(chunk));
+      }
+      const value: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"));
+      return value && typeof value === "object"
+        ? (value as Record<string, unknown>)
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
   async list(dto: ListRequestDto, ctx?: UserContext): Promise<ListResponseDto> {
     const prefix = ctx ? this.scopeKey(ctx, dto.prefix) : dto.prefix;
     // Enforce scope on the read side too, so a crafted absolute prefix can't

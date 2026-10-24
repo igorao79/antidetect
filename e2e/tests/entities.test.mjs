@@ -1982,6 +1982,7 @@ async function fakeOwlServer({ name = "Team", token = "member-token" } = {}) {
     revoked: false,
     invites: [],
     removed: [],
+    apiKeys: [],
     calls: [],
   };
   const member = { id: "m1", name: "Ivan", role: "owner" };
@@ -1997,8 +1998,15 @@ async function fakeOwlServer({ name = "Team", token = "member-token" } = {}) {
       };
       const url = new URL(request.url, "http://owl.test");
       state.calls.push(`${request.method} ${url.pathname}`);
-      const authorized =
-        request.headers.authorization === `Bearer ${token}` && !state.revoked;
+      if (url.pathname === "/health") return send(200, { status: "ok" });
+      const bearer = request.headers.authorization ?? "";
+      const byApiKey = state.apiKeys.some(
+        (key) => bearer === `Bearer ${key.key}`,
+      );
+      if (byApiKey && url.pathname === "/v1/members") {
+        return send(200, { members: [member] });
+      }
+      const authorized = bearer === `Bearer ${token}` && !state.revoked;
       if (request.method === "POST" && url.pathname === "/v1/join") {
         const { code } = JSON.parse(body || "{}");
         if (code !== "good-code") return send(401, { error: "invite_invalid" });
@@ -2042,6 +2050,27 @@ async function fakeOwlServer({ name = "Team", token = "member-token" } = {}) {
       if (url.pathname.startsWith("/v1/invites/")) {
         const id = url.pathname.split("/").pop();
         state.invites = state.invites.filter((invite) => invite.id !== id);
+        return send(204);
+      }
+      if (url.pathname === "/v1/api-keys" && request.method === "GET") {
+        return send(200, {
+          keys: state.apiKeys.map(({ key: _key, ...listed }) => listed),
+        });
+      }
+      if (url.pathname === "/v1/api-keys" && request.method === "POST") {
+        const created = {
+          id: `k${state.apiKeys.length + 1}`,
+          name: JSON.parse(body || "{}").name,
+          key: `owlk_fake${state.apiKeys.length + 1}`,
+          createdAt: "2030-01-01T00:00:00Z",
+          lastUsedAt: null,
+        };
+        state.apiKeys.push(created);
+        return send(200, created);
+      }
+      if (url.pathname.startsWith("/v1/api-keys/")) {
+        const id = url.pathname.split("/").pop();
+        state.apiKeys = state.apiKeys.filter((key) => key.id !== id);
         return send(204);
       }
       if (url.pathname === "/v1/profile-locks") return send(200, []);
@@ -2149,6 +2178,46 @@ test("an Owl server is joined by invite, its members and invites are managed, an
       );
       await app.invoke("revoke_workspace_invite", { inviteId: invite.id });
       assert.deepEqual(await app.invoke("list_workspace_invites"), []);
+
+      // API keys for scripts: made by the owner, kept on this computer.
+      assert.deepEqual(await app.invoke("list_workspace_api_keys"), []);
+      assert.match(
+        await app.invokeError("create_workspace_api_key", { name: "  " }),
+        /"code":"NAME_CANNOT_BE_EMPTY"/,
+      );
+      const apiKey = await app.invoke("create_workspace_api_key", {
+        name: "CRM",
+      });
+      assert.equal(apiKey, "owlk_fake1");
+      const keys = await app.invoke("list_workspace_api_keys");
+      assert.deepEqual(
+        keys.map((k) => [k.id, k.name, k.stored]),
+        [["k1", "CRM", true]],
+      );
+      assert.equal(
+        await app.invoke("get_workspace_api_key", { id: "k1" }),
+        apiKey,
+      );
+      const check = await app.invoke("check_workspace_api_key", { id: "k1" });
+      assert.deepEqual(
+        [
+          check.configured,
+          check.reachable,
+          check.authorized,
+          check.http_status,
+        ],
+        [true, true, true, 200],
+      );
+      await app.invoke("revoke_workspace_api_key", { id: "k1" });
+      assert.deepEqual(await app.invoke("list_workspace_api_keys"), []);
+      assert.match(
+        await app.invokeError("get_workspace_api_key", { id: "k1" }),
+        /"code":"WORKSPACE_API_KEY_NOT_STORED"/,
+      );
+      assert.equal(
+        (await app.invoke("check_workspace_api_key", { id: "k1" })).configured,
+        false,
+      );
 
       // Removed from the server: every call says so in a translatable code.
       owl.state.revoked = true;

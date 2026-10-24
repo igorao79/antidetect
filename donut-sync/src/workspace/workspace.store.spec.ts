@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { WorkspaceStore } from "./workspace.store.js";
+import { API_KEY_PREFIX, WorkspaceStore } from "./workspace.store.js";
 
 describe("WorkspaceStore", () => {
   let dir: string;
@@ -81,5 +81,36 @@ describe("WorkspaceStore", () => {
     expect(dump).not.toContain(invite.code);
     expect(dump).not.toContain(joined?.token);
     store = new WorkspaceStore(dir);
+  });
+
+  it("knows an API key until it is revoked, and keeps only its hash", () => {
+    const created = store.createApiKey("CRM sync", "m1");
+    expect(created.key.startsWith(API_KEY_PREFIX)).toBe(true);
+    expect(store.apiKeyByToken(created.key)).toMatchObject({
+      id: created.id,
+      name: "CRM sync",
+    });
+    expect(store.listApiKeys()).toEqual([
+      expect.objectContaining({
+        id: created.id,
+        lastUsedAt: expect.any(String),
+      }),
+    ]);
+    // A member token or a made-up key is not an API key.
+    expect(store.apiKeyByToken("owlk_made-up")).toBeNull();
+    expect(
+      store.apiKeyByToken(created.key.slice(API_KEY_PREFIX.length)),
+    ).toBeNull();
+
+    const { DatabaseSync } = require("node:sqlite");
+    const db = new DatabaseSync(join(dir, "owl.db"));
+    const dump = JSON.stringify(db.prepare("SELECT * FROM api_keys").all());
+    db.close();
+    expect(dump).not.toContain(created.key);
+
+    expect(store.revokeApiKey(created.id)).toBe(true);
+    expect(store.revokeApiKey(created.id)).toBe(false);
+    expect(store.apiKeyByToken(created.key)).toBeNull();
+    expect(store.listApiKeys()).toEqual([]);
   });
 });

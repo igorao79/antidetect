@@ -971,6 +971,37 @@
       "credentialClientsFailed": "The credential is stored, but these clients could not be updated: {{clients}}. Rotate again to retry.",
       "fxHint": "fx reads the credential from DONUT_MCP_TOKEN. Export it in the shell that starts fx.",
       "fxExportCopied": "Export line copied"
+    },
+    "tabServer": "Server API",
+    "server": {
+      "title": "Owl server API",
+      "notJoined": "Join an Owl server on the Server page to use its API.",
+      "description": "Scripts manage the {{name}} team through the server's API: members, invites, the shared profiles and who has which one open. A key never reaches the synced profile data.",
+      "addressCopied": "Server address copied",
+      "keys": "API keys",
+      "ownerOnly": "API keys are created by the owner of the server.",
+      "noKeys": "No API keys yet.",
+      "keyUsed": "Created {{created}}, last used {{used}}",
+      "keyUnused": "Created {{created}}, not used yet",
+      "copyKey": "Copy",
+      "revokeKey": "Revoke key",
+      "revokeConfirm": "Revoke {{name}}? Scripts using it lose access at once.",
+      "keyName": "Key name",
+      "keyNamePlaceholder": "For example, CRM sync",
+      "createKey": "Create key",
+      "keyCreated": "Key created and copied. This computer keeps it, so you can copy it again.",
+      "keyCopied": "Key copied",
+      "endpoints": "What a key can do",
+      "scope": "Send the key as Authorization: Bearer. It is refused for the synced files and for taking a profile.",
+      "endpoint": {
+        "members": "List members",
+        "removeMember": "Remove a member",
+        "createInvite": "Create an invite link",
+        "invites": "List open invites",
+        "revokeInvite": "Revoke an invite",
+        "profiles": "List shared profiles with who shared them and who has them open",
+        "locks": "Who has which profile open"
+      }
     }
   },
   "import": {
@@ -2479,7 +2510,8 @@
     "workspaceDeployPortsBusy": "Ports 80 and 443 on this server are taken by {{process}}. Owl can work next to nginx or on a server where they are free.",
     "workspaceProfilesRunning": "Close the shared profiles that are open, then try again.",
     "workspaceSavedNotFound": "This server is no longer on your list. Join it again with an invite.",
-    "workspaceSavedIsActive": "This is the server you are connected to. Use Leave server instead."
+    "workspaceSavedIsActive": "This is the server you are connected to. Use Leave server instead.",
+    "workspaceApiKeyNotStored": "This computer does not keep that key. Revoke it and create a new one."
   },
   "rail": {
     "profiles": "Profiles",
@@ -3218,7 +3250,8 @@
     "confirmed": "Yes",
     "unavailable": "No",
     "apiProbeScope": "Checks the running local API with the saved credential. No profile is launched.",
-    "remoteProbeScope": "Checks the saved MCP credential. Remote control also needs a connected device and an eligible plan; a configured client is not a live session."
+    "remoteProbeScope": "Checks the saved MCP credential. Remote control also needs a connected device and an eligible plan; a configured client is not a live session.",
+    "serverApiProbeScope": "Checks the selected API key against the server. Nothing on the server changes."
   },
   "easterEgg": {
     "konami": {

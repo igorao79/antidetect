@@ -971,6 +971,37 @@
       "credentialClientsFailed": "凭据已保存，但无法更新以下客户端：{{clients}}。请再次轮换以重试。",
       "fxHint": "fx 从 DONUT_MCP_TOKEN 读取凭据。请在启动 fx 的 shell 中导出该变量。",
       "fxExportCopied": "已复制导出命令"
+    },
+    "tabServer": "服务器 API",
+    "server": {
+      "title": "Owl 服务器 API",
+      "notJoined": "请在“服务器”页面加入一个 Owl 服务器以使用其 API。",
+      "description": "脚本通过服务器 API 管理 {{name}} 团队：成员、邀请、共享配置文件以及谁打开了哪一个。密钥永远无法访问已同步的配置文件数据。",
+      "addressCopied": "已复制服务器地址",
+      "keys": "API 密钥",
+      "ownerOnly": "API 密钥由服务器所有者创建。",
+      "noKeys": "还没有 API 密钥。",
+      "keyUsed": "创建于 {{created}}，上次使用 {{used}}",
+      "keyUnused": "创建于 {{created}}，尚未使用",
+      "copyKey": "复制",
+      "revokeKey": "吊销密钥",
+      "revokeConfirm": "要吊销 {{name}} 吗？使用它的脚本会立即失去访问权限。",
+      "keyName": "密钥名称",
+      "keyNamePlaceholder": "例如：CRM 同步",
+      "createKey": "创建密钥",
+      "keyCreated": "密钥已创建并复制。这台电脑会保存它，你可以再次复制。",
+      "keyCopied": "已复制密钥",
+      "endpoints": "密钥能做什么",
+      "scope": "以 Authorization: Bearer 发送密钥。同步文件和占用配置文件会拒绝该密钥。",
+      "endpoint": {
+        "members": "列出成员",
+        "removeMember": "移除成员",
+        "createInvite": "创建邀请链接",
+        "invites": "列出有效邀请",
+        "revokeInvite": "撤销邀请",
+        "profiles": "共享配置文件、共享者以及打开者",
+        "locks": "谁打开了哪个配置文件"
+      }
     }
   },
   "import": {
@@ -2479,7 +2510,8 @@
     "workspaceDeployPortsBusy": "此服务器的 80 和 443 端口被 {{process}} 占用。Owl 可以与 nginx 共存，或在这两个端口空闲的服务器上运行。",
     "workspaceProfilesRunning": "请关闭已打开的共享配置文件，然后重试。",
     "workspaceSavedNotFound": "此服务器已不在你的列表中。请通过邀请重新加入。",
-    "workspaceSavedIsActive": "你当前已连接到此服务器。请改用“离开服务器”。"
+    "workspaceSavedIsActive": "你当前已连接到此服务器。请改用“离开服务器”。",
+    "workspaceApiKeyNotStored": "这台电脑没有保存该密钥。请吊销它并创建一个新密钥。"
   },
   "rail": {
     "profiles": "配置文件",
@@ -3218,7 +3250,8 @@
     "confirmed": "是",
     "unavailable": "否",
     "apiProbeScope": "使用已保存的凭据检查正在运行的本地 API。不会启动任何配置文件。",
-    "remoteProbeScope": "检查已保存的 MCP 凭据。远程控制还需要已连接的设备和符合条件的套餐；已配置的客户端不代表活动会话。"
+    "remoteProbeScope": "检查已保存的 MCP 凭据。远程控制还需要已连接的设备和符合条件的套餐；已配置的客户端不代表活动会话。",
+    "serverApiProbeScope": "在服务器上检查所选 API 密钥。服务器上不会有任何改动。"
   },
   "easterEgg": {
     "konami": {

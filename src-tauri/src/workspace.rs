@@ -184,7 +184,7 @@ async fn member_token(app_handle: &tauri::AppHandle) -> Option<String> {
 }
 
 /// Send one call to the joined server with this member's token.
-async fn call(
+pub(crate) async fn call(
   app_handle: &tauri::AppHandle,
   method: reqwest::Method,
   path: &str,
@@ -215,7 +215,9 @@ async fn call(
   }
 }
 
-async fn json<T: serde::de::DeserializeOwned>(response: reqwest::Response) -> Result<T, String> {
+pub(crate) async fn json<T: serde::de::DeserializeOwned>(
+  response: reqwest::Response,
+) -> Result<T, String> {
   response.json().await.map_err(|e| {
     log::warn!("Unexpected answer from the Owl server: {e}");
     error("WORKSPACE_REQUEST_FAILED")

@@ -971,6 +971,37 @@
       "credentialClientsFailed": "資格情報は保存されましたが、次のクライアントを更新できませんでした: {{clients}}。再試行するにはもう一度ローテーションしてください。",
       "fxHint": "fx は DONUT_MCP_TOKEN から資格情報を読み取ります。fx を起動するシェルでエクスポートしてください。",
       "fxExportCopied": "エクスポート行をコピーしました"
+    },
+    "tabServer": "サーバー API",
+    "server": {
+      "title": "Owl サーバー API",
+      "notJoined": "API を使うには、サーバーページで Owl サーバーに参加してください。",
+      "description": "スクリプトはサーバーの API で {{name}} チームを管理します。メンバー、招待、共有プロファイル、誰がどれを開いているかを扱えます。キーで同期済みのプロファイルデータにアクセスすることはできません。",
+      "addressCopied": "サーバーのアドレスをコピーしました",
+      "keys": "API キー",
+      "ownerOnly": "API キーはサーバーの所有者が作成します。",
+      "noKeys": "API キーはまだありません。",
+      "keyUsed": "作成 {{created}}、最終使用 {{used}}",
+      "keyUnused": "作成 {{created}}、未使用",
+      "copyKey": "コピー",
+      "revokeKey": "キーを無効化",
+      "revokeConfirm": "{{name}} を無効化しますか？ このキーを使うスクリプトはすぐにアクセスできなくなります。",
+      "keyName": "キーの名前",
+      "keyNamePlaceholder": "例: CRM 連携",
+      "createKey": "キーを作成",
+      "keyCreated": "キーを作成してコピーしました。このコンピューターに保存されるので、もう一度コピーできます。",
+      "keyCopied": "キーをコピーしました",
+      "endpoints": "キーでできること",
+      "scope": "キーは Authorization: Bearer として送信します。同期ファイルやプロファイルの使用権の取得には使えません。",
+      "endpoint": {
+        "members": "メンバー一覧",
+        "removeMember": "メンバーを削除",
+        "createInvite": "招待リンクを作成",
+        "invites": "有効な招待の一覧",
+        "revokeInvite": "招待を取り消す",
+        "profiles": "共有プロファイル、共有した人、開いている人",
+        "locks": "誰がどのプロファイルを開いているか"
+      }
     }
   },
   "import": {
@@ -2479,7 +2510,8 @@
     "workspaceDeployPortsBusy": "このサーバーのポート 80 と 443 は {{process}} が使用しています。Owl は nginx と併用するか、これらのポートが空いているサーバーで動作します。",
     "workspaceProfilesRunning": "開いている共有プロファイルを閉じてから、もう一度お試しください。",
     "workspaceSavedNotFound": "このサーバーはもうリストにありません。招待でもう一度参加してください。",
-    "workspaceSavedIsActive": "このサーバーに接続中です。代わりに「サーバーから退出」を使ってください。"
+    "workspaceSavedIsActive": "このサーバーに接続中です。代わりに「サーバーから退出」を使ってください。",
+    "workspaceApiKeyNotStored": "このコンピューターにはそのキーが保存されていません。無効化して新しいキーを作成してください。"
   },
   "rail": {
     "profiles": "プロファイル",
@@ -3218,7 +3250,8 @@
     "confirmed": "はい",
     "unavailable": "いいえ",
     "apiProbeScope": "保存された認証情報で実行中のローカル API を確認します。プロファイルは起動しません。",
-    "remoteProbeScope": "保存された MCP 認証情報を確認します。リモート操作には接続済みデバイスと対応プランも必要です。クライアントの設定は稼働中のセッションを意味しません。"
+    "remoteProbeScope": "保存された MCP 認証情報を確認します。リモート操作には接続済みデバイスと対応プランも必要です。クライアントの設定は稼働中のセッションを意味しません。",
+    "serverApiProbeScope": "選んだ API キーをサーバーで確認します。サーバー上では何も変わりません。"
   },
   "easterEgg": {
     "konami": {

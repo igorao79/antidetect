@@ -304,6 +304,11 @@ export const commandCoverage = {
       "workspace_servers::list_saved_workspaces",
       "workspace_servers::switch_workspace",
       "workspace_servers::forget_saved_workspace",
+      "workspace_api::list_workspace_api_keys",
+      "workspace_api::create_workspace_api_key",
+      "workspace_api::get_workspace_api_key",
+      "workspace_api::revoke_workspace_api_key",
+      "workspace_api::check_workspace_api_key",
     ],
   },
   cloudContracts: {

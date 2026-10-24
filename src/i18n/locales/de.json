@@ -971,6 +971,37 @@
       "credentialClientsFailed": "Die Zugangsdaten sind gespeichert, aber diese Clients konnten nicht aktualisiert werden: {{clients}}. Rotieren Sie erneut, um es noch einmal zu versuchen.",
       "fxHint": "fx liest die Zugangsdaten aus DONUT_MCP_TOKEN. Exportieren Sie die Variable in der Shell, die fx startet.",
       "fxExportCopied": "Export-Zeile kopiert"
+    },
+    "tabServer": "Server-API",
+    "server": {
+      "title": "Owl-Server-API",
+      "notJoined": "Treten Sie auf der Server-Seite einem Owl-Server bei, um seine API zu nutzen.",
+      "description": "Skripte verwalten das Team {{name}} über die API des Servers: Mitglieder, Einladungen, die geteilten Profile und wer welches geöffnet hat. Ein Schlüssel erreicht nie die synchronisierten Profildaten.",
+      "addressCopied": "Serveradresse kopiert",
+      "keys": "API-Schlüssel",
+      "ownerOnly": "API-Schlüssel erstellt der Eigentümer des Servers.",
+      "noKeys": "Noch keine API-Schlüssel.",
+      "keyUsed": "Erstellt {{created}}, zuletzt verwendet {{used}}",
+      "keyUnused": "Erstellt {{created}}, noch nicht verwendet",
+      "copyKey": "Kopieren",
+      "revokeKey": "Schlüssel widerrufen",
+      "revokeConfirm": "{{name}} widerrufen? Skripte mit diesem Schlüssel verlieren sofort den Zugriff.",
+      "keyName": "Name des Schlüssels",
+      "keyNamePlaceholder": "Zum Beispiel CRM-Abgleich",
+      "createKey": "Schlüssel erstellen",
+      "keyCreated": "Schlüssel erstellt und kopiert. Dieser Computer bewahrt ihn auf, Sie können ihn erneut kopieren.",
+      "keyCopied": "Schlüssel kopiert",
+      "endpoints": "Was ein Schlüssel kann",
+      "scope": "Senden Sie den Schlüssel als Authorization: Bearer. Für synchronisierte Dateien und das Übernehmen eines Profils wird er abgelehnt.",
+      "endpoint": {
+        "members": "Mitglieder auflisten",
+        "removeMember": "Ein Mitglied entfernen",
+        "createInvite": "Einladungslink erstellen",
+        "invites": "Offene Einladungen auflisten",
+        "revokeInvite": "Eine Einladung widerrufen",
+        "profiles": "Geteilte Profile mit Teilendem und wer sie geöffnet hat",
+        "locks": "Wer welches Profil geöffnet hat"
+      }
     }
   },
   "import": {
@@ -2479,7 +2510,8 @@
     "workspaceDeployPortsBusy": "Die Ports 80 und 443 dieses Servers sind von {{process}} belegt. Owl läuft neben nginx oder auf einem Server, auf dem sie frei sind.",
     "workspaceProfilesRunning": "Schließen Sie die geöffneten geteilten Profile und versuchen Sie es erneut.",
     "workspaceSavedNotFound": "Dieser Server ist nicht mehr in Ihrer Liste. Treten Sie ihm erneut per Einladung bei.",
-    "workspaceSavedIsActive": "Mit diesem Server sind Sie gerade verbunden. Verwenden Sie stattdessen „Server verlassen“."
+    "workspaceSavedIsActive": "Mit diesem Server sind Sie gerade verbunden. Verwenden Sie stattdessen „Server verlassen“.",
+    "workspaceApiKeyNotStored": "Dieser Computer bewahrt diesen Schlüssel nicht auf. Widerrufen Sie ihn und erstellen Sie einen neuen."
   },
   "rail": {
     "profiles": "Profile",
@@ -3218,7 +3250,8 @@
     "confirmed": "Ja",
     "unavailable": "Nein",
     "apiProbeScope": "Prüft die laufende lokale API mit den gespeicherten Zugangsdaten. Es wird kein Profil gestartet.",
-    "remoteProbeScope": "Prüft die gespeicherten MCP-Zugangsdaten. Die Fernsteuerung benötigt außerdem ein verbundenes Gerät und einen passenden Tarif; ein konfigurierter Client ist noch keine aktive Sitzung."
+    "remoteProbeScope": "Prüft die gespeicherten MCP-Zugangsdaten. Die Fernsteuerung benötigt außerdem ein verbundenes Gerät und einen passenden Tarif; ein konfigurierter Client ist noch keine aktive Sitzung.",
+    "serverApiProbeScope": "Prüft den gewählten API-Schlüssel am Server. Auf dem Server ändert sich nichts."
   },
   "easterEgg": {
     "konami": {
