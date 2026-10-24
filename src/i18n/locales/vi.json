@@ -2462,7 +2462,6 @@
     "workspaceOwnerOnly": "Chỉ chủ sở hữu máy chủ mới làm được việc này.",
     "workspaceRequestFailed": "Máy chủ Owl không thực hiện được việc này. Hãy thử lại.",
     "workspaceInviteLinkInvalid": "Đây không phải liên kết mời của Owl. Liên kết bắt đầu bằng owl://join.",
-    "workspaceAlreadyJoined": "Ứng dụng này đã kết nối với một máy chủ Owl. Hãy ngắt kết nối trước.",
     "workspaceInviteInvalid": "Lời mời này không còn hiệu lực: đã được dùng, bị thu hồi hoặc hết hạn. Hãy xin lời mời mới.",
     "workspaceTooManyAttempts": "Quá nhiều lần thử. Hãy đợi một phút rồi thử lại.",
     "workspaceProfileNotYours": "{{name}} đã chia sẻ hồ sơ này. Chỉ người đó hoặc chủ máy chủ mới có thể gỡ nó khỏi máy chủ.",
@@ -2477,7 +2476,10 @@
     "workspaceDeployFailedNoDetail": "Cài đặt thất bại. Chi tiết có trong nhật ký Owl.",
     "workspaceDeployHttpsFailed": "Máy chủ đã chạy nhưng HTTPS cho {{domain}} chưa bật được. Hãy kiểm tra cổng 80 và 443 đã mở trong bảng điều khiển hosting, rồi chạy cài đặt lại.",
     "workspaceDeployHasOwner": "Máy chủ này đã có chủ sở hữu. Hãy xin họ lời mời.",
-    "workspaceDeployPortsBusy": "Cổng 80 và 443 trên máy chủ này đang bị {{process}} chiếm. Owl chạy được cạnh nginx hoặc trên máy chủ còn trống các cổng này."
+    "workspaceDeployPortsBusy": "Cổng 80 và 443 trên máy chủ này đang bị {{process}} chiếm. Owl chạy được cạnh nginx hoặc trên máy chủ còn trống các cổng này.",
+    "workspaceProfilesRunning": "Hãy đóng các hồ sơ dùng chung đang mở rồi thử lại.",
+    "workspaceSavedNotFound": "Máy chủ này không còn trong danh sách. Hãy tham gia lại bằng lời mời.",
+    "workspaceSavedIsActive": "Bạn đang kết nối với máy chủ này. Hãy dùng «Rời máy chủ» thay thế."
   },
   "rail": {
     "profiles": "Profile",
@@ -3739,7 +3741,7 @@
     "inviteExpires": "Hết hạn {{date}}",
     "revokeInvite": "Thu hồi",
     "leave": "Rời máy chủ",
-    "leaveDescription": "Các hồ sơ vẫn ở trên máy tính này dưới dạng bản sao cục bộ và không còn đồng bộ với máy chủ.",
+    "leaveDescription": "Máy chủ sẽ bị xóa khỏi danh sách. Các hồ sơ của nó vẫn ở máy tính này dưới dạng bản sao cục bộ và ngừng đồng bộ.",
     "joined": "Đã tham gia {{name}}",
     "left": "Đã rời máy chủ",
     "revoked": "Quyền truy cập của bạn vào máy chủ này đã bị gỡ. Hãy rời máy chủ hoặc xin chủ sở hữu lời mời mới.",
@@ -3782,6 +3784,16 @@
         "https": "HTTPS",
         "owner": "Chủ sở hữu"
       }
+    },
+    "servers": {
+      "title": "Máy chủ của bạn",
+      "add": "Thêm máy chủ",
+      "active": "Đang kết nối",
+      "switch": "Chuyển",
+      "switched": "Đã kết nối tới {{name}}",
+      "forget": "Xóa khỏi danh sách",
+      "forgetConfirm": "Xóa {{name}} khỏi danh sách? Các hồ sơ của nó vẫn ở máy tính này dưới dạng bản sao cục bộ.",
+      "description": "Owl đồng bộ với một máy chủ mỗi lúc. Hồ sơ của các máy chủ khác chờ trên máy tính này và đồng bộ lại khi bạn chuyển về máy chủ của chúng."
     }
   }
 }

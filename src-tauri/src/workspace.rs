@@ -1,7 +1,8 @@
 //! Your own Owl server (fork). Anyone can run one (`donut-sync/`, in Docker)
 //! and invite people to it; its members share the profiles synced there and
-//! take turns in them. The app joins one server at a time, with an invite link
-//! `owl://join?server=<url>&code=<code>`.
+//! take turns in them. The app joins servers with an invite link
+//! `owl://join?server=<url>&code=<code>` and syncs with one of them at a time
+//! (`workspace_servers.rs` keeps the others and switches between them).
 //!
 //! Joining stores the server as the self-hosted sync server and the personal
 //! token the server hands out as the sync token, so the existing sync engine
@@ -405,8 +406,10 @@ pub async fn join_workspace(
   if CLOUD_AUTH.is_logged_in().await {
     return Err(error("SELF_HOSTED_REQUIRES_LOGOUT"));
   }
-  if current().is_some() {
-    return Err(error("WORKSPACE_ALREADY_JOINED"));
+  // Checked before the invite is spent: an invite works once.
+  let switching = current().is_some();
+  if switching {
+    crate::workspace_servers::refuse_while_shared_profiles_run()?;
   }
 
   let response = http()
@@ -429,29 +432,69 @@ pub async fn join_workspace(
   }
   let joined: JoinResponse = json(response).await?;
 
-  let manager = SettingsManager::instance();
-  manager
-    .store_sync_token(&app_handle, &joined.token)
-    .await
-    .map_err(|e| e.to_string())?;
-  manager
-    .save_sync_server_url(Some(server.clone()))
-    .map_err(|e| e.to_string())?;
+  // The server this app syncs with now waits in the list, its profiles
+  // parked, until the person switches back to it.
+  if switching {
+    crate::workspace_servers::deactivate(&app_handle, false).await?;
+  }
   let info = WorkspaceInfo {
     server,
     name: joined.workspace.name,
     member: joined.member,
   };
-  write_state(&info)?;
+  activate(&app_handle, info.clone(), &joined.token).await?;
   log::info!(
     "Joined the Owl server {} as {}",
     info.name,
     info.member.role
   );
-
-  tauri::async_runtime::spawn(start(app_handle));
-  let _ = crate::events::emit("workspace-changed", ());
   Ok(info)
+}
+
+/// Make `info` the server this app syncs with, under the member's `token`.
+pub(crate) async fn activate(
+  app_handle: &tauri::AppHandle,
+  info: WorkspaceInfo,
+  token: &str,
+) -> Result<(), String> {
+  let manager = SettingsManager::instance();
+  manager
+    .store_sync_token(app_handle, token)
+    .await
+    .map_err(|e| e.to_string())?;
+  manager
+    .save_sync_server_url(Some(info.server.clone()))
+    .map_err(|e| e.to_string())?;
+  write_state(&info)?;
+  crate::workspace_servers::remember_active(app_handle).await?;
+  tauri::async_runtime::spawn(start(app_handle.clone()));
+  let _ = crate::events::emit("workspace-changed", ());
+  Ok(())
+}
+
+/// Stop syncing with the active server and drop it as the sync server. What
+/// happens to its profiles is the caller's (`workspace_servers::deactivate`).
+pub(crate) async fn disconnect(app_handle: &tauri::AppHandle) -> Result<(), String> {
+  crate::team_lock::PROFILE_LOCK
+    .release_all_held_within(Duration::from_secs(2))
+    .await;
+  crate::team_lock::PROFILE_LOCK.disconnect().await;
+  crate::sync::stop_pipeline();
+  let manager = SettingsManager::instance();
+  manager
+    .save_sync_server_url(None)
+    .map_err(|e| e.to_string())?;
+  manager
+    .remove_sync_token(app_handle)
+    .await
+    .map_err(|e| e.to_string())?;
+  match std::fs::remove_file(state_path()) {
+    Ok(()) => {}
+    Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+    Err(e) => return Err(e.to_string()),
+  }
+  let _ = crate::events::emit("workspace-changed", ());
+  Ok(())
 }
 
 /// Read who this member is from the server again: a name or role changed
@@ -521,29 +564,12 @@ pub async fn revoke_workspace_invite(
   Ok(())
 }
 
-/// Leave the server. Profiles stay on this computer as local copies.
+/// Leave the server for good: it comes off the list, and its profiles stay on
+/// this computer as local copies that sync nowhere.
 #[tauri::command]
 pub async fn leave_workspace(app_handle: tauri::AppHandle) -> Result<(), String> {
-  crate::team_lock::PROFILE_LOCK
-    .release_all_held_within(Duration::from_secs(2))
-    .await;
-  crate::team_lock::PROFILE_LOCK.disconnect().await;
-  crate::sync::stop_pipeline();
-  let manager = SettingsManager::instance();
-  manager
-    .save_sync_server_url(None)
-    .map_err(|e| e.to_string())?;
-  manager
-    .remove_sync_token(&app_handle)
-    .await
-    .map_err(|e| e.to_string())?;
-  match std::fs::remove_file(state_path()) {
-    Ok(()) => {}
-    Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-    Err(e) => return Err(e.to_string()),
-  }
+  crate::workspace_servers::deactivate(&app_handle, true).await?;
   log::info!("Left the Owl server");
-  let _ = crate::events::emit("workspace-changed", ());
   Ok(())
 }
 

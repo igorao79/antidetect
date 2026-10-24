@@ -119,6 +119,7 @@ mod wayfern_terms;
 mod window_decorations;
 mod workspace;
 mod workspace_deploy;
+mod workspace_servers;
 // mod theme_detector; // removed: theme detection handled in webview via CSS prefers-color-scheme
 mod agent_console;
 pub mod cloud_auth;
@@ -3431,6 +3432,9 @@ pub fn run_with_builder(
       workspace::revoke_workspace_invite,
       workspace::leave_workspace,
       workspace_deploy::deploy_workspace_server,
+      workspace_servers::list_saved_workspaces,
+      workspace_servers::switch_workspace,
+      workspace_servers::forget_saved_workspace,
       workspace::take_pending_workspace_link,
       profile_templates::save_profile_template,
       profile_templates::delete_profile_template,

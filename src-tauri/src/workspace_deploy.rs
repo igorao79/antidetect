@@ -488,9 +488,6 @@ pub async fn deploy_workspace_server(
   if request.member_name.trim().is_empty() {
     return Err(error("NAME_CANNOT_BE_EMPTY"));
   }
-  if crate::workspace::current().is_some() {
-    return Err(error("WORKSPACE_ALREADY_JOINED"));
-  }
   if crate::cloud_auth::CLOUD_AUTH.is_logged_in().await {
     return Err(error("SELF_HOSTED_REQUIRES_LOGOUT"));
   }

@@ -2462,7 +2462,6 @@
     "workspaceOwnerOnly": "この操作はサーバーの所有者だけが行えます。",
     "workspaceRequestFailed": "Owl サーバーでこの操作を実行できませんでした。もう一度お試しください。",
     "workspaceInviteLinkInvalid": "これは Owl の招待リンクではありません。招待リンクは owl://join で始まります。",
-    "workspaceAlreadyJoined": "このアプリはすでに Owl サーバーに接続されています。先に接続を解除してください。",
     "workspaceInviteInvalid": "この招待は無効です。使用済み、取り消し済み、または期限切れです。新しい招待を依頼してください。",
     "workspaceTooManyAttempts": "試行回数が多すぎます。1 分待ってからもう一度お試しください。",
     "workspaceProfileNotYours": "このプロファイルは {{name}} が共有しました。サーバーから外せるのはその人かサーバーの所有者だけです。",
@@ -2477,7 +2476,10 @@
     "workspaceDeployFailedNoDetail": "インストールに失敗しました。詳細は Owl のログにあります。",
     "workspaceDeployHttpsFailed": "サーバーは動いていますが、{{domain}} の HTTPS が有効になりませんでした。ホスティングの管理画面でポート 80 と 443 が開いていることを確認し、もう一度インストールしてください。",
     "workspaceDeployHasOwner": "このサーバーにはすでに所有者がいます。所有者に招待を依頼してください。",
-    "workspaceDeployPortsBusy": "このサーバーのポート 80 と 443 は {{process}} が使用しています。Owl は nginx と併用するか、これらのポートが空いているサーバーで動作します。"
+    "workspaceDeployPortsBusy": "このサーバーのポート 80 と 443 は {{process}} が使用しています。Owl は nginx と併用するか、これらのポートが空いているサーバーで動作します。",
+    "workspaceProfilesRunning": "開いている共有プロファイルを閉じてから、もう一度お試しください。",
+    "workspaceSavedNotFound": "このサーバーはもうリストにありません。招待でもう一度参加してください。",
+    "workspaceSavedIsActive": "このサーバーに接続中です。代わりに「サーバーから退出」を使ってください。"
   },
   "rail": {
     "profiles": "プロファイル",
@@ -3739,7 +3741,7 @@
     "inviteExpires": "{{date}} まで有効",
     "revokeInvite": "取り消す",
     "leave": "サーバーから退出",
-    "leaveDescription": "プロファイルはローカルコピーとしてこのパソコンに残り、サーバーとは同期しなくなります。",
+    "leaveDescription": "サーバーはリストから削除されます。そのプロファイルはローカルコピーとしてこのコンピューターに残り、同期されなくなります。",
     "joined": "{{name}} に参加しました",
     "left": "サーバーから退出しました",
     "revoked": "このサーバーへのアクセス権が削除されました。退出するか、所有者に新しい招待を依頼してください。",
@@ -3782,6 +3784,16 @@
         "https": "HTTPS",
         "owner": "所有者"
       }
+    },
+    "servers": {
+      "title": "あなたのサーバー",
+      "add": "サーバーを追加",
+      "active": "接続中",
+      "switch": "切り替え",
+      "switched": "{{name}} に接続しました",
+      "forget": "リストから削除",
+      "forgetConfirm": "{{name}} をリストから削除しますか？ そのプロファイルはローカルコピーとしてこのコンピューターに残ります。",
+      "description": "Owl は一度に 1 台のサーバーと同期します。ほかのサーバーのプロファイルはこのコンピューターで待機し、そのサーバーに切り替えると再び同期します。"
     }
   }
 }

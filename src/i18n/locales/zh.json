@@ -2462,7 +2462,6 @@
     "workspaceOwnerOnly": "只有服务器所有者可以执行此操作。",
     "workspaceRequestFailed": "Owl 服务器无法完成此操作。请重试。",
     "workspaceInviteLinkInvalid": "这不是 Owl 邀请链接。邀请链接以 owl://join 开头。",
-    "workspaceAlreadyJoined": "此应用已连接到一个 Owl 服务器。请先断开连接。",
     "workspaceInviteInvalid": "此邀请已失效：已被使用、撤销或已过期。请索取新的邀请。",
     "workspaceTooManyAttempts": "尝试次数过多。请等待一分钟后重试。",
     "workspaceProfileNotYours": "此配置文件由 {{name}} 共享。只有该成员或服务器所有者可以将其从服务器移除。",
@@ -2477,7 +2476,10 @@
     "workspaceDeployFailedNoDetail": "安装失败。详情见 Owl 日志。",
     "workspaceDeployHttpsFailed": "服务器已运行，但 {{domain}} 的 HTTPS 未能启用。请确认主机面板中已开放 80 和 443 端口，然后重新运行安装。",
     "workspaceDeployHasOwner": "此服务器已有所有者。请向其索取邀请。",
-    "workspaceDeployPortsBusy": "此服务器的 80 和 443 端口被 {{process}} 占用。Owl 可以与 nginx 共存，或在这两个端口空闲的服务器上运行。"
+    "workspaceDeployPortsBusy": "此服务器的 80 和 443 端口被 {{process}} 占用。Owl 可以与 nginx 共存，或在这两个端口空闲的服务器上运行。",
+    "workspaceProfilesRunning": "请关闭已打开的共享配置文件，然后重试。",
+    "workspaceSavedNotFound": "此服务器已不在你的列表中。请通过邀请重新加入。",
+    "workspaceSavedIsActive": "你当前已连接到此服务器。请改用“离开服务器”。"
   },
   "rail": {
     "profiles": "配置文件",
@@ -3739,7 +3741,7 @@
     "inviteExpires": "{{date}} 前有效",
     "revokeInvite": "撤销",
     "leave": "离开服务器",
-    "leaveDescription": "配置文件会以本地副本形式保留在这台电脑上，不再与服务器同步。",
+    "leaveDescription": "该服务器将从你的列表中移除。它的配置文件会作为本地副本留在这台电脑上，并停止同步。",
     "joined": "已加入 {{name}}",
     "left": "已离开服务器",
     "revoked": "你对此服务器的访问权限已被移除。请离开该服务器，或向所有者索取新的邀请。",
@@ -3782,6 +3784,16 @@
         "https": "HTTPS",
         "owner": "所有者"
       }
+    },
+    "servers": {
+      "title": "你的服务器",
+      "add": "添加服务器",
+      "active": "已连接",
+      "switch": "切换",
+      "switched": "已连接到 {{name}}",
+      "forget": "从列表中移除",
+      "forgetConfirm": "要从列表中移除 {{name}} 吗？它的配置文件会作为本地副本留在这台电脑上。",
+      "description": "Owl 一次只与一台服务器同步。其他服务器的配置文件会在这台电脑上等待，切换回它们的服务器后再次同步。"
     }
   }
 }

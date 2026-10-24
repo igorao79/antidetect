@@ -2472,7 +2472,6 @@
     "workspaceOwnerOnly": "Somente o proprietário do servidor pode fazer isso.",
     "workspaceRequestFailed": "O servidor Owl não conseguiu fazer isso. Tente novamente.",
     "workspaceInviteLinkInvalid": "Este não é um link de convite do Owl. Ele começa com owl://join.",
-    "workspaceAlreadyJoined": "Este aplicativo já está conectado a um servidor Owl. Desconecte-se primeiro.",
     "workspaceInviteInvalid": "Este convite não vale mais: foi usado, revogado ou expirou. Peça um novo.",
     "workspaceTooManyAttempts": "Tentativas demais. Aguarde um minuto e tente novamente.",
     "workspaceProfileNotYours": "{{name}} compartilhou este perfil. Somente essa pessoa ou o proprietário do servidor pode retirá-lo do servidor.",
@@ -2487,7 +2486,10 @@
     "workspaceDeployFailedNoDetail": "A instalação falhou. O registro do Owl tem os detalhes.",
     "workspaceDeployHttpsFailed": "O servidor está rodando, mas o HTTPS para {{domain}} não subiu. Confira se as portas 80 e 443 estão abertas no painel da hospedagem e execute a instalação de novo.",
     "workspaceDeployHasOwner": "Este servidor já tem um proprietário. Peça um convite a ele.",
-    "workspaceDeployPortsBusy": "As portas 80 e 443 deste servidor estão ocupadas por {{process}}. O Owl funciona ao lado do nginx ou em um servidor onde elas estejam livres."
+    "workspaceDeployPortsBusy": "As portas 80 e 443 deste servidor estão ocupadas por {{process}}. O Owl funciona ao lado do nginx ou em um servidor onde elas estejam livres.",
+    "workspaceProfilesRunning": "Feche os perfis compartilhados que estão abertos e tente de novo.",
+    "workspaceSavedNotFound": "Este servidor não está mais na sua lista. Entre de novo com um convite.",
+    "workspaceSavedIsActive": "Você está conectado a este servidor. Use «Sair do servidor» em vez disso."
   },
   "rail": {
     "profiles": "Perfis",
@@ -3772,7 +3774,7 @@
     "inviteExpires": "Expira em {{date}}",
     "revokeInvite": "Revogar",
     "leave": "Sair do servidor",
-    "leaveDescription": "Os perfis continuam neste computador como cópias locais e deixam de sincronizar com o servidor.",
+    "leaveDescription": "O servidor sai da sua lista. Os perfis dele ficam neste computador como cópias locais e deixam de sincronizar.",
     "joined": "Você entrou em {{name}}",
     "left": "Você saiu do servidor",
     "revoked": "Seu acesso a este servidor foi removido. Saia dele ou peça um novo convite ao proprietário.",
@@ -3815,6 +3817,16 @@
         "https": "HTTPS",
         "owner": "Proprietário"
       }
+    },
+    "servers": {
+      "title": "Seus servidores",
+      "add": "Adicionar servidor",
+      "active": "Conectado",
+      "switch": "Trocar",
+      "switched": "Conectado a {{name}}",
+      "forget": "Remover da lista",
+      "forgetConfirm": "Remover {{name}} da lista? Os perfis dele ficam neste computador como cópias locais.",
+      "description": "O Owl sincroniza com um servidor por vez. Os perfis dos outros esperam neste computador e voltam a sincronizar quando você troca para o servidor deles."
     }
   }
 }

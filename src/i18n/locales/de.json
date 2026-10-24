@@ -2462,7 +2462,6 @@
     "workspaceOwnerOnly": "Das kann nur der Besitzer des Servers.",
     "workspaceRequestFailed": "Der Owl-Server konnte das nicht ausführen. Versuchen Sie es erneut.",
     "workspaceInviteLinkInvalid": "Das ist kein Owl-Einladungslink. Er beginnt mit owl://join.",
-    "workspaceAlreadyJoined": "Diese App ist bereits mit einem Owl-Server verbunden. Trennen Sie zuerst die Verbindung.",
     "workspaceInviteInvalid": "Diese Einladung gilt nicht mehr: Sie wurde benutzt, widerrufen oder ist abgelaufen. Bitten Sie um eine neue.",
     "workspaceTooManyAttempts": "Zu viele Versuche. Warten Sie eine Minute und versuchen Sie es erneut.",
     "workspaceProfileNotYours": "{{name}} hat dieses Profil geteilt. Nur diese Person oder der Server-Besitzer kann es vom Server nehmen.",
@@ -2477,7 +2476,10 @@
     "workspaceDeployFailedNoDetail": "Die Installation ist fehlgeschlagen. Details stehen im Owl-Protokoll.",
     "workspaceDeployHttpsFailed": "Der Server läuft, aber HTTPS für {{domain}} wurde nicht aktiv. Prüfen Sie, ob die Ports 80 und 443 im Hosting-Panel offen sind, und starten Sie die Einrichtung erneut.",
     "workspaceDeployHasOwner": "Dieser Server hat bereits einen Eigentümer. Bitten Sie ihn um eine Einladung.",
-    "workspaceDeployPortsBusy": "Die Ports 80 und 443 dieses Servers sind von {{process}} belegt. Owl läuft neben nginx oder auf einem Server, auf dem sie frei sind."
+    "workspaceDeployPortsBusy": "Die Ports 80 und 443 dieses Servers sind von {{process}} belegt. Owl läuft neben nginx oder auf einem Server, auf dem sie frei sind.",
+    "workspaceProfilesRunning": "Schließen Sie die geöffneten geteilten Profile und versuchen Sie es erneut.",
+    "workspaceSavedNotFound": "Dieser Server ist nicht mehr in Ihrer Liste. Treten Sie ihm erneut per Einladung bei.",
+    "workspaceSavedIsActive": "Mit diesem Server sind Sie gerade verbunden. Verwenden Sie stattdessen „Server verlassen“."
   },
   "rail": {
     "profiles": "Profile",
@@ -3739,7 +3741,7 @@
     "inviteExpires": "Gültig bis {{date}}",
     "revokeInvite": "Widerrufen",
     "leave": "Server verlassen",
-    "leaveDescription": "Die Profile bleiben als lokale Kopien auf diesem Computer und werden nicht mehr mit dem Server synchronisiert.",
+    "leaveDescription": "Der Server verschwindet aus Ihrer Liste. Seine Profile bleiben als lokale Kopien auf diesem Computer und werden nicht mehr synchronisiert.",
     "joined": "{{name}} beigetreten",
     "left": "Server verlassen",
     "revoked": "Ihr Zugang zu diesem Server wurde entfernt. Verlassen Sie ihn oder bitten Sie den Besitzer um eine neue Einladung.",
@@ -3782,6 +3784,16 @@
         "https": "HTTPS",
         "owner": "Eigentümer"
       }
+    },
+    "servers": {
+      "title": "Ihre Server",
+      "add": "Server hinzufügen",
+      "active": "Verbunden",
+      "switch": "Wechseln",
+      "switched": "Mit {{name}} verbunden",
+      "forget": "Aus der Liste entfernen",
+      "forgetConfirm": "{{name}} aus der Liste entfernen? Seine Profile bleiben als lokale Kopien auf diesem Computer.",
+      "description": "Owl synchronisiert mit einem Server zur Zeit. Die Profile der anderen warten auf diesem Computer und synchronisieren wieder, wenn Sie zu ihrem Server wechseln."
     }
   }
 }

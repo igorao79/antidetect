@@ -2462,7 +2462,6 @@
     "workspaceOwnerOnly": "서버 소유자만 할 수 있습니다.",
     "workspaceRequestFailed": "Owl 서버가 이 작업을 수행하지 못했습니다. 다시 시도하세요.",
     "workspaceInviteLinkInvalid": "Owl 초대 링크가 아닙니다. 초대 링크는 owl://join으로 시작합니다.",
-    "workspaceAlreadyJoined": "이 앱은 이미 Owl 서버에 연결되어 있습니다. 먼저 연결을 해제하세요.",
     "workspaceInviteInvalid": "이 초대는 더 이상 유효하지 않습니다. 이미 사용되었거나 취소되었거나 만료되었습니다. 새 초대를 요청하세요.",
     "workspaceTooManyAttempts": "시도 횟수가 너무 많습니다. 1분 후에 다시 시도하세요.",
     "workspaceProfileNotYours": "{{name}}님이 이 프로필을 공유했습니다. 서버에서 내릴 수 있는 사람은 그 사람이나 서버 소유자뿐입니다.",
@@ -2477,7 +2476,10 @@
     "workspaceDeployFailedNoDetail": "설치에 실패했습니다. 자세한 내용은 Owl 로그에 있습니다.",
     "workspaceDeployHttpsFailed": "서버는 실행 중이지만 {{domain}}의 HTTPS가 켜지지 않았습니다. 호스팅 관리 화면에서 80번과 443번 포트가 열려 있는지 확인한 뒤 설치를 다시 실행하세요.",
     "workspaceDeployHasOwner": "이 서버에는 이미 소유자가 있습니다. 소유자에게 초대를 요청하세요.",
-    "workspaceDeployPortsBusy": "이 서버의 80번과 443번 포트를 {{process}}이(가) 사용 중입니다. Owl은 nginx와 함께 쓰거나 이 포트가 비어 있는 서버에서 작동합니다."
+    "workspaceDeployPortsBusy": "이 서버의 80번과 443번 포트를 {{process}}이(가) 사용 중입니다. Owl은 nginx와 함께 쓰거나 이 포트가 비어 있는 서버에서 작동합니다.",
+    "workspaceProfilesRunning": "열려 있는 공유 프로필을 닫은 뒤 다시 시도하세요.",
+    "workspaceSavedNotFound": "이 서버는 더 이상 목록에 없습니다. 초대로 다시 참여하세요.",
+    "workspaceSavedIsActive": "현재 이 서버에 연결되어 있습니다. 대신 '서버 나가기'를 사용하세요."
   },
   "rail": {
     "profiles": "프로필",
@@ -3739,7 +3741,7 @@
     "inviteExpires": "{{date}}까지 유효",
     "revokeInvite": "취소",
     "leave": "서버 나가기",
-    "leaveDescription": "프로필은 이 컴퓨터에 로컬 사본으로 남고 서버와 더 이상 동기화되지 않습니다.",
+    "leaveDescription": "서버가 목록에서 사라집니다. 해당 프로필은 이 컴퓨터에 로컬 사본으로 남고 더 이상 동기화되지 않습니다.",
     "joined": "{{name}}에 참여했습니다",
     "left": "서버에서 나갔습니다",
     "revoked": "이 서버에 대한 접근 권한이 삭제되었습니다. 서버에서 나가거나 소유자에게 새 초대를 요청하세요.",
@@ -3782,6 +3784,16 @@
         "https": "HTTPS",
         "owner": "소유자"
       }
+    },
+    "servers": {
+      "title": "내 서버",
+      "add": "서버 추가",
+      "active": "연결됨",
+      "switch": "전환",
+      "switched": "{{name}}에 연결했습니다",
+      "forget": "목록에서 제거",
+      "forgetConfirm": "{{name}}을(를) 목록에서 제거할까요? 해당 프로필은 이 컴퓨터에 로컬 사본으로 남습니다.",
+      "description": "Owl은 한 번에 한 서버와 동기화합니다. 다른 서버의 프로필은 이 컴퓨터에서 기다리다가 해당 서버로 전환하면 다시 동기화됩니다."
     }
   }
 }

@@ -1,31 +1,24 @@
+/** Owl's mark (assets/brand/mark.svg): a solid owl whose facial disc and wing
+ * lines are cut out, so it takes the colour of the text around it. */
 export const Logo = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     width={1200}
     height={1200}
     role="graphics-symbol img"
-    fill="none"
-    stroke="currentColor"
-    viewBox="0 0 900 900"
+    fill="currentColor"
+    viewBox="0 0 512 512"
     {...props}
   >
     <title>Owl</title>
     <path
-      d="M170 120 L340 250 Q450 222 560 250 L730 120 C755 250 765 345 765 445 C765 650 625 800 450 830 C275 800 135 650 135 445 C135 345 145 250 170 120 Z"
-      strokeWidth={56}
-      strokeLinejoin="round"
+      fillRule="evenodd"
+      d="M118 60C148 104 178 128 214 138Q256 126 298 138C334 128 364 104 394 60C424 122 442 186 442 250C442 382 360 460 256 472C152 460 70 382 70 250C70 186 88 122 118 60ZM256 186C228 154 154 156 130 206C110 254 138 318 196 330C228 336 248 352 256 378C264 352 284 336 316 330C374 318 402 254 382 206C358 156 284 154 256 186ZM100 300C108 366 148 418 212 446C164 404 134 354 124 300ZM412 300C404 366 364 418 300 446C348 404 378 354 388 300Z"
     />
-    <g strokeWidth={34} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M205 365 Q330 300 450 400 Q570 300 695 365" />
-      <circle cx="325" cy="480" r="92" />
-      <circle cx="575" cy="480" r="92" />
-      <path d="M418 545 L450 600 L482 545" />
-      <path d="M230 590 C262 680 322 742 398 776" />
-      <path d="M670 590 C638 680 578 742 502 776" />
-    </g>
-    <g fill="currentColor" stroke="none">
-      <circle cx="325" cy="485" r="38" />
-      <circle cx="575" cy="485" r="38" />
-    </g>
+    <path
+      fillRule="evenodd"
+      d="M196 206A46 46 0 1 0 196.01 206ZM212 222A13 13 0 1 1 211.99 222Z M316 206A46 46 0 1 0 316.01 206ZM332 222A13 13 0 1 1 331.99 222Z"
+    />
+    <path d="M240 304L256 342L272 304Q256 294 240 304Z" />
   </svg>
 );

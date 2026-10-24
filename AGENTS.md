@@ -81,8 +81,16 @@ Fork-specific rules:
   the owner turns its sharing off or deletes it (`workspace::may_unshare`, and the server
   refuses another member's `delete-prefix` of `profiles/<id>/`). Shared profiles appear on
   other members' machines as soon as the server announces them; Firefox lock files and
-  `user.js` are not synced. One server per app at a time; password encryption is not used
-  for it yet.
+  `user.js` are not synced. Password encryption is not used for it yet.
+- An app syncs with one Owl server at a time and keeps every server it joined
+  (`workspace_servers.rs`, `workspace-server-list.tsx`, "Add server" on the Server page):
+  `workspaces.json` lists them, each member token sealed in its own file under
+  `workspace-tokens/`. Joining another server, or switching, parks what the server being
+  left syncs: profiles, proxies, groups, VPNs, extensions and extension groups with sync on
+  get it turned off locally (no `updated_at` bump, nothing sent) and are listed in that
+  server's entry; switching back turns it on again, so nothing of one server reaches another.
+  Leaving a server forgets it and leaves its entities as local copies with sync off. A switch
+  or a leave waits while a shared profile is open (`WORKSPACE_PROFILES_RUNNING`).
 - The Server page also installs an Owl server on a VPS (`workspace_deploy.rs`,
   `workspace-deploy-form.tsx`): the app logs in over SSH (password, or a key file; root, or
   sudo with or without the password), uploads the server's sources it carries
@@ -143,10 +151,12 @@ Fork-specific rules:
   `profile_templates.rs`, `interface_language.rs`, `donut_cloud.rs`,
   `profile/{after_exit,camoufox}.rs`, `ssh_upstream.rs`,
   `cookie_robot.rs`, `octo_compat_api.rs`, `synchronizer_bidi.rs`, `workspace.rs`,
-  `workspace_deploy.rs` (with `workspace_deploy.sh` and `build_owl_server.rs`), and on the
+  `workspace_deploy.rs` (with `workspace_deploy.sh` and `build_owl_server.rs`),
+  `workspace_servers.rs`, and on the
   frontend `camoufox-config-dialog.tsx`, `shared-camoufox-config-form.tsx`,
   `cookie-robot-dialog.tsx`, `profile-template-menu.tsx`, `interface-language-field.tsx`,
-  `workspace-page.tsx`, `workspace-share-dialog.tsx`, `workspace-deploy-form.tsx`; on the server `donut-sync/src/storage/`,
+  `workspace-page.tsx`, `workspace-share-dialog.tsx`, `workspace-deploy-form.tsx`,
+  `workspace-server-list.tsx`; on the server `donut-sync/src/storage/`,
   `donut-sync/src/workspace/` and `donut-sync/src/cli.ts`.
 - Keep the AGPL license and upstream copyright notices.
 - Commit only when the user asks.
@@ -273,6 +283,7 @@ donutbrowser/
 │   │   ├── synchronizer_bidi.rs    # The synchronizer on Camoufox, over WebDriver BiDi (fork)
 │   │   ├── workspace.rs            # Own Owl server: join by invite, members, invites, locks routing (fork)
 │   │   ├── workspace_deploy.rs     # Install an Owl server on a VPS over SSH and join it as owner (fork)
+│   │   ├── workspace_servers.rs    # Joined Owl servers: list, switch, park what the inactive ones sync (fork)
 │   │   ├── daemon/                 # Background daemon + tray icon (currently disabled)
 │   │   └── cloud_auth.rs           # Cloud authentication
 │   ├── tests/                      # Integration tests

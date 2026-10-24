@@ -2462,7 +2462,6 @@
     "workspaceOwnerOnly": "Only the owner of the server can do this.",
     "workspaceRequestFailed": "The Owl server could not do this. Try again.",
     "workspaceInviteLinkInvalid": "This is not an Owl invite link. It starts with owl://join.",
-    "workspaceAlreadyJoined": "This app is already connected to an Owl server. Leave it first.",
     "workspaceInviteInvalid": "This invite no longer works: it was used, revoked or has expired. Ask for a new one.",
     "workspaceTooManyAttempts": "Too many attempts. Wait a minute and try again.",
     "workspaceProfileNotYours": "{{name}} shared this profile. Only they or the server owner can take it off the server.",
@@ -2477,7 +2476,10 @@
     "workspaceDeployFailedNoDetail": "The installation failed. The Owl log has the details.",
     "workspaceDeployHttpsFailed": "The server is running, but HTTPS for {{domain}} did not come up. Make sure ports 80 and 443 are open in your hosting panel, then run the setup again.",
     "workspaceDeployHasOwner": "This server already has an owner. Ask them for an invite.",
-    "workspaceDeployPortsBusy": "Ports 80 and 443 on this server are taken by {{process}}. Owl can work next to nginx or on a server where they are free."
+    "workspaceDeployPortsBusy": "Ports 80 and 443 on this server are taken by {{process}}. Owl can work next to nginx or on a server where they are free.",
+    "workspaceProfilesRunning": "Close the shared profiles that are open, then try again.",
+    "workspaceSavedNotFound": "This server is no longer on your list. Join it again with an invite.",
+    "workspaceSavedIsActive": "This is the server you are connected to. Use Leave server instead."
   },
   "rail": {
     "profiles": "Profiles",
@@ -3739,7 +3741,7 @@
     "inviteExpires": "Expires {{date}}",
     "revokeInvite": "Revoke",
     "leave": "Leave server",
-    "leaveDescription": "Profiles stay on this computer as local copies and stop syncing with the server.",
+    "leaveDescription": "The server comes off your list. Its profiles stay on this computer as local copies and stop syncing.",
     "joined": "Joined {{name}}",
     "left": "Left the server",
     "revoked": "Your access to this server was removed. Leave it, or ask its owner for a new invite.",
@@ -3782,6 +3784,16 @@
         "https": "HTTPS",
         "owner": "Owner"
       }
+    },
+    "servers": {
+      "title": "Your servers",
+      "add": "Add server",
+      "active": "Connected",
+      "switch": "Switch",
+      "switched": "Connected to {{name}}",
+      "forget": "Remove from the list",
+      "forgetConfirm": "Remove {{name}} from the list? Its profiles stay on this computer as local copies.",
+      "description": "Owl syncs with one server at a time. Profiles of the others wait on this computer and sync again when you switch back to their server."
     }
   }
 }

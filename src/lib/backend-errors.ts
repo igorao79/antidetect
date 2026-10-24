@@ -251,7 +251,6 @@ export type BackendErrorCode =
   | "WORKSPACE_OWNER_ONLY"
   | "WORKSPACE_REQUEST_FAILED"
   | "WORKSPACE_INVITE_LINK_INVALID"
-  | "WORKSPACE_ALREADY_JOINED"
   | "WORKSPACE_INVITE_INVALID"
   | "WORKSPACE_TOO_MANY_ATTEMPTS"
   | "WORKSPACE_PROFILE_NOT_YOURS"
@@ -266,6 +265,9 @@ export type BackendErrorCode =
   | "WORKSPACE_DEPLOY_HTTPS_FAILED"
   | "WORKSPACE_DEPLOY_HAS_OWNER"
   | "WORKSPACE_DEPLOY_PORTS_BUSY"
+  | "WORKSPACE_PROFILES_RUNNING"
+  | "WORKSPACE_SAVED_NOT_FOUND"
+  | "WORKSPACE_SAVED_IS_ACTIVE"
   | "PROFILE_TEMPLATE_INVALID"
   | "PROFILE_TEMPLATE_LIMIT"
   | "PROFILE_TEMPLATE_NOT_FOUND"
@@ -896,8 +898,6 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       return t("backendErrors.workspaceRequestFailed");
     case "WORKSPACE_INVITE_LINK_INVALID":
       return t("backendErrors.workspaceInviteLinkInvalid");
-    case "WORKSPACE_ALREADY_JOINED":
-      return t("backendErrors.workspaceAlreadyJoined");
     case "WORKSPACE_INVITE_INVALID":
       return t("backendErrors.workspaceInviteInvalid");
     case "WORKSPACE_TOO_MANY_ATTEMPTS":
@@ -938,6 +938,12 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       });
     case "WORKSPACE_DEPLOY_HAS_OWNER":
       return t("backendErrors.workspaceDeployHasOwner");
+    case "WORKSPACE_PROFILES_RUNNING":
+      return t("backendErrors.workspaceProfilesRunning");
+    case "WORKSPACE_SAVED_NOT_FOUND":
+      return t("backendErrors.workspaceSavedNotFound");
+    case "WORKSPACE_SAVED_IS_ACTIVE":
+      return t("backendErrors.workspaceSavedIsActive");
     case "WORKSPACE_DEPLOY_PORTS_BUSY":
       return t("backendErrors.workspaceDeployPortsBusy", {
         process: parsed.params?.process ?? "",

@@ -301,6 +301,9 @@ export const commandCoverage = {
       "workspace::leave_workspace",
       "workspace::take_pending_workspace_link",
       "workspace_deploy::deploy_workspace_server",
+      "workspace_servers::list_saved_workspaces",
+      "workspace_servers::switch_workspace",
+      "workspace_servers::forget_saved_workspace",
     ],
   },
   cloudContracts: {

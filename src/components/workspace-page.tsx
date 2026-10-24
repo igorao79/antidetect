@@ -30,6 +30,7 @@ import {
   SettingsPanel,
 } from "@/components/ui/settings-panel";
 import { WorkspaceDeployForm } from "@/components/workspace-deploy-form";
+import { WorkspaceServerList } from "@/components/workspace-server-list";
 import {
   useWorkspace,
   type WorkspaceInvite,
@@ -56,6 +57,17 @@ export function WorkspacePage({
 }: WorkspacePageProps) {
   const { t } = useTranslation();
   const { workspace, loaded } = useWorkspace();
+  const [adding, setAdding] = useState(false);
+
+  // A new server joined (or another one switched to) ends the adding.
+  const activeServer = workspace?.server ?? null;
+  useEffect(() => {
+    if (activeServer) setAdding(false);
+  }, [activeServer]);
+  // An invite link opened from outside while connected adds that server.
+  useEffect(() => {
+    if (initialLink) setAdding(true);
+  }, [initialLink]);
 
   return (
     <Dialog
@@ -78,10 +90,32 @@ export function WorkspacePage({
               subPage && "mx-auto w-full max-w-4xl",
             )}
           >
-            {!loaded ? null : workspace ? (
+            {loaded && (
+              <WorkspaceServerList
+                adding={adding}
+                onAdd={() => setAdding(true)}
+              />
+            )}
+            {!loaded ? null : workspace && !adding ? (
               <JoinedServer key={workspace.server} />
             ) : (
-              <JoinForm initialLink={initialLink ?? null} />
+              <>
+                {workspace && (
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-medium">
+                      {t("workspace.servers.add")}
+                    </h3>
+                    <Button
+                      variant="subtle"
+                      size="sm"
+                      onClick={() => setAdding(false)}
+                    >
+                      {t("common.buttons.cancel")}
+                    </Button>
+                  </div>
+                )}
+                <JoinForm initialLink={initialLink ?? null} />
+              </>
             )}
           </div>
         </div>

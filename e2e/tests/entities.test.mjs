@@ -1977,7 +1977,7 @@ test("the hourly profile allowance counts from a window that survives a restart"
 });
 
 /** The Owl server's member and invite calls, as small as the app needs them. */
-async function fakeOwlServer() {
+async function fakeOwlServer({ name = "Team", token = "member-token" } = {}) {
   const state = {
     revoked: false,
     invites: [],
@@ -1998,20 +1998,19 @@ async function fakeOwlServer() {
       const url = new URL(request.url, "http://owl.test");
       state.calls.push(`${request.method} ${url.pathname}`);
       const authorized =
-        request.headers.authorization === "Bearer member-token" &&
-        !state.revoked;
+        request.headers.authorization === `Bearer ${token}` && !state.revoked;
       if (request.method === "POST" && url.pathname === "/v1/join") {
-        const { code, name } = JSON.parse(body || "{}");
+        const { code } = JSON.parse(body || "{}");
         if (code !== "good-code") return send(401, { error: "invite_invalid" });
         return send(200, {
-          token: "member-token",
-          member: { ...member, name },
-          workspace: { name: "Team" },
+          token,
+          member: { ...member, name: JSON.parse(body || "{}").name },
+          workspace: { name },
         });
       }
       if (!authorized) return send(401);
       if (url.pathname === "/v1/me") {
-        return send(200, { member, workspace: { name: "Team" } });
+        return send(200, { member, workspace: { name } });
       }
       if (url.pathname === "/v1/members" && request.method === "GET") {
         return send(200, {
@@ -2128,15 +2127,6 @@ test("an Owl server is joined by invite, its members and invites are managed, an
         member: { id: "m1", name: "Ivan", role: "owner" },
       });
       assert.deepEqual(await app.invoke("get_workspace"), joined);
-      assert.match(
-        await app.invokeError("join_workspace", {
-          server: owl.address,
-          code: "good-code",
-          name: "Ivan",
-        }),
-        /"code":"WORKSPACE_ALREADY_JOINED"/,
-      );
-      assert.match(await deploy({}), /"code":"WORKSPACE_ALREADY_JOINED"/);
       assert.deepEqual(await app.invoke("refresh_workspace"), joined);
 
       const members = await app.invoke("list_workspace_members");
@@ -2176,6 +2166,86 @@ test("an Owl server is joined by invite, its members and invites are managed, an
     });
   } finally {
     owl.server.close();
+  }
+});
+
+test("joined servers are listed and switched between, and a switch parks what was shared", async () => {
+  const team = await fakeOwlServer();
+  const other = await fakeOwlServer({ name: "Other", token: "other-token" });
+  const link = (owl) =>
+    `owl://join?server=${encodeURIComponent(owl.address)}&code=good-code`;
+  try {
+    await withApp("entities-workspace-servers", async (app) => {
+      assert.deepEqual(await app.invoke("list_saved_workspaces"), []);
+      await app.invoke("join_workspace", { link: link(team), name: "Ivan" });
+
+      // A profile shared on the first server.
+      const profile = await createProfile(app, "Shared on Team");
+      const metadata = path.join(
+        app.dataRoot,
+        "data",
+        "profiles",
+        profile.id,
+        "metadata.json",
+      );
+      const stored = JSON.parse(await readFile(metadata, "utf8"));
+      await writeFile(
+        metadata,
+        JSON.stringify({ ...stored, sync_mode: "Regular" }, null, 2),
+      );
+      const syncModeOf = async () =>
+        (await app.invoke("list_browser_profiles")).find(
+          (p) => p.id === profile.id,
+        ).sync_mode;
+
+      // Joining another server keeps the first one, its profile parked so
+      // it never syncs to the second.
+      await app.invoke("join_workspace", { link: link(other), name: "Ivan" });
+      const listed = await app.invoke("list_saved_workspaces");
+      assert.deepEqual(
+        listed.map((s) => [s.name, s.active]),
+        [
+          ["Team", false],
+          ["Other", true],
+        ],
+      );
+      assert.equal(await syncModeOf(), "Disabled");
+
+      // Back to the first server without an invite: its profile syncs again.
+      const back = await app.invoke("switch_workspace", {
+        server: team.address,
+      });
+      assert.equal(back.name, "Team");
+      assert.equal((await app.invoke("get_workspace")).server, team.address);
+      assert.equal(await syncModeOf(), "Regular");
+      assert.deepEqual(await app.invoke("refresh_workspace"), back);
+
+      assert.match(
+        await app.invokeError("switch_workspace", {
+          server: "https://unknown.example.com",
+        }),
+        /"code":"WORKSPACE_SAVED_NOT_FOUND"/,
+      );
+      assert.match(
+        await app.invokeError("forget_saved_workspace", {
+          server: team.address,
+        }),
+        /"code":"WORKSPACE_SAVED_IS_ACTIVE"/,
+      );
+      await app.invoke("forget_saved_workspace", { server: other.address });
+      assert.deepEqual(
+        (await app.invoke("list_saved_workspaces")).map((s) => s.name),
+        ["Team"],
+      );
+
+      // Leaving for good keeps the profile as a local copy syncing nowhere.
+      await app.invoke("leave_workspace");
+      assert.deepEqual(await app.invoke("list_saved_workspaces"), []);
+      assert.equal(await syncModeOf(), "Disabled");
+    });
+  } finally {
+    team.server.close();
+    other.server.close();
   }
 });
 
