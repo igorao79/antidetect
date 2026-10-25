@@ -199,8 +199,6 @@
       "copyLogsSuccess": "Đã sao chép nhật ký vào clipboard",
       "copyLogsDescription": "Sao chép gói nhật ký gần đây đã được che thông tin nhạy cảm (tối đa 5 MB). Hãy xem lại trước khi chia sẻ vì việc che dữ liệu không thể nhận diện mọi loại dữ liệu cá nhân."
     },
-    "disableAutoUpdates": "Tắt tự động cập nhật ứng dụng",
-    "disableAutoUpdatesDescription": "Ngăn ứng dụng tự động kiểm tra và cài đặt bản cập nhật Owl. Cập nhật trình duyệt không bị ảnh hưởng.",
     "keepDecryptedProfilesInRam": "Giữ hồ sơ đã giải mã trong RAM",
     "keepDecryptedProfilesInRamDescription": "Giữ bản sao đã giải mã trong RAM của hồ sơ được bảo vệ bằng mật khẩu giữa các lần khởi chạy để khởi động nhanh hơn. Bản sao trên ổ đĩa vẫn được mã hóa.",
     "privacy": {
@@ -248,7 +246,17 @@
     },
     "trashRetentionOff": "Xóa ngay",
     "scrollSectionsLeft": "Cuộn các mục sang trái",
-    "scrollSectionsRight": "Cuộn các mục sang phải"
+    "scrollSectionsRight": "Cuộn các mục sang phải",
+    "updates": {
+      "title": "Cập nhật",
+      "auto": "Tự động cập nhật Owl",
+      "autoDescription": "Kiểm tra phiên bản mới khi khởi động và vài giờ một lần, tải về ở chế độ nền và đề nghị khởi động lại. Không ảnh hưởng đến việc cập nhật trình duyệt.",
+      "currentVersion": "Owl {{version}}",
+      "check": "Kiểm tra cập nhật",
+      "found": "Đã tìm thấy phiên bản {{version}}. Đang tải về; khi sẵn sàng, Owl sẽ đề nghị khởi động lại.",
+      "latest": "Bạn đang dùng phiên bản mới nhất.",
+      "failed": "Không thể kiểm tra cập nhật. Hãy kiểm tra kết nối và thử lại."
+    }
   },
   "header": {
     "searchPlaceholder": "Tìm kiếm hồ sơ...",

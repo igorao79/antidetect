@@ -199,8 +199,6 @@
       "copyLogsSuccess": "Logs copied to clipboard",
       "copyLogsDescription": "Copies a redacted bundle of recent logs (up to 5 MB). Review it before sharing because redaction cannot identify every kind of personal data."
     },
-    "disableAutoUpdates": "Disable App Auto Updates",
-    "disableAutoUpdatesDescription": "Prevent the app from automatically checking and installing Owl updates. Browser updates are not affected.",
     "keepDecryptedProfilesInRam": "Keep Decrypted Profiles In RAM",
     "keepDecryptedProfilesInRamDescription": "Preserve the decrypted in-RAM copy of password-protected profiles between launches for faster startup. The on-disk copy stays encrypted regardless.",
     "privacy": {
@@ -248,7 +246,17 @@
     },
     "trashRetentionOff": "Delete at once",
     "scrollSectionsLeft": "Scroll sections left",
-    "scrollSectionsRight": "Scroll sections right"
+    "scrollSectionsRight": "Scroll sections right",
+    "updates": {
+      "title": "Updates",
+      "auto": "Update Owl automatically",
+      "autoDescription": "Check for new versions at startup and every few hours, download them in the background and offer a restart. Browser updates are not affected.",
+      "currentVersion": "Owl {{version}}",
+      "check": "Check for updates",
+      "found": "Version {{version}} found. It is downloading, and Owl will offer a restart when it is ready.",
+      "latest": "You have the latest version.",
+      "failed": "Could not check for updates. Check the connection and try again."
+    }
   },
   "header": {
     "searchPlaceholder": "Search profiles...",

@@ -141,7 +141,10 @@ Fork-specific rules:
   build` calls itself `dev-<x.y.z>` and never updates. To ship: bump the version in
   `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`, commit, push, and run
   `scripts/release-macos.sh`, which builds, writes `SHA256SUMS.txt` and publishes the release.
-  Publishing is public (the repository is public): ask before running it. A release is signed
+  Publishing is public (the repository is public): ask before running it. Settings → Updates
+  turns the automatic checks off (`disable_auto_updates`, on by default) and has a "Check for
+  updates" button (`check_for_app_updates_manual`), whose find goes to the same download and
+  restart toast through an `app-update-available` event. A release is signed
   with the Developer ID certificate in the keychain and notarized (the app by Tauri with its
   ticket stapled, then the .dmg by `notarytool` and stapled), so macOS opens it without a
   warning and keeps camera and microphone grants across updates; the identity and the App
@@ -151,6 +154,15 @@ Fork-specific rules:
 - The camera and microphone prompt at launch is offered once (`src/lib/permission-prompt.ts`);
   Settings requests them afterwards. An ad-hoc signed build is a new app to macOS after every
   rebuild, so a grant given to an earlier build does not carry over.
+- Bundled fonts on macOS (`camoufox/bundled_fonts.rs`). Camoufox carries the fonts of every OS
+  it poses as in `Resources/fonts` (`gfx.bundled-fonts.activate`), among them other versions of
+  fonts this Mac has (SF, Helvetica, Arial, Georgia: 476 files on macOS 26). A profile posing as
+  another OS (`navigator.platform` not a Mac one) shaped text with the bundled file while
+  WebRender drew the installed font's glyphs, so tabs, the address bar and fallback text such
+  as Cyrillic showed other characters. Before a launch those files move to
+  `Resources/fonts-shadowed` once per build and macOS version (`.owl-checked` holds the build);
+  fonts the Mac lacks (Calibri, Segoe UI) stay bundled. `drawWindow` renders correctly either
+  way, so only a screenshot of the window shows it.
 - Address-bar search (`camoufox/search.rs`). The Camoufox build has no search engines: its
   configuration carries one inert engine, "None", at `http://127.0.0.1/`, and its
   `distribution/policies.json` makes it the default, so a search typed in the address bar

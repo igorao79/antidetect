@@ -199,8 +199,6 @@
       "copyLogsSuccess": "Registros copiados al portapapeles",
       "copyLogsDescription": "Copia un paquete censurado de los registros recientes (hasta 5 MB). Revísalo antes de compartirlo, ya que la censura no puede identificar todos los tipos de datos personales."
     },
-    "disableAutoUpdates": "Desactivar Actualizaciones Automáticas de la App",
-    "disableAutoUpdatesDescription": "Evita que la aplicación busque e instale actualizaciones de Owl automáticamente. Las actualizaciones de navegadores no se ven afectadas.",
     "keepDecryptedProfilesInRam": "Mantener Perfiles Descifrados en RAM",
     "keepDecryptedProfilesInRamDescription": "Conservar la copia descifrada en RAM de los perfiles protegidos por contraseña entre lanzamientos para un inicio más rápido. La copia en disco permanece cifrada en cualquier caso.",
     "privacy": {
@@ -249,7 +247,17 @@
     },
     "trashRetentionOff": "Eliminar al instante",
     "scrollSectionsLeft": "Desplazar secciones a la izquierda",
-    "scrollSectionsRight": "Desplazar secciones a la derecha"
+    "scrollSectionsRight": "Desplazar secciones a la derecha",
+    "updates": {
+      "title": "Actualizaciones",
+      "auto": "Actualizar Owl automáticamente",
+      "autoDescription": "Buscar nuevas versiones al iniciar y cada pocas horas, descargarlas en segundo plano y ofrecer un reinicio. Las actualizaciones de los navegadores no se ven afectadas.",
+      "currentVersion": "Owl {{version}}",
+      "check": "Buscar actualizaciones",
+      "found": "Se encontró la versión {{version}}. Se está descargando y Owl ofrecerá reiniciar cuando esté lista.",
+      "latest": "Tienes la versión más reciente.",
+      "failed": "No se pudieron buscar actualizaciones. Revisa la conexión e inténtalo de nuevo."
+    }
   },
   "header": {
     "searchPlaceholder": "Buscar perfiles...",

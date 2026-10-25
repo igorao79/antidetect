@@ -199,8 +199,6 @@
       "copyLogsSuccess": "ログをクリップボードにコピーしました",
       "copyLogsDescription": "最近のログを編集したバンドル（最大 5 MB）をコピーします。編集ではすべての種類の個人データを識別できないため、共有前に内容を確認してください。"
     },
-    "disableAutoUpdates": "アプリの自動更新を無効にする",
-    "disableAutoUpdatesDescription": "Owlの自動更新確認・インストールを無効にします。ブラウザの更新には影響しません。",
     "keepDecryptedProfilesInRam": "復号済みプロファイルをRAMに保持",
     "keepDecryptedProfilesInRamDescription": "起動を高速化するため、パスワード保護されたプロファイルの復号済みコピーをRAMに保持します。ディスク上のコピーは常に暗号化されたままです。",
     "privacy": {
@@ -248,7 +246,17 @@
     },
     "trashRetentionOff": "すぐに削除",
     "scrollSectionsLeft": "セクションを左へスクロール",
-    "scrollSectionsRight": "セクションを右へスクロール"
+    "scrollSectionsRight": "セクションを右へスクロール",
+    "updates": {
+      "title": "アップデート",
+      "auto": "Owl を自動的にアップデート",
+      "autoDescription": "起動時と数時間ごとに新しいバージョンを確認し、バックグラウンドでダウンロードして再起動を提案します。ブラウザーのアップデートには影響しません。",
+      "currentVersion": "Owl {{version}}",
+      "check": "アップデートを確認",
+      "found": "バージョン {{version}} が見つかりました。ダウンロード中です。準備ができると Owl が再起動を提案します。",
+      "latest": "最新バージョンです。",
+      "failed": "アップデートを確認できませんでした。接続を確認して、もう一度お試しください。"
+    }
   },
   "header": {
     "searchPlaceholder": "プロファイルを検索...",

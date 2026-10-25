@@ -199,8 +199,6 @@
       "copyLogsSuccess": "Günlükler panoya kopyalandı",
       "copyLogsDescription": "Son günlüklerin hassas verileri ayıklanmış bir paketini kopyalar (en fazla 5 MB). Ayıklama her tür kişisel veriyi belirleyemeyeceğinden paylaşmadan önce inceleyin."
     },
-    "disableAutoUpdates": "Uygulama Otomatik Güncellemelerini Devre Dışı Bırak",
-    "disableAutoUpdatesDescription": "Uygulamanın Owl güncellemelerini otomatik olarak denetlemesini ve yüklemesini engelleyin. Tarayıcı güncellemeleri bundan etkilenmez.",
     "keepDecryptedProfilesInRam": "Şifresi Çözülmüş Profilleri RAM'de Tut",
     "keepDecryptedProfilesInRamDescription": "Daha hızlı başlatma için parola korumalı profillerin şifresi çözülmüş RAM kopyasını başlatmalar arasında koruyun. Diskteki kopya her durumda şifreli kalır.",
     "privacy": {
@@ -248,7 +246,17 @@
     },
     "trashRetentionOff": "Hemen sil",
     "scrollSectionsLeft": "Bölümleri sola kaydır",
-    "scrollSectionsRight": "Bölümleri sağa kaydır"
+    "scrollSectionsRight": "Bölümleri sağa kaydır",
+    "updates": {
+      "title": "Güncellemeler",
+      "auto": "Owl'u otomatik güncelle",
+      "autoDescription": "Açılışta ve birkaç saatte bir yeni sürümleri denetle, arka planda indir ve yeniden başlatmayı öner. Tarayıcı güncellemeleri etkilenmez.",
+      "currentVersion": "Owl {{version}}",
+      "check": "Güncellemeleri denetle",
+      "found": "{{version}} sürümü bulundu. İndiriliyor; hazır olduğunda Owl yeniden başlatmayı önerecek.",
+      "latest": "En son sürümü kullanıyorsunuz.",
+      "failed": "Güncellemeler denetlenemedi. Bağlantıyı kontrol edip yeniden deneyin."
+    }
   },
   "header": {
     "searchPlaceholder": "Profillerde ara...",

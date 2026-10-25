@@ -1856,6 +1856,7 @@ dependencies = [
  "dunce",
  "env_logger",
  "flate2",
+ "fontdb",
  "futures-util",
  "globset",
  "gtk",

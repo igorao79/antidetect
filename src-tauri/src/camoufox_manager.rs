@@ -325,6 +325,13 @@ impl CamoufoxManager {
       .get_browser_executable_path(profile)
       .map_err(|e| format!("Failed to get Camoufox executable path: {e}"))?;
     crate::camoufox::search::ensure_search_engines(&executable_path);
+    {
+      let executable = executable_path.clone();
+      let _ = tokio::task::spawn_blocking(move || {
+        crate::camoufox::bundled_fonts::shadow_installed_fonts(&executable)
+      })
+      .await;
+    }
 
     // Parse the fingerprint config JSON
     let mut fingerprint_config: HashMap<String, serde_json::Value> =

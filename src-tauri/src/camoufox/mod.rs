@@ -9,6 +9,7 @@
 //!
 //! The process itself is spawned by `camoufox_manager`.
 
+pub mod bundled_fonts;
 pub mod config;
 pub mod data;
 pub mod env_vars;

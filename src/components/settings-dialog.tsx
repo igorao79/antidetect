@@ -1,6 +1,7 @@
 "use client";
 
 import { invoke } from "@tauri-apps/api/core";
+import { emit } from "@tauri-apps/api/event";
 import { writeText as writeClipboardText } from "@tauri-apps/plugin-clipboard-manager";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import Color from "color";
@@ -70,7 +71,7 @@ import {
 } from "@/lib/themes";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
 import { cn } from "@/lib/utils";
-import type { SetDefaultBrowserOutcome } from "@/types";
+import type { AppUpdateInfo, SetDefaultBrowserOutcome } from "@/types";
 import { RippleButton } from "./ui/ripple";
 
 interface AppSettings {
@@ -164,6 +165,13 @@ export function SettingsDialog({
   const [isSettingDefault, setIsSettingDefault] = useState(false);
   const [isClearingCache, setIsClearingCache] = useState(false);
   const [isClearingTraffic, setIsClearingTraffic] = useState(false);
+  const [isCheckingUpdates, setIsCheckingUpdates] = useState(false);
+  const [updateCheck, setUpdateCheck] = useState<
+    | { status: "found"; version: string }
+    | { status: "latest" }
+    | { status: "failed" }
+    | null
+  >(null);
   const [permissions, setPermissions] = useState<PermissionInfo[]>([]);
   const [isLoadingPermissions, setIsLoadingPermissions] = useState(false);
   const [requestingPermission, setRequestingPermission] =
@@ -650,6 +658,28 @@ export function SettingsDialog({
     t,
   ]);
 
+  const handleCheckForUpdates = useCallback(async () => {
+    setIsCheckingUpdates(true);
+    setUpdateCheck(null);
+    try {
+      const update = await invoke<AppUpdateInfo | null>(
+        "check_for_app_updates_manual",
+      );
+      if (update) {
+        // The app-wide updater downloads it and offers the restart.
+        await emit("app-update-available", update);
+        setUpdateCheck({ status: "found", version: update.new_version });
+      } else {
+        setUpdateCheck({ status: "latest" });
+      }
+    } catch (error) {
+      console.error("Failed to check for app updates:", error);
+      setUpdateCheck({ status: "failed" });
+    } finally {
+      setIsCheckingUpdates(false);
+    }
+  }, []);
+
   const updateSetting = useCallback(
     (
       key: keyof AppSettings,
@@ -827,7 +857,7 @@ export function SettingsDialog({
     ...(
       [
         ["api_enabled", "settings.integrations.title"],
-        ["disable_auto_updates", "settings.disableAutoUpdates"],
+        ["disable_auto_updates", "settings.updates.auto"],
         [
           "keep_decrypted_profiles_in_ram",
           "settings.keepDecryptedProfilesInRam",
@@ -888,13 +918,12 @@ export function SettingsDialog({
         "settings.trashRetentionDescription",
       ],
     ],
+    ["updates", "settings.updates.title", ["settings.updates"]],
     [
       "advanced",
       "settings.advanced.title",
       [
         "settings.advanced",
-        "settings.disableAutoUpdates",
-        "settings.disableAutoUpdatesDescription",
         "settings.keepDecryptedProfilesInRam",
         "settings.keepDecryptedProfilesInRamDescription",
       ],
@@ -1823,6 +1852,82 @@ export function SettingsDialog({
                 </div>
               </div>
 
+              {/* Updates Section */}
+              <div
+                data-settings-section="updates"
+                tabIndex={-1}
+                hidden={!sectionVisible("updates")}
+                className="scroll-mt-2 space-y-4 focus:outline-none"
+              >
+                <Label className="text-base font-medium">
+                  {t("settings.updates.title")}
+                </Label>
+
+                {!isLinux && (
+                  <div className="flex items-start gap-x-3 rounded-lg border p-3">
+                    <Checkbox
+                      id="auto-updates"
+                      checked={!(settings.disable_auto_updates ?? false)}
+                      onCheckedChange={(checked) => {
+                        updateSetting("disable_auto_updates", checked !== true);
+                      }}
+                    />
+                    <div className="space-y-1">
+                      <Label
+                        htmlFor="auto-updates"
+                        className="text-sm font-medium"
+                      >
+                        {t("settings.updates.auto")}
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {t("settings.updates.autoDescription")}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-sm font-medium">
+                      {systemInfo
+                        ? t("settings.updates.currentVersion", {
+                            version: systemInfo.app_version,
+                          })
+                        : t("settings.updates.title")}
+                    </p>
+                    {updateCheck && (
+                      <p
+                        role="status"
+                        className={cn(
+                          "text-xs",
+                          updateCheck.status === "failed"
+                            ? "text-destructive"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {updateCheck.status === "found"
+                          ? t("settings.updates.found", {
+                              version: updateCheck.version,
+                            })
+                          : updateCheck.status === "latest"
+                            ? t("settings.updates.latest")
+                            : t("settings.updates.failed")}
+                      </p>
+                    )}
+                  </div>
+                  <LoadingButton
+                    isLoading={isCheckingUpdates}
+                    variant="outline"
+                    className="shrink-0"
+                    onClick={() => {
+                      void handleCheckForUpdates();
+                    }}
+                  >
+                    {t("settings.updates.check")}
+                  </LoadingButton>
+                </div>
+              </div>
+
               {/* Advanced Section */}
               <div
                 data-settings-section="advanced"
@@ -1833,32 +1938,6 @@ export function SettingsDialog({
                 <Label className="text-base font-medium">
                   {t("settings.advanced.title")}
                 </Label>
-
-                {!isLinux && (
-                  <div className="flex items-start gap-x-3 rounded-lg border p-3">
-                    <Checkbox
-                      id="disable-auto-updates"
-                      checked={settings.disable_auto_updates ?? false}
-                      onCheckedChange={(checked) => {
-                        updateSetting(
-                          "disable_auto_updates",
-                          checked as boolean,
-                        );
-                      }}
-                    />
-                    <div className="space-y-1">
-                      <Label
-                        htmlFor="disable-auto-updates"
-                        className="text-sm font-medium"
-                      >
-                        {t("settings.disableAutoUpdates")}
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        {t("settings.disableAutoUpdatesDescription")}
-                      </p>
-                    </div>
-                  </div>
-                )}
 
                 <div className="flex items-start gap-x-3 rounded-lg border p-3">
                   <Checkbox

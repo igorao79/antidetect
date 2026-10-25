@@ -153,6 +153,8 @@ secret-service = { version = "5", default-features = false, features = ["rt-toki
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-foundation = "0.10"
+# Reading which bundled Camoufox fonts this Mac also has (camoufox/bundled_fonts.rs).
+fontdb = "0.24"
 # Reading the source browser's "<Brand> Safe Storage" Keychain item during
 # profile import, so its cookies and passwords can be re-encrypted for Wayfern.
 security-framework = "3"

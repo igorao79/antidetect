@@ -199,8 +199,6 @@
       "copyLogsSuccess": "Protokolle in die Zwischenablage kopiert",
       "copyLogsDescription": "Kopiert ein bereinigtes Paket der aktuellen Protokolle (bis zu 5 MB). Prüfen Sie es vor dem Teilen, da die Bereinigung nicht jede Art personenbezogener Daten erkennen kann."
     },
-    "disableAutoUpdates": "Automatische App-Updates deaktivieren",
-    "disableAutoUpdatesDescription": "Verhindert, dass die App automatisch nach Updates für Owl sucht und sie installiert. Browser-Updates sind davon nicht betroffen.",
     "keepDecryptedProfilesInRam": "Entschlüsselte Profile im RAM behalten",
     "keepDecryptedProfilesInRamDescription": "Behält die entschlüsselte Kopie passwortgeschützter Profile zwischen den Starts im RAM, damit sie schneller starten. Die Kopie auf dem Datenträger bleibt in jedem Fall verschlüsselt.",
     "privacy": {
@@ -248,7 +246,17 @@
     },
     "trashRetentionOff": "Sofort löschen",
     "scrollSectionsLeft": "Abschnitte nach links scrollen",
-    "scrollSectionsRight": "Abschnitte nach rechts scrollen"
+    "scrollSectionsRight": "Abschnitte nach rechts scrollen",
+    "updates": {
+      "title": "Updates",
+      "auto": "Owl automatisch aktualisieren",
+      "autoDescription": "Beim Start und alle paar Stunden nach neuen Versionen suchen, sie im Hintergrund herunterladen und einen Neustart anbieten. Browser-Updates sind nicht betroffen.",
+      "currentVersion": "Owl {{version}}",
+      "check": "Nach Updates suchen",
+      "found": "Version {{version}} gefunden. Sie wird heruntergeladen; Owl bietet einen Neustart an, sobald sie bereit ist.",
+      "latest": "Sie haben die neueste Version.",
+      "failed": "Die Suche nach Updates ist fehlgeschlagen. Prüfen Sie die Verbindung und versuchen Sie es erneut."
+    }
   },
   "header": {
     "searchPlaceholder": "Profile durchsuchen...",

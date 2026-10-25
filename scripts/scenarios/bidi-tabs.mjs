@@ -6,9 +6,12 @@
 const [endpoint, flag, part] = process.argv.slice(2);
 const ws = new WebSocket(endpoint);
 let id = 0; const pending = new Map();
+// A command a page never answers (one still loading) gives up, so the session
+// is always ended below.
 const send = (method, params = {}) => new Promise((resolve, reject) => {
   const mid = ++id; pending.set(mid, { resolve, reject });
   ws.send(JSON.stringify({ id: mid, method, params }));
+  setTimeout(() => pending.delete(mid) && reject(new Error("timed out: " + method)), 10000);
 });
 ws.onmessage = (ev) => {
   const msg = JSON.parse(ev.data);
@@ -23,8 +26,11 @@ try {
     await send("browsingContext.navigate", { context, url: part, wait: "none" });
   }
   const contexts = (await send("browsingContext.getTree", {})).contexts;
-  for (const { context } of contexts) await send("browsingContext.activate", { context });
-  if (contexts.length) await send("browsingContext.activate", { context: contexts[0].context });
+  // Firefox's own pages (a new tab is chrome://browser/content/blanktab.html)
+  // cannot be activated over BiDi.
+  const activate = (context) => send("browsingContext.activate", { context }).catch(() => {});
+  for (const { context } of contexts) await activate(context);
+  if (contexts.length) await activate(contexts[0].context);
   const tabs = [];
   for (const { context, url } of (await send("browsingContext.getTree", {})).contexts) {
     // Written by a script of the page itself: Firefox's session store records
@@ -32,10 +38,13 @@ try {
     const mark = flag === "--mark" && url.includes(part)
       ? `{ const s = document.createElement("script"); s.textContent = 'sessionStorage.owl = "1"'; document.head.append(s); }`
       : "";
-    const r = await send("script.evaluate", { expression: `${mark} sessionStorage.owl ?? null`, target: { context }, awaitPromise: false });
-    tabs.push({ url, owl: r.result?.value ?? null });
+    const r = await send("script.evaluate", { expression: `${mark} sessionStorage.owl ?? null`, target: { context }, awaitPromise: false })
+      .catch(() => null);
+    tabs.push({ url, owl: r?.result?.value ?? null });
   }
   console.log(JSON.stringify(tabs));
-  await send("session.end", {});
 } catch (e) { console.error("ERR", e.message); process.exitCode = 1; }
+// Firefox keeps a session after its connection drops, and allows one: a
+// session left open would keep the app from asking the browser to quit.
+try { await send("session.end", {}); } catch {}
 ws.close();

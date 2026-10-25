@@ -199,8 +199,6 @@
       "copyLogsSuccess": "日志已复制到剪贴板",
       "copyLogsDescription": "复制经过脱敏的近期日志包（最多 5 MB）。脱敏无法识别所有类型的个人数据，请在分享前检查内容。"
     },
-    "disableAutoUpdates": "禁用应用自动更新",
-    "disableAutoUpdatesDescription": "阻止应用程序自动检查和安装 Owl 更新。浏览器更新不受影响。",
     "keepDecryptedProfilesInRam": "在内存中保留已解密的配置文件",
     "keepDecryptedProfilesInRamDescription": "在启动之间保留密码保护配置文件的已解密内存副本,以便更快地启动。无论如何磁盘上的副本始终保持加密。",
     "privacy": {
@@ -248,7 +246,17 @@
     },
     "trashRetentionOff": "立即删除",
     "scrollSectionsLeft": "向左滚动分区",
-    "scrollSectionsRight": "向右滚动分区"
+    "scrollSectionsRight": "向右滚动分区",
+    "updates": {
+      "title": "更新",
+      "auto": "自动更新 Owl",
+      "autoDescription": "启动时及每隔几小时检查新版本，在后台下载并提示重新启动。不影响浏览器的更新。",
+      "currentVersion": "Owl {{version}}",
+      "check": "检查更新",
+      "found": "已找到版本 {{version}}。正在下载，准备就绪后 Owl 会提示重新启动。",
+      "latest": "已是最新版本。",
+      "failed": "无法检查更新。请检查网络连接后重试。"
+    }
   },
   "header": {
     "searchPlaceholder": "搜索配置文件...",
