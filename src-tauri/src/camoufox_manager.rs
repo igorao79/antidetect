@@ -82,8 +82,13 @@ pub struct CamoufoxManager {
 
 /// Ask the Camoufox listening for WebDriver BiDi on `port` to quit the way a
 /// person quitting it would, so it writes its session, cookies and storage
-/// before it exits. False when it cannot be asked: the endpoint is gone, or an
-/// automation client holds the one session Firefox allows.
+/// before it exits. False when it cannot be asked: the endpoint is gone, an
+/// automation client holds the one session Firefox allows, or the browser was
+/// started without `--remote-allow-system-access`.
+///
+/// BiDi's own `browser.close` does not quit Firefox: it closes the tabs one by
+/// one, which the session then records, and on macOS the browser stays running
+/// without windows. So the quit is asked of the browser's parent process.
 pub async fn close_over_bidi(port: u16) -> bool {
   use futures_util::{SinkExt, StreamExt};
   use tokio_tungstenite::tungstenite::Message;
@@ -95,15 +100,9 @@ pub async fn close_over_bidi(port: u16) -> bool {
   else {
     return false;
   };
-  let mut call = async |id: u64, method: &str, params: serde_json::Value| -> bool {
+  let mut call = async |id: u64, method: &str, params: serde_json::Value| {
     let command = serde_json::json!({ "id": id, "method": method, "params": params });
-    if socket
-      .send(Message::text(command.to_string()))
-      .await
-      .is_err()
-    {
-      return false;
-    }
+    socket.send(Message::text(command.to_string())).await.ok()?;
     let answer = tokio::time::timeout(STEP, async {
       while let Some(Ok(message)) = socket.next().await {
         let Message::Text(text) = message else {
@@ -113,17 +112,42 @@ pub async fn close_over_bidi(port: u16) -> bool {
           continue;
         };
         if value["id"] == id {
-          return value["type"] == "success";
+          return (value["type"] == "success").then(|| value["result"].clone());
         }
       }
-      // The browser closing the socket as it quits answers `browser.close`.
-      method == "browser.close"
+      // The browser closing the socket as it quits answers the quit.
+      Some(serde_json::Value::Null)
     })
     .await;
-    answer.unwrap_or(false)
+    answer.ok().flatten()
   };
-  call(1, "session.new", serde_json::json!({ "capabilities": {} })).await
-    && call(2, "browser.close", serde_json::json!({})).await
+  if call(1, "session.new", serde_json::json!({ "capabilities": {} }))
+    .await
+    .is_none()
+  {
+    return false;
+  }
+  let Some(window) = call(
+    2,
+    "browsingContext.getTree",
+    serde_json::json!({ "moz:scope": "chrome", "maxDepth": 0 }),
+  )
+  .await
+  .and_then(|tree| tree["contexts"][0]["context"].as_str().map(str::to_owned)) else {
+    let _ = call(3, "session.end", serde_json::json!({})).await;
+    return false;
+  };
+  call(
+    3,
+    "script.evaluate",
+    serde_json::json!({
+      "expression": "Services.startup.quit(Ci.nsIAppStartup.eForceQuit)",
+      "target": { "context": window },
+      "awaitPromise": false,
+    }),
+  )
+  .await
+  .is_some()
 }
 
 /// Hand the session a clean quit saved to Firefox as the one to recover.
@@ -300,6 +324,7 @@ impl CamoufoxManager {
     let executable_path = BrowserRunner::instance()
       .get_browser_executable_path(profile)
       .map_err(|e| format!("Failed to get Camoufox executable path: {e}"))?;
+    crate::camoufox::search::ensure_search_engines(&executable_path);
 
     // Parse the fingerprint config JSON
     let mut fingerprint_config: HashMap<String, serde_json::Value> =
@@ -339,6 +364,8 @@ impl CamoufoxManager {
       None => Self::find_free_port().await?,
     };
     args.push(format!("--remote-debugging-port={cdp_port}"));
+    // Lets a stop ask the browser to quit (`close_over_bidi`).
+    args.push("--remote-allow-system-access".to_string());
 
     // Add URL if provided
     if let Some(url) = url {

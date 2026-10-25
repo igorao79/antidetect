@@ -55,9 +55,13 @@ Fork-specific rules:
 - A persistent Camoufox profile reopens its session at launch: tabs, their session storage
   and session cookies (`SESSION_RESTORE_PREFS` in `camoufox_manager.rs`, written to `user.js`
   at every launch). camoufox.cfg starts on a blank page and drops the session. A stop first
-  asks the browser to quit over WebDriver BiDi (`close_over_bidi`, `browser.close`), so it
-  writes its session, cookies and storage, and falls back to SIGTERM and a kill when it cannot
-  ask (an automation client holds Firefox's one BiDi session). After a clean quit Firefox
+  asks the browser to quit over WebDriver BiDi (`close_over_bidi`: `Services.startup.quit` in
+  the parent process, which Camoufox is launched with `--remote-allow-system-access` for), so
+  it writes its session, cookies and storage, and falls back to SIGTERM and a kill when it
+  cannot ask (an automation client holds Firefox's one BiDi session). BiDi's own
+  `browser.close` is not a quit: it closes the tabs one by one, the session records each
+  closure, and on macOS the browser stays running without windows until the kill, so only
+  the last tab or none came back. After a clean quit Firefox
   reopens tabs and session cookies but drops session storage, which only a crashed session
   brings back, so each launch moves `sessionstore.jsonlz4` to
   `sessionstore-backups/recovery.jsonlz4` (`resume_as_recovery`) and the session resumes as
@@ -147,6 +151,13 @@ Fork-specific rules:
 - The camera and microphone prompt at launch is offered once (`src/lib/permission-prompt.ts`);
   Settings requests them afterwards. An ad-hoc signed build is a new app to macOS after every
   rebuild, so a grant given to an earlier build does not carry over.
+- Address-bar search (`camoufox/search.rs`). The Camoufox build has no search engines: its
+  configuration carries one inert engine, "None", at `http://127.0.0.1/`, and its
+  `distribution/policies.json` makes it the default, so a search typed in the address bar
+  went to 127.0.0.1. Every launch rewrites the policy's `SearchEngines` (Google, the default,
+  Bing, DuckDuckGo, Yandex, Wikipedia; "None" hidden). Firefox applies the policy's default
+  once per change, so a person may pick another engine, and older profiles switch too.
+  `s18_search_engine.py` checks it.
 - Interface language (`interface_language.rs`, `interface-language-field.tsx`, the
   `interface_language` setting of a Camoufox profile, also on the local API's profile
   creation). Camoufox keeps no language of its menus apart from what a page reads, so by
