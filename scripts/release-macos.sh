@@ -5,12 +5,34 @@
 # hours, downloads the .dmg, checks it against SHA256SUMS.txt and offers to
 # restart into the new version.
 #
+# A release is signed with the Developer ID certificate in this Mac's keychain
+# and notarized by Apple, so macOS opens it without a warning and keeps its
+# camera and microphone grants across updates. The signing identity and the
+# App Store Connect API key for notarization come from ~/.config/owl/release.env
+# (kept out of the repository):
+#
+#   APPLE_SIGNING_IDENTITY="Developer ID Application: <name> (<team id>)"
+#   APPLE_API_ISSUER=<issuer id>
+#   APPLE_API_KEY=<key id>
+#   APPLE_API_KEY_PATH=$HOME/.appstoreconnect/private_keys/AuthKey_<key id>.p8
+#
 # Bump the version in package.json, src-tauri/Cargo.toml and
 # src-tauri/tauri.conf.json, commit and push, then run:
 #
 #   scripts/release-macos.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+release_env="$HOME/.config/owl/release.env"
+# shellcheck disable=SC1090
+[ -f "$release_env" ] && set -a && . "$release_env" && set +a
+for name in APPLE_SIGNING_IDENTITY APPLE_API_ISSUER APPLE_API_KEY APPLE_API_KEY_PATH; do
+  if [ -z "${!name:-}" ]; then
+    echo "$name is not set (see $release_env): a release must be signed and notarized." >&2
+    exit 1
+  fi
+done
+test -f "$APPLE_API_KEY_PATH"
 
 version=$(node -p 'require("./src-tauri/tauri.conf.json").version')
 # The repository the app reads; `gh` would otherwise pick upstream's.
@@ -38,7 +60,23 @@ env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy -u ALL_PROXY -u al
 
 bundle=src-tauri/target/release/bundle/dmg
 dmg="Owl_${version}_aarch64.dmg"
+app=src-tauri/target/release/bundle/macos/Owl.app
 test -f "$bundle/$dmg"
+
+# Tauri signs and notarizes the app and staples its ticket before it builds
+# the disk image; the image is signed and notarized as well, so a downloaded
+# copy opens without a warning before it is even mounted.
+codesign --verify --deep --strict "$app"
+codesign -dv "$app" 2>&1 | grep -q "Authority=Developer ID Application"
+xcrun stapler validate "$app"
+codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$bundle/$dmg"
+notarized=$(xcrun notarytool submit "$bundle/$dmg" --wait \
+  --key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER" 2>&1)
+echo "$notarized"
+echo "$notarized" | grep -q "status: Accepted"
+xcrun stapler staple "$bundle/$dmg"
+spctl --assess --type open --context context:primary-signature -v "$bundle/$dmg"
+# The checksum the updater checks is taken of the stapled image.
 (cd "$bundle" && shasum -a 256 "$dmg" > SHA256SUMS.txt)
 
 # Notes list the commits since the previous Owl release.

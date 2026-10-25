@@ -137,7 +137,13 @@ Fork-specific rules:
   build` calls itself `dev-<x.y.z>` and never updates. To ship: bump the version in
   `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`, commit, push, and run
   `scripts/release-macos.sh`, which builds, writes `SHA256SUMS.txt` and publishes the release.
-  Publishing is public (the repository is public): ask before running it.
+  Publishing is public (the repository is public): ask before running it. A release is signed
+  with the Developer ID certificate in the keychain and notarized (the app by Tauri with its
+  ticket stapled, then the .dmg by `notarytool` and stapled), so macOS opens it without a
+  warning and keeps camera and microphone grants across updates; the identity and the App
+  Store Connect API key come from `~/.config/owl/release.env`, outside the repository, and the
+  script refuses to publish without them. Local builds stay ad-hoc signed (`signingIdentity`
+  `-` in `tauri.conf.json`).
 - The camera and microphone prompt at launch is offered once (`src/lib/permission-prompt.ts`);
   Settings requests them afterwards. An ad-hoc signed build is a new app to macOS after every
   rebuild, so a grant given to an earlier build does not carry over.
