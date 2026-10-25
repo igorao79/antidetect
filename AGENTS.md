@@ -140,7 +140,10 @@ Fork-specific rules:
   build made with `STABLE_RELEASE` (version `v<x.y.z>`) takes updates; a plain `pnpm tauri
   build` calls itself `dev-<x.y.z>` and never updates. To ship: bump the version in
   `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`, commit, push, and run
-  `scripts/release-macos.sh`, which builds, writes `SHA256SUMS.txt` and publishes the release.
+  `gh workflow run release-macos.yml`: GitHub's macOS runner runs `scripts/release-macos.sh`,
+  which builds, writes `SHA256SUMS.txt` and publishes the release, with the signing certificate
+  and the API key from the repository's Actions secrets (listed in the workflow). The script
+  also runs on this Mac.
   Publishing is public (the repository is public): ask before running it. Settings → Updates
   turns the automatic checks off (`disable_auto_updates`, on by default) and has a "Check for
   updates" button (`check_for_app_updates_manual`), whose find goes to the same download and

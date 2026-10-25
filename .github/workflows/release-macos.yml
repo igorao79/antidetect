@@ -1,0 +1,95 @@
+# Builds, signs, notarizes and publishes an Owl release on GitHub's macOS
+# runner, so a release does not take a developer's Mac for half an hour. It
+# runs scripts/release-macos.sh, the same script a local release runs.
+#
+# Started by hand after the version bump is pushed:
+#
+#   gh workflow run release-macos.yml -R igorao79/antidetect
+#
+# Not on tag pushes: upstream's tags share the release names, and pushing them
+# must not start a release.
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   APPLE_CERTIFICATE           the Developer ID Application certificate with
+#                               its key, exported as .p12, base64
+#   APPLE_CERTIFICATE_PASSWORD  the password the .p12 was exported with
+#   APPLE_SIGNING_IDENTITY      "Developer ID Application: <name> (<team id>)"
+#   APPLE_API_ISSUER            App Store Connect API issuer id
+#   APPLE_API_KEY               App Store Connect API key id
+#   APPLE_API_KEY_P8            the contents of AuthKey_<key id>.p8
+name: Release macOS
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-macos
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-15
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The release notes list the commits since the previous release.
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          shared-key: release-macos
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Import the signing certificate
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          keychain="$RUNNER_TEMP/owl-signing.keychain-db"
+          password=$(openssl rand -hex 24)
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          printf '%s' "$APPLE_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -k "$keychain" \
+            -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+          rm "$RUNNER_TEMP/certificate.p12"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$password" "$keychain" > /dev/null
+          # shellcheck disable=SC2046
+          security list-keychains -d user -s "$keychain" $(security list-keychains -d user | tr -d '"')
+
+      - name: Write the App Store Connect key
+        env:
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+        run: |
+          printf '%s\n' "$APPLE_API_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+          echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+
+      - name: Build, sign, notarize and publish
+        env:
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/release-macos.sh
+
+      - name: Remove the signing material
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/owl-signing.keychain-db" 2> /dev/null || true
+          rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/certificate.p12"

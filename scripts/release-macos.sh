@@ -17,7 +17,13 @@
 #   APPLE_API_KEY_PATH=$HOME/.appstoreconnect/private_keys/AuthKey_<key id>.p8
 #
 # Bump the version in package.json, src-tauri/Cargo.toml and
-# src-tauri/tauri.conf.json, commit and push, then run:
+# src-tauri/tauri.conf.json, commit and push, then have GitHub's macOS runner
+# run this script (.github/workflows/release-macos.yml, signing material from
+# the repository's secrets):
+#
+#   gh workflow run release-macos.yml -R igorao79/antidetect
+#
+# or run it on this Mac:
 #
 #   scripts/release-macos.sh
 set -euo pipefail
