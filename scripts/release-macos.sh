@@ -67,7 +67,8 @@ test -f "$bundle/$dmg"
 # the disk image; the image is signed and notarized as well, so a downloaded
 # copy opens without a warning before it is even mounted.
 codesign --verify --deep --strict "$app"
-codesign -dvv "$app" 2>&1 | grep -q "Authority=Developer ID Application"
+signed_by=$(codesign -dvv "$app" 2>&1)
+grep -q "Authority=Developer ID Application" <<< "$signed_by"
 xcrun stapler validate "$app"
 codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$bundle/$dmg"
 notarized=$(xcrun notarytool submit "$bundle/$dmg" --wait \
