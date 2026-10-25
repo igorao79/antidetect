@@ -83,7 +83,14 @@ test -f "$bundle/$dmg"
 codesign --verify --deep --strict "$app"
 signed_by=$(codesign -dvv "$app" 2>&1)
 grep -q "Authority=Developer ID Application" <<< "$signed_by"
-xcrun stapler validate "$app"
+# Right after Apple accepts the app its ticket is not always served yet, and
+# Tauri does not report a staple that found none, so it is stapled again here.
+for attempt in 1 2 3 4 5; do
+  xcrun stapler validate "$app" > /dev/null 2>&1 && break
+  [ "$attempt" = 5 ] && { xcrun stapler validate "$app"; exit 1; }
+  sleep 20
+  xcrun stapler staple "$app" || true
+done
 codesign --force --timestamp --sign "$APPLE_SIGNING_IDENTITY" "$bundle/$dmg"
 notarized=$(xcrun notarytool submit "$bundle/$dmg" --wait \
   --key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER" 2>&1)
