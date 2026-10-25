@@ -325,6 +325,7 @@ impl CamoufoxManager {
       .get_browser_executable_path(profile)
       .map_err(|e| format!("Failed to get Camoufox executable path: {e}"))?;
     crate::camoufox::search::ensure_search_engines(&executable_path);
+    crate::camoufox::last_window::ensure_quit_with_last_window(&executable_path);
     {
       let executable = executable_path.clone();
       let _ = tokio::task::spawn_blocking(move || {

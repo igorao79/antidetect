@@ -157,6 +157,13 @@ Fork-specific rules:
 - The camera and microphone prompt at launch is offered once (`src/lib/permission-prompt.ts`);
   Settings requests them afterwards. An ad-hoc signed build is a new app to macOS after every
   rebuild, so a grant given to an earlier build does not carry over.
+- Closing a profile's last window ends the profile (`camoufox/last_window.rs`,
+  `last_window.js`). On macOS a browser outlives its last window, and Firefox keeps a last
+  window for restoring only on other systems, so the close button lost the tabs while the
+  browser kept running and Owl still showed the profile as started. A hook in the build's
+  camoufox.cfg (Firefox autoconfig, unsandboxed by `general.config.sandbox_enabled` in
+  `defaults/pref/owl.js`) turns the close button and closing the last tab into the same quit
+  Owl's stop asks for; both files are brought up to date before every launch.
 - Bundled fonts on macOS (`camoufox/bundled_fonts.rs`). Camoufox carries the fonts of every OS
   it poses as in `Resources/fonts` (`gfx.bundled-fonts.activate`), among them other versions of
   fonts this Mac has (SF, Helvetica, Arial, Georgia: 476 files on macOS 26). A profile posing as

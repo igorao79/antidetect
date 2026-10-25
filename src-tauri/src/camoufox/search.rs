@@ -52,13 +52,11 @@ fn search_engines_policy() -> serde_json::Value {
 
 /// Where Firefox reads the policies of the build at `executable`.
 fn policies_path(executable: &Path) -> Option<PathBuf> {
-  let dir = executable.parent()?;
-  let distribution = if cfg!(target_os = "macos") {
-    dir.parent()?.join("Resources").join("distribution")
-  } else {
-    dir.join("distribution")
-  };
-  Some(distribution.join("policies.json"))
+  Some(
+    super::resources_dir(executable)?
+      .join("distribution")
+      .join("policies.json"),
+  )
 }
 
 /// Give the build at `executable` real search engines, keeping its other
@@ -84,14 +82,7 @@ pub fn ensure_search_engines(executable: &Path) {
 
   let written = serde_json::to_string_pretty(&document)
     .map_err(std::io::Error::other)
-    .and_then(|text| {
-      if let Some(dir) = path.parent() {
-        std::fs::create_dir_all(dir)?;
-      }
-      let staged = path.with_extension(format!("json.{}", std::process::id()));
-      std::fs::write(&staged, text)?;
-      std::fs::rename(&staged, &path)
-    });
+    .and_then(|text| super::write_atomically(&path, &text));
   match written {
     Ok(()) => log::info!("Set Camoufox search engines in {}", path.display()),
     Err(e) => log::warn!(

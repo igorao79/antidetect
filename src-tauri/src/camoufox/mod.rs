@@ -16,6 +16,7 @@ pub mod env_vars;
 pub mod fingerprint;
 pub mod fonts;
 pub mod geolocation;
+pub mod last_window;
 pub mod presets;
 pub mod search;
 pub mod webgl;
@@ -34,6 +35,30 @@ pub use geolocation::{
   GeolocationError, Locale, LocaleSelector,
 };
 pub use webgl::{sample_webgl, WebGLData, WebGLError};
+
+/// The directory that holds a Camoufox build's resources (camoufox.cfg,
+/// `distribution/`, `defaults/pref/`, `fonts/`): `Contents/Resources` of the
+/// macOS app, the executable's own directory elsewhere.
+pub(crate) fn resources_dir(executable: &std::path::Path) -> Option<std::path::PathBuf> {
+  let dir = executable.parent()?;
+  Some(if cfg!(target_os = "macos") {
+    dir.parent()?.join("Resources")
+  } else {
+    dir.to_path_buf()
+  })
+}
+
+/// Replace a file of a Camoufox build through a file beside it, so a profile
+/// of the same build starting at that moment reads the old or the new one.
+pub(crate) fn write_atomically(path: &std::path::Path, contents: &str) -> std::io::Result<()> {
+  if let Some(dir) = path.parent() {
+    std::fs::create_dir_all(dir)?;
+  }
+  let mut staged = path.as_os_str().to_owned();
+  staged.push(format!(".owl-{}", std::process::id()));
+  std::fs::write(&staged, contents)?;
+  std::fs::rename(&staged, path)
+}
 
 /// Unified error type for all Camoufox operations.
 #[derive(Debug, thiserror::Error)]

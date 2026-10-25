@@ -15,15 +15,10 @@
 //! shadowed files go back and the check runs again.
 
 use std::collections::HashSet;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 const SHADOWED: &str = "fonts-shadowed";
 const MARKER: &str = ".owl-checked";
-
-/// The `Resources` directory of the build at `executable`.
-fn resources_dir(executable: &Path) -> Option<PathBuf> {
-  Some(executable.parent()?.parent()?.join("Resources"))
-}
 
 fn macos_build() -> String {
   std::fs::read_to_string("/System/Library/CoreServices/SystemVersion.plist")
@@ -116,7 +111,7 @@ pub fn shadow_installed_fonts(executable: &Path) {
   if !cfg!(target_os = "macos") {
     return;
   }
-  let Some(resources) = resources_dir(executable) else {
+  let Some(resources) = super::resources_dir(executable) else {
     return;
   };
   if !resources.join("fonts").is_dir() {
