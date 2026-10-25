@@ -59,10 +59,18 @@ if gh release view "$tag" -R "$repo" > /dev/null 2>&1; then
   exit 1
 fi
 
-# STABLE_RELEASE makes the build a `v<version>` one, which takes updates;
-# without it a build calls itself dev-<version> and never updates.
+# STABLE_RELEASE makes the build a stable one, which takes updates; without it
+# a build calls itself dev-<version> and never updates. BUILD_TAG names the
+# version outright: on GitHub's runner build.rs would otherwise take
+# GITHUB_REF_NAME, the branch, and the app and donut-proxy would call
+# themselves `main-antidetect`.
 env -u HTTP_PROXY -u HTTPS_PROXY -u http_proxy -u https_proxy -u ALL_PROXY -u all_proxy \
-  STABLE_RELEASE=1 CARGO_INCREMENTAL=0 pnpm tauri build
+  STABLE_RELEASE=1 BUILD_TAG="$tag" CARGO_INCREMENTAL=0 pnpm tauri build
+proxy_version=$(src-tauri/target/release/donut-proxy --version)
+if [ "$proxy_version" != "donut-proxy $tag" ]; then
+  echo "The build calls itself \"$proxy_version\", not $tag." >&2
+  exit 1
+fi
 
 bundle=src-tauri/target/release/bundle/dmg
 dmg="Owl_${version}_aarch64.dmg"
