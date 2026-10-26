@@ -11,14 +11,22 @@
 //! are moved to `Resources/fonts-shadowed`, which Camoufox does not read; the
 //! installed font serves both. Fonts this Mac does not have stay bundled.
 //!
-//! The check runs once per build and macOS version; after a macOS update the
-//! shadowed files go back and the check runs again.
+//! The check runs once per build, macOS version and version of the check;
+//! after a macOS update the shadowed files go back and the check runs again.
 
 use std::collections::HashSet;
 use std::path::Path;
 
 const SHADOWED: &str = "fonts-shadowed";
 const MARKER: &str = ".owl-checked";
+/// Raised when the check finds more than before, so builds checked by an
+/// earlier one are checked again.
+const CHECK_VERSION: u32 = 2;
+/// System fonts outside the folders `fontdb` reads: macOS 26 keeps PingFang,
+/// the Chinese and Japanese fallback, here, and the bundled copy of it drew
+/// those scripts as other characters.
+const RESERVED_SYSTEM_FONTS: &str =
+  "/System/Library/PrivateFrameworks/FontServices.framework/Resources/Reserved";
 
 fn macos_build() -> String {
   std::fs::read_to_string("/System/Library/CoreServices/SystemVersion.plist")
@@ -36,6 +44,7 @@ fn macos_build() -> String {
 fn installed_fonts() -> (HashSet<String>, HashSet<String>) {
   let mut db = fontdb::Database::new();
   db.load_system_fonts();
+  db.load_fonts_dir(RESERVED_SYSTEM_FONTS);
   let mut names = HashSet::new();
   let mut files = HashSet::new();
   for face in db.faces() {
@@ -118,7 +127,7 @@ pub fn shadow_installed_fonts(executable: &Path) {
     return;
   }
   let marker = resources.join(SHADOWED).join(MARKER);
-  let build = macos_build();
+  let build = format!("{} check {CHECK_VERSION}", macos_build());
   if std::fs::read_to_string(&marker).is_ok_and(|done| done == build) {
     return;
   }
@@ -183,5 +192,11 @@ mod tests {
   fn finds_this_macs_interface_font() {
     let (_, files) = installed_fonts();
     assert!(files.contains("sfns.ttf"));
+    if Path::new(RESERVED_SYSTEM_FONTS)
+      .join("PingFangUI.ttc")
+      .exists()
+    {
+      assert!(files.contains("pingfangui.ttc"));
+    }
   }
 }

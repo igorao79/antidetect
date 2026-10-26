@@ -877,6 +877,7 @@ impl CamoufoxManager {
         "extensions.startupScanScopes",
         "browser.sessionhistory.max_entries",
         "browser.sessionhistory.max_total_viewers",
+        "layers.gpu-process.enabled",
       ];
       let restores_session = override_profile_path.is_none();
       if restores_session {
@@ -923,6 +924,16 @@ impl CamoufoxManager {
         "user_pref(\"xpinstall.signatures.required\", false);\n\
          user_pref(\"extensions.startupScanScopes\", 1);\n",
       );
+
+      // On macOS WebRender draws in a GPU process, where the fonts Camoufox
+      // carries (activated in the parent and content processes only) are
+      // looked up by name among the system's. A profile posing as another OS
+      // shapes Chinese and Japanese with bundled fonts this Mac lacks, so the
+      // GPU process drew other fonts' glyphs. Drawing in the parent process,
+      // which has them, renders them; the page sees no difference.
+      if cfg!(target_os = "macos") {
+        prefs.push_str("user_pref(\"layers.gpu-process.enabled\", false);\n");
+      }
 
       // Disable HTTP/3 / QUIC. Camoufox always sits behind the local
       // donut-proxy, and Firefox-150's QUIC stack bypasses configured HTTP

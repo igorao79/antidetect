@@ -172,7 +172,12 @@ Fork-specific rules:
   as Cyrillic showed other characters. Before a launch those files move to
   `Resources/fonts-shadowed` once per build and macOS version (`.owl-checked` holds the build);
   fonts the Mac lacks (Calibri, Segoe UI) stay bundled. `drawWindow` renders correctly either
-  way, so only a screenshot of the window shows it.
+  way, so only a screenshot of the window shows it. The check also reads the hidden
+  `FontServices.framework/Resources/Reserved` (PingFang on macOS 26). Fonts only the bundle has
+  (Noto Sans SC/JP, Microsoft YaHei, Yu Gothic) broke in the same way, Chinese and Japanese
+  above all, because WebRender's GPU process does not have the bundled fonts the parent
+  activates; on macOS every launch writes `layers.gpu-process.enabled` false to `user.js`, so
+  the parent draws.
 - Address-bar search (`camoufox/search.rs`). The Camoufox build has no search engines: its
   configuration carries one inert engine, "None", at `http://127.0.0.1/`, and its
   `distribution/policies.json` makes it the default, so a search typed in the address bar
