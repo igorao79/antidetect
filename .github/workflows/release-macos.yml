@@ -33,6 +33,13 @@ jobs:
   release:
     runs-on: macos-15
     timeout-minutes: 120
+    env:
+      # The release profile's single codegen unit took the runner's three
+      # cores about 28 minutes; sixteen compile in parallel, with thin LTO
+      # still joining them, for an app that is barely slower. Set for the
+      # whole job, so rust-cache's key, which hashes CARGO_* variables, tells
+      # these builds' dependencies from the ones compiled with one unit.
+      CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,8 +59,19 @@ jobs:
         with:
           workspaces: src-tauri -> target
           shared-key: release-macos
+          # A key that already exists is never saved again, so a cache of
+          # other settings came back at every run and everything compiled
+          # anew; a new prefix starts over.
+          prefix-key: v1-rust
           # A run that fails at notarization keeps what it compiled.
           cache-on-failure: true
+
+      # Next.js reported "No build cache found" and took five minutes.
+      - uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('src/**') }}
+          restore-keys: nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
 
       - run: pnpm install --frozen-lockfile
 
@@ -88,10 +106,6 @@ jobs:
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           GH_TOKEN: ${{ github.token }}
-          # The release profile's single codegen unit took the runner's three
-          # cores about 28 minutes; sixteen compile in parallel, with thin LTO
-          # still joining them, for an app that is barely slower.
-          CARGO_PROFILE_RELEASE_CODEGEN_UNITS: "16"
         run: scripts/release-macos.sh
 
       - name: Remove the signing material
