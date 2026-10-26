@@ -276,8 +276,7 @@
     "newProfile": "Novo",
     "donutLogo": "Logotipo do Owl",
     "scrollGroupsLeft": "Rolar grupos para a esquerda",
-    "scrollGroupsRight": "Rolar grupos para a direita",
-    "manageGroups": "Gerenciar grupos"
+    "scrollGroupsRight": "Rolar grupos para a direita"
   },
   "search": {
     "helpLabel": "Sintaxe de pesquisa",
@@ -987,7 +986,7 @@
     },
     "server": {
       "title": "API do servidor Owl",
-      "notJoined": "Entre em um servidor Owl na página Servidor para usar a API dele.",
+      "notJoined": "Entre em um servidor Owl na aba “Servidor” para usar a API dele.",
       "description": "Scripts gerenciam a equipe {{name}} pela API do servidor: membros, convites, os perfis compartilhados e quem está com cada um aberto. Uma chave nunca chega aos dados sincronizados dos perfis.",
       "addressCopied": "Endereço do servidor copiado",
       "keys": "Chaves de API",
@@ -1017,7 +1016,7 @@
     },
     "serverLink": {
       "title": "API do servidor Owl “{{name}}”",
-      "description": "As chaves para scripts que leem membros, convites e perfis compartilhados ficam na página “Servidor”.",
+      "description": "As chaves para scripts que leem membros, convites e perfis compartilhados ficam na aba “Servidor”.",
       "open": "Abrir"
     }
   },

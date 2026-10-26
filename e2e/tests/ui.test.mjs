@@ -53,10 +53,10 @@ const THEME_VARIABLES = [
 const DRACULA_THEME = THEMES.find((theme) => theme.id === "dracula").colors;
 const AYU_LIGHT_THEME = THEMES.find((theme) => theme.id === "ayu-light").colors;
 
-/** Groups have no rail item (fork): they open from the profiles header. */
+/** Groups have no rail item (fork): they are the profiles page's second tab. */
 async function openGroups(app) {
   await app.clickSelector('[aria-label="Profiles"]');
-  await app.clickSelector('[aria-label="Manage groups"]');
+  await app.clickText("Groups", { exact: false, roles: ["tab"] });
 }
 
 async function tableRows(app, tableId) {
@@ -1580,7 +1580,7 @@ test("soft table and creation surfaces stay quiet and readable in every theme", 
     { seedDownloadedBrowser: true },
   );
 });
-test("the integrations page shows the Local API, links to the server API and never names remote control for a regular desktop", async () => {
+test("the integrations page holds the Local API and the Owl server and never names remote control for a regular desktop", async () => {
   await withApp("ui-integrations", async (app) => {
     const modifier =
       process.platform === "darwin" ? { meta: true } : { ctrl: true };
@@ -1589,14 +1589,14 @@ test("the integrations page shows the Local API, links to the server API and nev
 
     // Local MCP is gone, and remote control is an Enterprise feature that a
     // desktop without the entitlement is never told about. This session is
-    // signed out, so any tab here means the Remote MCP gate opened for
-    // everyone: the Local API is the page's only content (fork), and the
-    // Owl server's API is a link to the Server page.
+    // signed out, so a Remote MCP tab here means the gate opened for
+    // everyone. The Owl server is the page's second tab (fork).
     const tabs = async () =>
       app.execute(
         `return [...document.querySelectorAll('[role="tab"]')].map((node) => node.textContent.trim());`,
       );
-    assert.deepEqual(await tabs(), []);
+    const offered = [en.integrations.tabApi, en.rail.workspace];
+    assert.deepEqual(await tabs(), offered);
     // The whole document, not just the painted text: a hidden trigger or an
     // unmounted-looking panel is still a mention.
     const html = await app.html();
@@ -1617,18 +1617,33 @@ test("the integrations page shows the Local API, links to the server API and nev
       "opening the page must not open the bridge",
     );
 
-    // Mod+I flips to Remote MCP only for an entitled account, so here it
-    // never brings a tab up.
+    // Mod+I flips between the API and the Owl server, never to Remote MCP.
+    const activeTab = async () =>
+      app.execute(
+        `return document.querySelector('[role="tab"][data-state="active"]')?.textContent.trim() ?? null;`,
+      );
+    assert.equal(await activeTab(), en.integrations.tabApi);
     await app.pressShortcut({ key: "i", ...modifier });
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    assert.deepEqual(await tabs(), []);
+    await app.waitFor(async () => (await activeTab()) === en.rail.workspace, {
+      description: "Mod+I opens the Server tab",
+    });
+    await app.waitForText(en.workspace.joinTitle);
+    await app.pressShortcut({ key: "i", ...modifier });
+    await app.waitFor(
+      async () => (await activeTab()) === en.integrations.tabApi,
+      { description: "Mod+I comes back to the API tab" },
+    );
+    assert.deepEqual(await tabs(), offered);
 
-    // Without a joined server the link says where to join one and goes there.
+    // Without a joined server the API tab's card says where to join one and
+    // opens the Server tab.
     await app.waitForText(en.integrations.server.notJoined);
     await app.clickText(en.integrations.serverLink.open, {
       roles: ["button"],
     });
-    await app.waitForText(en.workspace.joinTitle);
+    await app.waitFor(async () => (await activeTab()) === en.rail.workspace, {
+      description: "the card opens the Server tab",
+    });
 
     await dismissSurface(app);
   });
@@ -3527,6 +3542,7 @@ test("the navigation names every destination in a wide window and folds to icons
     );
     assert.ok(destinations.includes(en.rail.integrations), `${destinations}`);
     assert.ok(!destinations.includes(en.rail.groups), `${destinations}`);
+    assert.ok(!destinations.includes(en.rail.workspace), `${destinations}`);
     assert.ok(!destinations.includes(en.rail.cookieBot), `${destinations}`);
     assert.ok(!destinations.includes(en.rail.agent), `${destinations}`);
     assert.ok(!destinations.includes(en.rail.account), `${destinations}`);

@@ -9,7 +9,13 @@ import {
 } from "@tanstack/react-table/legacy";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { GoPlus } from "react-icons/go";
 import {
@@ -114,6 +120,8 @@ interface GroupManagementDialogProps {
   onClose: () => void;
   onGroupManagementComplete: () => void;
   subPage?: boolean;
+  /** Drawn in place of the groups count, such as the profiles | groups switch. */
+  headerTabs?: ReactNode;
 }
 
 export function GroupManagementDialog({
@@ -121,6 +129,7 @@ export function GroupManagementDialog({
   onClose,
   onGroupManagementComplete,
   subPage,
+  headerTabs,
 }: GroupManagementDialogProps) {
   const { t } = useTranslation();
   const { profiles: referencedProfiles, failed: referencesFailed } =
@@ -605,18 +614,20 @@ export function GroupManagementDialog({
 
           <div className="@container flex min-h-0 w-full flex-1 flex-col">
             <div className="flex shrink-0 flex-wrap items-center justify-between gap-2">
-              <div
-                data-slot="group-summary-pill"
-                className="inline-flex h-7 items-center justify-center gap-1.5 rounded-md bg-accent px-3 text-sm font-medium whitespace-nowrap text-accent-foreground"
-              >
-                <span>{t("groups.pageTitle")}</span>
-                <span
-                  data-slot="group-summary-count"
-                  className="text-xs tabular-nums"
+              {headerTabs ?? (
+                <div
+                  data-slot="group-summary-pill"
+                  className="inline-flex h-7 items-center justify-center gap-1.5 rounded-md bg-accent px-3 text-sm font-medium whitespace-nowrap text-accent-foreground"
                 >
-                  {groups.length}
-                </span>
-              </div>
+                  <span>{t("groups.pageTitle")}</span>
+                  <span
+                    data-slot="group-summary-count"
+                    className="text-xs tabular-nums"
+                  >
+                    {groups.length}
+                  </span>
+                </div>
+              )}
               <RippleButton
                 size="sm"
                 onClick={() => {

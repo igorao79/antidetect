@@ -275,8 +275,7 @@
     "newProfile": "新規",
     "donutLogo": "Owl ロゴ",
     "scrollGroupsLeft": "グループを左へスクロール",
-    "scrollGroupsRight": "グループを右へスクロール",
-    "manageGroups": "グループを管理"
+    "scrollGroupsRight": "グループを右へスクロール"
   },
   "search": {
     "helpLabel": "検索構文",
@@ -983,7 +982,7 @@
     },
     "server": {
       "title": "Owl サーバー API",
-      "notJoined": "API を使うには、サーバーページで Owl サーバーに参加してください。",
+      "notJoined": "API を使うには「サーバー」タブで Owl サーバーに参加してください。",
       "description": "スクリプトはサーバーの API で {{name}} チームを管理します。メンバー、招待、共有プロファイル、誰がどれを開いているかを扱えます。キーで同期済みのプロファイルデータにアクセスすることはできません。",
       "addressCopied": "サーバーのアドレスをコピーしました",
       "keys": "API キー",
@@ -1013,7 +1012,7 @@
     },
     "serverLink": {
       "title": "Owl サーバー「{{name}}」の API",
-      "description": "メンバー、招待、共有プロファイルを読み取るスクリプト用のキーは「サーバー」ページにあります。",
+      "description": "メンバー、招待、共有プロファイルを読み取るスクリプト用のキーは「サーバー」タブにあります。",
       "open": "開く"
     }
   },

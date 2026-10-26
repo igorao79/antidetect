@@ -45,6 +45,7 @@ import {
 } from "@/components/profile-password-dialog";
 import { ProfileSelectorDialog } from "@/components/profile-selector-dialog";
 import { ProfileSyncDialog } from "@/components/profile-sync-dialog";
+import { ProfilesGroupsTabs } from "@/components/profiles-groups-tabs";
 import { ProxyAssignmentDialog } from "@/components/proxy-assignment-dialog";
 import { ProxyDistributionDialog } from "@/components/proxy-distribution-dialog";
 import { ProxyManagementDialog } from "@/components/proxy-management-dialog";
@@ -63,10 +64,7 @@ import { WayfernConfigDialog } from "@/components/wayfern-config-dialog";
 import { WayfernTermsDialog } from "@/components/wayfern-terms-dialog";
 import { WelcomeDialog } from "@/components/welcome-dialog";
 import { WindowResizeWarningDialog } from "@/components/window-resize-warning-dialog";
-import {
-  useWorkspaceJoinLink,
-  WorkspacePage,
-} from "@/components/workspace-page";
+import { useWorkspaceJoinLink } from "@/components/workspace-page";
 import { WorkspaceShareDialog } from "@/components/workspace-share-dialog";
 import { useAgentConsole } from "@/hooks/use-agent-console";
 import { useAppUpdateNotifications } from "@/hooks/use-app-update-notifications";
@@ -458,7 +456,7 @@ export default function Home() {
   const [extensionManagementInitialTab, setExtensionManagementInitialTab] =
     useState<"extensions" | "groups">("extensions");
   const [integrationsInitialTab, setIntegrationsInitialTab] = useState<
-    "api" | "remote"
+    "api" | "server" | "remote"
   >("api");
   const [cookieBotDialogOpen, setCookieBotDialogOpen] = useState(false);
   const [cookieBotInitialTab, setCookieBotInitialTab] =
@@ -468,17 +466,11 @@ export default function Home() {
     useState<AgentTab>("conversation");
   const [createProfileDialogOpen, setCreateProfileDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
-  // The Server page section to scroll to, set by the Integrations page's
-  // link to the server API; every rail navigation clears it.
-  const [workspaceInitialSection, setWorkspaceInitialSection] = useState<
-    "api" | null
-  >(null);
   // A settings section to land on, set by a tip's action for one opening.
   const [settingsInitialSection, setSettingsInitialSection] = useState<
     string | null
   >(null);
   const [trashPageOpen, setTrashPageOpen] = useState(false);
-  const [workspacePageOpen, setWorkspacePageOpen] = useState(false);
   const [workspaceJoinLink, setWorkspaceJoinLink] = useState<string | null>(
     null,
   );
@@ -622,9 +614,7 @@ export default function Home() {
     setCookieBotDialogOpen(false);
     setAgentDialogOpen(false);
     setTrashPageOpen(false);
-    setWorkspacePageOpen(false);
     setSettingsInitialSection(null);
-    setWorkspaceInitialSection(null);
 
     setCurrentPage(page);
     switch (page) {
@@ -650,6 +640,7 @@ export default function Home() {
         setAgentDialogOpen(true);
         break;
       case "integrations":
+        setIntegrationsInitialTab("api");
         setIntegrationsDialogOpen(true);
         break;
       case "import":
@@ -668,7 +659,10 @@ export default function Home() {
         setTrashPageOpen(true);
         break;
       case "workspace":
-        setWorkspacePageOpen(true);
+        // The Owl server is the Integrations page's Server tab (fork).
+        setCurrentPage("integrations");
+        setIntegrationsInitialTab("server");
+        setIntegrationsDialogOpen(true);
         break;
       case "shortcuts":
         // Plain page render — nothing else to open.
@@ -790,13 +784,15 @@ export default function Home() {
         }
         case "goIntegrations": {
           // Mod+I: flip the tabs when already on integrations. The Remote MCP
-          // tab only exists for a user entitled to remote control, so everyone
-          // else stays on the API tab.
+          // tab only exists for a user entitled to remote control; everyone
+          // else flips between the API and the Owl server (fork).
           if (currentPage === "integrations") {
             setIntegrationsInitialTab((cur) =>
-              cur === "api" && canUseRemoteControl(cloudUser)
-                ? "remote"
-                : "api",
+              cur !== "api"
+                ? "api"
+                : canUseRemoteControl(cloudUser)
+                  ? "remote"
+                  : "server",
             );
           } else {
             handleRailNavigate("integrations");
@@ -2376,7 +2372,6 @@ export default function Home() {
           totalProfiles={profiles.length}
           selectedGroupId={selectedGroupId}
           onGroupSelect={handleSelectGroup}
-          onManageGroups={() => handleRailNavigate("groups")}
           pageTitle={subPageTitle}
         />
         <div className="flex min-h-0 flex-1">
@@ -2396,6 +2391,14 @@ export default function Home() {
                 data-table-id="profiles"
                 className="flex min-h-0 flex-1 flex-col px-3 pt-2.5"
               >
+                <div className="mb-2 shrink-0">
+                  <ProfilesGroupsTabs
+                    value="profiles"
+                    profileCount={profiles.length}
+                    groupCount={groupsData.length}
+                    onSelect={handleRailNavigate}
+                  />
+                </div>
                 <SynchronizerPanel
                   sessions={syncSessions}
                   onSessionChanged={applySession}
@@ -2514,10 +2517,7 @@ export default function Home() {
                 }}
                 subPage={currentPage === "integrations"}
                 initialTab={integrationsInitialTab}
-                onOpenServerApi={() => {
-                  handleRailNavigate("workspace");
-                  setWorkspaceInitialSection("api");
-                }}
+                initialLink={workspaceJoinLink}
               />
             )}
 
@@ -2542,6 +2542,16 @@ export default function Home() {
                 }}
                 onGroupManagementComplete={handleGroupManagementComplete}
                 subPage={currentPage === "groups"}
+                headerTabs={
+                  currentPage === "groups" ? (
+                    <ProfilesGroupsTabs
+                      value="groups"
+                      profileCount={profiles.length}
+                      groupCount={groupsData.length}
+                      onSelect={handleRailNavigate}
+                    />
+                  ) : undefined
+                }
               />
             )}
 
@@ -2633,19 +2643,6 @@ export default function Home() {
                   setCurrentPage("profiles");
                 }}
                 subPage={currentPage === "trash"}
-              />
-            )}
-
-            {workspacePageOpen && (
-              <WorkspacePage
-                isOpen={workspacePageOpen}
-                onClose={() => {
-                  setWorkspacePageOpen(false);
-                  setCurrentPage("profiles");
-                }}
-                subPage={currentPage === "workspace"}
-                initialLink={workspaceJoinLink}
-                initialSection={workspaceInitialSection}
               />
             )}
 

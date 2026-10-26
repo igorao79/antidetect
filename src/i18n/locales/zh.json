@@ -275,8 +275,7 @@
     "newProfile": "新建",
     "donutLogo": "Owl 标识",
     "scrollGroupsLeft": "向左滚动分组",
-    "scrollGroupsRight": "向右滚动分组",
-    "manageGroups": "管理分组"
+    "scrollGroupsRight": "向右滚动分组"
   },
   "search": {
     "helpLabel": "搜索语法",
@@ -983,7 +982,7 @@
     },
     "server": {
       "title": "Owl 服务器 API",
-      "notJoined": "请在“服务器”页面加入一个 Owl 服务器以使用其 API。",
+      "notJoined": "请在“服务器”标签页加入 Owl 服务器以使用其 API。",
       "description": "脚本通过服务器 API 管理 {{name}} 团队：成员、邀请、共享配置文件以及谁打开了哪一个。密钥永远无法访问已同步的配置文件数据。",
       "addressCopied": "已复制服务器地址",
       "keys": "API 密钥",
@@ -1013,7 +1012,7 @@
     },
     "serverLink": {
       "title": "Owl 服务器“{{name}}”的 API",
-      "description": "用于读取成员、邀请和共享配置文件的脚本密钥位于“服务器”页面。",
+      "description": "用于读取成员、邀请和共享配置文件的脚本密钥位于“服务器”标签页。",
       "open": "打开"
     }
   },

@@ -49,6 +49,7 @@ import {
   StatusLight,
 } from "@/components/ui/settings-panel";
 import { ServerApiLink } from "@/components/workspace-api-panel";
+import { WorkspaceContent } from "@/components/workspace-page";
 import { useCloudAuth } from "@/hooks/use-cloud-auth";
 import { useWayfernTerms } from "@/hooks/use-wayfern-terms";
 import {
@@ -86,7 +87,7 @@ interface AppSettings {
   mcp_remote_key?: string | null;
 }
 
-type IntegrationsTab = "api" | "remote";
+type IntegrationsTab = "api" | "server" | "remote";
 
 interface IntegrationsDialogProps {
   isOpen: boolean;
@@ -94,8 +95,8 @@ interface IntegrationsDialogProps {
   subPage?: boolean;
   /** Which tab is displayed when the dialog mounts; defaults to "api". */
   initialTab?: IntegrationsTab;
-  /** Opens the Server page at its API for scripts. */
-  onOpenServerApi?: () => void;
+  /** An `owl://join` invite link for the Server tab's join form (fork). */
+  initialLink?: string | null;
 }
 
 function categoryLabel(
@@ -119,7 +120,7 @@ export function IntegrationsDialog({
   onClose,
   subPage,
   initialTab = "api",
-  onOpenServerApi,
+  initialLink,
 }: IntegrationsDialogProps) {
   const { t } = useTranslation();
   const [settings, setSettings] = useState<AppSettings>({
@@ -147,6 +148,8 @@ export function IntegrationsDialog({
   const apiTokenId = useId();
   const remoteSwitchId = useId();
   const [activeTab, setActiveTab] = useState<IntegrationsTab>(initialTab);
+  // The Server tab section the API tab's server card scrolls to (fork).
+  const [serverSection, setServerSection] = useState<"api" | null>(null);
   // Mod+I re-targets an open dialog through `initialTab`. The tabs are
   // controlled (see `shownTab`), so a remount would not adopt the new value;
   // this is React's adjust-state-on-prop-change form of the same thing.
@@ -722,17 +725,27 @@ export function IntegrationsDialog({
               value={shownTab}
               onValueChange={(value) => setActiveTab(value as IntegrationsTab)}
             >
-              {remoteTabShown && (
-                <AnimatedTabsList>
-                  <AnimatedTabsTrigger value="api">
-                    {t("integrations.tabApi")}
-                  </AnimatedTabsTrigger>
+              <AnimatedTabsList>
+                <AnimatedTabsTrigger value="api">
+                  {t("integrations.tabApi")}
+                </AnimatedTabsTrigger>
+                <AnimatedTabsTrigger value="server">
+                  {t("rail.workspace")}
+                </AnimatedTabsTrigger>
+                {remoteTabShown && (
                   <AnimatedTabsTrigger value="remote">
                     <LuCloud className="size-3.5" />
                     {t("integrations.tabRemote")}
                   </AnimatedTabsTrigger>
-                </AnimatedTabsList>
-              )}
+                )}
+              </AnimatedTabsList>
+
+              <AnimatedTabsContent value="server" className="mt-4">
+                <WorkspaceContent
+                  initialLink={initialLink}
+                  initialSection={serverSection}
+                />
+              </AnimatedTabsContent>
 
               <AnimatedTabsContent value="api" className="@container mt-4">
                 <SettingsPanel>
@@ -898,7 +911,12 @@ export function IntegrationsDialog({
                 />
 
                 <div className="mt-4">
-                  <ServerApiLink onOpen={onOpenServerApi} />
+                  <ServerApiLink
+                    onOpen={() => {
+                      setServerSection("api");
+                      setActiveTab("server");
+                    }}
+                  />
                 </div>
 
                 <CodeExamplesDialog

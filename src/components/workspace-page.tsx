@@ -16,12 +16,6 @@ import { DeleteConfirmationDialog } from "@/components/delete-confirmation-dialo
 import { LoadingButton } from "@/components/loading-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -39,26 +33,22 @@ import {
 } from "@/hooks/use-workspace";
 import { translateBackendError } from "@/lib/backend-errors";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
-import { cn } from "@/lib/utils";
 
-interface WorkspacePageProps {
-  isOpen: boolean;
-  onClose: () => void;
-  subPage?: boolean;
+interface WorkspaceContentProps {
   /** An invite link opened from outside the app, to fill the join form. */
   initialLink?: string | null;
   /** A section to scroll to once it is shown: the API for scripts. */
   initialSection?: "api" | null;
 }
 
-/** The Owl server this app joins: invites, members, the API, leaving. */
-export function WorkspacePage({
-  isOpen,
-  onClose,
-  subPage,
+/**
+ * The Owl server this app joins: invites, members, the API, leaving. The
+ * Integrations page shows it as its Server tab (fork).
+ */
+export function WorkspaceContent({
   initialLink,
   initialSection,
-}: WorkspacePageProps) {
+}: WorkspaceContentProps) {
   const { t } = useTranslation();
   const { workspace, loaded } = useWorkspace();
   const [adding, setAdding] = useState(false);
@@ -74,60 +64,35 @@ export function WorkspacePage({
   }, [initialLink]);
 
   return (
-    <Dialog
-      open={isOpen}
-      onOpenChange={(open) => {
-        if (!open) onClose();
-      }}
-      subPage={subPage}
-    >
-      <DialogContent className="flex max-h-[calc(100vh-5rem)] max-w-3xl flex-col">
-        {!subPage && (
-          <DialogHeader className="shrink-0">
-            <DialogTitle>{t("workspace.title")}</DialogTitle>
-          </DialogHeader>
-        )}
-        <div className="min-h-0 flex-1 overflow-y-auto">
-          <div
-            className={cn(
-              "flex flex-col gap-4",
-              subPage && "mx-auto w-full max-w-4xl",
-            )}
-          >
-            {loaded && (
-              <WorkspaceServerList
-                adding={adding}
-                onAdd={() => setAdding(true)}
-              />
-            )}
-            {!loaded ? null : workspace && !adding ? (
-              <JoinedServer
-                key={workspace.server}
-                scrollToApi={initialSection === "api"}
-              />
-            ) : (
-              <>
-                {workspace && (
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-sm font-medium">
-                      {t("workspace.servers.add")}
-                    </h3>
-                    <Button
-                      variant="subtle"
-                      size="sm"
-                      onClick={() => setAdding(false)}
-                    >
-                      {t("common.buttons.cancel")}
-                    </Button>
-                  </div>
-                )}
-                <JoinForm initialLink={initialLink ?? null} />
-              </>
-            )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <div className="flex flex-col gap-4">
+      {loaded && (
+        <WorkspaceServerList adding={adding} onAdd={() => setAdding(true)} />
+      )}
+      {!loaded ? null : workspace && !adding ? (
+        <JoinedServer
+          key={workspace.server}
+          scrollToApi={initialSection === "api"}
+        />
+      ) : (
+        <>
+          {workspace && (
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-medium">
+                {t("workspace.servers.add")}
+              </h3>
+              <Button
+                variant="subtle"
+                size="sm"
+                onClick={() => setAdding(false)}
+              >
+                {t("common.buttons.cancel")}
+              </Button>
+            </div>
+          )}
+          <JoinForm initialLink={initialLink ?? null} />
+        </>
+      )}
+    </div>
   );
 }
 

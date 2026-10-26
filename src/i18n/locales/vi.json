@@ -275,8 +275,7 @@
     "newProfile": "Mới",
     "donutLogo": "Logo Owl",
     "scrollGroupsLeft": "Cuộn nhóm sang trái",
-    "scrollGroupsRight": "Cuộn nhóm sang phải",
-    "manageGroups": "Quản lý nhóm"
+    "scrollGroupsRight": "Cuộn nhóm sang phải"
   },
   "search": {
     "helpLabel": "Cú pháp tìm kiếm",
@@ -983,7 +982,7 @@
     },
     "server": {
       "title": "API máy chủ Owl",
-      "notJoined": "Hãy tham gia một máy chủ Owl ở trang Máy chủ để dùng API của nó.",
+      "notJoined": "Hãy tham gia một máy chủ Owl ở thẻ “Máy chủ” để dùng API của nó.",
       "description": "Script quản lý nhóm {{name}} qua API của máy chủ: thành viên, lời mời, các hồ sơ dùng chung và ai đang mở hồ sơ nào. Khóa không bao giờ chạm tới dữ liệu hồ sơ đã đồng bộ.",
       "addressCopied": "Đã sao chép địa chỉ máy chủ",
       "keys": "Khóa API",
@@ -1013,7 +1012,7 @@
     },
     "serverLink": {
       "title": "API của máy chủ Owl “{{name}}”",
-      "description": "Khóa cho các script đọc thành viên, lời mời và hồ sơ được chia sẻ nằm ở trang “Máy chủ”.",
+      "description": "Khóa cho các script đọc thành viên, lời mời và hồ sơ được chia sẻ nằm ở thẻ “Máy chủ”.",
       "open": "Mở"
     }
   },

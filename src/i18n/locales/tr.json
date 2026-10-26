@@ -275,8 +275,7 @@
     "newProfile": "Yeni",
     "donutLogo": "Owl logosu",
     "scrollGroupsLeft": "Grupları sola kaydır",
-    "scrollGroupsRight": "Grupları sağa kaydır",
-    "manageGroups": "Grupları yönet"
+    "scrollGroupsRight": "Grupları sağa kaydır"
   },
   "search": {
     "helpLabel": "Arama söz dizimi",
@@ -983,7 +982,7 @@
     },
     "server": {
       "title": "Owl sunucu API'si",
-      "notJoined": "API'sini kullanmak için Sunucu sayfasından bir Owl sunucusuna katılın.",
+      "notJoined": "API'sini kullanmak için “Sunucu” sekmesinden bir Owl sunucusuna katılın.",
       "description": "Betikler {{name}} ekibini sunucunun API'si üzerinden yönetir: üyeler, davetler, paylaşılan profiller ve hangisini kimin açtığı. Anahtar, eşitlenen profil verilerine asla ulaşmaz.",
       "addressCopied": "Sunucu adresi kopyalandı",
       "keys": "API anahtarları",
@@ -1013,7 +1012,7 @@
     },
     "serverLink": {
       "title": "Owl sunucusu “{{name}}” API'si",
-      "description": "Üyeleri, davetleri ve paylaşılan profilleri okuyan betikler için anahtarlar “Sunucu” sayfasında.",
+      "description": "Üyeleri, davetleri ve paylaşılan profilleri okuyan betikler için anahtarlar “Sunucu” sekmesinde.",
       "open": "Aç"
     }
   },

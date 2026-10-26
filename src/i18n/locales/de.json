@@ -275,8 +275,7 @@
     "newProfile": "Neu",
     "donutLogo": "Logo von Owl",
     "scrollGroupsLeft": "Gruppen nach links scrollen",
-    "scrollGroupsRight": "Gruppen nach rechts scrollen",
-    "manageGroups": "Gruppen verwalten"
+    "scrollGroupsRight": "Gruppen nach rechts scrollen"
   },
   "search": {
     "helpLabel": "Suchsyntax",
@@ -983,7 +982,7 @@
     },
     "server": {
       "title": "Owl-Server-API",
-      "notJoined": "Treten Sie auf der Server-Seite einem Owl-Server bei, um seine API zu nutzen.",
+      "notJoined": "Treten Sie im Tab „Server“ einem Owl-Server bei, um seine API zu nutzen.",
       "description": "Skripte verwalten das Team {{name}} über die API des Servers: Mitglieder, Einladungen, die geteilten Profile und wer welches geöffnet hat. Ein Schlüssel erreicht nie die synchronisierten Profildaten.",
       "addressCopied": "Serveradresse kopiert",
       "keys": "API-Schlüssel",
@@ -1013,7 +1012,7 @@
     },
     "serverLink": {
       "title": "API des Owl-Servers „{{name}}“",
-      "description": "Schlüssel für Skripte, die Mitglieder, Einladungen und geteilte Profile lesen, finden Sie auf der Seite „Server“.",
+      "description": "Schlüssel für Skripte, die Mitglieder, Einladungen und geteilte Profile lesen, finden Sie im Tab „Server“.",
       "open": "Öffnen"
     }
   },

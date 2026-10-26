@@ -4,7 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { GoPlus } from "react-icons/go";
-import { LuCircleHelp, LuSearch, LuSettings2, LuX } from "react-icons/lu";
+import { LuCircleHelp, LuSearch, LuX } from "react-icons/lu";
 import { useWindowDecorations } from "@/hooks/use-window-decorations";
 import { getCurrentOS } from "@/lib/browser-utils";
 import {
@@ -47,8 +47,6 @@ interface Props {
   totalProfiles: number;
   selectedGroupId: string | null;
   onGroupSelect: (groupId: string) => void;
-  /** Opens group management, which has no rail item of its own. */
-  onManageGroups?: () => void;
   pageTitle?: string;
 }
 
@@ -157,7 +155,6 @@ const HomeHeader = ({
   totalProfiles,
   selectedGroupId,
   onGroupSelect,
-  onManageGroups,
   pageTitle,
 }: Props) => {
   const { t } = useTranslation();
@@ -407,24 +404,6 @@ const HomeHeader = ({
             );
           })}
         </ScrollStrip>
-      )}
-
-      {showProfileToolbar && onManageGroups && (
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              type="button"
-              variant="subtle"
-              size="sm"
-              aria-label={t("header.manageGroups")}
-              onClick={onManageGroups}
-              className="h-7 w-7 shrink-0 p-0"
-            >
-              <LuSettings2 className="size-3.5" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>{t("header.manageGroups")}</TooltipContent>
-        </Tooltip>
       )}
 
       {!showProfileToolbar && <div className="flex-1" />}

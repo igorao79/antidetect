@@ -92,10 +92,10 @@ async function request(url, { method = "GET", token, body } = {}) {
   return { response, value };
 }
 
-/** Groups have no rail item (fork): they open from the profiles header. */
+/** Groups have no rail item (fork): they are the profiles page's second tab. */
 async function openGroups(app) {
   await app.clickSelector('[aria-label="Profiles"]');
-  await app.clickSelector('[aria-label="Manage groups"]');
+  await app.clickText("Groups", { exact: false, roles: ["tab"] });
 }
 
 async function createGroupThroughUi(app) {

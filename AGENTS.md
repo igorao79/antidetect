@@ -69,7 +69,7 @@ Fork-specific rules:
   `s16_session_restore.py` checks it; session storage comes back a moment after the
   restored page loads, and a value set from outside over BiDi is not recorded at all.
 - Own Owl server (`donut-sync/`, `workspace.rs`, `workspace-page.tsx`,
-  `workspace-share-dialog.tsx`, the "Server" page in the rail). Anyone runs one with
+  `workspace-share-dialog.tsx`, the Integrations page's Server tab). Anyone runs one with
   `docker compose up` in `donut-sync/` (one container, objects on its own disk in the
   `owl-data` volume, `STORAGE=disk`; S3 stays possible) and invites people; the first start
   logs the owner's `owl://join?server=..&code=..` link (`node dist/cli owner-link` prints a new
@@ -86,15 +86,16 @@ Fork-specific rules:
   refuses another member's `delete-prefix` of `profiles/<id>/`). Shared profiles appear on
   other members' machines as soon as the server announces them; Firefox lock files and
   `user.js` are not synced. Password encryption is not used for it yet.
-- The Owl server has an API for scripts (`workspace_api.rs`, `workspace-api-panel.tsx`, the
-  "Server API" tab in Integrations): the owner creates keys (`owlk_…`, `POST /v1/api-keys`,
+- The Owl server has an API for scripts (`workspace_api.rs`, `workspace-api-panel.tsx`,
+  the keys section of the Server tab, shown to the owner; the API tab's server card jumps
+  there): the owner creates keys (`owlk_…`, `POST /v1/api-keys`,
   only the SHA-256 on the server, the key itself sealed in the creating app under
   `workspace-api-keys/` so it can be copied again and checked). A key acts as the owner for
   members, invites, `GET /v1/profiles` (the shared profiles read from their synced
   `metadata.json`, with `shared_by` and who has each open) and `GET /v1/profile-locks`; the
   auth guard refuses it for `/v1/objects*` (synced data), `/v1/api-keys` and taking a lock.
 - An app syncs with one Owl server at a time and keeps every server it joined
-  (`workspace_servers.rs`, `workspace-server-list.tsx`, "Add server" on the Server page):
+  (`workspace_servers.rs`, `workspace-server-list.tsx`, "Add server" on the Server tab):
   `workspaces.json` lists them, each member token sealed in its own file under
   `workspace-tokens/`. Joining another server, or switching, parks what the server being
   left syncs: profiles, proxies, groups, VPNs, extensions and extension groups with sync on
@@ -102,7 +103,7 @@ Fork-specific rules:
   server's entry; switching back turns it on again, so nothing of one server reaches another.
   Leaving a server forgets it and leaves its entities as local copies with sync off. A switch
   or a leave waits while a shared profile is open (`WORKSPACE_PROFILES_RUNNING`).
-- The Server page also installs an Owl server on a VPS (`workspace_deploy.rs`,
+- The Server tab also installs an Owl server on a VPS (`workspace_deploy.rs`,
   `workspace-deploy-form.tsx`): the app logs in over SSH (password, or a key file; root, or
   sudo with or without the password), uploads the server's sources it carries
   (`build_owl_server.rs` packs `donut-sync/` into `OUT_DIR/owl-server.tar` at build time) and
@@ -157,6 +158,11 @@ Fork-specific rules:
 - The camera and microphone prompt at launch is offered once (`src/lib/permission-prompt.ts`);
   Settings requests them afterwards. An ad-hoc signed build is a new app to macOS after every
   rebuild, so a grant given to an earlier build does not carry over.
+- Navigation (`src/lib/folded-pages.ts`): the rail has Profiles, Network, Extensions and
+  Integrations. Groups are the profiles page's second tab (`profiles-groups-tabs.tsx`, the same
+  switch as Network's Proxies | VPN) and the Owl server is Integrations' Server tab
+  (`WorkspaceContent`); their pages keep their ids, so shortcuts, the palette, tips and
+  `owl://join` links still reach them, and the rail marks the page they live under.
 - Closing a profile's last window ends the profile (`camoufox/last_window.rs`,
   `last_window.js`). On macOS a browser outlives its last window, and Firefox keeps a last
   window for restoring only on other systems, so the close button lost the tabs while the
