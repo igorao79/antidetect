@@ -108,6 +108,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: scripts/release-macos.sh
 
+      # A run that built and notarized but could not publish (GitHub answered
+      # 0.33.7's release call with 403) keeps the disk image, so it can be
+      # published by hand instead of building again.
+      - name: Keep the disk image when publishing failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: owl-dmg
+          path: |
+            src-tauri/target/release/bundle/dmg/*.dmg
+            src-tauri/target/release/bundle/dmg/SHA256SUMS.txt
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Remove the signing material
         if: always()
         run: |
