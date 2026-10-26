@@ -2,7 +2,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   LuLink,
@@ -29,6 +29,7 @@ import {
   SECTION_LABEL_CLASS,
   SettingsPanel,
 } from "@/components/ui/settings-panel";
+import { WorkspaceApiPanel } from "@/components/workspace-api-panel";
 import { WorkspaceDeployForm } from "@/components/workspace-deploy-form";
 import { WorkspaceServerList } from "@/components/workspace-server-list";
 import {
@@ -46,14 +47,17 @@ interface WorkspacePageProps {
   subPage?: boolean;
   /** An invite link opened from outside the app, to fill the join form. */
   initialLink?: string | null;
+  /** A section to scroll to once it is shown: the API for scripts. */
+  initialSection?: "api" | null;
 }
 
-/** The Owl server this app joins: invites, members, leaving. */
+/** The Owl server this app joins: invites, members, the API, leaving. */
 export function WorkspacePage({
   isOpen,
   onClose,
   subPage,
   initialLink,
+  initialSection,
 }: WorkspacePageProps) {
   const { t } = useTranslation();
   const { workspace, loaded } = useWorkspace();
@@ -97,7 +101,10 @@ export function WorkspacePage({
               />
             )}
             {!loaded ? null : workspace && !adding ? (
-              <JoinedServer key={workspace.server} />
+              <JoinedServer
+                key={workspace.server}
+                scrollToApi={initialSection === "api"}
+              />
             ) : (
               <>
                 {workspace && (
@@ -209,8 +216,9 @@ function JoinForm({ initialLink }: { initialLink: string | null }) {
   );
 }
 
-function JoinedServer() {
+function JoinedServer({ scrollToApi }: { scrollToApi: boolean }) {
   const { t, i18n } = useTranslation();
+  const apiRef = useRef<HTMLDivElement>(null);
   const { workspace } = useWorkspace();
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [invites, setInvites] = useState<WorkspaceInvite[]>([]);
@@ -308,6 +316,13 @@ function JoinedServer() {
       setLeaveOpen(false);
     }
   };
+
+  const showApi = isOwner && !revoked;
+  useEffect(() => {
+    if (scrollToApi && showApi) {
+      apiRef.current?.scrollIntoView({ block: "start" });
+    }
+  }, [scrollToApi, showApi]);
 
   if (!workspace) return null;
 
@@ -430,6 +445,12 @@ function JoinedServer() {
             </ul>
           )}
         </SettingsPanel>
+      )}
+
+      {showApi && (
+        <div ref={apiRef} data-workspace-section="api" className="scroll-mt-2">
+          <WorkspaceApiPanel />
+        </div>
       )}
 
       <DeleteConfirmationDialog

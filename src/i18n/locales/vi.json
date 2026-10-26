@@ -275,7 +275,8 @@
     "newProfile": "Mới",
     "donutLogo": "Logo Owl",
     "scrollGroupsLeft": "Cuộn nhóm sang trái",
-    "scrollGroupsRight": "Cuộn nhóm sang phải"
+    "scrollGroupsRight": "Cuộn nhóm sang phải",
+    "manageGroups": "Quản lý nhóm"
   },
   "search": {
     "helpLabel": "Cú pháp tìm kiếm",
@@ -980,7 +981,6 @@
       "fxHint": "fx đọc thông tin xác thực từ DONUT_MCP_TOKEN. Hãy export biến này trong shell khởi chạy fx.",
       "fxExportCopied": "Đã sao chép dòng export"
     },
-    "tabServer": "API máy chủ",
     "server": {
       "title": "API máy chủ Owl",
       "notJoined": "Hãy tham gia một máy chủ Owl ở trang Máy chủ để dùng API của nó.",
@@ -1010,6 +1010,11 @@
         "profiles": "Hồ sơ dùng chung, ai đã chia sẻ và ai đang mở",
         "locks": "Ai đang mở hồ sơ nào"
       }
+    },
+    "serverLink": {
+      "title": "API của máy chủ Owl “{{name}}”",
+      "description": "Khóa cho các script đọc thành viên, lời mời và hồ sơ được chia sẻ nằm ở trang “Máy chủ”.",
+      "open": "Mở"
     }
   },
   "import": {

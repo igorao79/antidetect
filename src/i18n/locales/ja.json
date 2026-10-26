@@ -275,7 +275,8 @@
     "newProfile": "新規",
     "donutLogo": "Owl ロゴ",
     "scrollGroupsLeft": "グループを左へスクロール",
-    "scrollGroupsRight": "グループを右へスクロール"
+    "scrollGroupsRight": "グループを右へスクロール",
+    "manageGroups": "グループを管理"
   },
   "search": {
     "helpLabel": "検索構文",
@@ -980,7 +981,6 @@
       "fxHint": "fx は DONUT_MCP_TOKEN から資格情報を読み取ります。fx を起動するシェルでエクスポートしてください。",
       "fxExportCopied": "エクスポート行をコピーしました"
     },
-    "tabServer": "サーバー API",
     "server": {
       "title": "Owl サーバー API",
       "notJoined": "API を使うには、サーバーページで Owl サーバーに参加してください。",
@@ -1010,6 +1010,11 @@
         "profiles": "共有プロファイル、共有した人、開いている人",
         "locks": "誰がどのプロファイルを開いているか"
       }
+    },
+    "serverLink": {
+      "title": "Owl サーバー「{{name}}」の API",
+      "description": "メンバー、招待、共有プロファイルを読み取るスクリプト用のキーは「サーバー」ページにあります。",
+      "open": "開く"
     }
   },
   "import": {

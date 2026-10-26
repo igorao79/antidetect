@@ -48,7 +48,7 @@ import {
   SettingsRow,
   StatusLight,
 } from "@/components/ui/settings-panel";
-import { WorkspaceApiPanel } from "@/components/workspace-api-panel";
+import { ServerApiLink } from "@/components/workspace-api-panel";
 import { useCloudAuth } from "@/hooks/use-cloud-auth";
 import { useWayfernTerms } from "@/hooks/use-wayfern-terms";
 import {
@@ -86,7 +86,7 @@ interface AppSettings {
   mcp_remote_key?: string | null;
 }
 
-type IntegrationsTab = "api" | "server" | "remote";
+type IntegrationsTab = "api" | "remote";
 
 interface IntegrationsDialogProps {
   isOpen: boolean;
@@ -94,6 +94,8 @@ interface IntegrationsDialogProps {
   subPage?: boolean;
   /** Which tab is displayed when the dialog mounts; defaults to "api". */
   initialTab?: IntegrationsTab;
+  /** Opens the Server page at its API for scripts. */
+  onOpenServerApi?: () => void;
 }
 
 function categoryLabel(
@@ -117,6 +119,7 @@ export function IntegrationsDialog({
   onClose,
   subPage,
   initialTab = "api",
+  onOpenServerApi,
 }: IntegrationsDialogProps) {
   const { t } = useTranslation();
   const [settings, setSettings] = useState<AppSettings>({
@@ -719,24 +722,17 @@ export function IntegrationsDialog({
               value={shownTab}
               onValueChange={(value) => setActiveTab(value as IntegrationsTab)}
             >
-              <AnimatedTabsList>
-                <AnimatedTabsTrigger value="api">
-                  {t("integrations.tabApi")}
-                </AnimatedTabsTrigger>
-                <AnimatedTabsTrigger value="server">
-                  {t("integrations.tabServer")}
-                </AnimatedTabsTrigger>
-                {remoteTabShown && (
+              {remoteTabShown && (
+                <AnimatedTabsList>
+                  <AnimatedTabsTrigger value="api">
+                    {t("integrations.tabApi")}
+                  </AnimatedTabsTrigger>
                   <AnimatedTabsTrigger value="remote">
                     <LuCloud className="size-3.5" />
                     {t("integrations.tabRemote")}
                   </AnimatedTabsTrigger>
-                )}
-              </AnimatedTabsList>
-
-              <AnimatedTabsContent value="server" className="mt-4">
-                <WorkspaceApiPanel />
-              </AnimatedTabsContent>
+                </AnimatedTabsList>
+              )}
 
               <AnimatedTabsContent value="api" className="@container mt-4">
                 <SettingsPanel>
@@ -900,6 +896,10 @@ export function IntegrationsDialog({
                   target="api"
                   className="mt-4"
                 />
+
+                <div className="mt-4">
+                  <ServerApiLink onOpen={onOpenServerApi} />
+                </div>
 
                 <CodeExamplesDialog
                   open={apiExamplesOpen}

@@ -23,6 +23,7 @@ import {
 import { useInputModality } from "@/hooks/use-input-modality";
 import { CLOUD_ONLY_PAGES } from "@/lib/cloud-only-pages";
 import { launchDonutClone } from "@/lib/donut-physics";
+import { FOLDED_PAGES, railPageOf } from "@/lib/folded-pages";
 import { MOTION_SPRING_POSITION } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { Logo } from "./icons/logo";
@@ -282,7 +283,7 @@ const ALL_TOP_ITEMS: RailItem[] = [
 ];
 
 const TOP_ITEMS = ALL_TOP_ITEMS.filter(
-  (item) => !CLOUD_ONLY_PAGES.has(item.page),
+  (item) => !CLOUD_ONLY_PAGES.has(item.page) && !(item.page in FOLDED_PAGES),
 );
 
 interface MoreMenuItem {
@@ -410,7 +411,7 @@ export function RailNav({
 
       <div className="flex min-h-0 w-full scrollbar-none flex-col items-center gap-1 overflow-y-auto [-ms-overflow-style:none] lg:items-stretch lg:overflow-visible [&::-webkit-scrollbar]:hidden">
         {TOP_ITEMS.map(({ page, Icon, labelKey }) => {
-          const active = currentPage === page;
+          const active = railPageOf(currentPage) === page;
           const waiting = page === "agent" ? agentRequests : 0;
           const label =
             waiting > 0

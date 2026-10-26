@@ -468,6 +468,11 @@ export default function Home() {
     useState<AgentTab>("conversation");
   const [createProfileDialogOpen, setCreateProfileDialogOpen] = useState(false);
   const [settingsDialogOpen, setSettingsDialogOpen] = useState(false);
+  // The Server page section to scroll to, set by the Integrations page's
+  // link to the server API; every rail navigation clears it.
+  const [workspaceInitialSection, setWorkspaceInitialSection] = useState<
+    "api" | null
+  >(null);
   // A settings section to land on, set by a tip's action for one opening.
   const [settingsInitialSection, setSettingsInitialSection] = useState<
     string | null
@@ -619,6 +624,7 @@ export default function Home() {
     setTrashPageOpen(false);
     setWorkspacePageOpen(false);
     setSettingsInitialSection(null);
+    setWorkspaceInitialSection(null);
 
     setCurrentPage(page);
     switch (page) {
@@ -2370,6 +2376,7 @@ export default function Home() {
           totalProfiles={profiles.length}
           selectedGroupId={selectedGroupId}
           onGroupSelect={handleSelectGroup}
+          onManageGroups={() => handleRailNavigate("groups")}
           pageTitle={subPageTitle}
         />
         <div className="flex min-h-0 flex-1">
@@ -2507,6 +2514,10 @@ export default function Home() {
                 }}
                 subPage={currentPage === "integrations"}
                 initialTab={integrationsInitialTab}
+                onOpenServerApi={() => {
+                  handleRailNavigate("workspace");
+                  setWorkspaceInitialSection("api");
+                }}
               />
             )}
 
@@ -2634,6 +2645,7 @@ export default function Home() {
                 }}
                 subPage={currentPage === "workspace"}
                 initialLink={workspaceJoinLink}
+                initialSection={workspaceInitialSection}
               />
             )}
 

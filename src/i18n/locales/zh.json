@@ -275,7 +275,8 @@
     "newProfile": "新建",
     "donutLogo": "Owl 标识",
     "scrollGroupsLeft": "向左滚动分组",
-    "scrollGroupsRight": "向右滚动分组"
+    "scrollGroupsRight": "向右滚动分组",
+    "manageGroups": "管理分组"
   },
   "search": {
     "helpLabel": "搜索语法",
@@ -980,7 +981,6 @@
       "fxHint": "fx 从 DONUT_MCP_TOKEN 读取凭据。请在启动 fx 的 shell 中导出该变量。",
       "fxExportCopied": "已复制导出命令"
     },
-    "tabServer": "服务器 API",
     "server": {
       "title": "Owl 服务器 API",
       "notJoined": "请在“服务器”页面加入一个 Owl 服务器以使用其 API。",
@@ -1010,6 +1010,11 @@
         "profiles": "共享配置文件、共享者以及打开者",
         "locks": "谁打开了哪个配置文件"
       }
+    },
+    "serverLink": {
+      "title": "Owl 服务器“{{name}}”的 API",
+      "description": "用于读取成员、邀请和共享配置文件的脚本密钥位于“服务器”页面。",
+      "open": "打开"
     }
   },
   "import": {

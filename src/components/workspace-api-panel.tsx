@@ -41,8 +41,8 @@ const ENDPOINTS = [
 ] as const;
 
 /**
- * The joined Owl server's API for scripts: its address, the API keys the
- * owner creates, a check of a key, and what a key can do.
+ * The joined Owl server's API for scripts, on the Server page: its address,
+ * the API keys the owner creates, a check of a key, and what a key can do.
  */
 export function WorkspaceApiPanel() {
   const { t, i18n } = useTranslation();
@@ -120,24 +120,8 @@ export function WorkspaceApiPanel() {
       year: "numeric",
     });
 
-  if (!loaded) return null;
-  if (!workspace) {
-    return (
-      <SettingsPanel className="flex items-start gap-3">
-        <FeatureIcon active={false}>
-          <LuServer />
-        </FeatureIcon>
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <h3 className="text-sm font-medium">
-            {t("integrations.server.title")}
-          </h3>
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            {t("integrations.server.notJoined")}
-          </p>
-        </div>
-      </SettingsPanel>
-    );
-  }
+  // Shown on the Server page to the owner, the one who creates keys.
+  if (!loaded || !workspace || !isOwner) return null;
 
   const example = `curl -H "Authorization: Bearer owlk_…" ${workspace.server}/v1/profiles`;
 
@@ -174,94 +158,85 @@ export function WorkspaceApiPanel() {
         <span className={SECTION_LABEL_CLASS}>
           {t("integrations.server.keys")}
         </span>
-        {!isOwner ? (
+
+        {keys.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            {t("integrations.server.ownerOnly")}
+            {t("integrations.server.noKeys")}
           </p>
         ) : (
-          <>
-            {keys.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                {t("integrations.server.noKeys")}
-              </p>
-            ) : (
-              <ul className="flex flex-col">
-                {keys.map((key) => (
-                  <li
-                    key={key.id}
-                    className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-foreground/5"
-                  >
-                    <LuKeyRound className="size-3.5 shrink-0 text-muted-foreground" />
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <span className="truncate text-sm">{key.name}</span>
-                      <span className="truncate text-xs text-muted-foreground tabular-nums">
-                        {key.lastUsedAt
-                          ? t("integrations.server.keyUsed", {
-                              created: formatDate(key.createdAt),
-                              used: formatDate(key.lastUsedAt),
-                            })
-                          : t("integrations.server.keyUnused", {
-                              created: formatDate(key.createdAt),
-                            })}
-                      </span>
-                    </div>
-                    {key.stored && (
-                      <Button
-                        variant="subtle"
-                        size="sm"
-                        className="h-7"
-                        onClick={() => void copyKey(key)}
-                      >
-                        {t("integrations.server.copyKey")}
-                      </Button>
-                    )}
-                    <Button
-                      variant="subtle"
-                      size="sm"
-                      className="h-7"
-                      aria-label={t("integrations.server.revokeKey")}
-                      onClick={() => setRevoking(key)}
-                    >
-                      <LuTrash2 className="size-3.5" />
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-            <form
-              className="flex flex-wrap items-end gap-2"
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (name.trim()) void create();
-              }}
-            >
-              <div className="flex min-w-48 flex-1 flex-col gap-1.5">
-                <Label htmlFor={nameId}>
-                  {t("integrations.server.keyName")}
-                </Label>
-                <Input
-                  id={nameId}
-                  value={name}
-                  maxLength={64}
-                  placeholder={t("integrations.server.keyNamePlaceholder")}
-                  onChange={(event) => setName(event.target.value)}
-                />
-              </div>
-              <LoadingButton
-                type="submit"
-                variant="soft"
-                isLoading={creating}
-                disabled={!name.trim()}
+          <ul className="flex flex-col">
+            {keys.map((key) => (
+              <li
+                key={key.id}
+                className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-foreground/5"
               >
-                <LuPlus className="size-3.5" />
-                {t("integrations.server.createKey")}
-              </LoadingButton>
-            </form>
-          </>
+                <LuKeyRound className="size-3.5 shrink-0 text-muted-foreground" />
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-sm">{key.name}</span>
+                  <span className="truncate text-xs text-muted-foreground tabular-nums">
+                    {key.lastUsedAt
+                      ? t("integrations.server.keyUsed", {
+                          created: formatDate(key.createdAt),
+                          used: formatDate(key.lastUsedAt),
+                        })
+                      : t("integrations.server.keyUnused", {
+                          created: formatDate(key.createdAt),
+                        })}
+                  </span>
+                </div>
+                {key.stored && (
+                  <Button
+                    variant="subtle"
+                    size="sm"
+                    className="h-7"
+                    onClick={() => void copyKey(key)}
+                  >
+                    {t("integrations.server.copyKey")}
+                  </Button>
+                )}
+                <Button
+                  variant="subtle"
+                  size="sm"
+                  className="h-7"
+                  aria-label={t("integrations.server.revokeKey")}
+                  onClick={() => setRevoking(key)}
+                >
+                  <LuTrash2 className="size-3.5" />
+                </Button>
+              </li>
+            ))}
+          </ul>
         )}
+        <form
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (name.trim()) void create();
+          }}
+        >
+          <div className="flex min-w-48 flex-1 flex-col gap-1.5">
+            <Label htmlFor={nameId}>{t("integrations.server.keyName")}</Label>
+            <Input
+              id={nameId}
+              value={name}
+              maxLength={64}
+              placeholder={t("integrations.server.keyNamePlaceholder")}
+              onChange={(event) => setName(event.target.value)}
+            />
+          </div>
+          <LoadingButton
+            type="submit"
+            variant="soft"
+            isLoading={creating}
+            disabled={!name.trim()}
+          >
+            <LuPlus className="size-3.5" />
+            {t("integrations.server.createKey")}
+          </LoadingButton>
+        </form>
       </SettingsPanel>
 
-      {isOwner && checkedKey && (
+      {checkedKey && (
         <IntegrationDiagnostics
           key={`${workspace.server}:${checkedKey}`}
           target="server"
@@ -315,5 +290,42 @@ export function WorkspaceApiPanel() {
         confirmButtonText={t("integrations.server.revokeKey")}
       />
     </div>
+  );
+}
+
+/**
+ * The Integrations page's way to the server API, which lives on the Server
+ * page: the joined server's name and a button there, or why there is none.
+ */
+export function ServerApiLink({ onOpen }: { onOpen?: () => void }) {
+  const { t } = useTranslation();
+  const { workspace, loaded } = useWorkspace();
+  if (!loaded) return null;
+  const isOwner = workspace?.member.role === "owner";
+  return (
+    <SettingsPanel className="flex items-start gap-3">
+      <FeatureIcon active={workspace !== null}>
+        <LuServer />
+      </FeatureIcon>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <h3 className="truncate text-sm font-medium">
+          {workspace
+            ? t("integrations.serverLink.title", { name: workspace.name })
+            : t("integrations.server.title")}
+        </h3>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          {!workspace
+            ? t("integrations.server.notJoined")
+            : isOwner
+              ? t("integrations.serverLink.description")
+              : t("integrations.server.ownerOnly")}
+        </p>
+      </div>
+      {onOpen && (!workspace || isOwner) && (
+        <Button variant="soft" size="sm" className="shrink-0" onClick={onOpen}>
+          {t("integrations.serverLink.open")}
+        </Button>
+      )}
+    </SettingsPanel>
   );
 }

@@ -275,7 +275,8 @@
     "newProfile": "Yeni",
     "donutLogo": "Owl logosu",
     "scrollGroupsLeft": "Grupları sola kaydır",
-    "scrollGroupsRight": "Grupları sağa kaydır"
+    "scrollGroupsRight": "Grupları sağa kaydır",
+    "manageGroups": "Grupları yönet"
   },
   "search": {
     "helpLabel": "Arama söz dizimi",
@@ -980,7 +981,6 @@
       "fxHint": "fx kimlik bilgisini DONUT_MCP_TOKEN'dan okur. fx'i başlatan kabukta dışa aktarın.",
       "fxExportCopied": "Dışa aktarma satırı kopyalandı"
     },
-    "tabServer": "Sunucu API'si",
     "server": {
       "title": "Owl sunucu API'si",
       "notJoined": "API'sini kullanmak için Sunucu sayfasından bir Owl sunucusuna katılın.",
@@ -1010,6 +1010,11 @@
         "profiles": "Paylaşılan profiller, kimin paylaştığı ve kimin açtığı",
         "locks": "Hangi profili kimin açtığı"
       }
+    },
+    "serverLink": {
+      "title": "Owl sunucusu “{{name}}” API'si",
+      "description": "Üyeleri, davetleri ve paylaşılan profilleri okuyan betikler için anahtarlar “Sunucu” sayfasında.",
+      "open": "Aç"
     }
   },
   "import": {

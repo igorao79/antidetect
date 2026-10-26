@@ -275,7 +275,8 @@
     "newProfile": "New",
     "donutLogo": "Owl logo",
     "scrollGroupsLeft": "Scroll groups left",
-    "scrollGroupsRight": "Scroll groups right"
+    "scrollGroupsRight": "Scroll groups right",
+    "manageGroups": "Manage groups"
   },
   "search": {
     "helpLabel": "Search syntax",
@@ -980,7 +981,6 @@
       "fxHint": "fx reads the credential from DONUT_MCP_TOKEN. Export it in the shell that starts fx.",
       "fxExportCopied": "Export line copied"
     },
-    "tabServer": "Server API",
     "server": {
       "title": "Owl server API",
       "notJoined": "Join an Owl server on the Server page to use its API.",
@@ -1010,6 +1010,11 @@
         "profiles": "List shared profiles with who shared them and who has them open",
         "locks": "Who has which profile open"
       }
+    },
+    "serverLink": {
+      "title": "API of the Owl server “{{name}}”",
+      "description": "Keys for scripts that read members, invites and shared profiles are on the Server page.",
+      "open": "Open"
     }
   },
   "import": {

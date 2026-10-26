@@ -53,6 +53,12 @@ const THEME_VARIABLES = [
 const DRACULA_THEME = THEMES.find((theme) => theme.id === "dracula").colors;
 const AYU_LIGHT_THEME = THEMES.find((theme) => theme.id === "ayu-light").colors;
 
+/** Groups have no rail item (fork): they open from the profiles header. */
+async function openGroups(app) {
+  await app.clickSelector('[aria-label="Profiles"]');
+  await app.clickSelector('[aria-label="Manage groups"]');
+}
+
 async function tableRows(app, tableId) {
   return app.execute(
     `return [...document.querySelectorAll('[data-table-id="' + arguments[0] + '"] tr[data-table-row]')].map(row => row.dataset.tableRow);`,
@@ -1055,7 +1061,7 @@ test("management tables share search, filters, selection, and saved views", asyn
       description: "management row height changes",
     });
     await app.capture("management-table-controls");
-    await app.clickSelector(`[aria-label="${en.rail.groups}"]`);
+    await openGroups(app);
     await app.waitFor(
       async () => (await tableRows(app, "groups")).length === 2,
       { description: "group table" },
@@ -1574,23 +1580,23 @@ test("soft table and creation surfaces stay quiet and readable in every theme", 
     { seedDownloadedBrowser: true },
   );
 });
-test("the integrations page ships the Local API and Server API tabs and never names remote control for a regular desktop", async () => {
+test("the integrations page shows the Local API, links to the server API and never names remote control for a regular desktop", async () => {
   await withApp("ui-integrations", async (app) => {
     const modifier =
       process.platform === "darwin" ? { meta: true } : { ctrl: true };
     await app.clickSelector('[aria-label="Integrations"]');
-    await app.waitForText(en.integrations.tabApi);
+    await app.waitForText(en.integrations.apiEnableLabel);
 
     // Local MCP is gone, and remote control is an Enterprise feature that a
     // desktop without the entitlement is never told about. This session is
-    // signed out, so a Remote MCP tab here means the gate opened for
-    // everyone. The Owl server's API (fork) sits beside the Local API.
+    // signed out, so any tab here means the Remote MCP gate opened for
+    // everyone: the Local API is the page's only content (fork), and the
+    // Owl server's API is a link to the Server page.
     const tabs = async () =>
       app.execute(
         `return [...document.querySelectorAll('[role="tab"]')].map((node) => node.textContent.trim());`,
       );
-    const offered = [en.integrations.tabApi, en.integrations.tabServer];
-    assert.deepEqual(await tabs(), offered);
+    assert.deepEqual(await tabs(), []);
     // The whole document, not just the painted text: a hidden trigger or an
     // unmounted-looking panel is still a mention.
     const html = await app.html();
@@ -1612,20 +1618,17 @@ test("the integrations page ships the Local API and Server API tabs and never na
     );
 
     // Mod+I flips to Remote MCP only for an entitled account, so here it
-    // never lands on a tab that is not offered.
-    const activeTab = async () =>
-      app.execute(
-        `return document.querySelector('[role="tab"][data-state="active"]')?.textContent.trim() ?? null;`,
-      );
-    assert.equal(await activeTab(), en.integrations.tabApi);
+    // never brings a tab up.
     await app.pressShortcut({ key: "i", ...modifier });
     await new Promise((resolve) => setTimeout(resolve, 500));
-    assert.equal(await activeTab(), en.integrations.tabApi);
-    assert.deepEqual(await tabs(), offered);
+    assert.deepEqual(await tabs(), []);
 
-    // Without a joined server the Server API tab says where to join one.
-    await app.clickText(en.integrations.tabServer, { roles: ["tab"] });
+    // Without a joined server the link says where to join one and goes there.
     await app.waitForText(en.integrations.server.notJoined);
+    await app.clickText(en.integrations.serverLink.open, {
+      roles: ["button"],
+    });
+    await app.waitForText(en.workspace.joinTitle);
 
     await dismissSurface(app);
   });
@@ -1748,7 +1751,7 @@ test("all primary navigation buttons and sub-page tabs render and remain interac
       await dismissSurface(app);
     }
 
-    await app.clickSelector('[aria-label="Groups"]');
+    await openGroups(app);
     await app.waitForText("Create");
     await dismissSurface(app);
 
@@ -1836,7 +1839,7 @@ test("every custom theme keeps tabs, counts, group pills, and rail states readab
       );
     }
 
-    await app.clickSelector('[aria-label="Groups"]');
+    await openGroups(app);
     await app.waitFor(
       () =>
         app.execute(
@@ -3523,6 +3526,7 @@ test("the navigation names every destination in a wide window and folds to icons
       `return [...document.querySelectorAll("nav [aria-label]")].map((item) => item.getAttribute("aria-label"));`,
     );
     assert.ok(destinations.includes(en.rail.integrations), `${destinations}`);
+    assert.ok(!destinations.includes(en.rail.groups), `${destinations}`);
     assert.ok(!destinations.includes(en.rail.cookieBot), `${destinations}`);
     assert.ok(!destinations.includes(en.rail.agent), `${destinations}`);
     assert.ok(!destinations.includes(en.rail.account), `${destinations}`);
@@ -3550,7 +3554,7 @@ test("the group bookmark editor adds, reorders and removes a row", async () => {
   await withApp("ui-group-bookmarks", async (app) => {
     const group = await app.invoke("create_profile_group", { name: "Client" });
 
-    await app.clickSelector('[aria-label="Groups"]');
+    await openGroups(app);
     await app.waitForText("Client");
     await app.clickSelector('[data-testid="group-bookmarks-button"]');
     await app.waitForText(en.groupBookmarks.description);

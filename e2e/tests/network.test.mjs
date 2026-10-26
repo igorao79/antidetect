@@ -92,8 +92,14 @@ async function request(url, { method = "GET", token, body } = {}) {
   return { response, value };
 }
 
+/** Groups have no rail item (fork): they open from the profiles header. */
+async function openGroups(app) {
+  await app.clickSelector('[aria-label="Profiles"]');
+  await app.clickSelector('[aria-label="Manage groups"]');
+}
+
 async function createGroupThroughUi(app) {
-  await app.clickSelector('[aria-label="Groups"]');
+  await openGroups(app);
   await app.waitForText("Profile groups");
   await app.clickSelector('[aria-label="Create"]');
   await app.waitForText("Create New Group");
