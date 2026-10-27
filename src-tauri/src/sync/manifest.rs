@@ -12,6 +12,13 @@ use super::types::{SyncError, SyncResult};
 /// Default exclude patterns for volatile browser profile files.
 /// Patterns use `**/` prefix to match at any directory depth, since the sync
 /// engine scans from `profiles/{uuid}/` which contains `profile/Default/...`.
+///
+/// `Service Worker/ScriptCache` and `Service Worker/CacheStorage` are site
+/// data, not caches: Chromium drops a service worker registration whose script
+/// is missing, which loses the site's push subscription and offline data, and
+/// an extension's background worker fails its first start. `Secure
+/// Preferences` holds the extension, homepage and startup settings of profiles
+/// written by browsers that kept tracked preferences there.
 pub const DEFAULT_EXCLUDE_PATTERNS: &[&str] = &[
   "**/Cache/**",
   "**/Code Cache/**",
@@ -20,8 +27,6 @@ pub const DEFAULT_EXCLUDE_PATTERNS: &[&str] = &[
   "**/ShaderCache/**",
   "**/DawnCache/**",
   "**/DawnGraphiteCache/**",
-  "**/Service Worker/CacheStorage/**",
-  "**/Service Worker/ScriptCache/**",
   "**/Session Storage/**",
   "**/blob_storage/**",
   "**/Crashpad/**",
@@ -65,12 +70,13 @@ pub const DEFAULT_EXCLUDE_PATTERNS: &[&str] = &[
   // Rewritten by donut before every launch from the profile metadata that
   // already syncs; uploading it would only duplicate that state.
   "**/wayfern-identity.json",
+  "**/wayfern-identity-result.json",
   "**/wayfern-persona.json",
   "**/SingletonSocket",
   "**/SingletonCookie",
-  "**/Secure Preferences",
   "**/GraphiteDawnCache/**",
   "**/DawnWebGPUCache/**",
+  "**/GPUPersistentCache/**",
   "**/BrowserMetrics*",
   "**/.DS_Store",
   // Profile metadata is a separately reconciled LWW config object. Including
@@ -282,10 +288,7 @@ pub fn generate_manifest(
   let mut max_mtime: i64 = 0;
 
   if !profile_dir.exists() {
-    log::debug!(
-      "Profile directory doesn't exist: {}, creating empty manifest",
-      profile_dir.display()
-    );
+    log::debug!("Profile dir missing, empty manifest profile={profile_id}");
     return Ok(manifest);
   }
 
@@ -445,6 +448,9 @@ pub enum DiffBias {
   /// the local clock genuinely is later; only the caller knows that the remote
   /// copy is the one that matters.
   PreferRemote,
+  /// Remote wins, for the pull that follows a restore point: the server now
+  /// holds the restored files, and the local copy is the one being replaced.
+  Restore,
 }
 
 pub fn compute_diff(local: &SyncManifest, remote: Option<&SyncManifest>) -> ManifestDiff {
@@ -478,7 +484,7 @@ pub fn compute_diff_with_bias(
   // would appear "newer" and cause all remote files to be deleted.
   if local.files.is_empty() && !remote.files.is_empty() {
     log::info!(
-      "Local manifest is empty but remote has {} files — downloading from remote to recover",
+      "Local manifest empty, recovering from remote files={}",
       remote.files.len()
     );
     diff.files_to_download = remote.files.clone();
@@ -490,7 +496,7 @@ pub fn compute_diff_with_bias(
   let remote_updated = remote.updated_at_datetime();
 
   let local_is_newer = match bias {
-    DiffBias::PreferRemote => false,
+    DiffBias::PreferRemote | DiffBias::Restore => false,
     DiffBias::Auto => match (local_updated, remote_updated) {
       (Some(l), Some(r)) => l > r,
       (Some(_), None) => true,
@@ -705,6 +711,36 @@ mod tests {
       !paths.iter().any(|p| p.contains("Crashpad")),
       "Crashpad should be excluded: {paths:?}"
     );
+  }
+
+  #[test]
+  fn test_generate_manifest_keeps_site_data_and_secure_preferences() {
+    let temp_dir = TempDir::new().unwrap();
+    let profile_dir = temp_dir.path().join("profile_root");
+    let default_dir = profile_dir.join("profile/Default");
+    for relative in [
+      "Service Worker/Database/000001.log",
+      "Service Worker/ScriptCache/index",
+      "Service Worker/CacheStorage/index.txt",
+      "Secure Preferences",
+    ] {
+      let path = default_dir.join(relative);
+      fs::create_dir_all(path.parent().unwrap()).unwrap();
+      fs::write(&path, "keep").unwrap();
+    }
+
+    let mut cache = HashCache::default();
+    let manifest = generate_manifest("test-profile", &profile_dir, &mut cache).unwrap();
+
+    let paths: Vec<&str> = manifest.files.iter().map(|f| f.path.as_str()).collect();
+    for kept in [
+      "profile/Default/Service Worker/Database/000001.log",
+      "profile/Default/Service Worker/ScriptCache/index",
+      "profile/Default/Service Worker/CacheStorage/index.txt",
+      "profile/Default/Secure Preferences",
+    ] {
+      assert!(paths.contains(&kept), "{kept} must sync: {paths:?}");
+    }
   }
 
   #[test]

@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
+import { TickingCount } from "@/components/entity-page";
 import {
   AnimatedTabs,
   AnimatedTabsList,
@@ -31,13 +32,17 @@ export function ProfilesGroupsTabs({
       onValueChange={(tab) => onSelect(tab as ProfilesGroupsTab)}
     >
       <AnimatedTabsList>
-        <AnimatedTabsTrigger value="profiles">
+        <AnimatedTabsTrigger value="profiles" data-summary="profiles">
           <span>{t("rail.profiles")}</span>
-          <span className="text-xs tabular-nums">{profileCount}</span>
+          <TickingCount value={profileCount} className="text-xs" />
         </AnimatedTabsTrigger>
-        <AnimatedTabsTrigger value="groups">
-          <span>{t("rail.groups")}</span>
-          <span className="text-xs tabular-nums">{groupCount}</span>
+        <AnimatedTabsTrigger value="groups" data-summary="groups">
+          <span data-slot="group-summary-title">{t("rail.groups")}</span>
+          <TickingCount
+            slot="group-summary-count"
+            value={groupCount}
+            className="text-xs"
+          />
         </AnimatedTabsTrigger>
       </AnimatedTabsList>
     </AnimatedTabs>

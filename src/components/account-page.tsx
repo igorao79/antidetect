@@ -15,12 +15,15 @@ import {
   LuTriangleAlert,
   LuUser,
 } from "react-icons/lu";
+import { AccountSyncServer } from "@/components/account-sync-server";
 import {
   formatDate,
   formatHours,
   RemoteHoursMeter,
 } from "@/components/cookie-bot-shared";
 import { LoadingButton } from "@/components/loading-button";
+import { TeamAccess } from "@/components/team-access";
+import { TeamActivityLog } from "@/components/team-activity-log";
 import { TeamUsagePanel } from "@/components/team-usage-panel";
 import {
   AnimatedTabs,
@@ -45,6 +48,7 @@ import { cookieBotScopeFor, useCookieBot } from "@/hooks/use-cookie-bot";
 import { translateBackendError } from "@/lib/backend-errors";
 import {
   canUseCookieBot,
+  canViewTeamActivity,
   effectivePlanOf,
   getEntitlements,
   isTeamOwner,
@@ -85,6 +89,7 @@ export function AccountPage({
   // a refused launch.
   const remoteHoursVisible = isLoggedIn && canUseCookieBot(user);
   const showTeamUsage = remoteHoursVisible && isTeamOwner(user);
+  const showTeamActivity = isLoggedIn && canViewTeamActivity(user);
   // A member's own row says "free" because the owner pays. The plan the seat
   // is served under is the one the customer expects to read here, and the
   // billing period slot names the seat instead, since a seat has no period.
@@ -95,7 +100,9 @@ export function AccountPage({
       ? t("sync.team.roleOwner")
       : user?.teamRole === "admin"
         ? t("sync.team.roleAdmin")
-        : t("sync.team.roleMember");
+        : user?.teamRole === "launcher"
+          ? t("sync.team.roleLauncher")
+          : t("sync.team.roleMember");
   const seatLabel = user?.teamName
     ? t("account.teamSeat", { role: seatRole, team: user.teamName })
     : t("account.teamSeatUnnamed", { role: seatRole });
@@ -110,7 +117,14 @@ export function AccountPage({
   // click back to.
   useEffect(() => {
     if (!showTeamUsage && activeTab === "team-usage") setActiveTab("account");
-  }, [showTeamUsage, activeTab]);
+    if (
+      !showTeamActivity &&
+      (activeTab === "team-activity" || activeTab === "team-access")
+    ) {
+      setActiveTab("account");
+    }
+    if (isLoggedIn && activeTab === "self-hosted") setActiveTab("account");
+  }, [showTeamUsage, showTeamActivity, isLoggedIn, activeTab]);
 
   // Self-hosted server state. Loaded once when the dialog opens and persisted
   // via `save_sync_settings` so the rest of the app picks up the new URL/token
@@ -124,12 +138,11 @@ export function AccountPage({
     useState<ConnectionStatus>("unknown");
 
   const hasConfig = Boolean(serverUrl && token);
-  // Self-hosted and cloud are mutually exclusive — both share the same sync
-  // engine and a profile can't be sync'd to two backends. The tab trigger is
-  // disabled here AND the backend rejects mixed state (see `save_sync_settings`
-  // / `cloud_logout`), so even if someone bypasses the UI we don't end up
-  // with split-brain.
-  const selfHostedDisabled = isLoggedIn || isCloudLoading;
+  // A shared-token server is set up signed out. Signed in, the account card
+  // names where the account syncs (`AccountSyncServer`); the backend refuses a
+  // new shared token then (`save_sync_settings`), so one device never syncs one
+  // profile to two places.
+  const selfHostedDisabled = isCloudLoading;
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -137,7 +150,7 @@ export function AccountPage({
       await refreshProfile();
       showSuccessToast(t("account.refreshed"));
     } catch (e) {
-      showErrorToast(String(e));
+      showErrorToast(translateBackendError(t, e));
     } finally {
       setIsRefreshing(false);
     }
@@ -154,7 +167,7 @@ export function AccountPage({
       await loadSelfHostedSettings();
       showSuccessToast(t("account.loggedOut"));
     } catch (e) {
-      showErrorToast(String(e));
+      showErrorToast(translateBackendError(t, e));
     } finally {
       setIsLoggingOut(false);
     }
@@ -222,7 +235,7 @@ export function AccountPage({
       // Use the structured backend-error translator so the cloud-vs-self-
       // hosted mutex (`SELF_HOSTED_REQUIRES_LOGOUT`) shows a clear message
       // instead of the generic "save failed" toast.
-      showErrorToast(translateBackendError(t as never, error));
+      showErrorToast(translateBackendError(t, error));
     } finally {
       setIsSavingSelfHosted(false);
     }
@@ -246,7 +259,9 @@ export function AccountPage({
       showSuccessToast(t("sync.config.disconnected"));
     } catch (error) {
       console.error("Failed to disconnect:", error);
-      showErrorToast(t("sync.config.disconnectFailed"));
+      showErrorToast(t("sync.config.disconnectFailed"), {
+        description: translateBackendError(t, error),
+      });
     } finally {
       setIsSavingSelfHosted(false);
     }
@@ -283,7 +298,7 @@ export function AccountPage({
       details.push({
         id: "teamRole",
         label: t("account.fields.teamRole"),
-        value: user.teamRole,
+        value: seatRole,
       });
     }
     if (user.planPeriod) {
@@ -333,17 +348,24 @@ export function AccountPage({
                     {t("account.tabs.teamUsage")}
                   </AnimatedTabsTrigger>
                 )}
-                <AnimatedTabsTrigger
-                  value="self-hosted"
-                  disabled={selfHostedDisabled}
-                  title={
-                    selfHostedDisabled
-                      ? t("account.selfHosted.disabledWhileLoggedIn")
-                      : undefined
-                  }
-                >
-                  {t("account.tabs.selfHosted")}
-                </AnimatedTabsTrigger>
+                {showTeamActivity && (
+                  <AnimatedTabsTrigger value="team-activity">
+                    {t("account.tabs.teamActivity")}
+                  </AnimatedTabsTrigger>
+                )}
+                {showTeamActivity && (
+                  <AnimatedTabsTrigger value="team-access">
+                    {t("account.tabs.teamAccess")}
+                  </AnimatedTabsTrigger>
+                )}
+                {!isLoggedIn && (
+                  <AnimatedTabsTrigger
+                    value="self-hosted"
+                    disabled={selfHostedDisabled}
+                  >
+                    {t("account.tabs.selfHosted")}
+                  </AnimatedTabsTrigger>
+                )}
               </AnimatedTabsList>
 
               <AnimatedTabsContent
@@ -449,7 +471,7 @@ export function AccountPage({
                           key={detail.id}
                           className="min-w-0 rounded-lg bg-foreground/4 px-3 py-2"
                         >
-                          <dt className="text-[10px] tracking-wide text-muted-foreground uppercase">
+                          <dt className="text-[11px] tracking-wide text-muted-foreground uppercase">
                             {detail.label}
                           </dt>
                           <dd className="mt-0.5 truncate font-medium">
@@ -479,6 +501,13 @@ export function AccountPage({
                         {t("account.automationActiveHere")}
                       </p>
                     )}
+
+                  {isLoggedIn && user && (
+                    <AccountSyncServer
+                      paid={getEntitlements(user).cloudBackup}
+                      teamSeat={Boolean(user.teamId)}
+                    />
+                  )}
                 </SettingsPanel>
 
                 {remoteHoursVisible && (
@@ -544,20 +573,23 @@ export function AccountPage({
                 </AnimatedTabsContent>
               )}
 
+              {showTeamActivity && (
+                <AnimatedTabsContent value="team-activity" className="mt-4">
+                  <TeamActivityLog />
+                </AnimatedTabsContent>
+              )}
+
+              {showTeamActivity && (
+                <AnimatedTabsContent value="team-access" className="mt-4">
+                  <TeamAccess actorRole={user?.teamRole} />
+                </AnimatedTabsContent>
+              )}
+
               <AnimatedTabsContent
                 value="self-hosted"
                 className="@container mt-4"
               >
-                {selfHostedDisabled ? (
-                  // Defensive: the tab trigger is disabled while the user is
-                  // logged in, so this branch shouldn't be reachable via UI —
-                  // but if state flips mid-render (e.g. a cloud login finishes
-                  // while the tab is open), show the explanation instead of
-                  // a silent empty card.
-                  <p className="text-sm text-muted-foreground">
-                    {t("account.selfHosted.disabledWhileLoggedIn")}
-                  </p>
-                ) : (
+                {isLoggedIn || selfHostedDisabled ? null : (
                   <SettingsPanel className="flex flex-col gap-4">
                     <div className="flex items-start gap-3">
                       <FeatureIcon active={connectionStatus === "connected"}>

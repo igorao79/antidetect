@@ -7,7 +7,7 @@
 //! in every new document, so the capture is armed again after every navigation
 //! by the browser itself. Each message is rewritten into the
 //! `Wayfern.inputCaptured` event the synchronizer already handles, and a
-//! top-level navigation into the `Page.frameNavigated` it already replays.
+//! top-level navigation into the `Page.frameNavigated` it already passes on.
 //!
 //! A follower is replayed with `input.performActions` and
 //! `browsingContext.navigate`, and its window is placed with
@@ -659,7 +659,9 @@ fn command_for(event: &CapturedEvent) -> Option<(&'static str, Value)> {
     }))
   };
   match event.event_type.as_str() {
-    "navigate" => Some((
+    // A navigation the leader's input caused comes with that input; only an
+    // address typed on the leader is sent as such.
+    "navigated" if event.typed == Some(true) => Some((
       "browsingContext.navigate",
       json!({ "url": event.url.as_deref()?, "wait": "none" }),
     )),
@@ -868,11 +870,19 @@ mod tests {
   #[test]
   fn a_navigation_does_not_wait_for_the_page() {
     let (method, params) = command_for(&event(
-      json!({ "type": "navigate", "url": "https://example.com/" }),
+      json!({ "type": "navigated", "url": "https://example.com/", "typed": true }),
     ))
     .unwrap();
     assert_eq!(method, "browsingContext.navigate");
     assert_eq!(params["wait"], "none");
+  }
+
+  #[test]
+  fn a_navigation_an_input_caused_is_left_to_that_input() {
+    assert!(command_for(&event(
+      json!({ "type": "navigated", "url": "https://example.com/", "typed": false }),
+    ))
+    .is_none());
   }
 
   #[test]

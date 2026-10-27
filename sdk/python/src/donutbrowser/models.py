@@ -17,14 +17,26 @@ passed straight into the next.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict
 
 __all__ = [
     "ApiProfile",
     "ApiProfilesResponse",
     "ApiProfileResponse",
+    "ApiProfileFingerprintResponse",
     "ApiGroupResponse",
+    "ApiStatusResponse",
+    "ProfilePatch",
+    "BulkEditResponse",
+    "TemplateSettings",
+    "ProfileTemplate",
+    "ApiBulkCreateResponse",
+    "StorageItem",
+    "OriginStorage",
+    "StorageState",
+    "StorageStateImport",
     "ApiProxyResponse",
+    "RotationResult",
     "ApiVpnResponse",
     "ApiVpnExportResponse",
     "DownloadBrowserResponse",
@@ -102,6 +114,7 @@ class _ApiProfileRequired(TypedDict):
     tags: List[str]
     is_running: bool
     proxy_bypass_rules: List[str]
+    start_urls: List[str]
     ephemeral: bool
     temporary: bool
     clear_on_close: bool
@@ -117,6 +130,8 @@ class ApiProfile(_ApiProfileRequired, total=False):
     last_launch: int
     group_id: str
     vpn_id: str
+    dns_server: str
+    status_id: str
     extension_group_id: str
     host_os: str
     fingerprint_os: str
@@ -131,16 +146,157 @@ class ApiProfileResponse(TypedDict):
     profile: ApiProfile
 
 
+class ApiProfileFingerprintResponse(TypedDict, total=False):
+    #: The device the profile presents, as a JSON-encoded object: the shape
+    #: ``wayfern_config.fingerprint`` takes on create. ``None`` when there is
+    #: none to show.
+    fingerprint: Optional[str]
+
+
 class ApiGroupResponse(TypedDict):
     id: str
     name: str
     profile_count: int
 
 
-class ApiProxyResponse(TypedDict):
+class ApiStatusResponse(TypedDict):
+    """A named, colored label for where a profile's account stands."""
+
+    id: str
+    name: str
+    color: str
+
+
+class ProfilePatch(TypedDict, total=False):
+    """One change applied to many profiles by ``bulk_edit_profiles``.
+
+    A key left out keeps that field as it is. For the fields typed
+    ``Optional``, an explicit ``None`` (JSON ``null``) clears the field, so
+    the patch is sent exactly as given. An unknown key is refused with 400.
+    """
+
+    status_id: Optional[str]
+    tags_add: List[str]
+    tags_remove: List[str]
+    note: Optional[str]
+    group_id: Optional[str]
+    extension_group_id: Optional[str]
+    dns_blocklist: Optional[str]
+    dns_server: Optional[str]
+    proxy_bypass_rules: List[str]
+    start_urls: List[str]
+    launch_hook: Optional[str]
+    clear_on_close: bool
+    randomize_fingerprint_on_launch: bool
+    webrtc_mode: Optional[str]
+    block_images: bool
+    block_webgl: bool
+    restore_session: bool
+    new_device: bool
+
+
+class BulkEditResponse(TypedDict):
+    changed: int
+
+
+class TemplateSettings(TypedDict, total=False):
+    """What every profile made from a template starts with.
+
+    A key left out is empty. ``proxy_ids``, when not empty, wins over
+    ``proxy_id`` and spreads new profiles across those proxies in turn.
+    """
+
+    name_prefix: Optional[str]
+    proxy_id: Optional[str]
+    vpn_id: Optional[str]
+    proxy_ids: List[str]
+    group_id: Optional[str]
+    tags: List[str]
+    status_id: Optional[str]
+    note: Optional[str]
+    extension_group_id: Optional[str]
+    dns_blocklist: Optional[str]
+    dns_server: Optional[str]
+    proxy_bypass_rules: List[str]
+    start_urls: List[str]
+    launch_hook: Optional[str]
+    ephemeral: bool
+    clear_on_close: bool
+    wayfern_config: Optional[WayfernConfig]
+
+
+class ProfileTemplate(TypedDict):
+    id: str
+    name: str
+    settings: TemplateSettings
+    position: int
+    updated_at: int
+
+
+class _ApiBulkCreateResponseRequired(TypedDict):
+    profiles: List[ApiProfile]
+
+
+class ApiBulkCreateResponse(_ApiBulkCreateResponseRequired, total=False):
+    """``error`` is a ``{"code": ...}`` payload when creation stopped early."""
+
+    error: str
+
+
+class StorageItem(TypedDict):
+    name: str
+    value: str
+
+
+class _OriginStorageRequired(TypedDict):
+    origin: str
+
+
+class OriginStorage(_OriginStorageRequired, total=False):
+    # Playwright's own spelling.
+    localStorage: List[StorageItem]
+
+
+class StorageState(TypedDict, total=False):
+    """Playwright's ``storageState``: cookies and each origin's Local Storage.
+
+    Each cookie is Playwright's own object (``name``, ``value``, ``domain``,
+    ``path``, ``expires``, ``httpOnly``, ``secure``, ``sameSite``), passed
+    through untouched.
+    """
+
+    cookies: List[Dict[str, Any]]
+    origins: List[OriginStorage]
+
+
+class StorageStateImport(TypedDict):
+    origins: int
+    items: int
+    cookies_imported: int
+    cookies_replaced: int
+    cookie_errors: List[str]
+
+
+class _ApiProxyResponseRequired(TypedDict):
     id: str
     name: str
     proxy_settings: ProxySettings
+
+
+class ApiProxyResponse(_ApiProxyResponseRequired, total=False):
+    rotation_url: str
+
+
+class _RotationResultRequired(TypedDict):
+    proxy_id: str
+    elapsed_ms: int
+
+
+class RotationResult(_RotationResultRequired, total=False):
+    """``status`` is the provider's HTTP status, when it answered."""
+
+    status: int
+    error: str
 
 
 class _ApiVpnRequired(TypedDict):
@@ -167,10 +323,16 @@ class DownloadBrowserResponse(TypedDict):
     status: str
 
 
-class RunProfileResponse(TypedDict):
+class _RunProfileResponseRequired(TypedDict):
     profile_id: str
     remote_debugging_port: int
     headless: bool
+
+
+class RunProfileResponse(_RunProfileResponseRequired, total=False):
+    #: True when the profile was already running and was taken over as it is,
+    #: with no restart. Older apps omit it.
+    attached: bool
 
 
 class RunRemoteResponse(TypedDict):
@@ -684,6 +846,7 @@ class PerceptionStats(TypedDict):
     elapsedMs: int
     framesVisited: int
     framesFailed: int
+    framesTruncated: int
 
 
 class _PerceptionPageRequired(TypedDict):
@@ -751,13 +914,17 @@ class _AgentTypingRequired(TypedDict):
     duration_ms: float
     engine: str
     match: LocatorCandidate
+    verified: bool
 
 
 class AgentTyping(_AgentTypingRequired, total=False):
     """What a typing call did.
 
     ``corrections`` is absent on the fallback engine, which does not count its
-    own mistypes.
+    own mistypes. ``verified`` is true when the field was read back and holds
+    the text; it is false only for a field whose value is not the typed text
+    (a date or colour picker). A field that does not hold the text fails with
+    ``TYPE_NOT_APPLIED``.
     """
 
     corrections: int

@@ -22,10 +22,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${appSans.variable} ${appMono.variable} antialiased overflow-hidden bg-background`}
-      >
+    <html
+      lang="en"
+      className={`${appSans.variable} ${appMono.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="antialiased overflow-hidden bg-background">
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>

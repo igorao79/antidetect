@@ -8,6 +8,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 
 use crate::browser::ProxySettings;
+use crate::log_streak::Streak;
 use crate::proxy_manager::PROXY_MANAGER;
 use crate::settings_manager::{SettingsManager, StoredMcpRemoteKey};
 use crate::sync;
@@ -23,6 +24,35 @@ const ACCESS_TOKEN_REFRESH_MARGIN_SECS: i64 = 15 * 60;
 const SYNC_TOKEN_REFRESH_MARGIN_SECS: i64 = 120;
 const DEFAULT_RETRY_AFTER: Duration = Duration::from_secs(60);
 const MAX_RETRY_AFTER: Duration = Duration::from_secs(60 * 60);
+
+static ACCESS_TOKEN_REFRESH: Streak = Streak::new(module_path!(), "Access token refresh");
+static SYNC_TOKEN_FETCH: Streak = Streak::new(module_path!(), "Sync token fetch");
+static SERVER_SYNC_TOKEN_FETCH: Streak = Streak::new(module_path!(), "Own server sync token fetch");
+
+/// Tokens for the customer's own sync server, by address. In memory only:
+/// they last minutes and cost one request to replace.
+static SERVER_SYNC_TOKENS: std::sync::LazyLock<
+  std::sync::Mutex<std::collections::HashMap<String, String>>,
+> = std::sync::LazyLock::new(Default::default);
+static PROFILE_REFRESH: Streak = Streak::new(module_path!(), "Cloud profile refresh");
+static PROXY_CONFIG_FETCH: Streak = Streak::new(module_path!(), "Cloud proxy config fetch");
+static PROXY_USAGE_FETCH: Streak = Streak::new(module_path!(), "Cloud proxy usage fetch");
+static WAYFERN_TOKEN: Streak = Streak::new(module_path!(), "Wayfern token request");
+
+/// What the last cloud proxy sync found, so an unchanged result is not
+/// logged every ten minutes.
+static CLOUD_PROXY_STATE: std::sync::Mutex<Option<String>> = std::sync::Mutex::new(None);
+
+fn cloud_proxy_state_changed(state: String) -> bool {
+  let mut last = CLOUD_PROXY_STATE
+    .lock()
+    .unwrap_or_else(std::sync::PoisonError::into_inner);
+  if last.as_deref() == Some(state.as_str()) {
+    return false;
+  }
+  *last = Some(state);
+  true
+}
 
 pub(crate) fn parse_retry_after(value: &str, now: chrono::DateTime<Utc>) -> Option<Duration> {
   let value = value.trim();
@@ -110,6 +140,11 @@ pub struct Entitlements {
   /// cycle out of date must not be what refuses a customer their own machine.
   #[serde(rename = "remoteControl", default)]
   pub remote_control: bool,
+  /// Recipes Donut cloud runs on a calendar. Read only by the UI: the cloud
+  /// checks the plan when a schedule is saved and again at every fire, so a
+  /// stale or edited copy here can open a screen but never run anything.
+  #[serde(rename = "scheduledAutomation", default)]
+  pub scheduled_automation: bool,
   #[serde(rename = "profileLimit", default)]
   pub profile_limit: i64,
   #[serde(rename = "requestsPerHour", default)]
@@ -140,6 +175,7 @@ fn derive_entitlements(
       cookie_bot: false,
       remote_interactive: false,
       remote_control: false,
+      scheduled_automation: false,
       profile_limit: 0,
       requests_per_hour: 0,
       remote_browser_hours: 0,
@@ -182,6 +218,8 @@ fn derive_entitlements(
     cookie_bot,
     remote_interactive,
     remote_control,
+    // Every plan that is sold with it; an unknown one waits for the server.
+    scheduled_automation: matches!(plan, "solo" | "pro" | "team" | "enterprise"),
     profile_limit,
     requests_per_hour: if browser_automation {
       DEFAULT_REQUESTS_PER_HOUR
@@ -386,10 +424,19 @@ pub struct CloudAuthManager {
   refresh_lock: tokio::sync::Mutex<()>,
   refresh_deferred_until: std::sync::Mutex<Option<Instant>>,
   wayfern_token: Mutex<Option<String>>,
+  /// When the cached Wayfern token was minted, unix seconds. The server keeps a
+  /// token for a day of wall-clock time, sleep included.
+  wayfern_token_minted_at: std::sync::Mutex<Option<u64>>,
   /// The server's reason for refusing this desktop a Wayfern token under a
   /// device rule, until a token is acquired again. The engine reports a
   /// missing token as a plan problem; this is what lets MCP say the real one.
   wayfern_device_refusal: std::sync::Mutex<Option<String>>,
+}
+
+/// Tell what depends on the team seat that the signed-in account changed.
+fn observe_account(user: Option<&CloudUser>) {
+  crate::team_roles::observe(user);
+  crate::team_activity::observe(user);
 }
 
 pub static CLOUD_AUTH: std::sync::LazyLock<CloudAuthManager> =
@@ -398,6 +445,7 @@ pub static CLOUD_AUTH: std::sync::LazyLock<CloudAuthManager> =
 impl CloudAuthManager {
   fn new() -> Self {
     let state = Self::load_auth_state_from_disk();
+    observe_account(state.as_ref().map(|auth| &auth.user));
     // Bound every cloud API call so no single slow / hung request can stall
     // the startup chain (sync-token → proxy-config → wayfern-token), which
     // otherwise gates Wayfern launch behind whichever endpoint is slowest.
@@ -412,6 +460,7 @@ impl CloudAuthManager {
       refresh_lock: tokio::sync::Mutex::new(()),
       refresh_deferred_until: std::sync::Mutex::new(None),
       wayfern_token: Mutex::new(None),
+      wayfern_token_minted_at: std::sync::Mutex::new(None),
       wayfern_device_refusal: std::sync::Mutex::new(None),
     }
   }
@@ -480,6 +529,7 @@ impl CloudAuthManager {
   }
 
   fn store_auth_state(state: &CloudAuthState) -> Result<(), String> {
+    observe_account(Some(&state.user));
     let path = Self::get_settings_dir().join("cloud_auth_state.json");
     if let Some(parent) = path.parent() {
       fs::create_dir_all(parent).map_err(|e| format!("Failed to create directory: {e}"))?;
@@ -518,7 +568,8 @@ impl CloudAuthManager {
 
   // --- JWT expiry check ---
 
-  fn jwt_expiry(token: &str) -> Option<i64> {
+  /// A JWT's claims, unverified.
+  fn jwt_claims(token: &str) -> Option<serde_json::Value> {
     let parts: Vec<&str> = token.split('.').collect();
     if parts.len() != 3 {
       return None;
@@ -533,8 +584,21 @@ impl CloudAuthManager {
       }
     };
 
-    let json: serde_json::Value = serde_json::from_slice(&payload).ok()?;
-    json.get("exp").and_then(|v| v.as_i64())
+    serde_json::from_slice(&payload).ok()
+  }
+
+  fn jwt_expiry(token: &str) -> Option<i64> {
+    Self::jwt_claims(token)?.get("exp").and_then(|v| v.as_i64())
+  }
+
+  /// Whether `token` is one the Donut API bound to `server`. Anything else,
+  /// such as a token for Donut cloud from an API that does not know the
+  /// `server` field yet, must never be sent to a third party's server.
+  fn is_server_sync_token_for(token: &str, server: &str) -> bool {
+    Self::jwt_claims(token).is_some_and(|claims| {
+      claims.get("scope").and_then(|v| v.as_str()) == Some("server-sync")
+        && claims.get("aud").and_then(|v| v.as_str()) == Some(server)
+    })
   }
 
   fn jwt_expires_within(token: &str, margin_secs: i64, now: i64) -> bool {
@@ -618,34 +682,24 @@ impl CloudAuthManager {
       .map_err(|e| format!("Failed to parse response: {e}"))?;
 
     // Store tokens
-    log::info!(
-      "Storing access token (len={}) and refresh token (len={})",
-      result.access_token.len(),
-      result.refresh_token.len()
-    );
     Self::store_access_token(&result.access_token)?;
     Self::store_refresh_token(&result.refresh_token)?;
 
     // Verify tokens survived the encrypt/decrypt round-trip
     match Self::load_access_token() {
-      Ok(Some(loaded)) if loaded == result.access_token => {
-        log::info!(
-          "Access token verified after store/load (len={})",
-          loaded.len()
-        );
-      }
+      Ok(Some(loaded)) if loaded == result.access_token => {}
       Ok(Some(loaded)) => {
         log::error!(
-          "Access token CORRUPTED during store/load: original_len={}, loaded_len={}",
+          "Access token corrupted by store and load stored_len={} loaded_len={}",
           result.access_token.len(),
           loaded.len()
         );
       }
       Ok(None) => {
-        log::error!("Access token missing immediately after store");
+        log::error!("Access token missing right after store");
       }
       Err(e) => {
-        log::error!("Failed to load access token for verification: {e}");
+        log::error!("Access token not readable after store err=\"{e}\"");
       }
     }
 
@@ -657,7 +711,7 @@ impl CloudAuthManager {
     Self::store_auth_state(&auth_state)?;
 
     log::info!(
-      "Login successful: plan={}, subscription_status={}, proxy_bandwidth_limit={}MB",
+      "Signed in plan={} subscription_status={} proxy_bandwidth_limit_mb={}",
       auth_state.user.plan,
       auth_state.user.subscription_status,
       auth_state.user.proxy_bandwidth_limit_mb
@@ -682,8 +736,6 @@ impl CloudAuthManager {
         wait.as_secs()
       ));
     }
-    log::info!("Refreshing access token (holding lock)...");
-
     let refresh_token =
       Self::load_refresh_token()?.ok_or_else(|| "No refresh token stored".to_string())?;
 
@@ -698,7 +750,7 @@ impl CloudAuthManager {
 
     if !response.status().is_success() {
       let status = response.status();
-      log::warn!("Token refresh failed ({status})");
+      log::debug!("Access token refresh refused status={status}");
       if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
         self.defer_refresh(retry_after(response.headers()));
       } else if status == reqwest::StatusCode::UNAUTHORIZED {
@@ -718,7 +770,7 @@ impl CloudAuthManager {
     Self::store_access_token(&result.access_token)?;
     Self::store_refresh_token(&result.refresh_token)?;
 
-    log::info!("Access token refreshed successfully");
+    log::debug!("Access token refreshed");
     Ok(())
   }
 
@@ -767,7 +819,7 @@ impl CloudAuthManager {
       Ok(fresh) => Ok(fresh),
       Err(e) if e.contains("(401") => Err(e),
       Err(e) => {
-        log::debug!("Early access token refresh did not complete: {e}");
+        log::debug!("Early access token refresh not done err=\"{e}\"");
         Ok(token)
       }
     }
@@ -777,7 +829,7 @@ impl CloudAuthManager {
     let _guard = self.refresh_lock.lock().await;
     if let Some(current) = Self::load_access_token()? {
       if current != rejected && !current.is_empty() {
-        log::info!("Token was already refreshed by another caller, retrying...");
+        log::debug!("Access token already refreshed by another caller");
         return Ok(current);
       }
     }
@@ -822,7 +874,7 @@ impl CloudAuthManager {
   /// Only call this when the session is definitively dead (explicit logout
   /// or repeated background refresh failures).
   pub async fn invalidate_session(&self) {
-    log::warn!("Invalidating session — clearing all auth state");
+    log::warn!("Session invalidated, auth state cleared");
     PROXY_MANAGER.remove_cloud_proxy();
     // Same reason `logout` does it: left running, the bridge reconnects with a
     // credential that no longer exists, fails, and backs off into an
@@ -834,7 +886,7 @@ impl CloudAuthManager {
     // The stored `dmk_` key belongs to the account that just left this
     // machine, and the agent configs would keep presenting it. There is no
     // session left to revoke it with, so only the local copy goes; the key
-    // itself is retired from the account page.
+    // itself is retired by the next mint, or from the account page.
     Self::forget_mcp_key_locally("after the session expired");
     self.clear_auth().await;
     crate::team_lock::PROFILE_LOCK.disconnect().await;
@@ -1001,18 +1053,16 @@ impl CloudAuthManager {
       Ok(Some(StoredMcpRemoteKey { id: Some(id), .. })) => {
         if let Err(e) = self.revoke_mcp_key(&id).await {
           log::warn!(
-            "Could not revoke the remote MCP credential on logout; revoke it from the account page: {e}"
+            "Remote MCP key not revoked on logout, revoke it on the account page err=\"{e}\""
           );
         }
       }
       Ok(Some(StoredMcpRemoteKey { id: None, .. })) => {
-        log::warn!(
-          "The remote MCP credential has no stored id, so it cannot be revoked from here; revoke it from the account page"
-        );
+        log::warn!("Remote MCP key has no stored id, revoke it on the account page");
       }
       Ok(None) => return,
       Err(e) => {
-        log::warn!("Could not read the remote MCP credential on logout: {e}");
+        log::warn!("Remote MCP key not readable on logout err=\"{e}\"");
       }
     }
     Self::forget_mcp_key_locally("on logout");
@@ -1022,9 +1072,13 @@ impl CloudAuthManager {
   /// `retire_mcp_key_on_logout`, shared with the expiry path, which has no
   /// session left to revoke with. Logs rather than fails, because the
   /// credential is leaving with the session either way.
+  ///
+  /// The key id stays: a key that was not revoked is still live on the
+  /// server, and the next mint retires it by that id (a revoked one answers
+  /// 404, which counts as retired).
   fn forget_mcp_key_locally(when: &str) {
-    if let Err(e) = SettingsManager::instance().remove_mcp_remote_key() {
-      log::warn!("Could not forget the remote MCP credential {when}: {e}");
+    if let Err(e) = SettingsManager::instance().drop_mcp_remote_key_plaintext() {
+      log::warn!("Remote MCP key not removed locally when=\"{when}\" err=\"{e}\"");
     }
   }
 
@@ -1078,7 +1132,7 @@ impl CloudAuthManager {
     }
 
     // Fetch new sync token
-    let sync_token = self
+    let fetched = self
       .api_call_with_retry(|access_token| {
         let url = format!("{CLOUD_API_URL}/api/auth/sync-token");
         let client = self.client.clone();
@@ -1104,13 +1158,105 @@ impl CloudAuthManager {
           Ok(result.sync_token)
         }
       })
-      .await?;
+      .await;
+    let sync_token = match fetched {
+      Ok(token) => {
+        SYNC_TOKEN_FETCH.succeeded();
+        token
+      }
+      Err(e) => {
+        SYNC_TOKEN_FETCH.failed(&e);
+        return Err(e);
+      }
+    };
 
-    Self::store_cloud_sync_token(&sync_token)?;
+    if let Err(e) = Self::store_cloud_sync_token(&sync_token) {
+      log::error!("Sync token store failed err=\"{e}\"");
+      return Err(e);
+    }
     Ok(Some(sync_token))
   }
 
+  /// A token for the customer's own donut-sync at `server`, which the Donut
+  /// API binds to that one address (`sync::account_server`).
+  pub async fn server_sync_token(&self, server: &str) -> Result<String, String> {
+    if !self.is_logged_in().await {
+      return Err(crate::backend_error("ACCOUNT_SYNC_SIGN_IN_REQUIRED"));
+    }
+    let cached = SERVER_SYNC_TOKENS
+      .lock()
+      .ok()
+      .and_then(|tokens| tokens.get(server).cloned());
+    if let Some(token) = cached.filter(|token| !Self::is_jwt_expiring_soon(token)) {
+      return Ok(token);
+    }
+
+    let fetched = self
+      .api_call_with_retry(|access_token| {
+        let url = format!("{CLOUD_API_URL}/api/auth/sync-token");
+        let client = self.client.clone();
+        let body = serde_json::json!({ "server": server });
+        async move {
+          let response = client
+            .post(&url)
+            .header("Authorization", format!("Bearer {access_token}"))
+            .json(&body)
+            .send()
+            .await
+            .map_err(|e| format!("Failed to get sync token: {e}"))?;
+          let status = response.status();
+          if status == reqwest::StatusCode::FORBIDDEN {
+            return Err(crate::backend_error("ACCOUNT_SYNC_PLAN_REQUIRED"));
+          }
+          if !status.is_success() {
+            let body = response.text().await.unwrap_or_default();
+            return Err(format!("Sync token request failed ({status}): {body}"));
+          }
+          let result: SyncTokenResponse = response
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse sync token response: {e}"))?;
+          Ok(result.sync_token)
+        }
+      })
+      .await;
+    let fetched = fetched.and_then(|token| {
+      if Self::is_server_sync_token_for(&token, server) {
+        Ok(token)
+      } else {
+        Err(crate::backend_error("ACCOUNT_SYNC_UNAVAILABLE"))
+      }
+    });
+    match fetched {
+      Ok(token) => {
+        SERVER_SYNC_TOKEN_FETCH.succeeded();
+        if let Ok(mut tokens) = SERVER_SYNC_TOKENS.lock() {
+          tokens.insert(server.to_string(), token.clone());
+        }
+        Ok(token)
+      }
+      Err(e) => {
+        SERVER_SYNC_TOKEN_FETCH.failed(&e);
+        Err(e)
+      }
+    }
+  }
+
+  /// Forget a token the own server refused, so the next request fetches one.
+  pub(crate) fn discard_server_sync_token(refused: &str) {
+    if let Ok(mut tokens) = SERVER_SYNC_TOKENS.lock() {
+      tokens.retain(|_, token| token != refused);
+    }
+  }
+
   pub async fn logout(&self) -> Result<(), String> {
+    if let Ok(mut tokens) = SERVER_SYNC_TOKENS.lock() {
+      tokens.clear();
+    }
+    // The own server is this account's choice; the next account starts on
+    // Donut cloud.
+    crate::sync::account_server::clear();
+
     // Clear wayfern token
     self.clear_wayfern_token().await;
     self.set_wayfern_device_refusal(None);
@@ -1304,6 +1450,7 @@ impl CloudAuthManager {
   async fn clear_auth(&self) {
     let mut state = self.state.lock().await;
     *state = None;
+    observe_account(None);
     Self::delete_all_cloud_files();
     crate::cookie_bot::forget_enrolments();
   }
@@ -1320,17 +1467,15 @@ impl CloudAuthManager {
     match make_request(access_token.clone()).await {
       Ok(result) => Ok(result),
       Err(e) if e.contains("(401") || e.contains("Unauthorized") => {
-        log::info!("Got 401/Unauthorized response, attempting token refresh...");
+        log::debug!("Cloud API returned 401, refreshing the access token");
 
         // Check if another caller already refreshed while we waited
         let current_token = Self::load_access_token()?.unwrap_or_default();
         if current_token != access_token && !current_token.is_empty() {
-          log::info!("Token was already refreshed by another caller, retrying...");
           return make_request(current_token).await;
         }
 
         let new_token = self.refresh_after_rejection(&access_token).await?;
-        log::info!("Token refreshed, retrying request...");
         make_request(new_token).await
       }
       Err(e) => Err(e),
@@ -1363,7 +1508,6 @@ impl CloudAuthManager {
 
           let status = response.status();
           if status == reqwest::StatusCode::FORBIDDEN {
-            log::warn!("Proxy config returned 403");
             return Err("__403__".to_string());
           }
 
@@ -1379,10 +1523,16 @@ impl CloudAuthManager {
       })
       .await
     {
-      Ok(config) => Ok(Some(config)),
-      Err(e) if e.contains("__403__") => Ok(None),
+      Ok(config) => {
+        PROXY_CONFIG_FETCH.succeeded();
+        Ok(Some(config))
+      }
+      Err(e) if e.contains("__403__") => {
+        PROXY_CONFIG_FETCH.succeeded();
+        Ok(None)
+      }
       Err(e) => {
-        log::warn!("Failed to fetch cloud proxy config: {e}");
+        PROXY_CONFIG_FETCH.failed(e);
         Ok(None)
       }
     }
@@ -1390,15 +1540,15 @@ impl CloudAuthManager {
 
   /// Sync the cloud-managed proxy: fetch config and upsert or remove
   pub async fn sync_cloud_proxy(&self) {
-    log::info!("Syncing cloud proxy configuration...");
     match self.fetch_proxy_config().await {
       Ok(Some(config)) => {
-        log::info!(
-          "Cloud proxy config received: host={}, port={}, protocol={}",
-          config.host,
-          config.port,
-          config.protocol
+        let state = format!(
+          "host={} port={} protocol={}",
+          config.host, config.port, config.protocol
         );
+        if cloud_proxy_state_changed(state.clone()) {
+          log::info!("Cloud proxy configured {state}");
+        }
         let settings = ProxySettings {
           proxy_type: config.protocol,
           host: config.host,
@@ -1409,19 +1559,20 @@ impl CloudAuthManager {
         };
         match PROXY_MANAGER.upsert_cloud_proxy(settings) {
           Ok(_) => {
-            log::info!("Cloud proxy synced successfully");
             // Propagate credential changes to derived location proxies
             PROXY_MANAGER.update_cloud_derived_proxies();
           }
-          Err(e) => log::warn!("Failed to upsert cloud proxy: {e}"),
+          Err(e) => log::warn!("Cloud proxy not saved err=\"{e}\""),
         }
       }
       Ok(None) => {
-        log::info!("No cloud proxy config available (user may not have proxy bandwidth)");
+        if cloud_proxy_state_changed("none".to_string()) {
+          log::info!("Cloud proxy removed: no config available");
+        }
         PROXY_MANAGER.remove_cloud_proxy();
       }
       Err(e) => {
-        log::error!("Failed to sync cloud proxy: {e}");
+        log::error!("Cloud proxy sync failed err=\"{e}\"");
       }
     }
   }
@@ -1493,7 +1644,7 @@ impl CloudAuthManager {
     if !self.is_entitled_to_wayfern_token().await {
       // Ok(()) here means callers log nothing, so a session that declined to
       // mint left no trace at all and looked identical to one that succeeded.
-      log::info!("Skipping wayfern token request: the cached plan is not active");
+      log::info!("Wayfern token not requested: plan not active");
       self.clear_wayfern_token().await;
       return Ok(());
     }
@@ -1543,10 +1694,10 @@ impl CloudAuthManager {
         // A 403 rejects the entitlement without invalidating the login session.
         // Clear the browser token and refresh account state before notifying UI.
         if e.contains("(403") || e.contains("Forbidden") {
-          log::warn!("Wayfern token blocked by backend (403): {e}");
+          WAYFERN_TOKEN.failed(format!("refused: {}", refusal_message(&e)));
           self.clear_wayfern_token().await;
           if let Err(fetch_err) = self.fetch_profile().await {
-            log::warn!("Profile re-fetch after wayfern block failed: {fetch_err}");
+            PROFILE_REFRESH.failed(fetch_err);
           }
           // Only the device rules produce a restriction the user can lift, and
           // the toast tells them to sign other devices out — so only those may
@@ -1559,6 +1710,8 @@ impl CloudAuthManager {
             self.set_wayfern_device_refusal(Some(refusal_message(&e)));
             let _ = crate::events::emit_empty("wayfern-paid-blocked");
           }
+        } else {
+          WAYFERN_TOKEN.failed(&e);
         }
         return Err(e);
       }
@@ -1566,7 +1719,9 @@ impl CloudAuthManager {
 
     let mut wt = self.wayfern_token.lock().await;
     *wt = Some(token);
+    self.set_wayfern_token_minted_at(Some(crate::proxy_manager::now_secs()));
     self.set_wayfern_device_refusal(None);
+    WAYFERN_TOKEN.succeeded();
     log::info!("Wayfern token acquired");
     Ok(())
   }
@@ -1591,6 +1746,42 @@ impl CloudAuthManager {
   pub async fn clear_wayfern_token(&self) {
     let mut wt = self.wayfern_token.lock().await;
     *wt = None;
+    self.set_wayfern_token_minted_at(None);
+  }
+
+  fn set_wayfern_token_minted_at(&self, at: Option<u64>) {
+    if let Ok(mut minted_at) = self.wayfern_token_minted_at.lock() {
+      *minted_at = at;
+    }
+  }
+
+  /// Whether the cached Wayfern token is old enough to replace, by the clock on
+  /// the wall: a computer that slept through the night kept the app's timers
+  /// still while the server's day ran out.
+  fn wayfern_token_due(&self, now: u64) -> bool {
+    self
+      .wayfern_token_minted_at
+      .lock()
+      .ok()
+      .and_then(|minted_at| *minted_at)
+      .is_some_and(|minted_at| wayfern_token_stale(minted_at, now))
+  }
+
+  /// A fresh Wayfern token after the engine refused the cached one for a
+  /// feature this plan includes. The server drops a token on a plan change
+  /// and after a day; the cached copy does not know.
+  pub async fn wayfern_token_after_refusal(&self, refused: Option<&str>) -> Option<String> {
+    if !self.can_use_cross_os_fingerprints().await {
+      return None;
+    }
+    if let Err(e) = self.request_wayfern_token().await {
+      log::warn!("Wayfern token not replaced after a refusal err=\"{e}\"");
+      return None;
+    }
+    self
+      .get_wayfern_token()
+      .await
+      .filter(|token| Some(token.as_str()) != refused)
   }
 
   fn set_wayfern_device_refusal(&self, refusal: Option<String>) {
@@ -1609,7 +1800,6 @@ impl CloudAuthManager {
 
   /// Background loop that refreshes the sync token periodically
   pub async fn start_sync_token_refresh_loop(app_handle: tauri::AppHandle) {
-    let mut wayfern_refresh_counter: u32 = 0;
     loop {
       tokio::time::sleep(std::time::Duration::from_secs(600)).await; // 10 minutes
 
@@ -1617,39 +1807,34 @@ impl CloudAuthManager {
         continue;
       }
 
-      wayfern_refresh_counter += 1;
-
       // Proactively refresh the access token if it's expired or expiring soon.
       // This runs first so subsequent API calls use a fresh token.
       if let Ok(Some(token)) = Self::load_access_token() {
         if Self::access_token_needs_refresh(&token) {
-          if let Err(e) = CLOUD_AUTH.ensure_fresh_access_token().await {
-            log::warn!("Failed to refresh cloud access token: {e}");
-            // If the refresh token itself was rejected, session is irrecoverable
-            if e.contains("(401") || e.contains("Unauthorized") {
-              continue;
+          match CLOUD_AUTH.ensure_fresh_access_token().await {
+            Ok(_) => ACCESS_TOKEN_REFRESH.succeeded(),
+            Err(e) => {
+              ACCESS_TOKEN_REFRESH.failed(&e);
+              // If the refresh token itself was rejected, session is irrecoverable
+              if e.contains("(401") || e.contains("Unauthorized") {
+                continue;
+              }
             }
           }
         }
       }
 
-      match CLOUD_AUTH.get_or_refresh_sync_token().await {
-        Ok(Some(_)) => {
-          log::debug!("Cloud sync token refreshed successfully");
-        }
-        Ok(None) => {}
-        Err(e) => {
-          log::warn!("Failed to refresh cloud sync token: {e}");
-        }
-      }
+      // Failures are logged inside.
+      let _ = CLOUD_AUTH.get_or_refresh_sync_token().await;
 
       let plan_before = CLOUD_AUTH.plan_marker().await;
 
       // Refresh profile data periodically. A failure here leaves the cached
       // plan stale, which silently gates paid features, so it belongs at warn
       // rather than debug where the shipped log level hides it.
-      if let Err(e) = CLOUD_AUTH.fetch_profile().await {
-        log::warn!("Failed to refresh cloud profile: {e}");
+      match CLOUD_AUTH.fetch_profile().await {
+        Ok(_) => PROFILE_REFRESH.succeeded(),
+        Err(e) => PROFILE_REFRESH.failed(e),
       }
 
       if CLOUD_AUTH.plan_marker().await != plan_before {
@@ -1675,7 +1860,7 @@ impl CloudAuthManager {
       // Sync cloud proxy credentials
       CLOUD_AUTH.sync_cloud_proxy().await;
 
-      // Refresh wayfern token every 10 hours (60 iterations of 10-minute loop).
+      // Refresh the wayfern token once it is ten hours old by the wall clock.
       // request_wayfern_token owns the entitlement check and clears the cached
       // token when the plan doesn't include automation.
       //
@@ -1683,13 +1868,15 @@ impl CloudAuthManager {
       // above picks up an upgrade within ten minutes, but nothing watched that
       // transition, so a session that signed in before upgrading stayed
       // tokenless for up to ten hours while reporting the feature as unlocked.
+      // A plan change revokes the server's tokens, so it mints one too.
       let missing_entitled_token = CLOUD_AUTH.is_entitled_to_wayfern_token().await
         && CLOUD_AUTH.get_wayfern_token().await.is_none();
-      if wayfern_refresh_counter >= 60 || missing_entitled_token {
-        wayfern_refresh_counter = 0;
-        if let Err(e) = CLOUD_AUTH.request_wayfern_token().await {
-          log::warn!("Failed to refresh wayfern token: {e}");
-        }
+      let plan_changed = CLOUD_AUTH.plan_marker().await != plan_before;
+      if CLOUD_AUTH.wayfern_token_due(crate::proxy_manager::now_secs())
+        || missing_entitled_token
+        || plan_changed
+      {
+        let _ = CLOUD_AUTH.request_wayfern_token().await;
       }
 
       let _ = &app_handle; // keep app_handle alive
@@ -1776,12 +1963,12 @@ pub async fn cloud_exchange_device_code(
   // effort: a failure leaves the login response in place.
   match CLOUD_AUTH.fetch_profile().await {
     Ok(user) => state.user = user,
-    Err(e) => log::warn!("Post-login profile refresh failed: {e}"),
+    Err(e) => log::warn!("Post-login profile refresh failed err=\"{e}\""),
   }
 
   let has_subscription = CLOUD_AUTH.has_active_paid_subscription().await;
   log::info!(
-    "Post-login: plan={}, effective_plan={}, has_active_subscription={}",
+    "Post-login plan resolved plan={} effective_plan={} has_active_subscription={}",
     state.user.plan,
     state.user.effective_plan(),
     has_subscription
@@ -1789,17 +1976,13 @@ pub async fn cloud_exchange_device_code(
 
   // Pre-fetch sync token so sync can start immediately
   if has_subscription {
-    log::info!("Pre-fetching sync token...");
-    match CLOUD_AUTH.get_or_refresh_sync_token().await {
-      Ok(Some(_)) => log::info!("Sync token pre-fetched successfully"),
-      Ok(None) => log::warn!("Sync token not available despite active subscription"),
-      Err(e) => log::error!("Failed to pre-fetch sync token after login: {e}"),
+    // Failures of both are logged inside.
+    if let Ok(None) = CLOUD_AUTH.get_or_refresh_sync_token().await {
+      log::warn!("Sync token missing despite an active subscription");
     }
 
     // Request wayfern token for paid users
-    if let Err(e) = CLOUD_AUTH.request_wayfern_token().await {
-      log::warn!("Failed to request wayfern token after login: {e}");
-    }
+    let _ = CLOUD_AUTH.request_wayfern_token().await;
   }
 
   // Sync cloud proxy after login
@@ -1818,6 +2001,10 @@ pub async fn cloud_exchange_device_code(
   // app was restarted, which is the worst of both: the UI says yes and the
   // account page says no desktop is connected.
   ensure_remote_bridge(&app_handle).await;
+
+  // Signing out left the connected clients with a dead key; give them a new
+  // one without holding up the sign-in.
+  tauri::async_runtime::spawn(crate::restore_mcp_credential_after_sign_in());
 
   let _ = crate::events::emit_empty("cloud-auth-changed");
 
@@ -1855,9 +2042,7 @@ pub(crate) async fn ensure_remote_bridge(app_handle: &tauri::AppHandle) {
     .map(|settings| settings.mcp_remote_enabled)
     .unwrap_or(false);
   if enabled {
-    log::info!(
-      "[mcp-remote] Remote control is enabled and the account is signed in; opening the bridge"
-    );
+    log::info!("Remote control bridge opening: enabled and signed in");
     crate::mcp_remote::start(app_handle.clone());
   }
 }
@@ -1885,9 +2070,8 @@ pub async fn cloud_refresh_profile() -> Result<CloudUser, String> {
   if CLOUD_AUTH.is_entitled_to_wayfern_token().await
     && CLOUD_AUTH.get_wayfern_token().await.is_none()
   {
-    if let Err(e) = CLOUD_AUTH.request_wayfern_token().await {
-      log::warn!("Refresh could not obtain a wayfern token: {e}");
-    }
+    // Failures are logged inside.
+    let _ = CLOUD_AUTH.request_wayfern_token().await;
   }
 
   Ok(user)
@@ -1895,6 +2079,7 @@ pub async fn cloud_refresh_profile() -> Result<CloudUser, String> {
 
 #[tauri::command]
 pub async fn cloud_logout(app_handle: tauri::AppHandle) -> Result<(), String> {
+  let keep_self_hosted = crate::sync::account_server::self_hosted_picked().await;
   CLOUD_AUTH.logout().await?;
 
   // Stop the remote session-events stream. Its credential is now invalid, so
@@ -1904,15 +2089,18 @@ pub async fn cloud_logout(app_handle: tauri::AppHandle) -> Result<(), String> {
   // logout; nothing stopped the Rust stream, so a sign-out left it churning.
   crate::remote_session::stop_session_events();
 
-  // Always clear the stored sync URL and token on cloud logout. While the
-  // user was signed in, the cloud auth flow populated these with the hosted
-  // sync server's URL + a server-issued token — leaving them in place would
-  // pre-fill the Self-Hosted tab with our production URL and a token the
-  // user never typed. The cloud-URL-only check we used to do here missed
-  // trailing-slash / scheme variants and any future cloud endpoint moves.
-  let manager = crate::settings_manager::SettingsManager::instance();
-  let _ = manager.save_sync_server_url(None);
-  let _ = manager.remove_sync_token(&app_handle).await;
+  // Clear the stored sync URL and token on cloud logout, unless the person
+  // synced with that server while signed in. Older versions populated these
+  // with the hosted sync server's URL + a server-issued token — leaving them
+  // in place would pre-fill the Self-Hosted tab with our production URL and a
+  // token the user never typed. The cloud-URL-only check we used to do here
+  // missed trailing-slash / scheme variants and any future cloud endpoint
+  // moves.
+  if !keep_self_hosted {
+    let manager = crate::settings_manager::SettingsManager::instance();
+    let _ = manager.save_sync_server_url(None);
+    let _ = manager.remove_sync_token(&app_handle).await;
+  }
 
   // Remove cloud-managed and cloud-derived proxies
   crate::proxy_manager::PROXY_MANAGER.remove_cloud_proxies();
@@ -1929,6 +2117,14 @@ pub async fn cloud_has_active_subscription() -> Result<bool, String> {
 #[tauri::command]
 pub async fn cloud_get_wayfern_token() -> Result<Option<String>, String> {
   Ok(CLOUD_AUTH.get_wayfern_token().await)
+}
+
+/// How old a Wayfern token may get before it is replaced; the server keeps one
+/// for a day.
+const WAYFERN_TOKEN_REFRESH_SECS: u64 = 10 * 60 * 60;
+
+fn wayfern_token_stale(minted_at: u64, now: u64) -> bool {
+  now.saturating_sub(minted_at) >= WAYFERN_TOKEN_REFRESH_SECS
 }
 
 #[tauri::command]
@@ -2052,13 +2248,16 @@ pub async fn cloud_get_proxy_usage() -> Result<Option<CloudProxyUsage>, String> 
     })
     .await
   {
-    Ok(usage) => Ok(Some(merge_proxy_usage(
-      &usage,
-      cached_recurring,
-      cached_extra,
-    ))),
+    Ok(usage) => {
+      PROXY_USAGE_FETCH.succeeded();
+      Ok(Some(merge_proxy_usage(
+        &usage,
+        cached_recurring,
+        cached_extra,
+      )))
+    }
     Err(e) => {
-      log::warn!("Failed to fetch live proxy usage, falling back to cached: {e}");
+      PROXY_USAGE_FETCH.failed(format!("{e}; using cached usage"));
       // Fallback to cached values
       let state = CLOUD_AUTH.state.lock().await;
       match &*state {
@@ -2095,6 +2294,36 @@ pub async fn restart_sync_service(app_handle: tauri::AppHandle) -> Result<(), St
 mod tests {
   use super::*;
 
+  fn jwt_with(claims: serde_json::Value) -> String {
+    use base64::{engine::general_purpose, Engine as _};
+    let encode =
+      |value: &serde_json::Value| general_purpose::URL_SAFE_NO_PAD.encode(value.to_string());
+    format!(
+      "{}.{}.signature",
+      encode(&serde_json::json!({ "alg": "RS256" })),
+      encode(&claims)
+    )
+  }
+
+  #[test]
+  fn only_a_token_bound_to_the_server_goes_to_it() {
+    let server = "https://sync.example.com";
+    let bound = jwt_with(serde_json::json!({ "scope": "server-sync", "aud": server }));
+    assert!(CloudAuthManager::is_server_sync_token_for(&bound, server));
+    // An API that ignores `server` answers with a token for Donut cloud, which
+    // must never reach someone else's server.
+    let cloud = jwt_with(serde_json::json!({ "scope": "sync", "prefix": "users/u1/" }));
+    assert!(!CloudAuthManager::is_server_sync_token_for(&cloud, server));
+    assert!(!CloudAuthManager::is_server_sync_token_for(
+      &bound,
+      "https://other.example.com"
+    ));
+    assert!(!CloudAuthManager::is_server_sync_token_for(
+      "not-a-jwt",
+      server
+    ));
+  }
+
   #[test]
   fn a_refused_token_request_yields_the_servers_message() {
     let refused = r#"Wayfern token request failed (403 Forbidden): {"message":"Browser automation is restricted to your primary device. Log out other devices to use it here.","error":"Forbidden","statusCode":403}"#;
@@ -2125,6 +2354,25 @@ mod tests {
     assert!(
       !solo.cross_os_fingerprints,
       "solo is sold without fingerprint editing"
+    );
+  }
+
+  #[test]
+  fn scheduled_automation_is_paid_only_and_not_guessed_for_an_unknown_plan() {
+    for plan in ["solo", "pro", "team", "enterprise"] {
+      assert!(
+        derive_entitlements(plan, Some("monthly"), "active", 20).scheduled_automation,
+        "{plan}"
+      );
+    }
+    assert!(!derive_entitlements("free", None, "active", 3).scheduled_automation);
+    assert!(!derive_entitlements("pro", Some("monthly"), "canceled", 20).scheduled_automation);
+    assert!(!derive_entitlements("mystery", Some("monthly"), "active", 20).scheduled_automation);
+    let older_backend: Entitlements =
+      serde_json::from_str(r#"{"active":true,"browserAutomation":true}"#).unwrap();
+    assert!(
+      !older_backend.scheduled_automation,
+      "a backend that does not send the key does not open the feature"
     );
   }
 
@@ -2385,6 +2633,22 @@ mod tests {
       .find("sync::resume_subscription(app_handle.clone()).await;")
       .expect("a changed plan resumes the subscription");
     assert!(before < fetch && fetch < resume);
+  }
+
+  #[test]
+  fn a_wayfern_token_is_replaced_by_its_wall_clock_age() {
+    let minted = 1_800_000_000;
+    assert!(!wayfern_token_stale(minted, minted + 60));
+    assert!(!wayfern_token_stale(
+      minted,
+      minted + WAYFERN_TOKEN_REFRESH_SECS - 1
+    ));
+    assert!(wayfern_token_stale(
+      minted,
+      minted + WAYFERN_TOKEN_REFRESH_SECS
+    ));
+    // A night asleep counts: the server's day ran on.
+    assert!(wayfern_token_stale(minted, minted + 20 * 60 * 60));
   }
 
   #[test]

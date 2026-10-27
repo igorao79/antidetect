@@ -3,7 +3,6 @@
 //! Converts fingerprints to Camoufox configuration format and builds launch options.
 
 use rand::RngExt;
-use serde_yaml;
 use std::collections::HashMap;
 use std::path::Path;
 
@@ -15,12 +14,36 @@ use crate::camoufox::geolocation;
 use crate::camoufox::presets;
 use crate::camoufox::webgl;
 
-/// Browserforge mapping from YAML.
-type BrowserforgeMapping = HashMap<String, serde_yaml::Value>;
+/// Browserforge mapping from YAML: a target key, or a nested mapping.
+type BrowserforgeMapping = HashMap<String, serde_json::Value>;
 
 /// Load the browserforge mapping from embedded YAML.
 fn load_browserforge_mapping() -> BrowserforgeMapping {
-  serde_yaml::from_str(data::BROWSERFORGE_YML).unwrap_or_default()
+  let Ok(docs) = yaml_rust2::YamlLoader::load_from_str(data::BROWSERFORGE_YML) else {
+    return HashMap::new();
+  };
+  match docs.first().map(yaml_to_json) {
+    Some(serde_json::Value::Object(map)) => map.into_iter().collect(),
+    _ => HashMap::new(),
+  }
+}
+
+/// The mapping's YAML as JSON: strings and nested mappings are all it holds.
+fn yaml_to_json(yaml: &yaml_rust2::Yaml) -> serde_json::Value {
+  use yaml_rust2::Yaml;
+  match yaml {
+    Yaml::String(s) | Yaml::Real(s) => serde_json::Value::String(s.clone()),
+    Yaml::Integer(n) => serde_json::json!(n),
+    Yaml::Boolean(b) => serde_json::json!(b),
+    Yaml::Array(items) => serde_json::Value::Array(items.iter().map(yaml_to_json).collect()),
+    Yaml::Hash(map) => serde_json::Value::Object(
+      map
+        .iter()
+        .filter_map(|(k, v)| Some((k.as_str()?.to_string(), yaml_to_json(v))))
+        .collect(),
+    ),
+    _ => serde_json::Value::Null,
+  }
 }
 
 /// Convert a fingerprint to Camoufox configuration.
@@ -55,7 +78,7 @@ fn cast_to_properties(
       let fp_value = fp_obj.get(key);
 
       match mapping_value {
-        serde_yaml::Value::String(target_key) => {
+        serde_json::Value::String(target_key) => {
           if let Some(value) = fp_value {
             let mut final_value = value.clone();
 
@@ -77,11 +100,11 @@ fn cast_to_properties(
             config.insert(target_key.clone(), final_value);
           }
         }
-        serde_yaml::Value::Mapping(nested_mapping) => {
+        serde_json::Value::Object(nested_mapping) => {
           if let Some(nested_fp) = fp_value {
             let nested: BrowserforgeMapping = nested_mapping
               .iter()
-              .filter_map(|(k, v)| k.as_str().map(|ks| (ks.to_string(), v.clone())))
+              .map(|(k, v)| (k.clone(), v.clone()))
               .collect();
             cast_to_properties(config, &nested, nested_fp, ff_version);
           }

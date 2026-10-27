@@ -210,9 +210,9 @@ pub async fn resolve(profile: &BrowserProfile) -> Result<CdpTarget, ResolveError
       .await
       .map_err(|e| ResolveError::Endpoint(e.to_string()))?;
     let bearer = crate::remote_session::access_token_for_cdp().map_err(ResolveError::Endpoint)?;
-    log::info!(
-      "Driving profile '{}' through remote session {}",
-      profile.name,
+    log::debug!(
+      "Driving profile through remote session profile={} session={}",
+      profile.id,
       ShortId(&session.session_id)
     );
     return Ok(CdpTarget::Remote {
@@ -240,10 +240,6 @@ pub async fn resolve(profile: &BrowserProfile) -> Result<CdpTarget, ResolveError
 
 /// The debugging port a locally launched browser registered for this profile.
 async fn local_cdp_port(profile: &BrowserProfile, patience: Patience) -> Option<u16> {
-  let profiles_dir = crate::profile::manager::ProfileManager::instance().get_profiles_dir();
-  let profile_path = profile.get_profile_data_path(&profiles_dir);
-  let profile_path_str = profile_path.to_string_lossy().to_string();
-
   // Port info is written once the process is up, so a tool called straight
   // after a launch has to wait for it.
   for attempt in 0..patience.attempts(10) {
@@ -251,13 +247,36 @@ async fn local_cdp_port(profile: &BrowserProfile, patience: Patience) -> Option<
       tokio::time::sleep(Duration::from_secs(1)).await;
     }
     if let Some(port) = crate::wayfern_manager::WayfernManager::instance()
-      .get_cdp_port(&profile_path_str)
+      .cdp_port_for_profile(profile)
       .await
     {
       return Some(port);
     }
   }
   None
+}
+
+/// A BROWSER-level socket on a locally running browser, for a client that
+/// attaches to every tab itself. `None` when the profile's browser is not
+/// running on this machine.
+pub async fn connect_local_browser(profile: &BrowserProfile) -> Option<CdpConnection> {
+  profile.process_id?;
+  let port = local_cdp_port(profile, Patience::Immediate).await?;
+  let version: Value = reqwest::Client::new()
+    .get(format!("http://127.0.0.1:{port}/json/version"))
+    .timeout(Duration::from_secs(3))
+    .send()
+    .await
+    .ok()?
+    .json()
+    .await
+    .ok()?;
+  let request = version
+    .get("webSocketDebuggerUrl")
+    .and_then(Value::as_str)?
+    .into_client_request()
+    .ok()?;
+  dial(request, None).await.ok().map(CdpConnection::new)
 }
 
 /// A page-level socket on a locally running browser.
@@ -283,7 +302,11 @@ async fn local_page_ws_url(profile: &BrowserProfile, patience: Patience) -> Opti
     {
       Ok(response) => match response.json::<Vec<Value>>().await {
         Ok(targets) => {
-          if let Some(ws_url) = pick_local_page_socket(&targets) {
+          // The tab an agent picked comes first; then any drivable page.
+          if let Some(ws_url) =
+            crate::browser_tabs::selected_socket(&profile.id.to_string(), &targets)
+              .or_else(|| pick_local_page_socket(&targets))
+          {
             return Some(ws_url);
           }
           last_err = "no page target found in browser".to_string();
@@ -295,7 +318,7 @@ async fn local_page_ws_url(profile: &BrowserProfile, patience: Patience) -> Opti
   }
 
   if patience == Patience::WaitForLaunch {
-    log::warn!("Local CDP discovery on port {port} gave up: {last_err}");
+    log::warn!("Local CDP discovery gave up cdp_port={port} err=\"{last_err}\"");
   }
   None
 }
@@ -392,8 +415,26 @@ impl CdpConnection {
     method: &str,
     params: Value,
   ) -> Result<(), CdpError> {
-    use futures_util::sink::SinkExt;
     let frame = cdp_frame(self.cdp_session.as_deref(), id, method, params);
+    self.send_frame(frame).await
+  }
+
+  /// Send `method` as command `id` to the flattened session `session`, or to
+  /// the socket's own target when it is `None`.
+  pub async fn send_to(
+    &mut self,
+    session: Option<&str>,
+    id: u64,
+    method: &str,
+    params: Value,
+  ) -> Result<(), CdpError> {
+    self
+      .send_frame(cdp_frame(session, id, method, params))
+      .await
+  }
+
+  async fn send_frame(&mut self, frame: Value) -> Result<(), CdpError> {
+    use futures_util::sink::SinkExt;
     self
       .stream
       .send(Message::Text(frame.to_string().into()))
@@ -541,6 +582,7 @@ impl CdpConnection {
 const RUN_PAGE_ENABLE_ID: u64 = 1;
 const RUN_COMMAND_ID: u64 = 2;
 const RUN_PAGE_DISABLE_ID: u64 = 3;
+const RUN_FRAME_TREE_ID: u64 = 4;
 
 /// The attach handshake and the commands after it share one socket, so a
 /// handshake reply carrying a command's id would be handed back as that
@@ -554,32 +596,142 @@ const _: () = {
   assert!(HANDSHAKE_ATTACH_ID != RUN_PAGE_ENABLE_ID);
   assert!(HANDSHAKE_ATTACH_ID != RUN_COMMAND_ID);
   assert!(HANDSHAKE_ATTACH_ID != RUN_PAGE_DISABLE_ID);
+  assert!(HANDSHAKE_GET_TARGETS_ID != RUN_FRAME_TREE_ID);
+  assert!(HANDSHAKE_ATTACH_ID != RUN_FRAME_TREE_ID);
 };
 
 /// Run one command on a fresh connection and hand back its result.
+/// A socket kept open after a one-shot command, for the next one to the same
+/// page. Dialing costs little on this computer, but a remote session pays a
+/// relay dial and a page attach each time.
+struct PooledConnection {
+  connection: CdpConnection,
+  next_id: u64,
+  last_used: tokio::time::Instant,
+}
+
+/// How long an unused socket is kept.
+const POOL_IDLE: Duration = Duration::from_secs(30);
+/// The first command id on a pooled socket, apart from the fixed ids the
+/// one-shot helpers use, so a late reply never matches a new command.
+const POOL_FIRST_ID: u64 = 1_000;
+
+static POOL: std::sync::LazyLock<
+  tokio::sync::Mutex<std::collections::HashMap<String, PooledConnection>>,
+> = std::sync::LazyLock::new(Default::default);
+
+impl CdpTarget {
+  /// The socket a pooled connection to this target serves.
+  fn pool_key(&self) -> String {
+    match self {
+      Self::Local { ws_url } => ws_url.clone(),
+      Self::Remote {
+        ws_url, session_id, ..
+      } => format!("{ws_url}#{session_id}"),
+    }
+  }
+}
+
+/// Whether a failure on a pooled socket means the command never reached the
+/// browser, so a fresh socket may send it again.
+fn not_delivered(error: &CdpError) -> bool {
+  matches!(error, CdpError::Transport(message)
+    if message.starts_with("failed to send CDP command")
+      || message.contains("connection closed"))
+}
+
+/// Whether the socket is still fit for the next command after `result`.
+fn reusable(result: &Result<Value, CdpError>) -> bool {
+  matches!(result, Ok(_) | Err(CdpError::Protocol(_)))
+}
+
+async fn give_back(key: String, pooled: PooledConnection) {
+  let mut pool = POOL.lock().await;
+  pool.retain(|_, kept| kept.last_used.elapsed() < POOL_IDLE);
+  if let Some(extra) = pool.insert(key, pooled) {
+    drop(pool);
+    extra.connection.close().await;
+  }
+}
+
 pub async fn run_command(
   target: &CdpTarget,
   method: &str,
   params: Value,
 ) -> Result<Value, CdpError> {
-  let mut connection = target.connect().await?;
-  let result = connection.call(RUN_COMMAND_ID, method, params).await;
-  connection.close().await;
+  let key = target.pool_key();
+  // Tests run each case on a runtime of its own, and a socket kept from one
+  // is dead in the next, so the pool only serves the app's one runtime.
+  let kept = if cfg!(test) {
+    None
+  } else {
+    POOL
+      .lock()
+      .await
+      .remove(&key)
+      .filter(|kept| kept.last_used.elapsed() < POOL_IDLE)
+  };
+  if let Some(mut pooled) = kept {
+    pooled.next_id += 1;
+    // A bound on the whole call, the send included: a socket that stopped
+    // being driven must fail the command, never hang it.
+    let result = tokio::time::timeout(
+      COMMAND_TIMEOUT + Duration::from_secs(5),
+      pooled
+        .connection
+        .call(pooled.next_id, method, params.clone()),
+    )
+    .await
+    .unwrap_or_else(|_| {
+      Err(CdpError::Transport(
+        "timed out waiting for a CDP response".to_string(),
+      ))
+    });
+    match &result {
+      Err(error) if not_delivered(error) => {
+        log::debug!("Pooled CDP socket was closed, dialing again method={method}");
+      }
+      _ => {
+        if reusable(&result) {
+          pooled.last_used = tokio::time::Instant::now();
+          give_back(key, pooled).await;
+        } else {
+          pooled.connection.close().await;
+        }
+        return result;
+      }
+    }
+  }
+  let mut pooled = PooledConnection {
+    connection: target.connect().await?,
+    next_id: POOL_FIRST_ID,
+    last_used: tokio::time::Instant::now(),
+  };
+  let result = pooled.connection.call(pooled.next_id, method, params).await;
+  if reusable(&result) && !cfg!(test) {
+    pooled.last_used = tokio::time::Instant::now();
+    give_back(key, pooled).await;
+  } else {
+    pooled.connection.close().await;
+  }
   result
 }
 
 /// Run one command, then wait for the page to finish loading.
 ///
-/// Used for anything that might navigate: `Page.navigate` obviously, but also a
-/// click or a script that turns out to follow a link. When nothing navigates,
-/// the wait simply expires and the command's own result is returned — that is
-/// the intended path, not a failure.
+/// Used for anything that might navigate: `Page.navigate` obviously
+/// (`expect_navigation`), but also a click or a script that turns out to
+/// follow a link. When nothing starts to navigate, the wait ends a moment after
+/// the reply (`navigation_watch`) and the command's own result is returned:
+/// that is the intended path, not a failure.
 pub async fn run_command_awaiting_load(
   target: &CdpTarget,
   method: &str,
   params: Value,
   timeout_secs: u64,
+  expect_navigation: bool,
 ) -> Result<Value, CdpError> {
+  use crate::navigation_watch::{main_frame_of, NavigationWatch};
   let mut connection = target.connect().await?;
 
   // Page events have to be on before the command runs, or `loadEventFired`
@@ -587,20 +739,31 @@ pub async fn run_command_awaiting_load(
   connection
     .call(RUN_PAGE_ENABLE_ID, "Page.enable", serde_json::json!({}))
     .await?;
+  let main_frame = connection
+    .call(
+      RUN_FRAME_TREE_ID,
+      "Page.getFrameTree",
+      serde_json::json!({}),
+    )
+    .await
+    .ok()
+    .and_then(|tree| main_frame_of(&tree));
   connection
     .send_command(RUN_COMMAND_ID, method, params)
     .await?;
 
   let mut command_result = None;
   let mut failure = None;
+  let mut watch = NavigationWatch::new(main_frame, expect_navigation);
   let deadline = tokio::time::Instant::now() + Duration::from_secs(timeout_secs);
 
   loop {
-    let remaining = deadline.saturating_duration_since(tokio::time::Instant::now());
-    if remaining.is_zero() {
+    let now = tokio::time::Instant::now();
+    if watch.done(now) || now >= deadline {
       break;
     }
-    let text = match tokio::time::timeout(remaining, connection.next_text()).await {
+    let text = match tokio::time::timeout_at(watch.wake_at(deadline), connection.next_text()).await
+    {
       Ok(Some(Ok(text))) => text,
       Ok(Some(Err(e))) => {
         // A dropped connection cannot unsay a command the browser already
@@ -612,9 +775,11 @@ pub async fn run_command_awaiting_load(
         }
         break;
       }
-      // The peer hung up, or the wait expired. Either way whatever the command
-      // already answered is the best result available.
-      Ok(None) | Err(_) => break,
+      // The peer hung up. Whatever the command already answered is the best
+      // result available.
+      Ok(None) => break,
+      // Woken for the end of the grace or the deadline; the loop decides.
+      Err(_) => continue,
     };
 
     let response: Value = serde_json::from_str(&text).unwrap_or_default();
@@ -630,12 +795,13 @@ pub async fn run_command_awaiting_load(
           .cloned()
           .unwrap_or_else(|| serde_json::json!({})),
       );
+      watch.on_reply(tokio::time::Instant::now());
     }
 
     // Flattened remote sessions keep `method` at the top level, so this match
     // is identical on both arms.
-    if response.get("method") == Some(&Value::from("Page.loadEventFired")) {
-      break;
+    if let Some(event) = response.get("method").and_then(Value::as_str) {
+      watch.on_event(event, response.get("params"));
     }
   }
 
@@ -663,6 +829,7 @@ pub async fn navigate(target: &CdpTarget, url: &str, timeout_secs: u64) -> Resul
     "Page.navigate",
     serde_json::json!({ "url": url }),
     timeout_secs,
+    true,
   )
   .await
   .map(|_| ())
@@ -696,8 +863,8 @@ impl CdpTarget {
         return Err(error);
       }
       let delay = CONNECT_RETRY_BASE * 2u32.pow(attempt - 1);
-      log::warn!(
-        "CDP connect to {} failed ({error}); retrying in {}ms",
+      log::debug!(
+        "CDP connect failed target=\"{}\" attempt={attempt} retry_in_ms={} err=\"{error}\"",
         self.describe(),
         delay.as_millis()
       );
@@ -722,7 +889,7 @@ impl CdpTarget {
         let mut connection = dial_relay(ws_url, bearer).await?;
         if let Err(e) = connection.attach_to_page().await {
           log::warn!(
-            "Could not attach to a page in remote session {}: {e}",
+            "Remote session page attach failed session={} err=\"{e}\"",
             ShortId(session_id)
           );
           return Err(e);
@@ -763,7 +930,7 @@ pub async fn open_relay_socket(session_id: &str) -> Result<RelaySocket, CdpError
     Err(e) => return Err(e),
   };
 
-  log::info!("The CDP relay refused the stored access token; refreshing and retrying once");
+  log::debug!("CDP relay refused the access token, refreshing it once");
   crate::cloud_auth::CLOUD_AUTH
     .refresh_access_token()
     .await
@@ -824,7 +991,7 @@ async fn dial_relay(ws_url: &str, bearer: &str) -> Result<CdpConnection, CdpErro
     Err(e) => return Err(e),
   };
 
-  log::info!("The CDP relay refused the stored access token; refreshing and retrying once");
+  log::debug!("CDP relay refused the access token, refreshing it once");
   crate::cloud_auth::CLOUD_AUTH
     .refresh_access_token()
     .await

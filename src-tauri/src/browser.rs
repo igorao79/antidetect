@@ -366,7 +366,6 @@ mod linux {
   #[allow(dead_code)]
   pub fn prepare_executable(executable_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
     // On Linux, ensure the executable has proper permissions
-    log::info!("Setting execute permissions for: {:?}", executable_path);
 
     let metadata = std::fs::metadata(executable_path)?;
     let mut permissions = metadata.permissions();
@@ -377,10 +376,7 @@ mod linux {
 
     std::fs::set_permissions(executable_path, permissions)?;
 
-    log::info!(
-      "Execute permissions set successfully for: {:?}",
-      executable_path
-    );
+    log::debug!("Execute permission set path={}", executable_path.display());
     Ok(())
   }
 }
@@ -673,7 +669,6 @@ impl Browser for WayfernBrowser {
       "--no-default-browser-check".to_string(),
       "--disable-background-mode".to_string(),
       "--disable-component-update".to_string(),
-      "--disable-background-timer-throttling".to_string(),
       "--crash-server-url=".to_string(),
       "--disable-updater".to_string(),
       "--disable-session-crashed-bubble".to_string(),
@@ -1413,6 +1408,9 @@ mod tests {
       created_by_email: None,
       shared_by: None,
       dns_blocklist: None,
+      dns_server: None,
+      status_id: None,
+      start_urls: Vec::new(),
       password_protected: false,
       clear_on_close: false,
       created_at: None,

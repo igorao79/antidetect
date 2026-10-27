@@ -25,6 +25,7 @@ import {
 } from "@/components/agent-conversation";
 import { AgentProfiles } from "@/components/agent-profiles";
 import { AgentRecipes } from "@/components/agent-recipes";
+import { AgentSchedules } from "@/components/agent-schedules";
 import { AnimatedSwitch } from "@/components/ui/animated-switch";
 import {
   AnimatedTabs,
@@ -52,15 +53,30 @@ import { RippleButton } from "@/components/ui/ripple";
 import { Textarea } from "@/components/ui/textarea";
 import type { AgentConsole } from "@/hooks/use-agent-console";
 import { MAX_TEXT_CHARS, profileRollup, quotaLeft } from "@/lib/agent-console";
-import { canUseRemoteControl, getEntitlements } from "@/lib/entitlements";
+import {
+  canUseRemoteControl,
+  canUseScheduledAutomation,
+  getEntitlements,
+} from "@/lib/entitlements";
 import type { McpRemoteStatus } from "@/lib/mcp";
 import { showSuccessToast } from "@/lib/toast-utils";
 import { cn } from "@/lib/utils";
 import type { BrowserProfile, CloudUser } from "@/types";
 
-export type AgentTab = "conversation" | "profiles" | "activity" | "recipes";
+export type AgentTab =
+  | "conversation"
+  | "profiles"
+  | "activity"
+  | "recipes"
+  | "schedules";
 
-const TABS: AgentTab[] = ["conversation", "profiles", "activity", "recipes"];
+const TABS: AgentTab[] = [
+  "conversation",
+  "profiles",
+  "activity",
+  "recipes",
+  "schedules",
+];
 
 interface AgentPageProps {
   isOpen: boolean;
@@ -305,6 +321,8 @@ export function AgentPage({
   const signedIn = cloudUser !== null;
   const entitled = canUseRemoteControl(cloudUser);
   const automation = getEntitlements(cloudUser).browserAutomation;
+  // Solo keeps recipes for the schedules it pays for, without on-demand runs.
+  const scheduled = canUseScheduledAutomation(cloudUser);
   const blocker = !signedIn ? "signedOut" : !entitled ? "plan" : null;
   const remoteOff = remoteKnown && remote !== null && !remote.enabled;
   const hasSessions = agentConsole.sessions.length > 0;
@@ -500,19 +518,16 @@ export function AgentPage({
         <SoftFields>
           <div
             data-testid="agent-page"
-            className="@container flex min-h-0 w-full flex-1 flex-col gap-3"
+            className={cn(
+              "@container flex min-h-0 w-full flex-1 flex-col gap-3",
+              subPage && "mx-auto max-w-4xl",
+            )}
           >
             <div className="flex shrink-0 flex-wrap items-start justify-between gap-3">
               <div className="flex min-w-0 flex-col gap-1">
                 {subPage ? (
-                  <>
-                    <h2 className="text-base leading-none font-semibold">
-                      {title}
-                    </h2>
-                    <p className="text-xs text-muted-foreground">
-                      {description}
-                    </p>
-                  </>
+                  // The shell's header already names the page.
+                  <p className="text-xs text-muted-foreground">{description}</p>
                 ) : (
                   <>
                     <DialogTitle>{title}</DialogTitle>
@@ -618,8 +633,12 @@ export function AgentPage({
                 className="mt-3 min-h-0 flex-1 flex-col data-[state=active]:flex"
               >
                 {blockerPanel ??
-                  (automation ? (
-                    <AgentRecipes profiles={profiles} />
+                  (automation || scheduled ? (
+                    <AgentRecipes
+                      profiles={profiles}
+                      canRunOnDesktop={automation}
+                      desktopConnected={remote?.connected ?? false}
+                    />
                   ) : (
                     <SetupPanel
                       testId="agent-recipes-plan"
@@ -638,6 +657,35 @@ export function AgentPage({
                           {t("agent.setup.planAction")}
                         </Button>
                       </div>
+                    </SetupPanel>
+                  ))}
+              </AnimatedTabsContent>
+
+              <AnimatedTabsContent
+                value="schedules"
+                className="mt-3 min-h-0 flex-1 flex-col data-[state=active]:flex"
+              >
+                {blockerPanel ??
+                  (scheduled ? (
+                    <AgentSchedules
+                      profiles={profiles}
+                      canRunOnDesktop={automation}
+                    />
+                  ) : (
+                    <SetupPanel
+                      testId="agent-schedules-plan"
+                      icon={<LuLock />}
+                      title={t("agent.tabs.schedules")}
+                      body={t("agent.schedules.needsPlan")}
+                    >
+                      <Button
+                        size="sm"
+                        variant="soft"
+                        className="h-8 rounded-lg text-xs"
+                        onClick={onOpenAccount}
+                      >
+                        {t("agent.setup.planAction")}
+                      </Button>
                     </SetupPanel>
                   ))}
               </AnimatedTabsContent>

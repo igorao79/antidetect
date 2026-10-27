@@ -41,18 +41,19 @@ const MANIFEST_FILE: &str = "manifest.json";
 const DATA_DIR: &str = "profile";
 const METADATA_FILE: &str = "metadata.json";
 const RESTORED_SUFFIX: &str = "(restored)";
+/// Where proxies, VPNs, groups, extensions and templates wait (`entity_trash`).
+pub const ENTITIES_DIR: &str = "entities";
 
 /// Chromium directories that only ever hold caches, relative to the profile
 /// data directory. Every one of them is recreated by the browser on demand.
-const CACHE_DIRS: [&str; 8] = [
+/// Service worker scripts and Cache Storage are site data and stay.
+const CACHE_DIRS: [&str; 6] = [
   "Cache",
   "Code Cache",
   "GPUCache",
   "GrShaderCache",
   "ShaderCache",
   "DawnCache",
-  "Service Worker/CacheStorage",
-  "Service Worker/ScriptCache",
 ];
 
 /// Serialises every trash mutation so a restore cannot interleave with a
@@ -151,7 +152,10 @@ pub fn prune_cache_dirs(data_dir: &Path) -> Vec<PathBuf> {
     }
     match erase_dir(&dir) {
       Ok(()) => removed.push(dir),
-      Err(e) => log::warn!("Could not prune cache dir {}: {e}", dir.display()),
+      Err(e) => log::warn!(
+        "Cache dir prune failed path=\"{}\" err=\"{e}\"",
+        dir.display()
+      ),
     }
   }
   removed
@@ -202,7 +206,7 @@ pub fn move_dir(from: &Path, to: &Path) -> std::io::Result<()> {
     Ok(()) => Ok(()),
     Err(rename_error) => {
       log::info!(
-        "Rename of {} failed ({rename_error}); copying instead",
+        "Trash move fell back to copy path=\"{}\" rename_err=\"{rename_error}\"",
         from.display()
       );
       if let Err(copy_error) = copy_dir_recursive(from, to) {
@@ -240,10 +244,9 @@ pub fn trash_profile(
   if !profile.password_protected {
     let removed = prune_cache_dirs(&source_dir.join(DATA_DIR));
     if !removed.is_empty() {
-      log::info!(
-        "Pruned {} cache director{} from profile {id} before trashing",
-        removed.len(),
-        if removed.len() == 1 { "y" } else { "ies" }
+      log::debug!(
+        "Cache dirs pruned before trashing profile={id} dirs={}",
+        removed.len()
       );
     }
   }
@@ -291,14 +294,14 @@ pub fn list_entries(trash_root: &Path) -> Vec<(BrowserProfile, TrashManifest)> {
   };
   let mut listed: Vec<(BrowserProfile, TrashManifest)> = entries
     .flatten()
-    .filter(|entry| entry.path().is_dir())
+    .filter(|entry| entry.path().is_dir() && entry.file_name() != ENTITIES_DIR)
     .filter_map(|entry| {
       let name = entry.file_name();
       let id = name.to_string_lossy();
       match read_entry(trash_root, &id) {
         Ok(found) => Some(found),
         Err(e) => {
-          log::warn!("Skipping unreadable trash entry {id}: {e}");
+          log::warn!("Trash entry unreadable, skipped entry={id} err=\"{e}\"");
           None
         }
       }
@@ -326,7 +329,7 @@ pub fn summaries(trash_root: &Path, retention_days: u32) -> Vec<TrashedProfileSu
     .collect()
 }
 
-fn normalized_name(name: &str) -> String {
+pub(crate) fn normalized_name(name: &str) -> String {
   name.trim().to_lowercase()
 }
 
@@ -355,8 +358,9 @@ pub fn unique_restored_name(name: &str, taken: &HashSet<String>) -> String {
 
 /// Move a trashed profile back under `profiles_dir` and return the profile as
 /// it must be saved, next to the sync mode it had: same id, identity, proxy
-/// and tags; the group only when it still exists; a fresh `updated_at`; and
-/// sync off, so no tombstone can erase it before the caller clears one.
+/// and tags; the group only when it still exists or waits in the trash too; a
+/// fresh `updated_at`; and sync off, so no tombstone can erase it before the
+/// caller clears one.
 ///
 /// `TRASH_RESTORE_CONFLICT` when a live profile already carries the id.
 pub fn restore_profile(
@@ -377,10 +381,7 @@ pub fn restore_profile(
   if target_dir.exists() {
     // Nothing registered lives here (a registered profile has metadata.json
     // and would have been caught above), so this is leftover garbage.
-    log::warn!(
-      "Removing stale directory {} before restoring profile {profile_id}",
-      target_dir.display()
-    );
+    log::warn!("Removing stale directory before restore profile={profile_id}");
     fs::remove_dir_all(&target_dir).map_err(err_internal)?;
   }
 
@@ -390,7 +391,12 @@ pub fn restore_profile(
     .collect();
   profile.name = unique_restored_name(&profile.name, &taken);
   if let Some(group_id) = profile.group_id.clone() {
-    if !group_exists(&group_id) {
+    let group_trashed = crate::entity_trash::holds(
+      &crate::entity_trash::entities_root(trash_root),
+      crate::entity_trash::EntityKind::Group,
+      &group_id,
+    );
+    if !group_exists(&group_id) && !group_trashed {
       profile.group_id = None;
     }
   }
@@ -437,7 +443,7 @@ pub fn purge_expired(trash_root: &Path, now: u64, retention_days: u32) -> Vec<St
       match purge_entry(trash_root, &id) {
         Ok(()) => Some(id),
         Err(e) => {
-          log::warn!("Could not purge expired trash entry {id}: {e}");
+          log::warn!("Expired trash purge failed entry={id} err=\"{e}\"");
           None
         }
       }
@@ -447,7 +453,8 @@ pub fn purge_expired(trash_root: &Path, now: u64, retention_days: u32) -> Vec<St
 
 /// A profile whose browser process is alive on this machine cannot be
 /// trashed: its data directory is in use. A stale process id (the browser
-/// crashed) does not count, and a cross-OS profile can never be running here.
+/// crashed) does not count, and a profile bound to another OS can never be
+/// running here.
 pub fn is_running_locally(profile: &BrowserProfile) -> bool {
   profile
     .process_id
@@ -464,21 +471,24 @@ fn command_error(e: Box<dyn std::error::Error>, context: &str) -> String {
   }
 }
 
+/// Erase every expired entry, profiles and other entities alike. Returns how
+/// many were removed.
+pub fn purge_expired_everywhere() -> usize {
+  ProfileManager::instance().purge_expired_trash()
+    + crate::entity_trash::purge_expired(crate::proxy_manager::now_secs(), retention_days())
+}
+
 /// Sweep expired entries now and again every `PURGE_INTERVAL_SECS`.
 pub fn start_expiry_sweeper() {
   tauri::async_runtime::spawn(async move {
     let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(PURGE_INTERVAL_SECS));
     loop {
       interval.tick().await;
-      let purged =
-        tauri::async_runtime::spawn_blocking(|| ProfileManager::instance().purge_expired_trash())
-          .await
-          .unwrap_or(0);
+      let purged = tauri::async_runtime::spawn_blocking(purge_expired_everywhere)
+        .await
+        .unwrap_or(0);
       if purged > 0 {
-        log::info!(
-          "Purged {purged} expired trash entr{}",
-          if purged == 1 { "y" } else { "ies" }
-        );
+        log::info!("Expired trash purged entries={purged}");
       }
     }
   });
@@ -524,7 +534,7 @@ pub async fn restore_trashed_profile(
           profile = current;
         }
       }
-      Err(e) => log::warn!("Restored profile {profile_id} keeps sync off: {e}"),
+      Err(e) => log::warn!("Restored profile keeps sync off profile={profile_id} err=\"{e}\""),
     }
   }
 
@@ -542,12 +552,15 @@ pub async fn purge_trashed_profile(profile_id: String) -> Result<(), String> {
   .map_err(err_internal)?
 }
 
+/// Erase every entry: profiles, then proxies, VPNs, groups, extensions and
+/// templates. Returns how many were removed.
 #[tauri::command]
 pub async fn empty_trash() -> Result<usize, String> {
   tauri::async_runtime::spawn_blocking(|| {
-    ProfileManager::instance()
+    let profiles = ProfileManager::instance()
       .empty_trash()
-      .map_err(|e| command_error(e, "Failed to empty trash"))
+      .map_err(|e| command_error(e, "Failed to empty trash"))?;
+    Ok(profiles + crate::entity_trash::purge_all()?)
   })
   .await
   .map_err(err_internal)?
@@ -862,6 +875,34 @@ mod tests {
   }
 
   #[test]
+  fn restore_keeps_a_group_that_waits_in_the_trash() {
+    let root = TempDir::new().unwrap();
+    let profile = sample_profile("Grouped");
+    let profiles_dir = seed_profile(root.path(), &profile, false);
+    let trash_root = root.path().join("trash");
+    trash_profile(&profiles_dir, &trash_root, &profile, NOW, DAYS).unwrap();
+    let group_entry = trash_root.join(ENTITIES_DIR).join("group").join("group-1");
+    fs::create_dir_all(&group_entry).unwrap();
+    fs::write(group_entry.join("entry.json"), b"{}").unwrap();
+
+    assert_eq!(
+      summaries(&trash_root, DAYS).len(),
+      1,
+      "entities are not profiles"
+    );
+    let (restored, _) = restore_profile(
+      &profiles_dir,
+      &trash_root,
+      &profile.id.to_string(),
+      &[],
+      &|_| false,
+      NOW,
+    )
+    .unwrap();
+    assert_eq!(restored.group_id.as_deref(), Some("group-1"));
+  }
+
+  #[test]
   fn password_protected_entry_is_moved_as_is() {
     let root = TempDir::new().unwrap();
     let mut profile = sample_profile("Vault");
@@ -1047,12 +1088,15 @@ mod tests {
     let mut profile = sample_profile("Running");
     profile.process_id = Some(std::process::id());
     assert!(is_running_locally(&profile));
-    // A cross-OS profile can never be running on this machine.
+    // A Wayfern profile created on another OS runs here like any other.
     profile.host_os = Some(if cfg!(target_os = "macos") {
       "linux".to_string()
     } else {
       "macos".to_string()
     });
+    assert!(is_running_locally(&profile));
+    // A profile bound to another OS can never be running on this machine.
+    profile.browser = "camoufox".to_string();
     assert!(!is_running_locally(&profile));
     let mut idle = sample_profile("Idle");
     idle.process_id = None;

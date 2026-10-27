@@ -101,7 +101,7 @@ async function openGroups(app) {
 async function createGroupThroughUi(app) {
   await openGroups(app);
   await app.waitForText("Profile groups");
-  await app.clickSelector('[aria-label="Create"]');
+  await app.clickSelector('[aria-label="New group"]');
   await app.waitForText("Create New Group");
   await app.fillSelector("#group-name", "Visible UI Group");
   await app.clickTextIn('[role="dialog"]', "Create", { roles: ["button"] });
@@ -216,16 +216,29 @@ async function createExtensionsThroughUi(app) {
   );
   assert.ok(editButton, "Extension group edit control was not visible");
   await app.session.click(editButton);
-  await app.waitForText("Edit Group");
-  const extensionPicker = await app.execute(`
-    const dialogs = [...document.querySelectorAll('[role="dialog"]')];
-    return dialogs.reverse().find(
-      (dialog) => (dialog.innerText || "").includes("Edit Group")
-    )?.querySelector('[role="combobox"]') ?? null;
-  `);
-  assert.ok(extensionPicker, "Extension picker was not visible");
-  await app.session.click(extensionPicker);
-  await app.clickText(extension.name, { roles: ["option"] });
+  await app.waitForText("Edit group");
+  const memberToggle = await app.execute(
+    `
+      const dialogs = [...document.querySelectorAll('[role="dialog"]')];
+      const dialog = dialogs.reverse().find(
+        (candidate) => (candidate.innerText || "").includes("Edit group")
+      );
+      const member = [
+        ...(dialog?.querySelectorAll('[data-slot="extension-group-members"] label') ?? []),
+      ].find((label) => (label.innerText || "").includes(arguments[0]));
+      return member?.querySelector('[role="checkbox"]') ?? null;
+    `,
+    [extension.name],
+  );
+  assert.ok(memberToggle, "Extension member checkbox was not visible");
+  assert.equal(
+    await app.execute(`return arguments[0].getAttribute("data-state");`, [
+      memberToggle,
+    ]),
+    "unchecked",
+    "a new group starts with no extensions ticked",
+  );
+  await app.session.click(memberToggle);
   await app.clickTextIn('[role="dialog"]', "Save", { roles: ["button"] });
   await app.waitFor(
     async () => {
@@ -246,7 +259,7 @@ async function createProfileThroughUi(app, groupName, proxy) {
   await app.clickSelector('[aria-label="Profiles"]');
   await app.clickText(groupName, { exact: false, roles: ["button"] });
   await app.clickText("New", { roles: ["button"] });
-  await app.waitForText("Create New Profile");
+  await app.waitForText("Create new profile");
   await app.fillSelector("#profile-name", "Visible Network Profile");
   await app.clickSelector("#profile-proxy");
   await app.clickText(proxy.name, { roles: ["option"] });
@@ -257,7 +270,7 @@ async function createProfileThroughUi(app, groupName, proxy) {
       !(await app.execute(`
         return [...document.querySelectorAll('[role="dialog"]')].some(
           (dialog) =>
-            (dialog.innerText || "").includes("Create New Profile")
+            (dialog.innerText || "").includes("Create new profile")
         );
       `)),
     { description: "profile creation dialog to unmount" },
@@ -334,7 +347,7 @@ const assignNetworkThroughUi = (app, profileName, newName) =>
   assignThroughUi(app, profileName, "Proxy / VPN", newName, "Network");
 
 const assignExtensionGroupThroughUi = (app, profileName, newName) =>
-  assignThroughUi(app, profileName, "EXT", newName, "Extension");
+  assignThroughUi(app, profileName, "Extensions", newName, "Extension");
 
 async function runProfile(_app, base, token, profileId, url) {
   const launched = await request(`${base}/v1/profiles/${profileId}/run`, {
@@ -714,6 +727,197 @@ test("VLESS Reality persists, imports, routes through Xray-core, records traffic
     assert.ok(
       persistedTraffic.total_bytes_received >= liveTraffic.total_bytes_received,
     );
+  } catch (error) {
+    await app.capture("failure");
+    throw error;
+  } finally {
+    activeCdp?.close();
+    if (app.session) {
+      if (apiPort) await app.invoke("stop_api_server").catch(() => {});
+      if (profile) {
+        const latest = (
+          await app.invoke("list_browser_profiles").catch(() => [])
+        ).find((candidate) => candidate.id === profile.id);
+        if (latest?.process_id) {
+          await app
+            .invoke("kill_browser_profile", { profile: latest })
+            .catch(() => {});
+        }
+      }
+    }
+    await app.close();
+  }
+});
+
+// The page only the browser asks for: Donut's own exit-IP probes use other
+// hosts, so a line naming this one could only come from the browser.
+const DNS_TEST_PAGE = "https://icanhazip.com/";
+
+test("a profile DNS server resolves through the proxy, which sees addresses only", async () => {
+  const vlessUri = process.env.DONUT_E2E_VLESS_URI;
+  const accessLog = process.env.DONUT_E2E_XRAY_ACCESS_LOG;
+  assert.ok(vlessUri, "The network harness must provide a VLESS Reality URI");
+  assert.ok(accessLog, "The network harness must provide an Xray access log");
+  const residentialSettings = proxySettings(
+    process.env.RESIDENTIAL_PROXY_URL_ONE_HTTP,
+    "HTTP",
+  );
+
+  const app = appFromEnvironment("network-dns-server", {
+    seedVersionCache: false,
+    wayfernTermsAccepted: false,
+  });
+  let apiPort;
+  let activeCdp;
+  let profile;
+  try {
+    const prepared = await prepareWayfern(
+      app,
+      process.env.DONUT_E2E_PROJECT_ROOT,
+    );
+    if (!app.session) await app.start();
+    if (!(await app.invoke("check_wayfern_terms_accepted"))) {
+      await app.invoke("accept_wayfern_terms");
+      await app.restart();
+    }
+
+    const vless = await app.invoke("create_stored_proxy", {
+      name: "DNS VLESS",
+      proxySettings: {
+        proxy_type: "vless",
+        host: "ignored.invalid",
+        port: 1,
+        vless_uri: vlessUri,
+      },
+    });
+    profile = await app.invoke("create_browser_profile_new", {
+      name: "DNS Server Profile",
+      browserStr: "wayfern",
+      version: prepared.version,
+      releaseType: "stable",
+      proxyId: vless.id,
+      vpnId: null,
+      wayfernConfig: {
+        fingerprint: null,
+        randomize_fingerprint_on_launch: false,
+        geoip: false,
+      },
+      groupId: null,
+      ephemeral: false,
+      dnsBlocklist: null,
+      dnsServer: "1.1.1.1",
+      launchHook: null,
+    });
+    assert.equal(profile.dns_server, "1.1.1.1");
+
+    const settings = await app.invoke("get_app_settings");
+    const saved = await app.invoke("save_app_settings", {
+      settings: {
+        ...settings,
+        api_enabled: true,
+        api_port: 0,
+        api_token: null,
+      },
+    });
+    apiPort = await app.invoke("start_api_server", { port: 0 });
+    const base = `http://127.0.0.1:${apiPort}`;
+    const exitIpOf = (cdp, description) =>
+      cdp.waitFor(
+        `(() => {
+          const value = document.body?.innerText?.trim() ?? "";
+          return /^[0-9a-f:.]+$/i.test(value) ? value : false;
+        })()`,
+        { timeoutMs: 45_000, description },
+      );
+
+    const logBefore = (await readFile(accessLog, "utf8").catch(() => ""))
+      .length;
+    let launched = await runProfile(
+      app,
+      base,
+      saved.api_token,
+      profile.id,
+      DNS_TEST_PAGE,
+    );
+    activeCdp = launched.cdp;
+    const vlessExit = await exitIpOf(activeCdp, "exit IP through VLESS");
+    assert.ok(isIP(vlessExit), `Unexpected exit IP response: ${vlessExit}`);
+
+    // `1.1.1.1` was upgraded to Cloudflare's DNS over HTTPS, and the queries
+    // crossed the proxy: the server logged a tunnel to 1.1.1.1:443. The page's
+    // own tunnel went to the address the resolver returned, so the proxy
+    // never saw the name.
+    const lines = await app.waitFor(
+      async () => {
+        const fresh = (await readFile(accessLog, "utf8"))
+          .slice(logBefore)
+          .split("\n")
+          .filter((line) => line.includes("accepted"));
+        return fresh.some((line) => line.includes("tcp:1.1.1.1:443"))
+          ? fresh
+          : false;
+      },
+      { timeoutMs: 15_000, description: "DoH query in the Xray access log" },
+    );
+    assert.equal(
+      lines.some((line) => line.includes("icanhazip.com")),
+      false,
+      `the proxy was given the name: ${lines.join("\n")}`,
+    );
+    assert.ok(
+      lines.some((line) => /tcp:\[?[0-9a-f:.]+\]?:443/i.test(line)),
+      `no tunnel to a resolved address: ${lines.join("\n")}`,
+    );
+    await stopProfile(app, base, saved.api_token, profile.id, activeCdp);
+    activeCdp = null;
+
+    // A commercial HTTP proxy with an explicit encrypted resolver that needs
+    // HTTP/2.
+    const residential = await app.invoke("create_stored_proxy", {
+      name: "DNS Residential",
+      proxySettings: residentialSettings,
+    });
+    await app.invoke("update_profile_proxy", {
+      profileId: profile.id,
+      proxyId: residential.id,
+    });
+    const updated = await app.invoke("update_profile_dns_server", {
+      profileId: profile.id,
+      dnsServer: "https://dns.quad9.net/dns-query",
+    });
+    assert.equal(updated.dns_server, "https://dns.quad9.net/dns-query");
+    launched = await runProfile(
+      app,
+      base,
+      saved.api_token,
+      profile.id,
+      DNS_TEST_PAGE,
+    );
+    activeCdp = launched.cdp;
+    const residentialExit = await exitIpOf(
+      activeCdp,
+      "exit IP through the residential proxy",
+    );
+    assert.ok(isIP(residentialExit));
+    await stopProfile(app, base, saved.api_token, profile.id, activeCdp);
+    activeCdp = null;
+
+    // The worker log names the transport, never the server or a destination.
+    const workerLogs = (
+      await Promise.all(
+        (
+          await readdir(path.join(app.root, "tmp"))
+        )
+          .filter(
+            (file) => file.startsWith("donut-proxy-") && file.endsWith(".log"),
+          )
+          .map((file) => readFile(path.join(app.root, "tmp", file), "utf8")),
+      )
+    ).join("\n");
+    assert.match(workerLogs, /Worker started kind=proxy .*dns=https /);
+    assert.equal(workerLogs.includes("dns.quad9.net"), false);
+    assert.equal(workerLogs.includes("icanhazip.com"), false);
+    await assertProxyWorkerLogsRedacted(app, [residentialSettings]);
   } catch (error) {
     await app.capture("failure");
     throw error;

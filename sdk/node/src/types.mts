@@ -38,6 +38,18 @@ export interface ApiProfile {
   is_running: boolean;
   proxy_bypass_rules: string[];
   vpn_id?: string | null;
+  /**
+   * The DNS server the profile resolves names with, through its own proxy or
+   * VPN. `null` when the proxy resolves them.
+   */
+  dns_server?: string | null;
+  /** The profile's status id (see `listStatuses`), or `null`. */
+  status_id?: string | null;
+  /**
+   * Pages a launch from the app opens, in order, instead of the last session.
+   * A run with a `url` opens only that URL.
+   */
+  start_urls: string[];
   extension_group_id?: string | null;
   ephemeral: boolean;
   temporary: boolean;
@@ -46,7 +58,11 @@ export interface ApiProfile {
   sync_mode: string;
   cloud_sync_enabled: boolean;
   host_os?: string | null;
-  /** A profile from another OS can only ever run on a remote host of that OS. */
+  /**
+   * True when a browser bound to its OS created the profile on another OS, so
+   * it can only run on a remote host of that OS. Always false for Wayfern
+   * profiles, which run on every OS.
+   */
   is_cross_os: boolean;
   fingerprint_os?: string | null;
 }
@@ -60,16 +76,150 @@ export interface ApiProfileResponse {
   profile: ApiProfile;
 }
 
+export interface ApiProfileFingerprintResponse {
+  /**
+   * The device the profile presents, as a JSON-encoded object: the shape
+   * `wayfern_config.fingerprint` takes on create. `null` when there is none
+   * to show.
+   */
+  fingerprint?: string | null;
+}
+
 export interface ApiGroupResponse {
   id: string;
   name: string;
   profile_count: number;
 }
 
+/** A named, colored label for where a profile's account stands. */
+export interface ApiStatusResponse {
+  id: string;
+  name: string;
+  /** `#rrggbb`. */
+  color: string;
+}
+
+/**
+ * One change applied to many profiles by `bulkEditProfiles`.
+ *
+ * A property left out keeps that field as it is. For the fields that accept
+ * `null`, an explicit `null` clears the field, so the patch is sent exactly as
+ * given. An unknown property is refused with 400.
+ */
+export interface ProfilePatch {
+  status_id?: string | null;
+  tags_add?: string[];
+  tags_remove?: string[];
+  note?: string | null;
+  group_id?: string | null;
+  extension_group_id?: string | null;
+  /** `light`, `normal`, `pro`, `pro_plus`, `ultimate`, `custom`, or `null`. */
+  dns_blocklist?: string | null;
+  dns_server?: string | null;
+  proxy_bypass_rules?: string[];
+  start_urls?: string[];
+  launch_hook?: string | null;
+  /** Left off ephemeral and password-protected profiles, where it means nothing. */
+  clear_on_close?: boolean;
+  randomize_fingerprint_on_launch?: boolean;
+  /** `auto`, `tcp_only` or `block`; `null` clears it. */
+  webrtc_mode?: string | null;
+  block_images?: boolean;
+  block_webgl?: boolean;
+  restore_session?: boolean;
+  /** Drop the stored device, so the next launch generates a new one. */
+  new_device?: boolean;
+}
+
+export interface BulkEditResponse {
+  /** How many of the profiles actually changed. */
+  changed: number;
+}
+
+/** What every profile made from a template starts with. Left out is empty. */
+export interface TemplateSettings {
+  /** What the profiles made from the template are named after. */
+  name_prefix?: string | null;
+  proxy_id?: string | null;
+  vpn_id?: string | null;
+  /** Proxies to spread new profiles across, one each in turn. Wins over `proxy_id`. */
+  proxy_ids?: string[];
+  group_id?: string | null;
+  tags?: string[];
+  status_id?: string | null;
+  note?: string | null;
+  extension_group_id?: string | null;
+  dns_blocklist?: string | null;
+  dns_server?: string | null;
+  proxy_bypass_rules?: string[];
+  start_urls?: string[];
+  launch_hook?: string | null;
+  ephemeral?: boolean;
+  clear_on_close?: boolean;
+  /** Fingerprint settings. The device fields are always dropped. */
+  wayfern_config?: WayfernConfig | null;
+}
+
+export interface ProfileTemplate {
+  id: string;
+  name: string;
+  settings: TemplateSettings;
+  position: number;
+  updated_at: number;
+}
+
+export interface ApiBulkCreateResponse {
+  /** The profiles made, in order. */
+  profiles: ApiProfile[];
+  /** Why creation stopped before `count` (a `{"code": ...}` payload), or `null`. */
+  error?: string | null;
+}
+
+export interface StorageItem {
+  name: string;
+  value: string;
+}
+
+export interface OriginStorage {
+  /** `https://example.com`, the way a page's `origin` reads. */
+  origin: string;
+  localStorage?: StorageItem[];
+}
+
+/** Playwright's `storageState`: cookies and each origin's Local Storage. */
+export interface StorageState {
+  /**
+   * Playwright's own cookie objects (`name`, `value`, `domain`, `path`,
+   * `expires`, `httpOnly`, `secure`, `sameSite`), passed through untouched.
+   */
+  cookies?: Record<string, unknown>[];
+  origins?: OriginStorage[];
+}
+
+export interface StorageStateImport {
+  origins: number;
+  items: number;
+  cookies_imported: number;
+  cookies_replaced: number;
+  /** Codes of the cookies that could not be imported. */
+  cookie_errors: string[];
+}
+
 export interface ApiProxyResponse {
   id: string;
   name: string;
   proxy_settings: ProxySettings;
+  /** The provider's "change IP" link, or `null`. `rotateProxy` uses it. */
+  rotation_url?: string | null;
+}
+
+export interface RotationResult {
+  proxy_id: string;
+  /** The provider's HTTP status, when it answered. */
+  status?: number | null;
+  elapsed_ms: number;
+  /** A coded error when the IP change was not confirmed. */
+  error?: string | null;
 }
 
 export interface ApiVpnResponse {
@@ -99,6 +249,11 @@ export interface RunProfileResponse {
   profile_id: string;
   remote_debugging_port: number;
   headless: boolean;
+  /**
+   * True when the profile was already running and was taken over as it is,
+   * with no restart. Older apps omit it.
+   */
+  attached?: boolean;
 }
 
 export interface RunRemoteResponse {
@@ -555,6 +710,8 @@ export interface PerceptionStats {
   framesVisited: number;
   /** Frames whose renderer did not answer within the budget. */
   framesFailed: number;
+  /** Frames whose renderer stopped at the node ceiling or its time; older Wayfern builds report 0. */
+  framesTruncated: number;
 }
 
 export interface PerceptionPage {
@@ -631,4 +788,10 @@ export interface AgentTyping {
   duration_ms: number;
   engine: Engine;
   match: LocatorCandidate;
+  /**
+   * The field was read back and holds the text. False only for a field whose
+   * value is not the typed text (a date or colour picker); a field that does
+   * not hold the text fails with `TYPE_NOT_APPLIED`.
+   */
+  verified: boolean;
 }

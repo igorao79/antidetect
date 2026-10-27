@@ -228,6 +228,30 @@ pub fn maybe_unseal_after_download(raw: &[u8]) -> Result<Vec<u8>, String> {
   Ok(raw.to_vec())
 }
 
+/// What keeps a remote host (a cookie bot run, a remote session) from
+/// reading a profile's synced copy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RemoteSeal {
+  /// Encrypted sync seals the profile's files.
+  EncryptedSync,
+  /// A sync password seals every synced settings file of the account, the
+  /// profile's metadata and proxy included, whatever its own sync mode.
+  SyncPassword,
+}
+
+pub fn remote_seal(
+  profile: &crate::profile::types::BrowserProfile,
+  sync_password_stored: bool,
+) -> Option<RemoteSeal> {
+  if profile.is_encrypted_sync() {
+    Some(RemoteSeal::EncryptedSync)
+  } else if profile.is_sync_enabled() && sync_password_stored {
+    Some(RemoteSeal::SyncPassword)
+  } else {
+    None
+  }
+}
+
 // Tauri commands
 
 #[tauri::command]
@@ -236,7 +260,9 @@ pub async fn set_e2e_password(password: String) -> Result<(), String> {
     return Err("Password must be at least 8 characters".to_string());
   }
   enforce_team_owner_for_encryption_change().await?;
-  store_e2e_password(&password)
+  store_e2e_password(&password)?;
+  password_changed();
+  Ok(())
 }
 
 #[tauri::command]
@@ -255,7 +281,16 @@ pub fn verify_e2e_password(password: String) -> Result<bool, String> {
 #[tauri::command]
 pub async fn delete_e2e_password() -> Result<(), String> {
   enforce_team_owner_for_encryption_change().await?;
-  remove_e2e_password()
+  remove_e2e_password()?;
+  password_changed();
+  Ok(())
+}
+
+/// The password seals every synced profile, so the cookie bot and the
+/// window's remote actions must hear it.
+fn password_changed() {
+  tauri::async_runtime::spawn(crate::cookie_bot::report_enrolled_profiles());
+  let _ = crate::events::emit("sync-password-changed", ());
 }
 
 /// Only the team owner may flip the E2E password state — otherwise members

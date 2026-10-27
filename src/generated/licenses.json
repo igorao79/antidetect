@@ -1,6 +1,70 @@
 [
   {
+    "name": "@babel/code-frame",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/compat-data",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/core",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/generator",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/helper-compilation-targets",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/helper-globals",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/helper-module-imports",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/helper-module-transforms",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/helper-string-parser",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/helper-validator-identifier",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/helper-validator-option",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/helpers",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/parser",
+    "license": "MIT"
+  },
+  {
     "name": "@babel/runtime",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/template",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/traverse",
+    "license": "MIT"
+  },
+  {
+    "name": "@babel/types",
     "license": "MIT"
   },
   {
@@ -17,6 +81,30 @@
   },
   {
     "name": "@floating-ui/utils",
+    "license": "MIT"
+  },
+  {
+    "name": "@img/colour",
+    "license": "MIT"
+  },
+  {
+    "name": "@jridgewell/gen-mapping",
+    "license": "MIT"
+  },
+  {
+    "name": "@jridgewell/remapping",
+    "license": "MIT"
+  },
+  {
+    "name": "@jridgewell/resolve-uri",
+    "license": "MIT"
+  },
+  {
+    "name": "@jridgewell/sourcemap-codec",
+    "license": "MIT"
+  },
+  {
+    "name": "@jridgewell/trace-mapping",
     "license": "MIT"
   },
   {
@@ -308,6 +396,10 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "@tauri-apps/plugin-autostart",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "@tauri-apps/plugin-clipboard-manager",
     "license": "Apache-2.0 OR MIT"
   },
@@ -325,6 +417,10 @@
   },
   {
     "name": "@tauri-apps/plugin-log",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "@tauri-apps/plugin-notification",
     "license": "Apache-2.0 OR MIT"
   },
   {
@@ -452,6 +548,10 @@
     "license": "MIT"
   },
   {
+    "name": "arraydeque",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "arrayref",
     "license": "BSD-2-Clause"
   },
@@ -518,6 +618,10 @@
   {
     "name": "atomic-waker",
     "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "auto-launch",
+    "license": "MIT"
   },
   {
     "name": "av-scenechange",
@@ -618,6 +722,10 @@
   {
     "name": "brotli-decompressor",
     "license": "BSD-3-Clause OR MIT"
+  },
+  {
+    "name": "browserslist",
+    "license": "MIT"
   },
   {
     "name": "bs58",
@@ -808,6 +916,10 @@
     "license": "CC0-1.0 OR MIT-0 OR Apache-2.0"
   },
   {
+    "name": "convert-source-map",
+    "license": "MIT"
+  },
+  {
     "name": "cookie",
     "license": "Apache-2.0 OR MIT"
   },
@@ -840,11 +952,7 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
-    "name": "crc",
-    "license": "Apache-2.0 OR MIT"
-  },
-  {
-    "name": "crc-catalog",
+    "name": "crc32c",
     "license": "Apache-2.0 OR MIT"
   },
   {
@@ -984,6 +1092,10 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "debug",
+    "license": "MIT"
+  },
+  {
     "name": "decimal.js-light",
     "license": "MIT"
   },
@@ -1022,6 +1134,10 @@
   {
     "name": "des",
     "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "detect-libc",
+    "license": "Apache-2.0"
   },
   {
     "name": "detect-node-es",
@@ -1120,6 +1236,10 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "electron-to-chromium",
+    "license": "ISC"
+  },
+  {
     "name": "elliptic-curve",
     "license": "Apache-2.0 OR MIT"
   },
@@ -1181,6 +1301,10 @@
   },
   {
     "name": "es-toolkit",
+    "license": "MIT"
+  },
+  {
+    "name": "escalade",
     "license": "MIT"
   },
   {
@@ -1296,6 +1420,10 @@
     "license": "MIT"
   },
   {
+    "name": "fs2",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "futures",
     "license": "Apache-2.0 OR MIT"
   },
@@ -1364,7 +1492,15 @@
     "license": "MIT"
   },
   {
+    "name": "geist",
+    "license": "OFL-1.1"
+  },
+  {
     "name": "generic-array",
+    "license": "MIT"
+  },
+  {
+    "name": "gensync",
     "license": "MIT"
   },
   {
@@ -1445,6 +1581,10 @@
   },
   {
     "name": "harfrust",
+    "license": "MIT"
+  },
+  {
+    "name": "has-flag",
     "license": "MIT"
   },
   {
@@ -1620,6 +1760,10 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "integer-encoding",
+    "license": "MIT"
+  },
+  {
     "name": "internmap",
     "license": "ISC"
   },
@@ -1692,8 +1836,20 @@
     "license": "MIT"
   },
   {
+    "name": "js-tokens",
+    "license": "MIT"
+  },
+  {
+    "name": "jsesc",
+    "license": "MIT"
+  },
+  {
     "name": "json-patch",
     "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "json5",
+    "license": "MIT"
   },
   {
     "name": "jsonc-parser",
@@ -1780,15 +1936,23 @@
     "license": "MIT"
   },
   {
+    "name": "lru-cache",
+    "license": "ISC"
+  },
+  {
     "name": "lucide-react",
     "license": "ISC"
   },
   {
-    "name": "lzma-rs",
-    "license": "MIT"
+    "name": "lzma-rust2",
+    "license": "Apache-2.0"
   },
   {
     "name": "lzxd",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "mac-notification-sys",
     "license": "Apache-2.0 OR MIT"
   },
   {
@@ -1876,6 +2040,10 @@
     "license": "BSD-3-Clause OR Apache-2.0"
   },
   {
+    "name": "ms",
+    "license": "MIT"
+  },
+  {
     "name": "msi",
     "license": "MIT"
   },
@@ -1920,12 +2088,20 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "node-releases",
+    "license": "MIT"
+  },
+  {
     "name": "nom",
     "license": "MIT"
   },
   {
     "name": "noop_proc_macro",
     "license": "MIT"
+  },
+  {
+    "name": "notify-rust",
+    "license": "Apache-2.0 OR MIT"
   },
   {
     "name": "ntapi",
@@ -2036,12 +2212,16 @@
     "license": "Zlib OR Apache-2.0 OR MIT"
   },
   {
-    "name": "objc2-web-kit",
+    "name": "objc2-security",
     "license": "Zlib OR Apache-2.0 OR MIT"
   },
   {
-    "name": "onborda",
-    "license": "MIT"
+    "name": "objc2-service-management",
+    "license": "Zlib OR Apache-2.0 OR MIT"
+  },
+  {
+    "name": "objc2-web-kit",
+    "license": "Zlib OR Apache-2.0 OR MIT"
   },
   {
     "name": "once_cell",
@@ -2086,6 +2266,10 @@
   {
     "name": "ordered-stream",
     "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "os_info",
+    "license": "MIT"
   },
   {
     "name": "os_pipe",
@@ -2532,6 +2716,10 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "rusty-leveldb",
+    "license": "MIT"
+  },
+  {
     "name": "ryu",
     "license": "Apache-2.0 OR BSL-1.0"
   },
@@ -2600,6 +2788,10 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "semver",
+    "license": "ISC"
+  },
+  {
     "name": "sendfd",
     "license": "Apache-2.0 OR BSD-3-Clause"
   },
@@ -2652,10 +2844,6 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
-    "name": "serde_yaml",
-    "license": "Apache-2.0 OR MIT"
-  },
-  {
     "name": "serdect",
     "license": "Apache-2.0 OR MIT"
   },
@@ -2692,16 +2880,16 @@
     "license": "MIT"
   },
   {
+    "name": "shake",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "shared_child",
     "license": "MIT"
   },
   {
-    "name": "sigchld",
-    "license": "MIT"
-  },
-  {
-    "name": "signal-hook",
-    "license": "Apache-2.0 OR MIT"
+    "name": "sharp",
+    "license": "Apache-2.0"
   },
   {
     "name": "signal-hook-registry",
@@ -2748,8 +2936,16 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "smappservice-rs",
+    "license": "MIT"
+  },
+  {
     "name": "smoltcp",
     "license": "0BSD"
+  },
+  {
+    "name": "snap",
+    "license": "BSD-3-Clause"
   },
   {
     "name": "socket2",
@@ -2804,6 +3000,10 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "static_assertions",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "strict-num",
     "license": "MIT"
   },
@@ -2822,6 +3022,10 @@
   {
     "name": "subtle",
     "license": "BSD-3-Clause"
+  },
+  {
+    "name": "supports-color",
+    "license": "MIT"
   },
   {
     "name": "svgtypes",
@@ -2884,6 +3088,10 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "tauri-plugin-autostart",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "tauri-plugin-clipboard-manager",
     "license": "Apache-2.0 OR MIT"
   },
@@ -2912,6 +3120,10 @@
     "license": "MIT"
   },
   {
+    "name": "tauri-plugin-notification",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "tauri-plugin-opener",
     "license": "Apache-2.0 OR MIT"
   },
@@ -2937,6 +3149,10 @@
   },
   {
     "name": "tauri-utils",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
+    "name": "tauri-winrt-notification",
     "license": "Apache-2.0 OR MIT"
   },
   {
@@ -3136,12 +3352,12 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
-    "name": "unsafe-libyaml",
-    "license": "MIT"
-  },
-  {
     "name": "untrusted",
     "license": "ISC"
+  },
+  {
+    "name": "update-browserslist-db",
+    "license": "MIT"
   },
   {
     "name": "url",
@@ -3284,6 +3500,10 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "widestring",
+    "license": "Apache-2.0 OR MIT"
+  },
+  {
     "name": "winapi",
     "license": "Apache-2.0 OR MIT"
   },
@@ -3360,6 +3580,14 @@
     "license": "Apache-2.0 OR MIT"
   },
   {
+    "name": "winfsp",
+    "license": "GPL-3.0"
+  },
+  {
+    "name": "winfsp-sys",
+    "license": "GPL-3.0"
+  },
+  {
     "name": "winnow",
     "license": "MIT"
   },
@@ -3418,6 +3646,14 @@
   {
     "name": "y4m",
     "license": "MIT"
+  },
+  {
+    "name": "yallist",
+    "license": "ISC"
+  },
+  {
+    "name": "yaml-rust2",
+    "license": "Apache-2.0 OR MIT"
   },
   {
     "name": "yoke",

@@ -30,7 +30,7 @@ impl BayesianNetwork {
     let mut json_content = String::new();
     for i in 0..archive.len() {
       let mut file = archive.by_index(i)?;
-      if file.name().ends_with(".json") {
+      if file.name().is_ok_and(|name| name.ends_with(".json")) {
         file.read_to_string(&mut json_content)?;
         break;
       }

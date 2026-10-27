@@ -12,15 +12,19 @@ import { DonutConnectionError, DonutError, errorForStatus } from "./errors.mts";
 import type {
   AgentClick,
   AgentTyping,
+  ApiBulkCreateResponse,
   ApiGroupResponse,
+  ApiProfileFingerprintResponse,
   ApiProfileResponse,
   ApiProfilesResponse,
   ApiProxyResponse,
   ApiRemoteSessionsResponse,
+  ApiStatusResponse,
   ApiVpnExportResponse,
   ApiVpnResponse,
   BatchRunResponse,
   BatchStopResponse,
+  BulkEditResponse,
   CookieBotConflictCheck,
   CookieBotPresetList,
   CookieBotRun,
@@ -46,14 +50,20 @@ import type {
   PerceptionPage,
   PickedElement,
   ProfileImportBatchResult,
+  ProfilePatch,
+  ProfileTemplate,
   ProxyPair,
   ProxySettings,
   RemoteHoursQuota,
   RemoteSessionState,
+  RotationResult,
   RunProfileResponse,
   RunRemoteResponse,
   SetCloudSyncResponse,
   StopRemoteResponse,
+  StorageState,
+  StorageStateImport,
+  TemplateSettings,
   WayfernConfig,
 } from "./types.mts";
 
@@ -84,6 +94,13 @@ export interface DonutClientOptions {
 export interface RunProfileOptions {
   url?: string;
   headless?: boolean;
+}
+
+export interface BatchRunOptions extends RunProfileOptions {
+  /** Pause between the starts of two launches (0 to 60000). Defaults to the app's setting. */
+  delayMs?: number;
+  /** How many profiles may be starting at once (1 to 20). Defaults to the app's setting. */
+  concurrency?: number;
 }
 
 /** Drop every property the caller left `undefined`. */
@@ -257,6 +274,21 @@ export class DonutClient {
   }
 
   /**
+   * GET /v1/profiles/{id}/fingerprint
+   *
+   * The device the profile presents. May start the profile's browser version
+   * headless for a moment.
+   */
+  getProfileFingerprint(
+    profileId: string,
+  ): Promise<ApiProfileFingerprintResponse> {
+    return this.#request(
+      "GET",
+      `/v1/profiles/${segment(profileId)}/fingerprint`,
+    );
+  }
+
+  /**
    * POST /v1/profiles
    *
    * `browser` must be `"wayfern"`; anything else is refused with 400.
@@ -278,6 +310,18 @@ export class DonutClient {
     tags?: string[];
     ephemeral?: boolean;
     temporary?: boolean;
+    /**
+     * DNS server to resolve names with, through the profile's proxy or VPN:
+     * `https://host/path`, `tls://host[:port]`, `tcp://host[:port]` or a bare
+     * `host[:port]`. A bare address of a well-known resolver such as
+     * `"1.1.1.1"` uses its DNS over HTTPS endpoint. Omit it to let the proxy
+     * resolve names.
+     */
+    dns_server?: string;
+    /** A status id from `listStatuses`. */
+    status_id?: string;
+    /** At most 20 http(s) URLs; a bare host gets `https://`. */
+    start_urls?: string[];
   }): Promise<ApiProfileResponse> {
     return this.#request("POST", "/v1/profiles", body({ ...request }));
   }
@@ -305,6 +349,12 @@ export class DonutClient {
       /** `"Disabled"`, `"Regular"` or `"Encrypted"`. */
       sync_mode?: string;
       clear_on_close?: boolean;
+      /** Same formats as on create; `""` lets the proxy resolve names again. */
+      dns_server?: string;
+      /** `""` clears the status. */
+      status_id?: string;
+      /** Replaces the start pages; `[]` removes them. */
+      start_urls?: string[];
     },
   ): Promise<ApiProfileResponse> {
     return this.#request("PUT", `/v1/profiles/${segment(profileId)}`, body({ ...request }));
@@ -370,12 +420,18 @@ export class DonutClient {
    */
   batchRunProfiles(
     profileIds: string[],
-    options: RunProfileOptions = {},
+    options: BatchRunOptions = {},
   ): Promise<BatchRunResponse> {
     return this.#request(
       "POST",
       "/v1/profiles/batch/run",
-      body({ profile_ids: profileIds, url: options.url, headless: options.headless }),
+      body({
+        profile_ids: profileIds,
+        url: options.url,
+        headless: options.headless,
+        delay_ms: options.delayMs,
+        concurrency: options.concurrency,
+      }),
     );
   }
 
@@ -424,6 +480,53 @@ export class DonutClient {
   importProfileCookies(profileId: string, content: string): Promise<ImportCookiesResponse> {
     return this.#request("POST", `/v1/profiles/${segment(profileId)}/cookies/import`, {
       content,
+    });
+  }
+
+  /**
+   * GET /v1/profiles/{id}/storage-state
+   *
+   * Playwright's `storageState`: each origin's Local Storage, plus the cookies
+   * when `include_cookies` is true. Readable while the browser runs, but writes
+   * from the last few seconds may not be on disk yet.
+   */
+  exportStorageState(
+    profileId: string,
+    options: { include_cookies?: boolean } = {},
+  ): Promise<StorageState> {
+    return this.#request(
+      "GET",
+      `/v1/profiles/${segment(profileId)}/storage-state`,
+      undefined,
+      query({ include_cookies: options.include_cookies }),
+    );
+  }
+
+  /**
+   * POST /v1/profiles/{id}/storage-state
+   *
+   * `state` is a Playwright `storageState`; what `context.storageState()`
+   * returns can be passed as is. An item replaces the one of the same name,
+   * and the origin's other items stay. The browser must be stopped.
+   */
+  importStorageState(profileId: string, state: StorageState): Promise<StorageStateImport> {
+    return this.#request("POST", `/v1/profiles/${segment(profileId)}/storage-state`, {
+      ...state,
+    });
+  }
+
+  /**
+   * POST /v1/profiles/bulk-edit
+   *
+   * Every profile is checked before any is saved, so a bad value, an unknown
+   * profile or a running browser changes nothing. `patch` is sent as given: a
+   * `null` in it clears that field. `changed` counts only the profiles that
+   * really changed.
+   */
+  bulkEditProfiles(profileIds: string[], patch: ProfilePatch): Promise<BulkEditResponse> {
+    return this.#request("POST", "/v1/profiles/bulk-edit", {
+      profile_ids: profileIds,
+      patch,
     });
   }
 
@@ -763,6 +866,98 @@ export class DonutClient {
   }
 
   // ------------------------------------------------------------------
+  // Statuses
+  // ------------------------------------------------------------------
+
+  /** GET /v1/statuses */
+  listStatuses(): Promise<ApiStatusResponse[]> {
+    return this.#request("GET", "/v1/statuses");
+  }
+
+  /**
+   * POST /v1/statuses
+   *
+   * `name` is 1 to 40 characters, unique regardless of case, and `color` is
+   * `#rrggbb`.
+   */
+  createStatus(request: { name: string; color: string }): Promise<ApiStatusResponse> {
+    return this.#request("POST", "/v1/statuses", { ...request });
+  }
+
+  /** PUT /v1/statuses/{id} */
+  updateStatus(
+    statusId: string,
+    request: { name: string; color: string },
+  ): Promise<ApiStatusResponse> {
+    return this.#request("PUT", `/v1/statuses/${segment(statusId)}`, { ...request });
+  }
+
+  /** DELETE /v1/statuses/{id}. The status is also taken off every profile that had it. */
+  deleteStatus(statusId: string): Promise<void> {
+    return this.#request("DELETE", `/v1/statuses/${segment(statusId)}`);
+  }
+
+  // ------------------------------------------------------------------
+  // Templates
+  // ------------------------------------------------------------------
+
+  /** GET /v1/templates */
+  listTemplates(): Promise<ProfileTemplate[]> {
+    return this.#request("GET", "/v1/templates");
+  }
+
+  /**
+   * POST /v1/templates
+   *
+   * `name` is 1 to 60 characters, unique regardless of case. Device fields in
+   * `settings.wayfern_config` are dropped: every profile made from the
+   * template gets its own device.
+   */
+  createTemplate(request: {
+    name: string;
+    settings?: TemplateSettings;
+  }): Promise<ProfileTemplate> {
+    return this.#request("POST", "/v1/templates", body({ ...request }));
+  }
+
+  /**
+   * PUT /v1/templates/{id}
+   *
+   * Replaces the whole template. Settings left out are reset to empty, so to
+   * rename one, send its current `settings` back with the new name.
+   */
+  updateTemplate(
+    templateId: string,
+    request: { name: string; settings?: TemplateSettings },
+  ): Promise<ProfileTemplate> {
+    return this.#request("PUT", `/v1/templates/${segment(templateId)}`, body({ ...request }));
+  }
+
+  /** DELETE /v1/templates/{id}. Profiles made from the template keep their settings. */
+  deleteTemplate(templateId: string): Promise<void> {
+    return this.#request("DELETE", `/v1/templates/${segment(templateId)}`);
+  }
+
+  /**
+   * POST /v1/templates/{id}/profiles
+   *
+   * Makes `count` (1 to 100) profiles with the newest downloaded Wayfern, each
+   * with its own device. One profile takes `name`; several take it followed
+   * by numbers. When `error` is set, creation stopped early and `profiles`
+   * lists what was made.
+   */
+  createProfilesFromTemplate(
+    templateId: string,
+    request: { count: number; name?: string },
+  ): Promise<ApiBulkCreateResponse> {
+    return this.#request(
+      "POST",
+      `/v1/templates/${segment(templateId)}/profiles`,
+      body({ ...request }),
+    );
+  }
+
+  // ------------------------------------------------------------------
   // Proxies
   // ------------------------------------------------------------------
 
@@ -780,14 +975,21 @@ export class DonutClient {
   createProxy(request: {
     name: string;
     proxy_settings: ProxySettings;
+    /** The provider's http(s) "change IP" link, used by {@link rotateProxy}. */
+    rotation_url?: string;
   }): Promise<ApiProxyResponse> {
-    return this.#request("POST", "/v1/proxies", { ...request });
+    return this.#request("POST", "/v1/proxies", body({ ...request }));
   }
 
   /** PUT /v1/proxies/{id} */
   updateProxy(
     proxyId: string,
-    request: { name?: string; proxy_settings?: ProxySettings },
+    request: {
+      name?: string;
+      proxy_settings?: ProxySettings;
+      /** `""` clears the "change IP" link. */
+      rotation_url?: string;
+    },
   ): Promise<ApiProxyResponse> {
     return this.#request("PUT", `/v1/proxies/${segment(proxyId)}`, body({ ...request }));
   }
@@ -795,6 +997,17 @@ export class DonutClient {
   /** DELETE /v1/proxies/{id} */
   deleteProxy(proxyId: string): Promise<void> {
     return this.#request("DELETE", `/v1/proxies/${segment(proxyId)}`);
+  }
+
+  /**
+   * POST /v1/proxies/{id}/rotate
+   *
+   * Calls the proxy's "change IP" link; every profile behind the proxy moves
+   * to the new IP. A proxy without a link throws `ValidationError`, and a
+   * provider that refuses or does not answer throws `BadGateway`.
+   */
+  rotateProxy(proxyId: string): Promise<RotationResult> {
+    return this.#request("POST", `/v1/proxies/${segment(proxyId)}/rotate`);
   }
 
   /**
@@ -1030,7 +1243,11 @@ export class DonutClient {
       throw error;
     } finally {
       try {
-        await this.killProfile(profileId);
+        // A browser the person had open stays open: it was taken over, not
+        // started here.
+        if (!session.attached) {
+          await this.killProfile(profileId);
+        }
       } catch (cleanupError) {
         session.cleanupError = cleanupError;
         if (!failed) {
@@ -1056,6 +1273,8 @@ export class RunSession {
   readonly remoteDebuggingPort: number;
   /** Whether the browser actually started headless. */
   readonly headless: boolean;
+  /** Whether a running browser was taken over; the session then leaves it open. */
+  readonly attached: boolean;
   /** A failure while stopping the browser, kept rather than thrown. */
   cleanupError: unknown = undefined;
 
@@ -1065,6 +1284,7 @@ export class RunSession {
     this.response = response;
     this.remoteDebuggingPort = response.remote_debugging_port;
     this.headless = response.headless;
+    this.attached = response.attached === true;
   }
 
   /**
@@ -1078,6 +1298,8 @@ export class RunSession {
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
-    await this.client.killProfile(this.profileId);
+    if (!this.attached) {
+      await this.client.killProfile(this.profileId);
+    }
   }
 }

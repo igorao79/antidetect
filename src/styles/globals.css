@@ -66,9 +66,12 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-:root {
+/* `.light` scopes the light palette to one element, for theme previews. */
+:root,
+.light {
   --radius: 0.5rem;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in: cubic-bezier(0.5, 0, 0.75, 0);
   /* Owl Daylight: the light counterpart of Graphite below. Cool paper,
      ink with a blue cast, the same violet for everything that acts. */
   --background: #f3f5f9;
@@ -160,7 +163,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
     /* Thin, transparent-background scrollbars that look consistent across
        Windows, macOS, and Linux. */
     scrollbar-width: thin;
@@ -171,6 +174,11 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* The browser's own focus outline, for elements without a drawn ring: the
+     full ring color (a lighter one falls under 3:1), 2px off the element. */
+  :focus-visible {
+    outline-offset: 2px;
   }
   /* Keep pointer behavior consistent; explicit cursor utilities still override
      this base rule. */
@@ -286,18 +294,20 @@
    `--scroll-fade-top-offset` pushes the top-edge fade band down by N
    pixels so a sticky table header stays fully opaque and only the body
    rows scrolling past it fade. Set it inline on a scroll container whose
-   first N px are occupied by sticky chrome. */
+   first N px are occupied by sticky chrome. Coach marks read both
+   variables: content under the sticky chrome or a fade band is not shown. */
 .scroll-fade {
   --top-mask: black;
   --bottom-mask: black;
   --scroll-fade-top-offset: 0px;
+  --scroll-fade-size: 24px;
   -webkit-mask-image: linear-gradient(
     to bottom,
     black 0,
     black var(--scroll-fade-top-offset),
     var(--top-mask) var(--scroll-fade-top-offset),
-    black calc(var(--scroll-fade-top-offset) + 24px),
-    black calc(100% - 24px),
+    black calc(var(--scroll-fade-top-offset) + var(--scroll-fade-size)),
+    black calc(100% - var(--scroll-fade-size)),
     var(--bottom-mask)
   );
   mask-image: linear-gradient(
@@ -305,8 +315,8 @@
     black 0,
     black var(--scroll-fade-top-offset),
     var(--top-mask) var(--scroll-fade-top-offset),
-    black calc(var(--scroll-fade-top-offset) + 24px),
-    black calc(100% - 24px),
+    black calc(var(--scroll-fade-top-offset) + var(--scroll-fade-size)),
+    black calc(100% - var(--scroll-fade-size)),
     var(--bottom-mask)
   );
 }
@@ -377,6 +387,64 @@
     animation-iteration-count: 1;
     transition-duration: 0.01ms;
     scroll-behavior: auto;
+  }
+}
+
+/* The rail logo's wiggle (`animate-[wiggle_0.3s_ease-in-out]`). */
+@keyframes wiggle {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+  25% {
+    rotate: -8deg;
+  }
+  75% {
+    rotate: 8deg;
+  }
+}
+
+/* Popups (popovers, menus, selects, tooltips) grow out of their trigger.
+   `data-motion="on"` is set only for pointer users without reduced motion.
+   Menus, selects and popovers only scale: they are fully opaque from the first
+   frame, so a paused animation clock still shows them readable. A tooltip
+   also fades from half opacity. The exit holds a closed popup for 100ms;
+   `usePopupMotion` ends it if the clock is paused. A Select has no exit. */
+@keyframes popup-enter {
+  from {
+    scale: 0.97;
+  }
+}
+@keyframes popup-enter-fade {
+  from {
+    opacity: 0.5;
+    scale: 0.97;
+  }
+}
+@keyframes popup-exit {
+  to {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+@layer components {
+  .popup-motion[data-motion="on"]:is(
+    [data-state="open"],
+    [data-state="delayed-open"]
+  ) {
+    animation: popup-enter 120ms var(--ease-out);
+  }
+  .popup-motion.popup-motion-fade[data-motion="on"][data-state="delayed-open"] {
+    animation-name: popup-enter-fade;
+  }
+  .popup-motion[data-state="closed"] {
+    pointer-events: none;
+  }
+  .popup-motion[data-motion="on"][data-state="closed"] {
+    animation: popup-exit 100ms var(--ease-in) forwards;
+  }
+  .popup-motion:not([data-motion="on"])[data-state="closed"] {
+    display: none;
   }
 }
 

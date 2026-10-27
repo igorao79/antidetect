@@ -217,6 +217,8 @@ impl BrowserRunner {
         .unwrap_or_else(|| "DIRECT".to_string())
     );
 
+    let dns_server = crate::profile_dns::normalize_dns_server(profile.dns_server.clone())
+      .map_err(|e| -> BoxError { e.into() })?;
     let placeholder_pid = crate::proxy_manager::next_launch_placeholder_pid();
     let local_proxy = PROXY_MANAGER
       .start_proxy(
@@ -227,6 +229,7 @@ impl BrowserRunner {
         profile.proxy_bypass_rules.clone(),
         blocklist_file,
         dns_allowlist_mode,
+        dns_server.as_deref(),
         Self::records_site_history(profile),
         local_protocol,
       )

@@ -17,7 +17,6 @@ export function useProfileTableFilters(
   profiles: BrowserProfile[],
   query: string,
   context: ProfileSearchContext,
-  clearSelection: () => void,
 ) {
   const { t } = useTranslation();
   const searched = useMemo(() => {
@@ -36,6 +35,18 @@ export function useProfileTableFilters(
         options: [
           { value: "running", label: t("tables.running") },
           { value: "stopped", label: t("tables.stopped") },
+        ],
+      },
+      {
+        id: "state",
+        label: t("profileStatuses.column"),
+        value: (row) => row.status_id ?? "",
+        options: [
+          { value: "", label: t("profileStatuses.none") },
+          ...[...context.statusNames].map(([value, label]) => ({
+            value,
+            label,
+          })),
         ],
       },
       {
@@ -74,5 +85,5 @@ export function useProfileTableFilters(
     ],
     [profiles, context, t],
   );
-  return useTableFilters(searched, noTextSearch, definitions, clearSelection);
+  return useTableFilters(searched, noTextSearch, definitions, "profiles");
 }

@@ -10,11 +10,6 @@ export interface ProxySettings {
   vless_uri?: string;
 }
 
-export interface TableSortingSettings {
-  column: string; // "name", "note", "status"
-  direction: string; // "asc" or "desc"
-}
-
 export interface BrowserProfile {
   id: string; // UUID of the profile
   name: string;
@@ -49,6 +44,9 @@ export interface BrowserProfile {
    * profiles created before this field existed. */
   created_at?: number;
   dns_blocklist?: string;
+  dns_server?: string | null;
+  status_id?: string | null;
+  start_urls?: string[];
   password_protected?: boolean;
 }
 
@@ -91,6 +89,17 @@ export type SyncStatus = "Disabled" | "Syncing" | "Synced" | "Error";
 export interface SyncSettings {
   sync_server_url?: string;
   sync_token?: string;
+  source?: SyncSourceKind | null;
+}
+
+/** Where a device syncs: Donut cloud, the account's own server, or a server with a shared token. */
+export type SyncSourceKind = "cloud" | "account" | "self_hosted";
+
+/** Result of `get_sync_source`: the stored servers and the source in use. */
+export interface SyncSourceState {
+  active: SyncSourceKind | null;
+  account_server: string | null;
+  self_hosted_server: string | null;
 }
 
 /**
@@ -109,6 +118,8 @@ export interface SyncServerCheck {
   storage_endpoint: string | null;
   storage_reachable: boolean | null;
   storage_error: string | null;
+  /** The address Donut accounts sign in to the server with, when allowed. */
+  account_url?: string | null;
 }
 
 /**
@@ -142,6 +153,12 @@ export interface Entitlements {
    * bridge itself never gates on it: the server decides who may send work.
    */
   remoteControl: boolean;
+  /**
+   * Recipes Donut cloud runs on a calendar. Solo, Pro, Team and Enterprise.
+   * The UI reads it to open the Schedules page; the cloud checks the plan on
+   * every save and every fire.
+   */
+  scheduledAutomation: boolean;
   profileLimit: number;
   requestsPerHour: number;
   /**
@@ -164,16 +181,24 @@ export interface Entitlements {
  *
  * `remoteControl` is optional too, but for the opposite reason: a backend that
  * omits it has no remote-control endpoint at all, so `false` is the true answer
- * rather than a gap to fill in.
+ * rather than a gap to fill in. `scheduledAutomation` is the same.
  */
 export type ServerEntitlements = Omit<
   Entitlements,
-  "cookieBot" | "remoteBrowserHours" | "remoteInteractive" | "remoteControl"
+  | "cookieBot"
+  | "remoteBrowserHours"
+  | "remoteInteractive"
+  | "remoteControl"
+  | "scheduledAutomation"
 > &
   Partial<
     Pick<
       Entitlements,
-      "cookieBot" | "remoteBrowserHours" | "remoteInteractive" | "remoteControl"
+      | "cookieBot"
+      | "remoteBrowserHours"
+      | "remoteInteractive"
+      | "remoteControl"
+      | "scheduledAutomation"
     >
   >;
 
@@ -329,6 +354,8 @@ export interface StoredProxy {
   geo_region?: string;
   geo_city?: string;
   geo_isp?: string;
+  /** The provider's change-IP link; see `rotateProxyIps`. */
+  rotation_url?: string | null;
 }
 
 export interface LocationItem {
@@ -348,6 +375,60 @@ export interface ProfileGroup {
   bookmarks?: GroupBookmark[];
   sync_enabled?: boolean;
   last_sync?: number;
+}
+
+/** A named, colored label for where a profile's account stands. */
+export interface ProfileStatus {
+  id: string;
+  name: string;
+  /** `#rrggbb`, picked by the person. */
+  color: string;
+  position: number;
+  updated_at: number;
+}
+
+/**
+ * Saved settings that new profiles are made from. A template never holds a
+ * device: every profile made from it gets its own.
+ */
+export interface TemplateSettings {
+  name_prefix?: string | null;
+  proxy_id?: string | null;
+  vpn_id?: string | null;
+  /** Proxies to spread new profiles across, one each in turn. */
+  proxy_ids?: string[];
+  group_id?: string | null;
+  tags?: string[];
+  status_id?: string | null;
+  note?: string | null;
+  extension_group_id?: string | null;
+  dns_blocklist?: string | null;
+  dns_server?: string | null;
+  proxy_bypass_rules?: string[];
+  start_urls?: string[];
+  launch_hook?: string | null;
+  ephemeral?: boolean;
+  clear_on_close?: boolean;
+  wayfern_config?: WayfernConfig | null;
+  /** The engine the profiles are made with (fork); none means Wayfern. */
+  browser?: "camoufox" | "wayfern" | null;
+  /** Camoufox fingerprint settings (fork), without a fingerprint. */
+  camoufox_config?: CamoufoxConfig | null;
+}
+
+export interface ProfileTemplate {
+  id: string;
+  name: string;
+  settings: TemplateSettings;
+  position: number;
+  updated_at: number;
+}
+
+export interface BulkCreateResult {
+  created: BrowserProfile[];
+  /** Why creation stopped before the count, as a backend error, or null. */
+  error: string | null;
+  cancelled: boolean;
 }
 
 export interface GroupWithCount {
@@ -432,7 +513,8 @@ export interface ProfileImportReport {
 export interface ProfileImportItemResult {
   name: string;
   source_path: string;
-  status: "imported" | "skipped" | "failed";
+  /** `cancelled`: not started because the import was cancelled. */
+  status: "imported" | "skipped" | "failed" | "cancelled";
   profile_id: string | null;
   error: string | null;
   /** What actually came across. Present when status is "imported". */
@@ -443,6 +525,9 @@ export interface ProfileImportBatchResult {
   imported_count: number;
   skipped_count: number;
   failed_count: number;
+  cancelled_count?: number;
+  /** The import was cancelled; what it imported before is kept. */
+  cancelled?: boolean;
   results: ProfileImportItemResult[];
 }
 
@@ -478,6 +563,8 @@ export interface AppUpdateInfo {
   checksums_url?: string | null;
   /** GitHub-computed digest of the chosen asset ("sha256:<hex>"). */
   asset_digest?: string | null;
+  /** The app installs it without asking; false when the person starts it. */
+  auto_install: boolean;
 }
 
 export interface AppUpdateProgress {
@@ -1051,6 +1138,7 @@ export interface VpnConfig {
   last_used?: number;
   sync_enabled?: boolean;
   last_sync?: number;
+  updated_at?: number;
 }
 
 export interface VpnImportResult {
@@ -1135,6 +1223,15 @@ export interface PreLaunchChecks {
   exit_unverified: string[];
   exit_measurement_unreliable: boolean;
   consent_token: string | null;
+  /** The profile's proxy or VPN did not answer a check. A warning, not a block. */
+  route_unreachable?: RouteUnreachable | null;
+}
+
+export interface RouteUnreachable {
+  kind: "proxy" | "vpn";
+  id: string;
+  /** A backend error code. */
+  code: string;
 }
 
 /**
@@ -1190,4 +1287,36 @@ export interface CookieRobotProfileProgress {
 export interface CookieRobotStatus {
   running: boolean;
   profiles: CookieRobotProfileProgress[];
+}
+
+/** What else can go to the trash, as `trash_entity` names it. */
+export type TrashEntityKind =
+  | "proxy"
+  | "vpn"
+  | "group"
+  | "extension"
+  | "extension_group"
+  | "template";
+
+export interface TrashedEntitySummary {
+  kind: TrashEntityKind;
+  id: string;
+  name: string;
+  /** Epoch seconds. */
+  deleted_at: number;
+  /** Epoch seconds; the entry is purged once this has passed. */
+  expires_at: number;
+  size_bytes: number;
+  /** Whether it synced when it was deleted. */
+  sync_enabled: boolean;
+  /** A proxy's protocol, a VPN's type, an extension's version. */
+  detail: string | null;
+}
+
+export interface RestoredEntity {
+  kind: TrashEntityKind;
+  id: string;
+  name: string;
+  /** It synced before, but sync could not be turned back on. */
+  sync_stayed_off: boolean;
 }

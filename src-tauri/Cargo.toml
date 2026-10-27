@@ -39,13 +39,16 @@ tauri = { version = "2", features = ["tray-icon", "image-png"] }
 tauri-plugin-opener = "2"
 tauri-plugin-fs = "2"
 tauri-plugin-shell = "2"
-tauri-plugin-deep-link = "2"
+# 2.6.2 does not build on Linux: it omits two fields that rust-ini 0.21.3 requires.
+tauri-plugin-deep-link = "=2.6.1"
 tauri-plugin-single-instance = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-macos-permissions = "2"
 tauri-plugin-log = "2"
 tauri-plugin-clipboard-manager = "2"
 tauri-plugin-window-state = "2"
+tauri-plugin-notification = "2"
+tauri-plugin-autostart = "2"
 log = "0.4"
 env_logger = "0.11"
 
@@ -72,14 +75,14 @@ base64 = { version = "0.23", default-features = false, features = ["std"] }
 libc = "0.2"
 async-trait = "0.1"
 futures-util = "0.3"
-zip = { version = "8", default-features = false, features = ["deflate-flate2"] }
+zip = { version = "9", default-features = false, features = ["deflate-flate2"] }
 tar = "0"
 bzip2 = "0"
 flate2 = "1"
-lzma-rs = "0"
+lzma-rust2 = { version = "0.23", default-features = false, features = ["std", "optimization", "xz"] }
 msi-extract = "0"
 
-uuid = { version = "1.27", features = ["v4", "serde"] }
+uuid = { version = "1.29", features = ["v4", "serde"] }
 url = "2.5"
 blake3 = "1"
 globset = "0.4"
@@ -105,7 +108,7 @@ sha2 = "0.11"
 # alongside the `ring` this crate already ships through boringtun. Moving up is a
 # build-toolchain decision for every platform, not a routine dependency refresh.
 shadowsocks = { version = ">=1.24, <1.25", default-features = false, features = ["aead-cipher"] }
-hyper = { version = "1.11", features = ["full"] }
+hyper = { version = "1.12", features = ["full"] }
 hyper-util = { version = "0.1", features = ["full"] }
 http-body-util = "0.1"
 clap = { version = "4", features = ["derive"] }
@@ -117,8 +120,8 @@ russh = { version = "0.63", default-features = false, features = ["ring", "rsa"]
 
 # Wayfern CDP integration
 tokio-tungstenite = { version = "0.30", features = ["native-tls"] }
-rusqlite = { version = "0.40", features = ["bundled"] }
-serde_yaml = "0.9"
+rusqlite = { version = "0.41", features = ["bundled"] }
+yaml-rust2 = { version = "0.13", default-features = false }
 thiserror = "2.0"
 regex-lite = "0.1"
 tempfile = "3"
@@ -137,6 +140,7 @@ crossbeam-channel = "0.5"
 sys-locale = "0.3"
 jsonc-parser = { version = "0.34", features = ["cst", "serde_json"] }
 toml_edit = "0.25"
+rusty-leveldb = "4.0.2"
 
 [target.'cfg(unix)'.dependencies]
 nix = { version = "0.31", features = ["signal", "process"] }
@@ -158,7 +162,7 @@ fontdb = "0.24"
 # Reading the source browser's "<Brand> Safe Storage" Keychain item during
 # profile import, so its cookies and passwords can be re-encrypted for Wayfern.
 security-framework = "3"
-objc2 = "0.6.4"
+objc2 = "0.6.5"
 objc2-app-kit = { version = "0.3.2", features = ["NSWindow", "NSApplication", "NSRunningApplication", "NSView", "NSResponder", "NSButton", "NSControl", "NSGraphics"] }
 objc2-foundation = { version = "0.3.2", features = ["NSGeometry"] }
 
@@ -186,18 +190,30 @@ windows = { version = "0.62", features = [
   # CryptUnprotectData, for unwrapping the source browser's os_crypt key from
   # `Local State` during profile import.
   "Win32_Security_Cryptography",
+  # The RAM volume (src/ramfs): its root security descriptor, and loading the
+  # installed WinFsp DLL by full path.
+  "Win32_Security_Authorization",
+  "Win32_System_LibraryLoader",
 ] }
+# WinFsp, for the RAM volume of ephemeral profiles. Donut does not ship the
+# driver; the DLL is delay-loaded and used only when it is installed.
+winfsp = { version = "0.13", default-features = false }
+winfsp-sys = "0.12"
+
+[target.'cfg(windows)'.build-dependencies]
+winfsp = { version = "0.13", default-features = false, features = ["delayload"] }
 
 [dev-dependencies]
 tempfile = "3.27.0"
 wiremock = "0.6"
-hyper = { version = "1.11", features = ["full"] }
+hyper = { version = "1.12", features = ["full"] }
 hyper-util = { version = "0.1", features = ["full"] }
 http-body-util = "0.1"
 tower = "0.5"
 tower-http = { version = "0.7", features = ["fs", "trace"] }
 futures-util = "0.3"
 serial_test = "4"
+lzma-rust2 = { version = "0.23", features = ["encoder"] }
 
 # Integration test configuration
 [[test]]

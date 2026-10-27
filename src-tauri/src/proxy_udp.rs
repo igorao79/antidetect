@@ -92,21 +92,26 @@ pub async fn probe_udp_support(settings: &ProxySettings) -> UdpSupport {
     Ok(Ok(verdict)) => verdict,
     Ok(Err(e)) => {
       log::debug!(
-        "UDP probe of {}:{} could not complete: {e}",
+        "UDP probe inconclusive host={} port={} err=\"{e}\"",
         settings.host,
         settings.port
       );
       UdpSupport::Unknown
     }
     Err(_) => {
-      log::debug!("UDP probe of {}:{} timed out", settings.host, settings.port);
+      log::debug!(
+        "UDP probe timed out host={} port={}",
+        settings.host,
+        settings.port
+      );
       UdpSupport::Unknown
     }
   }
 }
 
 async fn socks5_udp_associate(settings: &ProxySettings) -> std::io::Result<UdpSupport> {
-  let mut stream = tokio::net::TcpStream::connect((settings.host.as_str(), settings.port)).await?;
+  let host = crate::proxy_storage::bare_host(&settings.host);
+  let mut stream = tokio::net::TcpStream::connect((host, settings.port)).await?;
 
   let credentials = settings
     .username

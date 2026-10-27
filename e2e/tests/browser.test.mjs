@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, readdir, readFile, stat, writeFile } from "node:fs/promises";
+import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -148,6 +149,59 @@ const LOCATION_KEYS = new Set([
   "longitude",
   "accuracy",
 ]);
+
+/**
+ * The MCP tools as an agent reaches them over the remote bridge, on one
+ * initialized session. `tool` fails on an error answer; `toolError` expects one
+ * and returns it.
+ */
+async function mcpClient(base, token, profileId) {
+  let rpcId = 0;
+  let session = null;
+  const post = async (method, params) => {
+    const response = await fetch(`${base}/v1/e2e/mcp`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+        ...(session ? { "mcp-session-id": session } : {}),
+      },
+      body: JSON.stringify({ jsonrpc: "2.0", id: ++rpcId, method, params }),
+    });
+    assert.equal(response.status, 200, await response.clone().text());
+    const answer = await response.json();
+    session = answer.session_id ?? session;
+    return answer.body;
+  };
+  const mcp = async (method, params) => {
+    const body = await post(method, params);
+    assert.equal(body.error, undefined, JSON.stringify(body));
+    return body.result;
+  };
+  const call = (name, args) =>
+    post("tools/call", {
+      name,
+      arguments: { profile_id: profileId, ...args },
+    });
+  const tool = async (name, args = {}) => {
+    const body = await call(name, args);
+    assert.equal(body.error, undefined, JSON.stringify(body));
+    assert.notEqual(body.result.isError, true, JSON.stringify(body.result));
+    return body.result.content[0];
+  };
+  const toolJson = async (name, args) =>
+    JSON.parse((await tool(name, args)).text);
+  const toolError = async (name, args = {}) => {
+    const body = await call(name, args);
+    assert.ok(body.error, JSON.stringify(body));
+    return body.error;
+  };
+  await mcp("initialize", {
+    protocolVersion: "2025-06-18",
+    clientInfo: { name: "Donut E2E", version: "1" },
+  });
+  return { mcp, tool, toolJson, toolError };
+}
 
 /** `fingerprint` is the serialised fingerprint STRING, or null for a fresh one. */
 async function createRealProfile(app, version, name, fingerprint = null) {
@@ -345,9 +399,13 @@ test("real Wayfern fingerprinting, terms, API automation, CDP, cookies, and proc
 
     // The new-profile form (which needs a downloaded browser and its release
     // types, so it renders here and not in the UI suite): session restore is
-    // on by default and the checkbox is a live control.
+    // on by default and the checkbox is a live control. It sits under the
+    // collapsed advanced options.
     await app.clickSelector('[aria-label="Profiles"]');
     await app.clickText("New");
+    await app.clickText(en.createProfile.advancedOptions, {
+      roles: ["button"],
+    });
     const restoreChecked = () =>
       app.execute(
         `return document.querySelector("#restore-session")?.getAttribute("aria-checked") ?? null;`,
@@ -498,6 +556,8 @@ test("real Wayfern fingerprinting, terms, API automation, CDP, cookies, and proc
     assert.equal(typeof checks.consistency, "object");
     assert.equal(typeof checks.exit_probe_pending, "boolean");
     assert.equal(typeof checks.exit_measurement_unreliable, "boolean");
+    // A profile with no proxy or VPN has no route to check before launch.
+    assert.equal(checks.route_unreachable, null);
     // The third consistency state: what no probe can ever verify for this
     // profile. Reported so a launch that compared nothing is never rendered as
     // a launch that compared everything and agreed.
@@ -686,6 +746,393 @@ test("real Wayfern fingerprinting, terms, API automation, CDP, cookies, and proc
     assert.ok(echo.userAgent.length > 20);
     assert.match(await cdp.evaluate("document.cookie"), /donut_e2e=browser-ok/);
 
+    // A click that only changes the page ends a moment after the click, not
+    // at the load timeout; a link click still waits for its load and says so.
+    const agentClick = async (locator) => {
+      const started = Date.now();
+      const answer = await request(
+        `${base}/v1/profiles/${profile.id}/agent/click`,
+        { method: "POST", token: saved.api_token, body: { locator } },
+      );
+      assert.equal(answer.response.status, 200, JSON.stringify(answer.value));
+      return { ...answer.value, ms: Date.now() - started };
+    };
+    const inPlace = await agentClick({ role: "button", name: "Clicked" });
+    assert.equal(inPlace.navigated, false);
+    assert.ok(inPlace.ms < 5000, `an in-place click took ${inPlace.ms} ms`);
+    const link = await agentClick({
+      role: "link",
+      name: "Open the linked page",
+    });
+    assert.equal(link.navigated, true);
+    assert.equal(
+      await cdp.evaluate("document.querySelector('#path').textContent"),
+      "/linked",
+    );
+
+    // The browser's own index never carries `id`, so the page applies this
+    // locator; the node a resolution names is the element itself.
+    const byIdLocator = {
+      attributes: [{ name: "id", value: "fixture-button" }],
+    };
+    const resolved = await request(
+      `${base}/v1/profiles/${profile.id}/agent/resolve-locator`,
+      {
+        method: "POST",
+        token: saved.api_token,
+        body: { locator: byIdLocator },
+      },
+    );
+    assert.equal(resolved.response.status, 200, JSON.stringify(resolved.value));
+    const resolvedNode = await cdp.command("DOM.describeNode", {
+      backendNodeId: resolved.value.backendNodeId,
+    });
+    assert.equal(resolvedNode.node.nodeName, "BUTTON");
+    assert.ok(
+      resolvedNode.node.attributes.includes("fixture-button"),
+      JSON.stringify(resolvedNode.node),
+    );
+    const byId = await agentClick(byIdLocator);
+    assert.equal(byId.navigated, false);
+    assert.equal(
+      await cdp.evaluate(
+        "document.querySelector('#fixture-button').dataset.clicked",
+      ),
+      "yes",
+    );
+
+    // The MCP browser tools, through the engine an agent reaches over the
+    // remote bridge. Each action says where the page is afterwards.
+    const { mcp, tool, toolJson, toolError } = await mcpClient(
+      base,
+      saved.api_token,
+      profile.id,
+    );
+
+    // What a bug report attaches, as an agent reads it: the running profile
+    // by alias, never by id, inside the size the agent asked for.
+    const { diagnostics } = await toolJson("get_diagnostics", { max_kb: 16 });
+    assert.ok(
+      diagnostics.startsWith("===== facts =====\n"),
+      diagnostics.slice(0, 400),
+    );
+    assert.match(diagnostics, /^profile-\d+ browser=wayfern .*running=true/m);
+    assert.ok(!diagnostics.includes(profile.id));
+    assert.ok(Buffer.byteLength(diagnostics) <= 16 * 1024);
+    assert.match(
+      (await toolError("get_diagnostics", { max_kb: 1 })).message,
+      /max_kb/,
+    );
+
+    // The device the profile presents, through each way it is read: the
+    // fingerprint form, REST and MCP. An identity-backed profile stores no
+    // device, so every read derives it, and it is what the running page reports.
+    const shown = JSON.parse(
+      await app.invoke("get_profile_fingerprint", { profileId: profile.id }),
+    );
+    assert.ok(Object.keys(shown).length >= 10, JSON.stringify(shown));
+    assert.equal(shown.platform, await cdp.evaluate("navigator.platform"));
+    assert.equal(
+      shown.hardwareConcurrency,
+      await cdp.evaluate("navigator.hardwareConcurrency"),
+    );
+    const restFingerprint = await request(
+      `${base}/v1/profiles/${profile.id}/fingerprint`,
+      { token: saved.api_token },
+    );
+    assert.equal(
+      restFingerprint.response.status,
+      200,
+      JSON.stringify(restFingerprint.value),
+    );
+    assert.deepEqual(JSON.parse(restFingerprint.value.fingerprint), shown);
+    assert.deepEqual(
+      JSON.parse((await toolJson("get_profile_fingerprint")).fingerprint),
+      shown,
+    );
+
+    const back = await tool("go_back");
+    assert.match(back.text, /^Went back/);
+    assert.match(back.text, /Page: Donut E2E Browser Fixture <.*\/wayfern>/);
+    assert.equal(
+      await cdp.evaluate("document.querySelector('#path').textContent"),
+      "/wayfern",
+    );
+
+    const scrolled = await toolJson("scroll", { direction: "down" });
+    assert.equal(scrolled.moved, true, JSON.stringify(scrolled));
+    assert.ok(scrolled.scroll_y > 0);
+    assert.equal(scrolled.at_top, false);
+
+    await cdp.evaluate("document.querySelector('#fixture-input').focus()");
+    const pressed = await tool("press_key", { key: "Enter" });
+    assert.match(pressed.text, /^Pressed Enter/);
+    assert.equal(
+      await cdp.evaluate(
+        "document.querySelector('#fixture-input').dataset.entered",
+      ),
+      "yes",
+    );
+
+    const found = await toolJson("wait_for", { selector: "#fixture-end" });
+    assert.equal(found.met, true);
+    assert.equal(found.title, "Donut E2E Browser Fixture");
+    const missing = await toolJson("wait_for", {
+      text: "Text that is never on the fixture",
+      timeout_ms: 300,
+    });
+    assert.equal(missing.met, false);
+
+    // Each listed element carries an id that stays the same while it lives;
+    // a batch acts on one by id and reports each step.
+    const listing = (await tool("get_interactive_elements")).text;
+    const buttonLine = listing
+      .split("\n")
+      .find((line) => line.includes('id="fixture-button"'));
+    const elementId = /^\[\d+ (e\d+)/.exec(buttonLine ?? "")?.[1];
+    assert.ok(elementId, listing);
+    assert.doesNotMatch(
+      (await tool("get_interactive_elements")).text,
+      / new[\] ]/,
+      "nothing is new on a second listing of the same page",
+    );
+    await cdp.evaluate(
+      "delete document.querySelector('#fixture-button').dataset.clicked; true",
+    );
+    const batch = await toolJson("run_actions", {
+      actions: [
+        { tool: "click_by_index", arguments: { element_id: elementId } },
+        { tool: "get_page_info" },
+      ],
+    });
+    assert.equal(batch.completed, 2, JSON.stringify(batch));
+    assert.equal(batch.stopped, null);
+    assert.equal(
+      await cdp.evaluate(
+        "document.querySelector('#fixture-button').dataset.clicked",
+      ),
+      "yes",
+    );
+
+    // Form tools on a native select and a hidden file input added to the page.
+    await cdp.evaluate(`(() => {
+      const form = document.createElement('form');
+      form.innerHTML = '<label for="fixture-country">Country</label>'
+        + '<select id="fixture-country"><option value="">Pick one</option>'
+        + '<option value="de">Germany</option><option value="fr">France</option></select>'
+        + '<select id="fixture-langs" multiple><option value="en">English</option>'
+        + '<option value="de">German</option></select>'
+        + '<label id="fixture-upload-label">Attach'
+        + '<input id="fixture-file" type="file" style="display: none"></label>';
+      document.body.prepend(form);
+      const country = form.querySelector('#fixture-country');
+      country.addEventListener('change', () => { country.dataset.changed = country.value; });
+      form.querySelector('#fixture-file').addEventListener('change', (event) => {
+        event.target.dataset.trusted = String(event.isTrusted);
+      });
+      return true;
+    })()`);
+    const picked = await toolJson("select_option", {
+      selector: "#fixture-country",
+      option: "France",
+    });
+    assert.deepEqual(
+      picked.selected.map((option) => option.value),
+      ["fr"],
+      JSON.stringify(picked),
+    );
+    assert.equal(picked.changed, true);
+    assert.equal(
+      await cdp.evaluate(
+        "document.querySelector('#fixture-country').dataset.changed",
+      ),
+      "fr",
+    );
+    const byLocator = await toolJson("select_option", {
+      locator: { attributes: [{ name: "id", value: "fixture-country" }] },
+      option: "de",
+    });
+    assert.equal(byLocator.selected[0].label, "Germany");
+    const unchanged = await toolJson("select_option", {
+      selector: "#fixture-country",
+      option: "Germany",
+    });
+    assert.equal(unchanged.changed, false);
+    const both = await toolJson("select_option", {
+      selector: "#fixture-langs",
+      options: ["English", "de"],
+    });
+    assert.deepEqual(
+      both.selected.map((option) => option.value),
+      ["en", "de"],
+    );
+    const noSuchOption = await toolError("select_option", {
+      selector: "#fixture-country",
+      option: "Mars",
+    });
+    assert.match(noSuchOption.message, /No option matches.*Germany/s);
+    const notSelect = await toolError("select_option", {
+      selector: "#fixture-button",
+      option: "x",
+    });
+    assert.match(notSelect.message, /not a <select>/);
+
+    const uploaded = await toolJson("file_upload", {
+      selector: "#fixture-upload-label",
+      files: [{ name: "notes.txt", text: "Donut upload" }],
+    });
+    assert.deepEqual(uploaded.files, [{ name: "notes.txt", bytes: 12 }]);
+    assert.equal(
+      await cdp.evaluate(
+        "document.querySelector('#fixture-file').files[0].text()",
+      ),
+      "Donut upload",
+    );
+    assert.equal(
+      await cdp.evaluate(
+        "document.querySelector('#fixture-file').dataset.trusted",
+      ),
+      "true",
+      "the page sees the files arrive as a person's pick",
+    );
+    const replaced = await toolJson("file_upload", {
+      selector: "#fixture-file",
+      files: [
+        {
+          name: "bytes.bin",
+          content_base64: Buffer.from([0, 1, 2]).toString("base64"),
+        },
+      ],
+    });
+    assert.deepEqual(replaced.files, [{ name: "bytes.bin", bytes: 3 }]);
+    const stagedUploads = path.join(
+      app.dataRoot,
+      "cache",
+      "agent-uploads",
+      profile.id,
+    );
+    assert.equal(existsSync(stagedUploads), true);
+    const oneFileOnly = await toolError("file_upload", {
+      selector: "#fixture-file",
+      files: [
+        { name: "a.txt", text: "a" },
+        { name: "b.txt", text: "b" },
+      ],
+    });
+    assert.match(oneFileOnly.message, /takes one file/);
+
+    // Network capture: what the page fetches, with its bodies and without its
+    // credentials, and nothing while the person holds the profile.
+    const capture = await toolJson("start_network_capture");
+    assert.equal(capture.capturing, true, JSON.stringify(capture));
+    assert.ok(capture.tabs >= 1, JSON.stringify(capture));
+    assert.equal(
+      (await toolJson("start_network_capture")).already_running,
+      true,
+    );
+    const echoBody = JSON.stringify({ hello: "capture" });
+    await cdp.evaluate(
+      `fetch('/api/echo?capture=1', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer e2e-secret' }, body: ${JSON.stringify(echoBody)} }).then((response) => response.text())`,
+    );
+    const echoed = await app.waitFor(
+      async () => {
+        const listed = await toolJson("list_network_requests", {
+          url_contains: "/api/echo?capture=1",
+        });
+        const entry = listed.requests[0];
+        return entry?.body === "kept" ? entry : null;
+      },
+      { timeoutMs: 10_000, description: "the captured echo request" },
+    );
+    assert.equal(echoed.method, "POST");
+    assert.equal(echoed.status, 200);
+    assert.equal(echoed.type, "Fetch");
+    const captured = await toolJson("get_network_request", {
+      request_id: echoed.id,
+    });
+    assert.equal(captured.post_data, echoBody);
+    assert.equal(JSON.parse(captured.body.text).body, echoBody);
+    const header = (headers, name) =>
+      Object.entries(headers).find(([key]) => key.toLowerCase() === name)?.[1];
+    assert.equal(
+      header(captured.request_headers, "authorization"),
+      "[redacted]",
+    );
+    const setCookie = header(captured.response_headers, "set-cookie");
+    assert.ok(setCookie === undefined || setCookie === "[redacted]", setCookie);
+    const byBody = await toolJson("list_network_requests", {
+      body_contains: "CAPTURE",
+      type: "fetch",
+    });
+    assert.ok(
+      byBody.requests.some((entry) => entry.id === echoed.id),
+      JSON.stringify(byBody),
+    );
+    await app.invoke("take_over_profile", {
+      profileId: profile.id,
+      note: null,
+    });
+    await cdp.evaluate(
+      "fetch('/api/echo?while-held=1').then((response) => response.text())",
+    );
+    // The capture reads the browser's events on its own task.
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    await app.invoke("hand_back_profile", {
+      profileId: profile.id,
+      note: null,
+    });
+    const whileHeld = await toolJson("list_network_requests", {
+      url_contains: "while-held",
+    });
+    assert.equal(whileHeld.requests.length, 0, JSON.stringify(whileHeld));
+    assert.ok(whileHeld.withheld >= 1, JSON.stringify(whileHeld));
+    assert.equal((await toolJson("stop_network_capture")).stopped, true);
+    assert.equal(
+      (await toolError("list_network_requests")).data.code,
+      "NETWORK_CAPTURE_NOT_RUNNING",
+    );
+    // Left running, so the browser's stop is what ends it.
+    await toolJson("start_network_capture");
+
+    const shot = await tool("screenshot");
+    assert.equal(shot.mimeType, "image/jpeg");
+    const jpeg = Buffer.from(shot.data, "base64");
+    assert.equal(jpeg.readUInt16BE(0), 0xffd8, "a JPEG by default");
+
+    const visited = await tool("navigate", { url: `${fixtureUrl}/again` });
+    assert.match(visited.text, /Page: Donut E2E Browser Fixture <.*\/again>/);
+
+    // A running browser is taken over as it is: a second run hands back the
+    // same DevTools port with the URL in a new tab, and never restarts it.
+    const takeover = await request(`${base}/v1/profiles/${profile.id}/run`, {
+      method: "POST",
+      token: saved.api_token,
+      body: { url: `${fixtureUrl}/taken-over` },
+    });
+    assert.equal(takeover.response.status, 200, JSON.stringify(takeover.value));
+    assert.equal(takeover.value.attached, true);
+    assert.equal(
+      takeover.value.remote_debugging_port,
+      launched.value.remote_debugging_port,
+    );
+    const listed = await toolJson("list_tabs");
+    const takenTab = listed.tabs.find((tab) => tab.url.endsWith("/taken-over"));
+    assert.ok(takenTab, JSON.stringify(listed));
+    assert.equal(
+      takenTab.selected,
+      true,
+      "the new tab is the one the tools drive",
+    );
+    const otherTab = listed.tabs.find((tab) => tab.id !== takenTab.id);
+    const switched = await toolJson("switch_tab", { tab_id: otherTab.id });
+    assert.equal(switched.selected, true);
+    assert.match((await tool("get_page_info")).text, /again/);
+    await tool("close_tab", { tab_id: takenTab.id });
+    assert.equal(
+      (await toolJson("list_tabs")).tabs.some((tab) => tab.id === takenTab.id),
+      false,
+    );
+
     const runningProfile = (await app.invoke("list_browser_profiles")).find(
       (item) => item.id === profile.id,
     );
@@ -720,21 +1167,82 @@ test("real Wayfern fingerprinting, terms, API automation, CDP, cookies, and proc
       );
     }
 
+    // The window's DevTools endpoint and network inspector reach the same
+    // browser the automation port does, and the capture the agent left
+    // running.
+    const endpoint = await app.invoke("get_profile_debug_endpoint", {
+      profileId: profile.id,
+    });
+    assert.equal(endpoint.port, launched.value.remote_debugging_port);
+    assert.match(
+      endpoint.ws_url,
+      /^ws:\/\/127\.0\.0\.1:\d+\/devtools\/browser\//,
+    );
+    const windowCapture = await app.invoke("start_network_capture", {
+      profileId: profile.id,
+    });
+    assert.equal(windowCapture.capturing, true);
+    assert.equal(windowCapture.already_running, true);
+
     const opened = await request(`${base}/v1/profiles/${profile.id}/open-url`, {
       method: "POST",
       token: saved.api_token,
       body: { url: `${fixtureUrl}/opened-via-api` },
     });
     assert.equal(opened.response.status, 200);
-    await app.waitFor(
+    const openedTarget = await app.waitFor(
       async () => {
         const targets = await fetch(
           `http://127.0.0.1:${launched.value.remote_debugging_port}/json`,
         ).then((response) => response.json());
-        return targets.some((target) => target.url.includes("/opened-via-api"));
+        return (
+          targets.find(
+            (target) =>
+              target.type === "page" && target.url.includes("/opened-via-api"),
+          ) ?? false
+        );
       },
       { timeoutMs: 20_000, description: "API-opened Wayfern target" },
     );
+    // The tab's document request starts before the tab exists as a target, so
+    // the capture cannot see it; what the tab sends once it is open is
+    // captured, under the tab's own id.
+    const openedTab = await CdpClient.connect(
+      launched.value.remote_debugging_port,
+      { match: (target) => target.id === openedTarget.id },
+    );
+    try {
+      await openedTab.evaluate(
+        "fetch('/api/echo?from=opened-via-api').then((response) => response.text())",
+      );
+    } finally {
+      openedTab.close();
+    }
+    const capturedRequest = await app.waitFor(
+      async () => {
+        const listed = await app.invoke("list_network_requests", {
+          profileId: profile.id,
+        });
+        assert.equal(listed.capturing, true);
+        return (
+          listed.requests.find((item) =>
+            item.url.includes("/api/echo?from=opened-via-api"),
+          ) ?? false
+        );
+      },
+      { timeoutMs: 20_000, description: "captured API-opened request" },
+    );
+    assert.equal(
+      capturedRequest.tab,
+      openedTarget.id,
+      JSON.stringify(capturedRequest),
+    );
+    const capturedDetail = await app.invoke("get_network_request", {
+      profileId: profile.id,
+      requestId: capturedRequest.id,
+    });
+    assert.equal(capturedDetail.id, capturedRequest.id);
+    assert.equal(typeof capturedDetail.request_headers, "object");
 
     const killed = await request(`${base}/v1/profiles/${profile.id}/kill`, {
       method: "POST",
@@ -744,12 +1252,33 @@ test("real Wayfern fingerprinting, terms, API automation, CDP, cookies, and proc
     cdp.close();
     cdp = null;
     await waitForProcessExit(app, browserPid);
+    assert.equal(
+      existsSync(stagedUploads),
+      false,
+      "an agent's uploads go with the browser",
+    );
+    assert.equal(
+      (await toolError("list_network_requests")).data.code,
+      "NETWORK_CAPTURE_NOT_RUNNING",
+    );
+    assert.deepEqual(
+      await app.invoke("list_network_requests", { profileId: profile.id }),
+      { capturing: false },
+    );
+    assert.deepEqual(
+      await app.invoke("stop_network_capture", { profileId: profile.id }),
+      { stopped: false },
+    );
     const stoppedProfile = (await app.invoke("list_browser_profiles")).find(
       (item) => item.id === profile.id,
     );
     assert.equal(
       await app.invoke("check_browser_status", { profile: stoppedProfile }),
       false,
+    );
+    assert.equal(
+      await app.invoke("get_profile_debug_endpoint", { profileId: profile.id }),
+      null,
     );
 
     const batchProfile = await createRealProfile(
@@ -770,42 +1299,27 @@ test("real Wayfern fingerprinting, terms, API automation, CDP, cookies, and proc
         profile_ids: [batchProfile.id],
         url: `${fixtureUrl}/batch`,
         headless: true,
+        delay_ms: 0,
+        concurrency: 1,
       },
     });
     assert.equal(batchRun.response.status, 200);
-    // A profile carrying a whole stored device is migrated into an identity
-    // plus overrides. Some override values are currently rejected by the
-    // browser at launch, and the launcher reports that with the property
-    // named, so this asserts the reported failure rather than pretending the
-    // launch worked. If the launch succeeds instead, the else branch takes
-    // over and the batch is asserted in full.
-    const batchBlockedByBrowser =
-      !batchRun.value.results[0].ok &&
-      /was not applied: \w+/.test(batchRun.value.results[0].error ?? "");
-    if (batchBlockedByBrowser) {
-      console.log(
-        `[donut-e2e] Batch profile could not launch: ${batchRun.value.results[0].error}`,
-      );
-      assert.match(
-        batchRun.value.results[0].error,
-        /WAYFERN_IDENTITY_REFUSED|WAYFERN_FINGERPRINT_APPLY_FAILED/,
-        "a refused device must reach the caller as a coded error, never as a silent success",
-      );
-    } else {
-      assert.equal(
-        batchRun.value.results[0].ok,
-        true,
-        batchRun.value.results[0].error,
-      );
-      const batchCdp = await CdpClient.connect(
-        batchRun.value.results[0].remote_debugging_port,
-      );
-      assert.equal(
-        await batchCdp.waitFor("window.__fixtureReady === true"),
-        true,
-      );
-      batchCdp.close();
-    }
+    // A whole supplied device becomes an identity plus overrides. The browser
+    // refuses some override values and names each one; the launcher drops it
+    // and launches again, so the batch launches.
+    assert.equal(
+      batchRun.value.results[0].ok,
+      true,
+      batchRun.value.results[0].error,
+    );
+    const batchCdp = await CdpClient.connect(
+      batchRun.value.results[0].remote_debugging_port,
+    );
+    assert.equal(
+      await batchCdp.waitFor("window.__fixtureReady === true"),
+      true,
+    );
+    batchCdp.close();
     const batchStop = await request(`${base}/v1/profiles/batch/stop`, {
       method: "POST",
       token: saved.api_token,
@@ -959,6 +1473,14 @@ test("real Wayfern fingerprinting, terms, API automation, CDP, cookies, and proc
       temporaryPid,
       "the temporary profile must report the browser it started",
     );
+    // The browser runs from the profile's RAM directory, and the tools must
+    // find it there: they once looked only under the profiles dir.
+    const ephemeralPage = await mcp("tools/call", {
+      name: "get_page_info",
+      arguments: { profile_id: temporaryId },
+    });
+    assert.notEqual(ephemeralPage.isError, true, JSON.stringify(ephemeralPage));
+    assert.match(ephemeralPage.content[0].text, /temporary/);
     await request(`${base}/v1/profiles/${temporaryId}/kill`, {
       method: "POST",
       token: saved.api_token,
@@ -1003,6 +1525,258 @@ test("real Wayfern fingerprinting, terms, API automation, CDP, cookies, and proc
   }
 });
 
+// What MCP agents reported on real forms, on a local page that has each kind
+// of field: a locator by id finds a search input and a search textarea, a click
+// lands on what a person sees (a radio drawn by its label, a day cell, a
+// textarea beside a fixed banner, never the banner), a name that two fields
+// share settles on the exact one, and typing either leaves the text in the
+// field, through the input events a framework listens to, or fails and says so.
+test("MCP locators and typing act on the field a person sees", async () => {
+  assert.ok(process.env.WAYFERN_TEST_TOKEN, "WAYFERN_TEST_TOKEN is required");
+  const localWayfernVersion = cachedFixtureVersion(
+    process.env.DONUT_E2E_PROJECT_ROOT,
+  );
+  const app = appFromEnvironment("browser-mcp-forms", {
+    seedVersionCache: localWayfernVersion ?? false,
+    wayfernTermsAccepted: false,
+  });
+  let cdp;
+  let browserPid;
+  try {
+    const prepared = await prepareWayfern(
+      app,
+      process.env.DONUT_E2E_PROJECT_ROOT,
+    );
+    if (!app.session) await app.start();
+    if (!(await app.invoke("check_wayfern_terms_accepted"))) {
+      await app.invoke("accept_wayfern_terms");
+    }
+    const profile = await createRealProfile(app, prepared.version, "MCP Forms");
+    const settings = await app.invoke("get_app_settings");
+    const saved = await app.invoke("save_app_settings", {
+      settings: {
+        ...settings,
+        api_enabled: true,
+        api_port: 0,
+        api_token: null,
+        onboarding_completed: true,
+      },
+    });
+    const port = await app.invoke("start_api_server", { port: 0 });
+    const base = `http://127.0.0.1:${port}`;
+    const launched = await request(`${base}/v1/profiles/${profile.id}/run`, {
+      method: "POST",
+      token: saved.api_token,
+      body: { url: `${fixtureUrl}/mcp-forms`, headless: true },
+    });
+    assert.equal(launched.response.status, 200, JSON.stringify(launched.value));
+    browserPid = (await app.invoke("list_browser_profiles")).find(
+      (item) => item.id === profile.id,
+    )?.process_id;
+    cdp = await CdpClient.connect(launched.value.remote_debugging_port);
+    await cdp.waitFor("window.__formsReady === true", {
+      description: "the MCP forms fixture",
+    });
+    const { tool, toolJson, toolError } = await mcpClient(
+      base,
+      saved.api_token,
+      profile.id,
+    );
+    const valueOf = (selector) =>
+      cdp.evaluate(`document.querySelector(${JSON.stringify(selector)}).value`);
+    const byId = (id) => ({ attributes: [{ name: "id", value: id }] });
+
+    // An id the browser's own index does not carry: a search input and a
+    // search textarea.
+    const searched = await toolJson("type_locator", {
+      locator: byId("searchInput"),
+      text: "Donut Browser",
+    });
+    assert.equal(searched.typed, true, JSON.stringify(searched));
+    assert.equal(searched.verified, true, JSON.stringify(searched));
+    assert.equal(await valueOf("#searchInput"), "Donut Browser");
+    const asked = await toolJson("type_locator", {
+      locator: byId("sb_form_q"),
+      text: "weather today",
+    });
+    assert.equal(asked.verified, true, JSON.stringify(asked));
+    assert.equal(await valueOf("#sb_form_q"), "weather today");
+
+    // A controlled field keeps only what real input events gave it: a value
+    // assigned by a script is put back on the next render.
+    const controlled = await toolJson("type_locator", {
+      locator: { role: "textbox", name: "Full name" },
+      text: "Jane Doe",
+    });
+    assert.equal(controlled.verified, true, JSON.stringify(controlled));
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    assert.equal(await valueOf("#react-name"), "Jane Doe");
+    assert.equal(
+      await cdp.evaluate("document.querySelector('#react-name').dataset.state"),
+      "Jane Doe",
+      "the page's own state took the text",
+    );
+    // Replaced, not appended, and still through input events.
+    assert.match(
+      (
+        await tool("type_text", {
+          selector: "#react-name",
+          text: "John Roe",
+        })
+      ).text,
+      /the field holds the text/,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    assert.equal(await valueOf("#react-name"), "John Roe");
+    assert.equal(
+      await cdp.evaluate("document.querySelector('#react-name').dataset.state"),
+      "John Roe",
+    );
+
+    // An autocomplete whose input is transparent and one pixel wide: the click
+    // goes to its control, and the text reaches the input.
+    const subject = await toolJson("type_locator", {
+      locator: byId("subjectsInput"),
+      text: "Mat",
+    });
+    assert.equal(subject.verified, true, JSON.stringify(subject));
+    assert.equal(await valueOf("#subjectsInput"), "Mat");
+    assert.match(
+      await cdp.evaluate(
+        "document.querySelector('#subjects-menu').textContent",
+      ),
+      /Maths/,
+    );
+    const batch = await toolJson("run_actions", {
+      actions: [
+        {
+          tool: "type_text",
+          arguments: { selector: "#subjectsInput", text: "Phy" },
+        },
+      ],
+    });
+    assert.equal(batch.completed, 1, JSON.stringify(batch));
+    assert.equal(await valueOf("#subjectsInput"), "Phy");
+
+    // Two names that differ by a suffix: the exact one is meant, and a
+    // locator that really is ambiguous says what it matched.
+    const first = await toolJson("type_locator", {
+      locator: { nameContains: "First Name" },
+      text: "Ada",
+    });
+    assert.equal(first.match.name, "First Name", JSON.stringify(first));
+    assert.equal(await valueOf("#first-name"), "Ada");
+    assert.equal(await valueOf("#first-name-optional"), "");
+    const ambiguous = await toolError("resolve_locator", {
+      locator: { role: "textbox", nameContains: "First" },
+    });
+    assert.equal(ambiguous.data.code, "LOCATOR_AMBIGUOUS");
+    assert.deepEqual(
+      ambiguous.data.candidates.map((candidate) => candidate.name).sort(),
+      ["First Name", "First Name (optional)"],
+    );
+    assert.match(ambiguous.message, /First Name \(optional\)/);
+
+    // Radios drawn by their labels: a text locator matches the label, a role
+    // and name locator matches the radio, and both click through the label.
+    const checked = () =>
+      cdp.evaluate("document.querySelector('input[name=gender]:checked')?.id");
+    const female = await toolJson("click_locator", {
+      locator: { text: "Female" },
+    });
+    assert.equal(female.clicked, true, JSON.stringify(female));
+    assert.equal(await checked(), "gender-radio-2");
+    await toolJson("click_locator", {
+      locator: { role: "radio", name: "Male" },
+    });
+    assert.equal(await checked(), "gender-radio-1");
+
+    // A day cell of a date grid.
+    await toolJson("click_locator", { locator: { text: "18" } });
+    assert.equal(
+      await cdp.evaluate("document.querySelector('#days').dataset.picked"),
+      "18",
+    );
+
+    // A field the page will not change: typing fails, and says what it holds.
+    const locked = await toolError("type_locator", {
+      locator: byId("locked"),
+      text: "nothing changes",
+    });
+    assert.equal(locked.data.code, "TYPE_NOT_APPLIED", JSON.stringify(locked));
+    assert.equal(locked.data.reason, "value");
+    assert.match(locked.message, /holds nothing/);
+
+    // A textarea at the bottom of the window, half under a fixed banner: the
+    // click and the typing land on the textarea, never on the banner.
+    const underBanner = `(() => {
+      const box = document.querySelector('#currentAddress').getBoundingClientRect();
+      window.scrollBy(0, box.top - (window.innerHeight - 140));
+      document.activeElement?.blur();
+      return true;
+    })()`;
+    await cdp.evaluate(underBanner);
+    await toolJson("click_locator", { locator: byId("currentAddress") });
+    assert.equal(
+      await cdp.evaluate("document.activeElement?.id"),
+      "currentAddress",
+    );
+    await cdp.evaluate(underBanner);
+    const address = await toolJson("type_locator", {
+      locator: { role: "textbox", name: "Current Address" },
+      text: "221B Baker Street",
+    });
+    assert.equal(address.verified, true, JSON.stringify(address));
+    assert.equal(await valueOf("#currentAddress"), "221B Baker Street");
+    assert.equal(
+      await cdp.evaluate("document.querySelector('#fixedban').dataset.clicks"),
+      undefined,
+      "nothing struck the banner",
+    );
+
+    // By index from a listing, with the same read-back.
+    const listing = (await tool("get_interactive_elements")).text;
+    const line = listing
+      .split("\n")
+      .find((entry) => entry.includes('id="sb_form_q"'));
+    const elementId = /^\[\d+ (e\d+)/.exec(line ?? "")?.[1];
+    assert.ok(elementId, listing);
+    assert.match(
+      (
+        await tool("type_by_index", {
+          element_id: elementId,
+          text: "by index",
+        })
+      ).text,
+      /the field holds the text/,
+    );
+    assert.equal(await valueOf("#sb_form_q"), "by index");
+
+    await request(`${base}/v1/profiles/${profile.id}/kill`, {
+      method: "POST",
+      token: saved.api_token,
+    });
+    if (browserPid) await waitForProcessExit(app, browserPid);
+    await app.invoke("stop_api_server");
+    await app.invoke("delete_profile", { profileId: profile.id });
+  } catch (error) {
+    await app.capture("failure");
+    throw error;
+  } finally {
+    cdp?.close();
+    if (app.session && browserPid && processExists(browserPid)) {
+      const running = (
+        await app.invoke("list_browser_profiles").catch(() => [])
+      ).find((item) => item.process_id === browserPid);
+      if (running)
+        await app
+          .invoke("kill_browser_profile", { profile: running })
+          .catch(() => {});
+    }
+    await app.close();
+  }
+});
+
 /// Read every donut-proxy worker config the app has on disk.
 async function readWorkerConfigs(app) {
   const dir = path.join(app.dataRoot, "cache", "proxy_workers");
@@ -1032,6 +1806,49 @@ async function waitForCondition(check, description, timeoutMs = 30_000) {
     await new Promise((resolve) => setTimeout(resolve, 200));
   }
   throw new Error(`Timed out after ${timeoutMs}ms waiting for ${description}`);
+}
+
+async function assertWorkerRoute(port) {
+  const target = new URL(fixtureUrl);
+  const socket = net.createConnection({ host: "127.0.0.1", port });
+  socket.setTimeout(5_000, () =>
+    socket.destroy(new Error("Proxy request timed out")),
+  );
+  const chunks = socket[Symbol.asyncIterator]();
+  let buffered = Buffer.alloc(0);
+  const read = async (length) => {
+    while (buffered.length < length) {
+      const { value, done } = await chunks.next();
+      assert.equal(done, false, "Proxy closed before its reply");
+      buffered = Buffer.concat([buffered, value]);
+    }
+    const value = buffered.subarray(0, length);
+    buffered = buffered.subarray(length);
+    return value;
+  };
+  try {
+    socket.write(Buffer.from([5, 1, 0]));
+    assert.deepEqual(await read(2), Buffer.from([5, 0]));
+    const host = Buffer.from(target.hostname);
+    const targetPort = Number(target.port || 80);
+    socket.write(
+      Buffer.concat([
+        Buffer.from([5, 1, 0, 3, host.length]),
+        host,
+        Buffer.from([targetPort >> 8, targetPort & 255]),
+      ]),
+    );
+    assert.deepEqual(await read(4), Buffer.from([5, 0, 0, 1]));
+    await read(6);
+    socket.write(
+      `GET /worker-recovery HTTP/1.1\r\nHost: ${target.host}\r\nConnection: close\r\n\r\n`,
+    );
+    const response = [buffered];
+    for await (const chunk of chunks) response.push(chunk);
+    assert.match(Buffer.concat(response).toString(), /^HTTP\/1\.1 200 /);
+  } finally {
+    socket.destroy();
+  }
 }
 
 /// Launch a real profile and return it together with the worker serving it,
@@ -1073,7 +1890,7 @@ async function launchWithWorker(app, version, name) {
 // recorded a verified owner identity it just kept running and users killed it
 // by hand. Phase one covers closing the browser; phase two covers the reported
 // order (app closed first, so nothing is left to reap anything).
-test("a proxy worker dies with its browser, with and without the app running", async () => {
+test("a proxy worker recovers for a live browser and dies with its browser", async () => {
   assert.ok(process.env.WAYFERN_TEST_TOKEN, "WAYFERN_TEST_TOKEN is required");
   const localWayfernVersion = cachedFixtureVersion(
     process.env.DONUT_E2E_PROJECT_ROOT,
@@ -1102,6 +1919,41 @@ test("a proxy worker dies with its browser, with and without the app running", a
     // Phase one: the app is up, the browser goes away.
     const first = await launchWithWorker(app, prepared.version, "Worker Reap");
     strays.add(first.browserPid).add(first.workerPid);
+    let worker = (await readWorkerConfigs(app)).find(
+      (config) => config.id === first.workerId,
+    );
+    await assertWorkerRoute(worker.local_port);
+    for (const afterRestart of [false, true]) {
+      if (afterRestart) await app.restart();
+      process.kill(worker.pid, "SIGKILL");
+      await waitForCondition(
+        () => !processExists(worker.pid),
+        "failed worker to exit",
+      );
+      const recovered = await app.waitFor(
+        async () => {
+          const current = (await readWorkerConfigs(app)).find(
+            (config) => config.id === worker.id,
+          );
+          return current?.pid !== worker.pid && processExists(current?.pid)
+            ? current
+            : false;
+        },
+        {
+          timeoutMs: 45_000,
+          description: "automatic proxy recovery on the original port",
+        },
+      );
+      strays.add(recovered.pid);
+      assert.deepEqual(recovered, { ...worker, pid: recovered.pid });
+      assert.ok(
+        processExists(first.browserPid),
+        "recovery must keep the browser running",
+      );
+      await assertWorkerRoute(worker.local_port);
+      worker = recovered;
+    }
+    first.workerPid = worker.pid;
     process.kill(first.browserPid, "SIGKILL");
     await waitForCondition(
       () => !processExists(first.browserPid),
@@ -1670,6 +2522,385 @@ test("a payload profile an older version stored launches and is stored as an ide
   }
 });
 
+test("start pages open on a launch from the app, and a given URL replaces them", async () => {
+  assert.ok(process.env.WAYFERN_TEST_TOKEN, "WAYFERN_TEST_TOKEN is required");
+  const app = appFromEnvironment("browser-start-pages", {
+    seedVersionCache:
+      cachedFixtureVersion(process.env.DONUT_E2E_PROJECT_ROOT) ?? false,
+    wayfernTermsAccepted: false,
+  });
+  let browserPid;
+  try {
+    const prepared = await prepareWayfern(
+      app,
+      process.env.DONUT_E2E_PROJECT_ROOT,
+    );
+    if (!app.session) await app.start();
+    await app.invoke("accept_wayfern_terms");
+    const profile = await createRealProfile(
+      app,
+      prepared.version,
+      "Start Pages",
+    );
+    const one = `${fixtureUrl}/start-page-one`;
+    const two = `${fixtureUrl}/start-page-two`;
+    const withPages = await app.invoke("update_profile_start_urls", {
+      profileId: profile.id,
+      startUrls: [one, " ", two],
+    });
+    assert.deepEqual(withPages.start_urls, [one, two]);
+
+    const openPages = async (pid) => {
+      const port = processCommandLine(pid).match(
+        /--remote-debugging-port=(\d+)/,
+      )?.[1];
+      if (!port) return [];
+      const targets = await fetch(`http://127.0.0.1:${port}/json`)
+        .then((response) => response.json())
+        .catch(() => []);
+      return targets
+        .filter((target) => target.type === "page")
+        .map((target) => target.url);
+    };
+    const stop = async () => {
+      const current = (await app.invoke("list_browser_profiles")).find(
+        (p) => p.id === profile.id,
+      );
+      await app.invoke("kill_browser_profile", { profile: current });
+      await waitForProcessExit(app, current.process_id);
+      browserPid = undefined;
+    };
+
+    const launched = await app.invoke("launch_browser_profile", {
+      profile: withPages,
+    });
+    browserPid = launched.process_id;
+    const pages = await app.waitFor(
+      async () => {
+        const urls = await openPages(browserPid);
+        return urls.includes(one) && urls.includes(two) ? urls : false;
+      },
+      { timeoutMs: 30_000, description: "both start pages open" },
+    );
+    assert.equal(pages.length, 2, `only the start pages: ${pages}`);
+    await stop();
+
+    const given = `${fixtureUrl}/given-url`;
+    const relaunched = await app.invoke("launch_browser_profile", {
+      profile: (await app.invoke("list_browser_profiles")).find(
+        (p) => p.id === profile.id,
+      ),
+      url: given,
+    });
+    browserPid = relaunched.process_id;
+    const replaced = await app.waitFor(
+      async () => {
+        const urls = await openPages(browserPid);
+        return urls.includes(given) ? urls : false;
+      },
+      { timeoutMs: 30_000, description: "the given URL open" },
+    );
+    assert.ok(
+      !replaced.includes(one) && !replaced.includes(two),
+      `a given URL replaces the start pages: ${replaced}`,
+    );
+    await stop();
+    await app.invoke("delete_profile", { profileId: profile.id });
+  } catch (error) {
+    await app.capture("failure");
+    throw error;
+  } finally {
+    if (app.session && browserPid && processExists(browserPid)) {
+      const running = (
+        await app.invoke("list_browser_profiles").catch(() => [])
+      ).find((item) => item.process_id === browserPid);
+      if (running)
+        await app
+          .invoke("kill_browser_profile", { profile: running })
+          .catch(() => {});
+    }
+    await app.close();
+  }
+});
+
+test("a batch from a template makes numbered profiles, each with its own device", async () => {
+  assert.ok(process.env.WAYFERN_TEST_TOKEN, "WAYFERN_TEST_TOKEN is required");
+  const app = appFromEnvironment("browser-template-batch", {
+    seedVersionCache:
+      cachedFixtureVersion(process.env.DONUT_E2E_PROJECT_ROOT) ?? false,
+    wayfernTermsAccepted: false,
+  });
+  try {
+    const prepared = await prepareWayfern(
+      app,
+      process.env.DONUT_E2E_PROJECT_ROOT,
+    );
+    if (!app.session) await app.start();
+    await app.invoke("accept_wayfern_terms");
+    // A profile that already holds the name, so numbering continues after it.
+    await createRealProfile(app, prepared.version, "Real Batch 1");
+    const template = await app.invoke("create_profile_template", {
+      name: "Real",
+      settings: {
+        tags: ["batch"],
+        start_urls: ["shop.example"],
+        wayfern_config: {
+          geoip: false,
+          randomize_fingerprint_on_launch: false,
+        },
+      },
+    });
+
+    const result = await app.invoke("bulk_create_profiles", {
+      settings: template.settings,
+      name: "Real Batch",
+      count: 2,
+    });
+    assert.equal(result.error, null);
+    assert.equal(result.cancelled, false);
+    assert.deepEqual(
+      result.created.map((p) => p.name),
+      ["Real Batch 2", "Real Batch 3"],
+    );
+    const stored = (await app.invoke("list_browser_profiles")).filter((p) =>
+      result.created.some((made) => made.id === p.id),
+    );
+    assert.equal(stored.length, 2);
+    for (const profile of stored) {
+      assert.deepEqual(profile.tags, ["batch"]);
+      assert.deepEqual(profile.start_urls, ["https://shop.example/"]);
+      assert.equal(profile.version, prepared.version);
+    }
+    const devices = stored.map(
+      (p) => p.wayfern_config?.identity_id ?? p.wayfern_config?.fingerprint,
+    );
+    assert.ok(devices.every(Boolean), "every profile got a device");
+    assert.notEqual(devices[0], devices[1], "no two profiles share a device");
+
+    for (const profile of await app.invoke("list_browser_profiles")) {
+      await app.invoke("delete_profile", {
+        profileId: profile.id,
+        permanent: true,
+      });
+    }
+  } catch (error) {
+    await app.capture("failure");
+    throw error;
+  } finally {
+    await app.close();
+  }
+});
+
+test("Local Storage that Donut writes, Wayfern reads, and what Wayfern writes exports", async () => {
+  assert.ok(process.env.WAYFERN_TEST_TOKEN, "WAYFERN_TEST_TOKEN is required");
+  const app = appFromEnvironment("browser-local-storage", {
+    seedVersionCache:
+      cachedFixtureVersion(process.env.DONUT_E2E_PROJECT_ROOT) ?? false,
+    wayfernTermsAccepted: false,
+  });
+  let browserPid;
+  try {
+    const prepared = await prepareWayfern(
+      app,
+      process.env.DONUT_E2E_PROJECT_ROOT,
+    );
+    if (!app.session) await app.start();
+    await app.invoke("accept_wayfern_terms");
+    const profile = await createRealProfile(
+      app,
+      prepared.version,
+      "Local Storage",
+    );
+    const origin = new URL(fixtureUrl).origin;
+    const imported = await app.invoke("import_profile_storage_state", {
+      profileId: profile.id,
+      content: JSON.stringify({
+        origins: [
+          {
+            origin,
+            localStorage: [
+              { name: "imported", value: "from Donut" },
+              { name: "unicode", value: "日本語 🍩" },
+            ],
+            // Playwright's shape: a store with an in-line key and an index,
+            // and one with out-of-line keys and an encoded (Date) value.
+            indexedDB: [
+              {
+                name: "shop",
+                version: 2,
+                stores: [
+                  {
+                    name: "cart",
+                    autoIncrement: false,
+                    keyPath: "id",
+                    records: [{ value: { id: 1, item: "donut" } }],
+                    indexes: [
+                      {
+                        name: "by_item",
+                        keyPath: "item",
+                        multiEntry: false,
+                        unique: false,
+                      },
+                    ],
+                  },
+                  {
+                    name: "kv",
+                    autoIncrement: false,
+                    records: [
+                      {
+                        key: "when",
+                        valueEncoded: { d: "2026-10-12T00:00:00.000Z" },
+                      },
+                    ],
+                    indexes: [],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    });
+    assert.equal(imported.items, 2);
+    assert.equal(imported.indexed_db_records, 2);
+
+    const launched = await app.invoke("launch_browser_profile", {
+      profile: (await app.invoke("list_browser_profiles")).find(
+        (p) => p.id === profile.id,
+      ),
+      url: `${fixtureUrl}/local-storage`,
+    });
+    browserPid = launched.process_id;
+    const port = processCommandLine(browserPid).match(
+      /--remote-debugging-port=(\d+)/,
+    )?.[1];
+    assert.ok(port, "the launch exposes a debugging port");
+    const cdp = await CdpClient.connect(Number(port));
+    await cdp.waitFor(`location.pathname === "/local-storage"`, {
+      description: "the fixture page",
+    });
+    assert.equal(
+      await cdp.evaluate("localStorage.getItem('imported')"),
+      "from Donut",
+    );
+    assert.equal(
+      await cdp.evaluate("localStorage.getItem('unicode')"),
+      "日本語 🍩",
+    );
+    await cdp.evaluate("localStorage.setItem('written', 'by Wayfern'); true");
+    const inShop = (body) =>
+      cdp.evaluate(`(async () => {
+        const db = await new Promise((resolve, reject) => {
+          const open = indexedDB.open("shop");
+          open.onsuccess = () => resolve(open.result);
+          open.onerror = () => reject(open.error);
+        });
+        const read = (store, key) => new Promise((resolve, reject) => {
+          const get = db.transaction(store).objectStore(store).get(key);
+          get.onsuccess = () => resolve(get.result);
+          get.onerror = () => reject(get.error);
+        });
+        const result = await (${body})(db, read);
+        db.close();
+        return result;
+      })()`);
+    assert.equal(
+      await inShop("async (db, read) => (await read('cart', 1)).item"),
+      "donut",
+    );
+    assert.equal(
+      await inShop(
+        "async (db, read) => (await read('kv', 'when')) instanceof Date",
+      ),
+      true,
+    );
+    await inShop(`(db) => new Promise((resolve, reject) => {
+      const tx = db.transaction("cart", "readwrite");
+      tx.objectStore("cart").put({ id: 2, item: "cruller" });
+      tx.oncomplete = () => resolve(true);
+      tx.onerror = () => reject(tx.error);
+    })`);
+    // Chromium commits Local Storage to disk a few seconds after a change.
+    await new Promise((resolve) => setTimeout(resolve, 8_000));
+    cdp.close?.();
+
+    const running = (await app.invoke("list_browser_profiles")).find(
+      (p) => p.id === profile.id,
+    );
+    await app.invoke("kill_browser_profile", { profile: running });
+    await waitForProcessExit(app, browserPid);
+    browserPid = undefined;
+
+    const exported = JSON.parse(
+      await app.invoke("export_profile_storage_state", {
+        profileId: profile.id,
+        includeCookies: false,
+      }),
+    );
+    const site = exported.origins.find((o) => o.origin === origin);
+    assert.ok(
+      site,
+      `the fixture origin is exported: ${JSON.stringify(exported.origins)}`,
+    );
+    const items = Object.fromEntries(
+      site.localStorage.map((i) => [i.name, i.value]),
+    );
+    assert.equal(items.imported, "from Donut");
+    assert.equal(items.written, "by Wayfern");
+    assert.equal(site.indexedDB, undefined, "IndexedDB only when asked for");
+
+    // With IndexedDB the closed profile opens headless for a moment.
+    const withDatabases = JSON.parse(
+      await app.invoke("export_profile_storage_state", {
+        profileId: profile.id,
+        includeCookies: false,
+        includeIndexedDb: true,
+      }),
+    );
+    const shop = withDatabases.origins
+      .find((o) => o.origin === origin)
+      ?.indexedDB?.find((db) => db.name === "shop");
+    assert.ok(shop, JSON.stringify(withDatabases.origins));
+    assert.equal(shop.version, 2);
+    const cart = shop.stores.find((store) => store.name === "cart");
+    assert.equal(cart.keyPath, "id");
+    assert.deepEqual(cart.records.map((record) => record.value.item).sort(), [
+      "cruller",
+      "donut",
+    ]);
+    assert.equal(cart.indexes[0].name, "by_item");
+    const kv = shop.stores.find((store) => store.name === "kv");
+    assert.deepEqual(kv.records, [
+      { key: "when", valueEncoded: { d: "2026-10-12T00:00:00.000Z" } },
+    ]);
+    assert.equal(
+      (await app.invoke("list_browser_profiles")).find(
+        (p) => p.id === profile.id,
+      ).process_id,
+      null,
+      "the headless browser is closed again",
+    );
+    await app.invoke("delete_profile", {
+      profileId: profile.id,
+      permanent: true,
+    });
+  } catch (error) {
+    await app.capture("failure");
+    throw error;
+  } finally {
+    if (app.session && browserPid && processExists(browserPid)) {
+      const running = (
+        await app.invoke("list_browser_profiles").catch(() => [])
+      ).find((item) => item.process_id === browserPid);
+      if (running)
+        await app
+          .invoke("kill_browser_profile", { profile: running })
+          .catch(() => {});
+    }
+    await app.close();
+  }
+});
+
 test("custom launch arguments reach only their Wayfern profile", async () => {
   assert.ok(process.env.WAYFERN_TEST_TOKEN, "WAYFERN_TEST_TOKEN is required");
   const app = appFromEnvironment("browser-launch-args", {
@@ -1807,6 +3038,133 @@ test("custom launch arguments reach only their Wayfern profile", async () => {
       for (const profile of profiles.filter((p) => p.process_id)) {
         await app.invoke("kill_browser_profile", { profile }).catch(() => {});
       }
+    }
+    await app.close();
+  }
+});
+
+test("a password-protected profile keeps what each session saved", async () => {
+  assert.ok(process.env.WAYFERN_TEST_TOKEN, "WAYFERN_TEST_TOKEN is required");
+  const app = appFromEnvironment("browser-sealed", {
+    seedVersionCache:
+      cachedFixtureVersion(process.env.DONUT_E2E_PROJECT_ROOT) ?? false,
+    wayfernTermsAccepted: false,
+  });
+  const password = "sealed-sessions";
+  let cdp;
+  let browserPid;
+  try {
+    const prepared = await prepareWayfern(
+      app,
+      process.env.DONUT_E2E_PROJECT_ROOT,
+    );
+    if (!app.session) await app.start();
+    await app.invoke("accept_wayfern_terms");
+    const profile = await createRealProfile(
+      app,
+      prepared.version,
+      "Sealed Sessions",
+    );
+    await app.invoke("set_profile_password", {
+      profileId: profile.id,
+      password,
+    });
+    const sealedDir = path.join(
+      app.dataRoot,
+      "data",
+      "profiles",
+      profile.id,
+      "profile",
+    );
+    const current = async () =>
+      (await app.invoke("list_browser_profiles")).find(
+        (p) => p.id === profile.id,
+      );
+
+    const saved = [];
+    for (let session = 0; session < 3; session++) {
+      if (await app.invoke("is_profile_locked", { profileId: profile.id })) {
+        await app.invoke("unlock_profile", { profileId: profile.id, password });
+      }
+      const launched = await app.invoke("launch_browser_profile", {
+        profile: await current(),
+        url: `${fixtureUrl}/sealed`,
+      });
+      browserPid = launched.process_id;
+      const port = Number(
+        processCommandLine(browserPid).match(
+          /--remote-debugging-port=(\d+)/,
+        )[1],
+      );
+      cdp = await CdpClient.connect(port);
+      await cdp.waitFor(`document.title === "Donut E2E Browser Fixture"`, {
+        description: "fixture page title",
+      });
+      const cookies = await cdp.evaluate("document.cookie");
+      for (const name of saved) {
+        assert.match(
+          cookies,
+          new RegExp(`${name}=kept`),
+          `session ${session} lost the cookie session ${name} saved`,
+        );
+      }
+      const name = `sealed_${session}`;
+      await cdp.evaluate(
+        `document.cookie = "${name}=kept; Max-Age=86400; Path=/"`,
+      );
+      saved.push(name);
+      cdp.close();
+      cdp = null;
+
+      // The cookie store commits every 30 s or at a clean shutdown, and a
+      // browser asked to close in its first seconds does not shut down.
+      await new Promise((resolve) => setTimeout(resolve, 32_000));
+      await app.invoke("kill_browser_profile", { profile: await current() });
+      await waitForProcessExit(app, browserPid);
+      browserPid = null;
+      assert.equal(
+        await app.invoke("is_profile_locked", { profileId: profile.id }),
+        true,
+        "a quit is sealed and its key forgotten before Stop returns",
+      );
+      const names = await readdir(sealedDir);
+      assert.ok(
+        names.every((n) => /^[\w-]{32}$/.test(n) || n === ".donut-pw-verify"),
+        `only sealed files belong in the profile directory: ${names}`,
+      );
+    }
+
+    const logDir = path.join(app.dataRoot, "logs");
+    const logText = (
+      await Promise.all(
+        (
+          await readdir(logDir)
+        )
+          .filter((n) => n.endsWith(".log"))
+          .map((n) => readFile(path.join(logDir, n), "utf8")),
+      )
+    ).join("\n");
+    assert.doesNotMatch(logText, /Cookie decryption check failed/);
+    assert.doesNotMatch(logText, /Profile re-encryption failed/);
+    assert.equal(
+      logText.match(
+        new RegExp(`Profile re-encrypted profile=${profile.id} `, "g"),
+      )?.length,
+      3,
+      "each quit is sealed exactly once",
+    );
+    await app.invoke("delete_profile", { profileId: profile.id });
+  } catch (error) {
+    await app.capture("failure");
+    throw error;
+  } finally {
+    cdp?.close();
+    if (app.session && browserPid && processExists(browserPid)) {
+      const profile = (
+        await app.invoke("list_browser_profiles").catch(() => [])
+      ).find((item) => item.process_id === browserPid);
+      if (profile)
+        await app.invoke("kill_browser_profile", { profile }).catch(() => {});
     }
     await app.close();
   }

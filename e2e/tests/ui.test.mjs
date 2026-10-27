@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdir, realpath, writeFile } from "node:fs/promises";
+import { mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
+import http from "node:http";
 import path from "node:path";
 import test from "node:test";
 import Color from "color";
@@ -10,7 +11,9 @@ import {
   LOCAL_API_EXAMPLES,
   maskToken,
   oneLine,
+  REMOTE_MCP_EXAMPLES,
 } from "../../src/lib/api-examples.ts";
+import { REMOTE_MCP_URL } from "../../src/lib/mcp.ts";
 import { getDerivedThemeColors, THEMES } from "../../src/lib/themes.ts";
 import { withApp } from "../lib/app.mjs";
 import {
@@ -63,6 +66,28 @@ async function tableRows(app, tableId) {
   return app.execute(
     `return [...document.querySelectorAll('[data-table-id="' + arguments[0] + '"] tr[data-table-row]')].map(row => row.dataset.tableRow);`,
     [tableId],
+  );
+}
+
+/** Selection checkboxes, and the browser icons that stand in for them, that sit
+ * more than half a pixel off the center of their cell. */
+async function offCenterSelectionControls(app, tableSelector) {
+  return app.execute(
+    `return [...document.querySelectorAll(arguments[0] + ' :is(th, td) :is([data-slot="table-selection"], [role="checkbox"], [role="checkbox"] + [aria-hidden="true"] > svg)')]
+       .map((node) => {
+         const cell = node.closest("th, td").getBoundingClientRect();
+         const rect = node.getBoundingClientRect();
+         // The checkbox and the row's icon sit side by side; their group is
+         // centered across the cell, and each of them down it.
+         const group = node.matches('[data-slot="table-selection"]');
+         return {
+           control: group ? "selection" : (node.getAttribute("aria-label") ?? "icon"),
+           x: group ? rect.left + rect.width / 2 - (cell.left + cell.width / 2) : 0,
+           y: rect.top + rect.height / 2 - (cell.top + cell.height / 2),
+         };
+       })
+       .filter(({ x, y }) => Math.abs(x) > 0.5 || Math.abs(y) > 0.5);`,
+    [tableSelector],
   );
 }
 
@@ -178,6 +203,24 @@ test("profile creation stays compact and saves basic, protected, and ephemeral p
         options: [...dialog.querySelectorAll('#profile-proxy, [role="checkbox"]')].map(border),
         proxyName: document.querySelector('#profile-proxy').getAttribute('aria-labelledby')
           .split(' ').map((id) => document.getElementById(id)?.textContent.trim()),
+        more: document.querySelector('#profile-more-options').getAttribute('aria-label'),
+        moreDescribed: document.querySelector('#profile-more-options').getAttribute('aria-describedby'),
+        rowTops: [...dialog.querySelectorAll('#profile-proxy, [role="checkbox"], #profile-more-options')]
+          .map((node) => Math.round(node.getBoundingClientRect().top)),
+        edges: [
+          '[data-slot="profile-name-field"]',
+          '#profile-more-options',
+          '[data-slot="profile-create-close"]',
+        ].map((selector) => Math.round(dialog.querySelector(selector).getBoundingClientRect().right)),
+        headerMiddles: [
+          '#' + dialog.getAttribute('aria-labelledby'),
+          '[data-slot="template-picker"]',
+          '[data-slot="profile-create-close"]',
+        ].map((selector) => {
+          const rect = document.querySelector(selector).getBoundingClientRect();
+          return Math.round(rect.top + rect.height / 2);
+        }),
+        cornerCloses: dialog.querySelectorAll(':scope > button:not([data-slot])').length,
       };
     `);
       assert.equal(chrome.name, "0px", "the name field has no box");
@@ -186,7 +229,88 @@ test("profile creation stays compact and saves basic, protected, and ephemeral p
         en.createProfile.proxy.title,
         en.createProfile.proxy.noProxy,
       ]);
+      // The options sit on one row; the destination group is behind More
+      // options: none while the list shows all.
+      assert.equal(chrome.rowTops.length, 4, JSON.stringify(chrome));
+      assert.equal(new Set(chrome.rowTops).size, 1, JSON.stringify(chrome));
+      // The options fill the row, and the close button ends the header row at
+      // the same edge, centred on the title and the template picker.
+      assert.equal(new Set(chrome.edges).size, 1, JSON.stringify(chrome));
+      assert.ok(
+        Math.max(...chrome.headerMiddles) - Math.min(...chrome.headerMiddles) <=
+          1,
+        JSON.stringify(chrome),
+      );
+      assert.equal(chrome.cornerCloses, 0, JSON.stringify(chrome));
+      assert.equal(chrome.more, en.createProfile.moreOptions);
+      assert.equal(chrome.moreDescribed, null);
+      await app.clickSelector("#profile-more-options");
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return document.querySelectorAll('[cmdk-item]').length > 0;`,
+          ),
+        { description: "group options" },
+      );
+      const groupOptions = await app.execute(`
+      return [...document.querySelectorAll('[cmdk-group-heading], [cmdk-item]')]
+        .map((node) => node.textContent.trim());
+    `);
+      assert.deepEqual(groupOptions, [
+        en.profiles.table.group,
+        en.groups.noGroup,
+      ]);
+      await app.pressShortcut({ key: "Escape" });
+      await app.waitFor(
+        async () =>
+          (await app.execute(
+            `return document.querySelector('#profile-more-options').getAttribute('aria-expanded');`,
+          )) === "false",
+        { description: "More options closes" },
+      );
       await app.capture("profile-create-compact-wide");
+      // The device's operating system is chosen on the dialog itself. The
+      // fork has no plans, so every system Wayfern can pose as is offered.
+      const hostOs =
+        { darwin: "macOS", win32: "Windows" }[process.platform] ?? "Linux";
+      assert.equal(
+        await app.execute(
+          `return document.querySelector('#profile-os').textContent.trim();`,
+        ),
+        hostOs,
+      );
+      await app.clickSelector("#profile-os");
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return document.querySelectorAll('[cmdk-item]').length;`,
+          ),
+        { description: "operating system options" },
+      );
+      const osOptions = await app.execute(`
+      return [...document.querySelectorAll('[cmdk-item]')].map((item) => ({
+        text: item.textContent.trim(),
+        disabled: item.getAttribute('aria-disabled') === 'true',
+      }));
+    `);
+      assert.deepEqual(
+        osOptions.map((option) => [option.text, option.disabled]),
+        [
+          ["Windows", false],
+          ["macOS", false],
+          ["Linux", false],
+          ["Android", false],
+          ["iOS", false],
+        ],
+      );
+      await app.pressShortcut({ key: "Escape" });
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return !document.querySelector('[cmdk-item]') && Boolean(document.querySelector('#profile-name'));`,
+          ),
+        { description: "the OS menu to close and the dialog to stay" },
+      );
       // Adding a route is part of the route list, and stays there when the
       // search finds nothing.
       await app.clickSelector("#profile-proxy");
@@ -277,6 +401,49 @@ test("profile creation stays compact and saves basic, protected, and ephemeral p
         "#profile-dns-blocklist",
         en.dnsBlocklist.normal,
       );
+      // The DNS field reads the value back from the backend: a value it cannot
+      // use blocks creation, a plain address says it is not encrypted, and a
+      // preset is encrypted.
+      const dnsStatus = (state) =>
+        app.waitFor(
+          () =>
+            app.execute(
+              `return document.querySelector('[data-slot="dns-server-status"]')?.dataset.state === arguments[0];`,
+              [state],
+            ),
+          { description: `DNS server status ${state}` },
+        );
+      const createEnabled = () =>
+        app.execute(
+          `return [...document.querySelectorAll('[role="dialog"] button')].some(button => button.textContent.trim() === arguments[0] && !button.disabled);`,
+          [en.common.buttons.create],
+        );
+      await dnsStatus("default");
+      await app.waitForText(en.dnsServer.summary.default);
+      await app.fillSelector("#profile-dns-server", "udp://1.1.1.1");
+      await dnsStatus("invalid");
+      await app.waitForText(en.backendErrors.dnsServerInvalid);
+      await app.waitFor(async () => !(await createEnabled()), {
+        description: "an invalid DNS server blocks creation",
+      });
+      await app.fillSelector("#profile-dns-server", "10.0.0.53");
+      await dnsStatus("valid");
+      await app.waitForText(
+        en.dnsServer.summary.tcp.replace("{{server}}", "10.0.0.53"),
+      );
+      await app.clickText("Quad9", { roles: ["button"] });
+      await app.waitForText(
+        en.dnsServer.summary.https.replace("{{server}}", "dns.quad9.net"),
+      );
+      assert.equal(
+        await app.execute(
+          `return document.querySelector('#profile-dns-server').value;`,
+        ),
+        "https://dns.quad9.net/dns-query",
+      );
+      await app.waitFor(createEnabled, {
+        description: "a valid DNS server allows creation",
+      });
       await chooseSelectOption(
         app,
         "#profile-extension-group",
@@ -359,6 +526,10 @@ test("profile creation stays compact and saves basic, protected, and ephemeral p
       assert.equal(protectedRequest.vpnId, undefined);
       assert.equal(protectedProfile.dns_blocklist, "normal");
       assert.equal(
+        protectedProfile.dns_server,
+        "https://dns.quad9.net/dns-query",
+      );
+      assert.equal(
         protectedProfile.launch_hook,
         "https://example.com/hooks/created",
       );
@@ -392,6 +563,12 @@ test("profile creation stays compact and saves basic, protected, and ephemeral p
           `return document.querySelector('#profile-dns-blocklist').textContent.trim();`,
         ),
         en.dnsBlocklist.none,
+      );
+      assert.equal(
+        await app.execute(
+          `return document.querySelector('#profile-dns-server').value;`,
+        ),
+        "",
       );
       assert.equal(
         await app.execute(
@@ -450,164 +627,6 @@ test("profile creation stays compact and saves basic, protected, and ephemeral p
   );
 });
 
-test("a count beside the name creates a numbered series, each profile with a device of its own", async () => {
-  await withApp(
-    "ui-profile-series",
-    async (app) => {
-      await stubCommand(app, "is_geoip_database_available", true);
-      // No browser binary here, so each request is recorded as the dialog sent
-      // it and then given a fixed device for the backend to store.
-      await app.execute(`
-        const originalFetch = window.fetch;
-        window.__seriesRequests = [];
-        window.fetch = function(input, init) {
-          const url = typeof input === 'string' ? input : input?.url ?? '';
-          if (url.endsWith('/create_browser_profile_new')) {
-            const payload = JSON.parse(init.body);
-            window.__seriesRequests.push(structuredClone(payload));
-            payload.wayfernConfig = { ...payload.wayfernConfig, fingerprint: '{}' };
-            return originalFetch.call(window, input, { ...init, body: JSON.stringify(payload) });
-          }
-          return originalFetch.apply(window, arguments);
-        };
-      `);
-      await openProfileCreation(app);
-      await app.fillSelector("#profile-name", "Series");
-
-      // The field can be emptied and retyped, and settles on a number in range.
-      await app.fillSelector("#profile-count", "");
-      assert.equal(
-        await app.execute(
-          `return document.querySelector('#profile-count').value;`,
-        ),
-        "",
-      );
-      await app.fillSelector("#profile-count", "3");
-      assert.equal(
-        await app.execute(
-          `return document.querySelector('#profile-count').value;`,
-        ),
-        "3",
-      );
-
-      await app.clickTextIn('[role="dialog"]', en.common.buttons.create, {
-        roles: ["button"],
-      });
-      await app.waitFor(
-        () => app.execute(`return !document.querySelector('#profile-name');`),
-        { description: "the series to be created" },
-      );
-      const names = (await app.invoke("list_browser_profiles"))
-        .map((profile) => profile.name)
-        .sort();
-      assert.deepEqual(names, ["Series 1", "Series 2", "Series 3"]);
-      const requests = await app.execute(`return window.__seriesRequests;`);
-      assert.deepEqual(
-        requests.map((request) => request.name),
-        ["Series 1", "Series 2", "Series 3"],
-      );
-      // A series never shares one pinned device.
-      for (const request of requests) {
-        assert.equal(request.wayfernConfig?.fingerprint ?? null, null);
-      }
-    },
-    { seedDownloadedBrowser: true },
-  );
-});
-
-test("a template keeps the create dialog's choices and brings them back", async () => {
-  await withApp(
-    "ui-profile-template",
-    async (app) => {
-      await stubCommand(app, "is_geoip_database_available", true);
-      // No browser binary here: the request is given a fixed device, as in
-      // the other creation tests.
-      await app.execute(`
-        const originalFetch = window.fetch;
-        window.fetch = function(input, init) {
-          const url = typeof input === 'string' ? input : input?.url ?? '';
-          if (url.endsWith('/create_browser_profile_new')) {
-            const payload = JSON.parse(init.body);
-            payload.wayfernConfig = { ...payload.wayfernConfig, fingerprint: '{}' };
-            return originalFetch.call(window, input, { ...init, body: JSON.stringify(payload) });
-          }
-          return originalFetch.apply(window, arguments);
-        };
-      `);
-      const checked = (selector) =>
-        app.execute(
-          `return document.querySelector(arguments[0])?.getAttribute('aria-checked');`,
-          [selector],
-        );
-      const nameField = `input[placeholder="${en.createProfile.templates.namePlaceholder}"]`;
-
-      await openProfileCreation(app);
-      await app.clickSelector("#ephemeral");
-      await app.clickSelector("#profile-template");
-      await app.waitForText(en.createProfile.templates.none);
-      await app.fillSelector(nameField, "Burner");
-      await app.pressShortcut({ key: "Enter" });
-      const [saved] = await app.waitFor(
-        async () => {
-          const templates = await app.invoke("list_profile_templates");
-          return templates.length > 0 ? templates : null;
-        },
-        { description: "the template to be saved" },
-      );
-      assert.equal(saved.name, "Burner");
-      assert.equal(saved.settings.engine, "wayfern");
-      assert.equal(saved.settings.ephemeral, true);
-      // A template is not one device.
-      assert.equal(saved.settings.wayfernConfig.fingerprint ?? null, null);
-
-      // Enter in the name field saved the template; it did not create a profile.
-      assert.deepEqual(await app.invoke("list_browser_profiles"), []);
-      assert.equal(
-        await app.execute(
-          `return document.querySelector('#profile-template').textContent.trim();`,
-        ),
-        "Burner",
-      );
-
-      await app.pressShortcut({ key: "Escape" });
-      await app.pressShortcut({ key: "Escape" });
-      await app.waitFor(
-        () => app.execute(`return !document.querySelector('#profile-name');`),
-        { description: "the create dialog to close" },
-      );
-
-      // A fresh dialog starts from the defaults; the template restores the rest.
-      await app.clickText("New", { roles: ["button"] });
-      await app.waitFor(
-        () =>
-          app.execute(
-            `return Boolean(document.querySelector('#profile-name'));`,
-          ),
-        { description: "profile name field" },
-      );
-      assert.equal(await checked("#ephemeral"), "false");
-      await app.clickSelector("#profile-template");
-      await app.clickSelector('[data-template-name="Burner"]');
-      await app.waitFor(async () => (await checked("#ephemeral")) === "true", {
-        description: "the template to be applied",
-      });
-      assert.equal(
-        await app.execute(
-          `return [...document.querySelectorAll('[role="radio"]')].find((radio) => radio.getAttribute('aria-checked') === 'true')?.textContent.trim();`,
-        ),
-        "Wayfern",
-      );
-
-      await app.fillSelector("#profile-name", "From template");
-      const created = await submitProfileCreation(app, "From template");
-      assert.ok(created);
-      assert.equal(created.ephemeral, true);
-      assert.equal(created.browser, "wayfern");
-    },
-    { seedDownloadedBrowser: true },
-  );
-});
-
 test("a profile can ask for the browser's interface in this app's language, and is told what that shows", async () => {
   await withApp(
     "ui-interface-language",
@@ -646,12 +665,9 @@ test("a profile can ask for the browser's interface in this app's language, and 
         await app.capture("interface-language");
 
         // The choice is part of the profile's settings: a template keeps it.
-        await app.clickSelector("#profile-template");
-        await app.fillSelector(
-          `input[placeholder="${en.createProfile.templates.namePlaceholder}"]`,
-          engine,
-        );
-        await app.pressShortcut({ key: "Enter" });
+        await app.clickSelector('[data-slot="template-picker"]');
+        await app.fillSelector('[data-slot="template-name"]', engine);
+        await app.clickSelector('[data-slot="template-save"]');
         const saved = await app.waitFor(
           async () =>
             (await app.invoke("list_profile_templates")).find(
@@ -659,8 +675,11 @@ test("a profile can ask for the browser's interface in this app's language, and 
             ),
           { description: `${engine}: the template to be saved` },
         );
-        const config = saved.settings.camoufoxConfig;
+        assert.equal(saved.settings.browser, "camoufox");
+        const config = saved.settings.camoufox_config;
         assert.equal(config.interface_language, "en", JSON.stringify(config));
+        // A template is never one device.
+        assert.equal(config.fingerprint ?? null, null);
 
         await app.pressShortcut({ key: "Escape" });
         await app.pressShortcut({ key: "Escape" });
@@ -672,6 +691,176 @@ test("a profile can ask for the browser's interface in this app's language, and 
     },
     { seedDownloadedBrowser: true },
   );
+});
+
+test("a found update waits while automatic updates are off; on, it downloads by itself and offers a restart", async () => {
+  await withApp("ui-app-update", async (app) => {
+    const update = (version, autoInstall) => ({
+      current_version: "v0.35.1",
+      new_version: version,
+      release_notes: "",
+      download_url: `https://github.com/donutbrowser/donutbrowser/releases/download/${version}/Donut_aarch64.dmg`,
+      is_nightly: false,
+      published_at: "2026-10-24T10:00:00Z",
+      manual_update_required: false,
+      release_page_url: `https://github.com/donutbrowser/donutbrowser/releases/tag/${version}`,
+      repo_update: false,
+      checksums_url: `https://github.com/donutbrowser/donutbrowser/releases/download/${version}/SHA256SUMS.txt`,
+      asset_digest: null,
+      auto_install: autoInstall,
+    });
+    const calls = (command) =>
+      app.execute(
+        `return (window.__donutStubbedCalls ?? []).filter((call) => call.command === arguments[0]);`,
+        [command],
+      );
+    try {
+      await stubCommand(app, "download_and_prepare_app_update", null);
+      await stubCommand(app, "restart_application", null);
+
+      // Automatic updates off: the toast asks, and nothing downloads.
+      await app.invoke("plugin:event|emit", {
+        event: "app-update-available",
+        payload: update("v99.0.0", false),
+      });
+      await app.waitForText(
+        en.about.update.available.replace("{{version}}", "v99.0.0"),
+      );
+      assert.equal((await calls("download_and_prepare_app_update")).length, 0);
+
+      // On: it downloads at once, and the toast offers the restart when the
+      // update is ready.
+      await app.invoke("plugin:event|emit", {
+        event: "app-update-available",
+        payload: update("v99.0.1", true),
+      });
+      await app.waitFor(
+        async () =>
+          (await calls("download_and_prepare_app_update")).length === 1,
+        { description: "the update downloads without a question" },
+      );
+      const [download] = await calls("download_and_prepare_app_update");
+      assert.equal(download.payload.updateInfo.new_version, "v99.0.1");
+
+      await app.invoke("plugin:event|emit", {
+        event: "app-update-ready",
+        payload: "v99.0.1",
+      });
+      await app.waitForText(en.appUpdate.toast.updateReady);
+      await app.capture("app-update-ready");
+      await app.clickText(en.appUpdate.toast.restartNow, {
+        roles: ["button"],
+      });
+      await app.waitFor(
+        async () => (await calls("restart_application")).length === 1,
+        { description: "Restart Now restarts the app" },
+      );
+    } finally {
+      await restoreStubs(app);
+    }
+  });
+});
+
+test("the open-link dialog names the link, lists the profiles, and opens the chosen one", async () => {
+  await withApp("ui-open-link", async (app) => {
+    const beta = await createUiProfile(app, "Link Beta");
+    await createUiProfile(app, "Link Alpha");
+    const link = "https://example.com/pricing?plan=pro";
+    const rows = () =>
+      app.execute(`
+      return [...document.querySelectorAll('[data-slot="profile-selector-option"]')]
+        .map((row) => ({
+          name: row.querySelector('.font-medium')?.textContent.trim(),
+          selected: row.getAttribute('data-selected') === 'true',
+        }));
+    `);
+    try {
+      await stubCommand(app, "open_url_with_profile", null);
+      await app.invoke("plugin:event|emit", {
+        event: "show-profile-selector",
+        payload: link,
+      });
+      await app.waitFor(async () => (await rows()).length === 2, {
+        description: "profile rows",
+      });
+      const view = await app.execute(`
+      const card = document.querySelector('[data-slot="profile-selector-link"]');
+      const dialog = card.closest('[role="dialog"]');
+      return {
+        title: dialog.querySelector('h2')?.textContent.trim(),
+        card: card.innerText,
+        search: dialog.querySelectorAll('input').length,
+        focused: dialog.contains(document.activeElement),
+        width: dialog.getBoundingClientRect().width,
+      };
+    `);
+      assert.equal(view.title, en.profileSelector.openLink);
+      assert.match(view.card, /example\.com/);
+      assert.match(view.card, /\/pricing\?plan=pro/);
+      // A short list has no search field, and the list takes the keys.
+      assert.equal(view.search, 0);
+      assert.equal(view.focused, true);
+      assert.ok(view.width <= 448, JSON.stringify(view));
+      assert.deepEqual(await rows(), [
+        { name: "Link Alpha", selected: true },
+        { name: "Link Beta", selected: false },
+      ]);
+      await app.capture("open-link-dialog");
+
+      await app.pressShortcut({ key: "\uE015" });
+      await app.waitFor(async () => (await rows())[1]?.selected === true, {
+        description: "ArrowDown selects the next profile",
+      });
+      await app.pressShortcut({ key: "\uE007" });
+      await app.waitFor(
+        async () =>
+          !(await app.execute(
+            `return Boolean(document.querySelector('[data-slot="profile-selector-link"]'));`,
+          )),
+        { description: "the dialog closes once the link is opened" },
+      );
+      const calls = await app.execute(
+        `return (window.__donutStubbedCalls ?? []).filter((call) => call.command === 'open_url_with_profile');`,
+      );
+      assert.equal(calls.length, 1);
+      assert.equal(calls[0].payload.profileId, beta.id);
+      assert.equal(calls[0].payload.url, link);
+
+      // A long list adds a search field that filters by name.
+      for (const name of [
+        "Link Gamma",
+        "Link Delta",
+        "Link Epsilon",
+        "Link Zeta",
+      ]) {
+        await createUiProfile(app, name);
+      }
+      await app.invoke("plugin:event|emit", {
+        event: "show-profile-selector",
+        payload: "https://example.org/",
+      });
+      await app.waitFor(async () => (await rows()).length === 6, {
+        description: "six profile rows",
+      });
+      assert.equal(
+        await app.execute(
+          `return document.activeElement === document.querySelector('[data-slot="profile-selector-link"]').closest('[role="dialog"]').querySelector('[cmdk-input]');`,
+        ),
+        true,
+      );
+      await app.fillSelector("[cmdk-input]", "eps");
+      await app.waitFor(
+        async () => {
+          const shown = await rows();
+          return shown.length === 1 && shown[0].name === "Link Epsilon";
+        },
+        { description: "search filters the list" },
+      );
+      await app.capture("open-link-dialog-search");
+    } finally {
+      await restoreStubs(app);
+    }
+  });
 });
 
 test("profile table filters, range selection, view settings, and keyboard edits work together", async () => {
@@ -716,7 +905,26 @@ test("profile table filters, range selection, view settings, and keyboard edits 
       );
       assert.deepEqual(chrome.controls, ["0px", "0px", "0px"]);
       assert.equal(chrome.rowRules, 0, "rows are not divided by rules");
+      assert.deepEqual(
+        await offCenterSelectionControls(app, '[data-table-id="profiles"]'),
+        [],
+      );
       const row = (index) => `tr[data-table-row="${profiles[index].id}"]`;
+      // A new profile is scrolled into view, so the last of the 32 leaves the
+      // table at its end. Scroll back to the first row.
+      await app.waitFor(
+        () =>
+          app.execute(
+            `
+            const root = document.querySelector('[data-table-id="profiles"]');
+            if (root?.querySelector('table')?.getAttribute('aria-rowcount') !== "33") return false;
+            root.querySelector('.scroll-fade').scrollTop = 0;
+            return Boolean(root.querySelector(arguments[0]));
+          `,
+            [row(0)],
+          ),
+        { description: "the first profile row in view" },
+      );
       await app.clickSelector(`${row(0)} [role="checkbox"]`);
       await tableShiftClick(app, `${row(3)} [role="checkbox"]`);
       await app.waitFor(
@@ -739,21 +947,184 @@ test("profile table filters, range selection, view settings, and keyboard edits 
         /4/,
       );
       const searchSelector = `input[placeholder="${en.header.searchPlaceholder}"]`;
-      await app.fillSelector(searchSelector, "Table 02");
+      // Quoted: an unquoted "02" is its own term, which also prefix-matches
+      // any profile whose random id starts with 02.
+      await app.fillSelector(searchSelector, '"Table 02"');
       await app.waitFor(
         async () =>
           JSON.stringify(await tableRows(app, "profiles")) ===
           JSON.stringify([profiles[1].id]),
         { description: "profile text search" },
       );
-      assert.equal(
-        await app.execute(
-          `return Boolean(document.querySelector('[data-slot="table-action-bar"]'));`,
+      // The selection outlives the search; the bar counts what it hides.
+      assert.ok(
+        (
+          await app.execute(
+            `return document.querySelector('[data-slot="table-action-bar"]')?.textContent ?? "";`,
+          )
+        ).includes(
+          en.dataTableActionBar.selectedHidden
+            .replace("{{selected}}", "4")
+            .replace("{{hidden}}", "3"),
         ),
+        "the bar counts the selected rows the search hides",
+      );
+      await app.clickSelector(
+        `[data-slot="table-action-bar"] [aria-label="${en.dataTableActionBar.clearSelection}"]`,
+      );
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return !document.querySelector('[data-slot="table-action-bar"]');`,
+          ),
+        { description: "clearing the selection removes the bar" },
+      );
+      const searchValue = () =>
+        app.execute("return document.querySelector(arguments[0]).value;", [
+          searchSelector,
+        ]);
+      const searchGhost = () =>
+        app.execute(
+          `return document.querySelector('[data-slot="profile-search-ghost"]')?.textContent ?? "";`,
+        );
+      const suggestionsOpen = () =>
+        app.execute(
+          `return Boolean(document.querySelector('[data-slot="profile-search-suggestions"]'));`,
+        );
+      await app.clickSelector(`[aria-label="${en.header.clearSearch}"]`);
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return document.querySelectorAll('[data-slot="profile-search-suggestions"] [role="option"][data-suggestion-kind="example"]').length === arguments[0];`,
+            [3],
+          ),
+        { description: "an emptied search lists example queries" },
+      );
+      await app.pressShortcut({ key: "\uE00C" });
+      await app.waitFor(async () => !(await suggestionsOpen()), {
+        description: "Escape closes the suggestions",
+      });
+
+      // Ghost completion: a field name, then a value from the profiles' tags.
+      await app.fillSelector(searchSelector, "ta");
+      await app.waitFor(async () => (await searchGhost()) === "g:", {
+        description: "field name ghost text",
+      });
+      await app.pressShortcut({ key: "\uE004" });
+      await app.waitFor(async () => (await searchValue()) === "tag:", {
+        description: "Tab accepts the field name",
+      });
+      await app.waitFor(async () => (await searchGhost()) === "table-work", {
+        description: "tag value ghost text",
+      });
+      await app.pressShortcut({ key: "\uE004" });
+      await app.waitFor(
+        async () =>
+          (await searchValue()) === "tag:table-work " &&
+          (await tableRows(app, "profiles")).length === 2,
+        { description: "Tab accepts the tag value" },
+      );
+      const highlight = await app.execute(
+        `
+        const input = document.querySelector(arguments[0]);
+        const layer = document.querySelector('[data-slot="profile-search-highlight"]');
+        const field = [...layer.children].find((node) => node.textContent === "tag:");
+        return {
+          mirrored: layer.textContent === input.value,
+          inputText: getComputedStyle(input).color,
+          field: field ? getComputedStyle(field).color : null,
+          value: getComputedStyle([...layer.children].find((node) => node.textContent === "table-work")).color,
+        };
+      `,
+        [searchSelector],
+      );
+      assert.equal(highlight.mirrored, true, "the highlight mirrors the input");
+      assert.equal(highlight.inputText, "rgba(0, 0, 0, 0)");
+      assert.ok(highlight.field, "the field name is its own span");
+      assert.notEqual(
+        highlight.field,
+        highlight.value,
+        "field and value differ",
+      );
+      assert.equal(
+        await suggestionsOpen(),
         false,
-        "search clears all action targets",
+        "a finished term closes the list",
+      );
+
+      // Picking a value with the mouse, and with the arrow keys.
+      await app.fillSelector(searchSelector, "tag:");
+      const option =
+        '[data-slot="profile-search-suggestions"] [role="option"][data-suggestion="table-work"]';
+      await app.waitFor(
+        () =>
+          app.execute(
+            "return document.querySelector(arguments[0])?.textContent === '2';",
+            [`${option} [data-slot="profile-search-count"]`],
+          ),
+        { description: "tag value with its profile count" },
+      );
+      await app.clickSelector(option);
+      await app.waitFor(
+        async () =>
+          (await searchValue()) === "tag:table-work " &&
+          (await tableRows(app, "profiles")).length === 2,
+        { description: "a clicked suggestion fills the value" },
+      );
+      await app.fillSelector(searchSelector, "tag:");
+      await app.waitFor(suggestionsOpen, { description: "tag values listed" });
+      await app.pressShortcut({ key: "\uE015" });
+      await app.waitFor(
+        () =>
+          app.execute(
+            "return document.getElementById(document.querySelector(arguments[0]).getAttribute('aria-activedescendant'))?.dataset.suggestion === 'table-work';",
+            [searchSelector],
+          ),
+        { description: "ArrowDown chooses the first value" },
+      );
+      await app.pressShortcut({ key: "\uE007" });
+      await app.waitFor(
+        async () => (await searchValue()) === "tag:table-work ",
+        {
+          description: "Enter accepts the chosen suggestion",
+        },
+      );
+
+      // A value the field cannot take is explained in the list.
+      await app.fillSelector(searchSelector, "os:solaris");
+      await app.waitFor(
+        () =>
+          app
+            .execute(
+              `return document.querySelector('[data-slot="profile-search-issue"]')?.textContent ?? "";`,
+            )
+            .then(
+              (text) =>
+                text ===
+                en.search.issues.enum
+                  .replace("{{field}}", "os:")
+                  .replace("{{values}}", "macos, windows, linux"),
+            ),
+        { description: "an invalid enum value explains itself" },
+      );
+
+      // The syntax help inserts a field where the caret is.
+      await app.clickSelector(`[aria-label="${en.header.clearSearch}"]`);
+      await app.clickSelector(`[aria-label="${en.search.helpLabel}"]`);
+      await app.clickSelector(
+        '[data-slot="profile-search-help"] [data-search-field="group"]',
+      );
+      await app.waitFor(
+        async () =>
+          (await searchValue()) === "group:" &&
+          (await app.execute(
+            "return document.activeElement === document.querySelector(arguments[0]);",
+            [searchSelector],
+          )),
+        { description: "the help inserts a field and returns to the box" },
       );
       await app.clickSelector(`[aria-label="${en.header.clearSearch}"]`);
+      await app.pressShortcut({ key: "\uE00C" });
       await app.clickTextIn(
         '[data-table-id="profiles"] [data-slot="table-filters"]',
         en.tables.filters,
@@ -953,6 +1324,60 @@ test("profile table filters, range selection, view settings, and keyboard edits 
   );
 });
 
+test("a proxy with a change-IP link offers Change IP on its row", async () => {
+  await withApp("ui-proxy-rotation", async (app) => {
+    const linked = await app.invoke("create_stored_proxy", {
+      name: "Rotating mobile proxy",
+      proxySettings: {
+        proxy_type: "http",
+        host: "127.0.0.1",
+        port: 9,
+        username: null,
+        password: null,
+      },
+    });
+    await app.invoke("set_proxy_rotation_url", {
+      proxyId: linked.id,
+      rotationUrl: `${process.env.DONUT_E2E_FIXTURE_URL}/change-ip?key=ui`,
+    });
+    const plain = await app.invoke("create_stored_proxy", {
+      name: "Static proxy",
+      proxySettings: {
+        proxy_type: "http",
+        host: "127.0.0.1",
+        port: 9,
+        username: null,
+        password: null,
+      },
+    });
+    // Mod+Shift+N opens Network; plain Mod+N makes a new profile.
+    await app.pressShortcut({
+      key: "n",
+      shift: true,
+      ...(process.platform === "darwin" ? { meta: true } : { ctrl: true }),
+    });
+    await app.waitFor(
+      async () => (await tableRows(app, "proxies")).length === 2,
+      { description: "proxy table" },
+    );
+    const rotateIn = (id) =>
+      `[data-table-id="proxies"] tr[data-table-row="${id}"] [data-slot="proxy-rotate"]`;
+    assert.equal(
+      await app.execute(
+        "return Boolean(document.querySelector(arguments[0]));",
+        [rotateIn(plain.id)],
+      ),
+      false,
+      "a proxy without a link has no Change IP action",
+    );
+    await app.clickSelector(rotateIn(linked.id));
+    await app.waitForText(
+      en.proxies.rotation.requested.replace("{{name}}", linked.name),
+    );
+    await app.capture("proxy-rotation-requested");
+  });
+});
+
 test("management tables share search, filters, selection, and saved views", async () => {
   await withApp("ui-management-tables", async (app) => {
     const proxies = [];
@@ -975,13 +1400,19 @@ test("management tables share search, filters, selection, and saved views", asyn
       );
     await app.invoke("create_profile_group", { name: "Table group Alpha" });
     await app.invoke("create_profile_group", { name: "Table group Beta" });
+    // Mod+Shift+N opens Network; plain Mod+N makes a new profile.
     await app.pressShortcut({
       key: "n",
+      shift: true,
       ...(process.platform === "darwin" ? { meta: true } : { ctrl: true }),
     });
     await app.waitFor(
       async () => (await tableRows(app, "proxies")).length === 3,
       { description: "proxy table" },
+    );
+    assert.deepEqual(
+      await offCenterSelectionControls(app, '[data-table-id="proxies"]'),
+      [],
     );
     const proxyRowHeight = () =>
       app.execute(
@@ -1009,11 +1440,28 @@ test("management tables share search, filters, selection, and saved views", asyn
       async () => (await tableRows(app, "proxies")).length === 1,
       { description: "proxy search" },
     );
-    assert.equal(
-      await app.execute(
-        `return Boolean(document.querySelector('[data-slot="table-action-bar"]'));`,
-      ),
-      false,
+    // A search keeps the selection, and the bar counts the rows it hides.
+    await app.waitFor(
+      () =>
+        app.execute(
+          `return document.querySelector('[data-slot="table-action-bar"] [data-slot="table-selection-count"] .sr-only')?.textContent === arguments[0];`,
+          [
+            en.dataTableActionBar.selectedHidden
+              .replace("{{selected}}", "3")
+              .replace("{{hidden}}", "2"),
+          ],
+        ),
+      { description: "selection kept through the search" },
+    );
+    await app.clickSelector(
+      `[data-slot="table-action-bar"] [aria-label="${en.dataTableActionBar.clearSelection}"]`,
+    );
+    await app.waitFor(
+      () =>
+        app.execute(
+          `return !document.querySelector('[data-slot="table-action-bar"]');`,
+        ),
+      { timeoutMs: 2000, description: "selection cleared" },
     );
     await app.fillSelector(
       `[data-table-id="proxies"] input[aria-label="${en.tables.search}"]`,
@@ -1329,8 +1777,28 @@ async function chooseSelectOption(app, triggerSelector, option) {
   );
 }
 
+async function chooseThemeCard(app, slotName, value) {
+  const card = `[data-slot="${slotName}"][data-value="${value}"]`;
+  await app.clickSelector(card);
+  await app.waitFor(
+    () =>
+      app.execute(
+        `return document.querySelector(arguments[0])?.getAttribute("aria-checked") === "true";`,
+        [card],
+      ),
+    { description: `${value} chosen in ${slotName}` },
+  );
+}
+
+function checkedThemeCard(app, slotName) {
+  return app.execute(
+    `return document.querySelector('[data-slot="' + arguments[0] + '"][aria-checked="true"]')?.dataset.value ?? null;`,
+    [slotName],
+  );
+}
+
 async function saveSettings(app) {
-  await app.clickText("Save Settings", { roles: ["button"] });
+  await app.clickText("Save settings", { roles: ["button"] });
   await app.waitFor(
     () =>
       app.execute(
@@ -1434,7 +1902,7 @@ async function dragBackgroundColorPicker(app) {
   await app.waitFor(
     () =>
       app.execute(
-        `return document.querySelector("#theme-preset-select")?.textContent?.includes("Your Own") === true;`,
+        `return document.querySelector('[data-slot="settings-theme-preset"][data-value="custom"]')?.getAttribute("aria-checked") === "true";`,
       ),
     {
       description: `customized theme to be marked as Your Own after ${JSON.stringify(pointerEvents)}`,
@@ -1557,7 +2025,7 @@ test("soft table and creation surfaces stay quiet and readable in every theme", 
         const colors = await paintedColors(app, {
           off: ["#ephemeral"],
           on: ["#enable-password"],
-          name: ['label[for="profile-name"]'],
+          name: ['[data-slot="profile-name-field"]'],
           password: ["#profile-password"],
         });
         assertQuietTint(colors.off, colors.page, 1.35, `${theme.id} option`);
@@ -1593,7 +2061,7 @@ test("the integrations page holds the Local API and the Owl server and never nam
     // everyone. The Owl server is the page's second tab (fork).
     const tabs = async () =>
       app.execute(
-        `return [...document.querySelectorAll('[role="tab"]')].map((node) => node.textContent.trim());`,
+        `return [...document.querySelectorAll('[role="tab"]')].filter((node) => !node.closest('[data-table-id="profiles"]')).map((node) => node.textContent.trim());`,
       );
     const offered = [en.integrations.tabApi, en.rail.workspace];
     assert.deepEqual(await tabs(), offered);
@@ -1620,7 +2088,7 @@ test("the integrations page holds the Local API and the Owl server and never nam
     // Mod+I flips between the API and the Owl server, never to Remote MCP.
     const activeTab = async () =>
       app.execute(
-        `return document.querySelector('[role="tab"][data-state="active"]')?.textContent.trim() ?? null;`,
+        `return [...document.querySelectorAll('[role="tab"][data-state="active"]')].find((node) => !node.closest('[data-table-id="profiles"]'))?.textContent.trim() ?? null;`,
       );
     assert.equal(await activeTab(), en.integrations.tabApi);
     await app.pressShortcut({ key: "i", ...modifier });
@@ -1645,6 +2113,267 @@ test("the integrations page holds the Local API and the Owl server and never nam
       description: "the card opens the Server tab",
     });
 
+    await dismissSurface(app);
+  });
+});
+
+test("MCP clients on this computer come first, and toolsets go to the connected clients", async () => {
+  await withApp("ui-mcp-clients", async (app) => {
+    await stubCommand(app, "get_remote_control_entitlement", true);
+    await stubCommand(app, "get_mcp_remote_status", {
+      enabled: true,
+      connected: true,
+      instanceId: "ui-mcp-clients",
+      lastError: null,
+    });
+    await stubCommand(app, "get_mcp_remote_credential", {
+      present: true,
+      tokenPrefix: "dmk_ui",
+    });
+    const remoteKey = "dmk_ui_0123456789abcdefghijklmnopqrstuvwxyz";
+    await stubCommand(app, "get_app_settings", {
+      ...(await app.invoke("get_app_settings")),
+      mcp_remote_key: remoteKey,
+    });
+    const agent = (id, display_name, connected, detected) => ({
+      id,
+      display_name,
+      category: "cli",
+      connected,
+      current: connected,
+      detected,
+      token_env: null,
+    });
+    await stubCommand(app, "list_mcp_agents", [
+      agent("cursor", "Cursor", false, false),
+      agent("codex", "Codex", false, true),
+      agent("claude-code", "Claude Code", true, true),
+      agent("pi", "Pi", false, true),
+      agent("zed", "Zed", false, false),
+    ]);
+    await stubCommand(app, "add_mcp_to_agent", null);
+    await stubCommand(app, "set_mcp_toolsets", []);
+    await stubCommand(app, "forget_mcp_remote_credential", null);
+    const calls = (command) =>
+      app.execute(
+        "return (window.__donutStubbedCalls ?? []).filter((c) => c.command === arguments[0]).map((c) => c.payload);",
+        [command],
+      );
+    const shown = () =>
+      app.execute(
+        `return [...document.querySelectorAll('[data-slot="mcp-client"]')].map((node) => node.dataset.agentId);`,
+      );
+
+    await app.clickSelector('[aria-label="Integrations"]');
+    await app.clickText(en.integrations.tabRemote, { roles: ["tab"] });
+    await app.waitForText(en.integrations.mcp.onThisComputer);
+    assert.deepEqual(
+      await shown(),
+      ["claude-code", "codex", "pi"],
+      "connected first, then the other apps found here; the rest wait",
+    );
+    await app.clickSelector('[data-slot="mcp-show-more"]');
+    await app.waitFor(async () => (await shown()).length === 5, {
+      description: "every client after Show more",
+    });
+
+    await app.clickSelector('[data-slot="mcp-add-all"]');
+    await app.waitFor(
+      async () => (await calls("add_mcp_to_agent")).length === 2,
+      {
+        description: "one add per suggested client",
+      },
+    );
+    assert.deepEqual(
+      (await calls("add_mcp_to_agent")).map((payload) => payload.agentId),
+      ["codex", "pi"],
+    );
+
+    await app.clickSelector('[data-slot="mcp-toolsets"]');
+    await app.waitForText(en.integrations.mcp.toolsets.title);
+    await app.capture("mcp-toolsets");
+    await app.clickSelector('[data-toolset="cookies"]');
+    await app.waitFor(
+      async () => (await calls("set_mcp_toolsets")).length === 1,
+      {
+        description: "the toolset choice saved",
+      },
+    );
+    assert.deepEqual((await calls("set_mcp_toolsets"))[0].toolsets, [
+      "organize",
+      "network",
+      "traffic",
+      "fingerprint",
+      "extensions",
+      "sync",
+      "remote",
+      "recipes",
+    ]);
+    await dismissSurface(app);
+
+    // The page shows the credential by its prefix only; every copy carries
+    // the whole key, so a pasted command runs as is.
+    await app.execute(
+      `window.__copied = [];
+       navigator.clipboard.writeText = async (text) => { window.__copied.push(text); };`,
+    );
+    const copied = () => app.execute("return window.__copied;");
+    const page = await app.bodyText();
+    assert.ok(!page.includes(remoteKey), "the full key is never on screen");
+    assert.ok(page.includes("dmk_ui…"), page);
+    const remoteTarget = { baseUrl: REMOTE_MCP_URL, token: remoteKey };
+    await app.clickSelector(
+      '[data-slot="code-snippet"]:has([data-testid="integrations-remote-example"]) button',
+    );
+    await app.waitFor(async () => (await copied()).length === 1, {
+      description: "the remote quick start was copied",
+    });
+    assert.equal(
+      (await copied())[0],
+      oneLine(curlSnippet(REMOTE_MCP_EXAMPLES[0].request, remoteTarget)),
+    );
+    await app.clickSelector('[data-slot="mcp-credential"] button');
+    await app.waitFor(async () => (await copied()).length === 2, {
+      description: "the credential was copied",
+    });
+    assert.equal((await copied())[1], remoteKey);
+    await app.clickText(en.integrations.examples.open);
+    await app.waitForText(en.integrations.examples.remoteTitle);
+    const examples =
+      (await dialogText(app, en.integrations.examples.remoteTitle)) ?? "";
+    assert.ok(!examples.includes(remoteKey), "the full key is never on screen");
+    assert.ok(examples.includes(en.integrations.examples.credentialIncluded));
+    await app.clickSelector('[data-testid="code-example-listTools"]');
+    await app.clickSelector(
+      '[data-testid="code-examples-dialog"] [data-slot="code-snippet"] button',
+    );
+    await app.waitFor(async () => (await copied()).length === 3, {
+      description: "the List tools example was copied",
+    });
+    assert.equal(
+      (await copied())[2],
+      curlSnippet(REMOTE_MCP_EXAMPLES[0].request, remoteTarget),
+    );
+    await dismissSurface(app);
+
+    // Forgetting the credential asks first, then revokes and removes it.
+    await app.clickSelector('[data-slot="mcp-credential-forget"]');
+    await app.waitForText(en.integrations.remote.credentialForgetTitle);
+    await app.clickTextIn(
+      '[role="dialog"]',
+      en.integrations.remote.credentialForget,
+      { roles: ["button"] },
+    );
+    await app.waitFor(
+      async () => (await calls("forget_mcp_remote_credential")).length === 1,
+      { description: "the confirmed forget reached the backend" },
+    );
+    await app.waitForText(en.integrations.remote.credentialForgotten);
+    await dismissSurface(app);
+  });
+});
+
+test("a rotated credential reaches the connected clients, and Retry never mints again", async () => {
+  await withApp("ui-mcp-rotation", async (app) => {
+    await stubCommand(app, "get_remote_control_entitlement", true);
+    await stubCommand(app, "get_mcp_remote_status", {
+      enabled: true,
+      connected: true,
+      instanceId: "ui-mcp-rotation",
+      lastError: null,
+    });
+    await stubCommand(app, "get_mcp_remote_credential", {
+      present: true,
+      tokenPrefix: "dmk_ui",
+    });
+    const remoteKey = "dmk_ui_0123456789abcdefghijklmnopqrstuvwxyz";
+    await stubCommand(app, "get_app_settings", {
+      ...(await app.invoke("get_app_settings")),
+      mcp_remote_key: remoteKey,
+    });
+    const agent = (id, display_name, current) => ({
+      id,
+      display_name,
+      category: "cli",
+      connected: true,
+      current,
+      detected: true,
+      token_env: id === "fx" ? "DONUT_MCP_TOKEN" : null,
+    });
+    await stubCommand(app, "list_mcp_agents", [
+      agent("claude-code", "Claude Code", true),
+      agent("cursor", "Cursor", false),
+      agent("fx", "fx", true),
+    ]);
+    await stubCommand(app, "rotate_mcp_remote_credential", {
+      token_prefix: "dmk_ui",
+      failed_clients: ["cursor"],
+    });
+    await stubCommand(app, "refresh_mcp_agents", []);
+    await stubCommand(app, "add_mcp_to_agent", null);
+    const calls = (command) =>
+      app.execute(
+        "return (window.__donutStubbedCalls ?? []).filter((c) => c.command === arguments[0]).map((c) => c.payload);",
+        [command],
+      );
+
+    await app.clickSelector('[aria-label="Integrations"]');
+    await app.clickText(en.integrations.tabRemote, { roles: ["tab"] });
+    await app.waitForText(en.integrations.mcp.onThisComputer);
+
+    // Rotating says to restart the open clients. A client it missed is
+    // retried with the stored key, never with a second mint, which would
+    // revoke the key the other clients just got.
+    await app.clickText(en.integrations.remote.credentialRotate);
+    await app.waitForText(en.integrations.remote.credentialRestartClients);
+    await app.waitForText(
+      en.integrations.remote.credentialClientsFailed.replace(
+        "{{clients}}",
+        "Cursor",
+      ),
+    );
+    await app.clickTextIn("[data-sonner-toast]", en.common.buttons.retry, {
+      roles: ["button"],
+    });
+    await app.waitFor(
+      async () => (await calls("refresh_mcp_agents")).length === 1,
+      { description: "Retry wrote the stored key again" },
+    );
+    assert.equal(
+      (await calls("rotate_mcp_remote_credential")).length,
+      1,
+      "Retry must not mint again",
+    );
+    await app.waitForText(en.integrations.remote.credentialClientsUpdated);
+
+    // fx reads the key from the shell, so it is told to export the new one;
+    // the line on screen shows only the prefix.
+    await app.waitForText(en.integrations.remote.fxReexport);
+    const fx = await app.execute(
+      `return document.querySelector('[data-slot="mcp-fx-reexport"]')?.innerText ?? "";`,
+    );
+    assert.ok(fx.includes("export DONUT_MCP_TOKEN=dmk_ui…"), fx);
+    assert.ok(!fx.includes(remoteKey), "the full key is never on screen");
+
+    // Only the client that holds an older key offers Update, and Update
+    // writes the stored key into that client alone.
+    assert.equal(
+      await app.execute(
+        `return document.querySelectorAll('[data-slot="mcp-client-update"]').length;`,
+      ),
+      1,
+    );
+    await app.clickSelector(
+      '[data-agent-id="cursor"] [data-slot="mcp-client-update"]',
+    );
+    await app.waitFor(
+      async () => (await calls("add_mcp_to_agent")).length === 1,
+      { description: "Update reached the backend" },
+    );
+    assert.equal((await calls("add_mcp_to_agent"))[0].agentId, "cursor");
+    await app.waitForText(
+      en.integrations.mcp.updatedClient.replace("{{name}}", "Cursor"),
+    );
     await dismissSurface(app);
   });
 });
@@ -1694,7 +2423,65 @@ test("the local API page shows a one-line example and opens runnable examples in
       (await copied())[0],
       oneLine(curlSnippet(LOCAL_API_EXAMPLES[0].request, { baseUrl, token })),
     );
+
+    // The connection test is one row until it runs: no stations and no
+    // verdicts before there is a result.
+    const diagnostics = '[data-slot="integration-diagnostics"]';
+    const probe = () =>
+      app.execute(
+        `const panel = document.querySelector(arguments[0]);
+         return {
+           height: panel.getBoundingClientRect().height,
+           flow: panel.querySelector('[data-slot="operation-flow"]')?.dataset.state ?? null,
+           problem: panel.querySelector('[data-slot="integration-diagnostics-problem"]')?.innerText ?? null,
+           text: panel.innerText,
+         };`,
+        [diagnostics],
+      );
+    const idle = await probe();
+    assert.equal(idle.flow, null);
+    assert.ok(!idle.text.includes(en.appFeedback.notVerified), idle.text);
+    assert.ok(idle.height < 110, `idle connection test is ${idle.height}px`);
+    await app.clickTextIn(diagnostics, en.appFeedback.testConnection, {
+      roles: ["button"],
+    });
+    await app.waitFor(async () => (await probe()).flow === "done", {
+      description: "the running API accepting the saved token",
+    });
+    const passed = await probe();
+    assert.equal(passed.problem, null);
+    assert.ok(passed.text.includes("HTTP 200"), passed.text);
+    assert.ok(
+      passed.height < 170,
+      `tested connection test is ${passed.height}px`,
+    );
     await app.capture("integrations-local-api");
+
+    // A refusal names the station and the reason, and stays.
+    await stubCommand(app, "check_integration_connection", {
+      configured: true,
+      reachable: true,
+      authorized: false,
+      http_status: 401,
+      checked_at: Math.floor(Date.now() / 1000),
+    });
+    await app.clickTextIn(diagnostics, en.appFeedback.testConnection, {
+      roles: ["button"],
+    });
+    await app.waitFor(async () => (await probe()).flow === "failed", {
+      description: "the refused credential reported",
+    });
+    const refused = await probe();
+    assert.equal(refused.problem, en.appFeedback.probeRefused);
+    assert.ok(refused.text.includes("HTTP 401"), refused.text);
+    assert.equal(
+      await app.execute(
+        `return document.querySelector(arguments[0] + ' [data-slot="operation-marker"]')?.dataset.nodeState ?? null;`,
+        [diagnostics],
+      ),
+      "failed",
+    );
+    await app.capture("integrations-local-api-refused");
 
     await app.clickText(en.integrations.examples.open);
     await app.waitForText(en.integrations.examples.apiTitle);
@@ -1734,6 +2521,18 @@ test("the local API page shows a one-line example and opens runnable examples in
     assert.equal(printed.length, 1);
     assert.ok(Array.isArray(printed[0].profiles), JSON.stringify(printed[0]));
 
+    // "Try it" sends the listing to the running server with the saved token
+    // and shows the answer in the dialog.
+    await app.clickSelector('[data-slot="code-example-try"]');
+    await app.waitFor(
+      () =>
+        app.execute(
+          `const panel = document.querySelector('[data-slot="code-example-live-response"]');
+           return panel?.dataset.status === "200" && panel.innerText.includes('"profiles"');`,
+        ),
+      { description: "the live answer of the local API" },
+    );
+
     // The language is the reader's choice and stays as they move on.
     await app.clickSelector('[data-testid="code-example-createProxy"]');
     await app.waitFor(
@@ -1767,7 +2566,7 @@ test("all primary navigation buttons and sub-page tabs render and remain interac
     }
 
     await openGroups(app);
-    await app.waitForText("Create");
+    await app.waitForText(en.groupManagement.newGroup);
     await dismissSurface(app);
 
     await app.clickSelector('[aria-label="More"]');
@@ -1858,30 +2657,50 @@ test("every custom theme keeps tabs, counts, group pills, and rail states readab
     await app.waitFor(
       () =>
         app.execute(
-          `return Boolean(document.querySelector('[data-slot="group-summary-pill"]'));`,
+          `return Boolean(document.querySelector('[data-summary="groups"] [data-slot="animated-tabs-indicator"]'));`,
         ),
-      { description: "Profile groups summary pill" },
+      { description: "Profile groups summary tab" },
     );
 
     for (const theme of THEMES) {
       await applyThemeForContrastAudit(app, theme);
       const snapshot = await app.execute(`
         const rootStyle = getComputedStyle(document.documentElement);
-        const pill = document.querySelector(
-          '[data-slot="group-summary-pill"]',
-        );
+        // The page title is the active tab of a one-tab list, as on the
+        // other sub-pages: its fill is the tab indicator.
+        const pill = document.querySelector('[data-summary="groups"]');
         const count = pill?.querySelector(
           '[data-slot="group-summary-count"]',
         );
-        const title = pill?.firstElementChild;
+        const title = pill?.querySelector('[data-slot="group-summary-title"]');
+        const fill = pill?.querySelector(
+          '[data-slot="animated-tabs-indicator"]',
+        );
         const rail = document.querySelector('nav [aria-current="page"]');
+        // The active item's fill is a translucent pill over the rail. Paint
+        // both on a 1px canvas to read the colour under the icon.
+        const railFill = (() => {
+          if (!rail) return null;
+          const canvas = document.createElement("canvas");
+          canvas.width = canvas.height = 1;
+          const context = canvas.getContext("2d", { willReadFrequently: true });
+          const layers = [
+            rail.closest("nav"),
+            rail.querySelector('[data-slot="rail-active-pill"]'),
+          ];
+          for (const node of layers) {
+            if (!node) continue;
+            context.fillStyle = getComputedStyle(node).backgroundColor;
+            context.fillRect(0, 0, 1, 1);
+          }
+          const [r, g, b] = context.getImageData(0, 0, 1, 1).data;
+          return "rgb(" + r + ", " + g + ", " + b + ")";
+        })();
         return {
-          pillBackground: pill ? getComputedStyle(pill).backgroundColor : null,
+          pillBackground: fill ? getComputedStyle(fill).backgroundColor : null,
           pillTitle: title ? getComputedStyle(title).color : null,
           pillCount: count ? getComputedStyle(count).color : null,
-          railBackground: rail
-            ? getComputedStyle(rail).backgroundColor
-            : null,
+          railBackground: railFill,
           railForeground: rail ? getComputedStyle(rail).color : null,
           accent: rootStyle.getPropertyValue("--accent").trim(),
           accentForeground: rootStyle
@@ -2197,7 +3016,13 @@ test("About exposes a searchable, responsive third-party license inventory", asy
       exact: false,
       roles: ["menuitem"],
     });
-    await app.waitForText("Open-source anti-detect browser.");
+    await app.waitFor(
+      () =>
+        app.execute(
+          `return Boolean(document.querySelector("[role='dialog'] [data-slot='about-diagnostics']"));`,
+        ),
+      { description: "About diagnostics" },
+    );
 
     const aboutText = await app.execute(
       `return document.querySelector("[role='dialog']")?.textContent ?? "";`,
@@ -2290,7 +3115,7 @@ test("About exposes a searchable, responsive third-party license inventory", asy
     await app.waitFor(
       () =>
         app.execute(
-          `return document.querySelector("[role='dialog'] [data-slot='dialog-title']")?.textContent === "About";`,
+          `return document.querySelector("[role='dialog'] [data-slot='dialog-title']")?.textContent === "Owl";`,
         ),
       { description: "About view after returning from licenses" },
     );
@@ -2364,6 +3189,95 @@ test("settings tabs, command palette filtering, and responsive layout survive re
   });
 });
 
+test("the command palette finds synonyms, remembers recent commands, and opens nested pages", async () => {
+  await withApp("ui-command-palette", async (app) => {
+    const modifier =
+      process.platform === "darwin" ? { meta: true } : { ctrl: true };
+    const paletteOpen = () =>
+      app.execute(`return Boolean(document.querySelector("[cmdk-input]"));`);
+    const openPalette = async () => {
+      await app.pressShortcut({ key: "k", ...modifier });
+      await app.waitFor(paletteOpen, { description: "command palette" });
+    };
+    const hasSelector = (selector) =>
+      app.execute(`return Boolean(document.querySelector(arguments[0]));`, [
+        selector,
+      ]);
+    const placeholder = () =>
+      app.execute(`return document.querySelector("[cmdk-input]").placeholder;`);
+    const waitSelected = (value) =>
+      app.waitFor(
+        async () =>
+          (await app.execute(
+            `return document.querySelector('[cmdk-item][data-selected="true"]')?.getAttribute("data-value") ?? null;`,
+          )) === value,
+        { description: `selected ${value}` },
+      );
+    const chip = '[data-slot="command-page-chip"][data-page="group"]';
+
+    await openPalette();
+    // A synonym finds a command its label does not name.
+    await app.fillSelector("[cmdk-input]", "new");
+    await waitSelected("action:createProfile");
+    // The matched part of a label is marked.
+    await app.fillSelector("[cmdk-input]", "trash");
+    await waitSelected("shortcut:goTrash");
+    assert.equal(
+      await app.execute(
+        `return document.querySelector('[cmdk-item][data-value="shortcut:goTrash"] mark')?.textContent ?? "";`,
+      ),
+      "Trash",
+    );
+    // Enter runs it, closes the palette, and remembers it.
+    await app.pressShortcut({ key: "\uE007" });
+    await app.waitFor(() => hasSelector('[data-slot="trash-page"]'), {
+      description: "trash page",
+    });
+    assert.equal(await paletteOpen(), false);
+    assert.deepEqual(
+      await app.execute(
+        `return JSON.parse(localStorage.getItem("donut.commandPalette.recent"));`,
+      ),
+      ["shortcut:goTrash"],
+    );
+
+    // Recent commands come first, so Enter repeats the last one.
+    await openPalette();
+    await waitSelected("recent:shortcut:goTrash");
+
+    // A page opens with a breadcrumb and its own search, and Backspace in
+    // the empty search goes back to the entry it came from.
+    await app.clickSelector('[cmdk-item][data-value="page:group"]');
+    await app.waitFor(() => hasSelector(chip), { description: "group page" });
+    assert.equal(
+      await placeholder(),
+      en.commandPalette.pages.group.placeholder,
+    );
+    await waitSelected("group:__all__");
+    await app.pressShortcut({ key: "\uE003" });
+    await app.waitFor(async () => !(await hasSelector(chip)), {
+      description: "back to all commands",
+    });
+    assert.equal(await placeholder(), en.commandPalette.placeholder);
+    await waitSelected("page:group");
+
+    // Escape leaves a page first, then closes the palette.
+    await app.pressShortcut({ key: "\uE007" });
+    await app.waitFor(() => hasSelector(chip), { description: "group page" });
+    await app.pressShortcut({ key: "Escape" });
+    await app.waitFor(async () => !(await hasSelector(chip)), {
+      description: "Escape leaves the page",
+    });
+    assert.equal(await paletteOpen(), true);
+
+    // The palette shortcut closes the palette it opened.
+    await app.pressShortcut({ key: "k", ...modifier });
+    await app.waitFor(async () => !(await paletteOpen()), {
+      description: "the palette shortcut closes the palette",
+    });
+  });
+});
+
 test("first-run onboarding stays recoverable, responsive, and platform-aware", async () => {
   await withApp(
     "ui-onboarding",
@@ -2397,6 +3311,19 @@ test("first-run onboarding stays recoverable, responsive, and platform-aware", a
 
       // The fork has no Donut licence step: the intro leads straight on.
       await app.clickText("Next", { roles: ["button"] });
+      await app.waitForText(en.isolationDemo.title);
+      // Back returns to the step before, and the dots follow.
+      await app.clickSelector('[data-slot="welcome-back"]');
+      await app.waitForText(en.welcome.title);
+      await app.clickText("Next", { roles: ["button"] });
+      await app.waitForText(en.isolationDemo.title);
+      assert.equal(
+        await app.execute(
+          `return document.querySelector("[role='dialog'] [data-slot='step-dots']")?.getAttribute("aria-valuenow");`,
+        ),
+        "2",
+      );
+      await app.clickText("Next", { roles: ["button"] });
 
       await app.waitFor(
         async () =>
@@ -2419,11 +3346,214 @@ test("first-run onboarding stays recoverable, responsive, and platform-aware", a
   );
 });
 
+/** The tour's coach mark: its step and anchor, once it is placed and shown. */
+async function tourState(app) {
+  return app.execute(`
+    const card = document.querySelector('[data-slot="onboarding-tour"]');
+    if (!card || card.dataset.state !== "shown") return null;
+    if (getComputedStyle(card.parentElement).visibility !== "visible") return null;
+    return {
+      step: card.dataset.step,
+      anchor: card.dataset.anchor,
+      spotlight: Boolean(document.querySelector('[data-slot="coach-mark-spotlight"]')),
+    };
+  `);
+}
+
+test("a new install walks from the welcome into a tour on the real controls", async () => {
+  await withApp(
+    "ui-onboarding-tour",
+    async (app) => {
+      // The welcome sets up Camoufox (fork); the harness registers Wayfern only.
+      await stubCommand(app, "get_downloaded_browser_versions", ["135.0"]);
+      await app.waitForText(en.welcome.title);
+      await app.clickText(en.welcome.next, { roles: ["button"] });
+      await app.waitForText(en.isolationDemo.title);
+      // The fork has no licence step: the isolation step leads straight on.
+      await app.clickText(en.welcome.next, { roles: ["button"] });
+      // macOS asks for the microphone and camera unless they are granted.
+      const next = await app.waitFor(
+        async () => {
+          const body = await app.bodyText();
+          if (body.includes(en.welcome.permissions.title)) return "permissions";
+          if (body.includes(en.welcome.ready.title)) return "setup";
+          return null;
+        },
+        { description: "the step after the isolation demo" },
+      );
+      if (next === "permissions") {
+        await app.clickText(en.welcome.permissions.skip, { roles: ["button"] });
+      }
+      // The browser is registered already, so setup is ready at once.
+      await app.waitForText(en.welcome.ready.cta);
+      await app.clickText(en.welcome.ready.cta, { roles: ["button"] });
+
+      // Step one dims the page around the New button and waits for a profile.
+      const first = await app.waitFor(
+        async () => {
+          const state = await tourState(app);
+          return state?.step === "0" ? state : null;
+        },
+        { description: "the tour on the New button" },
+      );
+      assert.equal(first.anchor, "new-profile");
+      assert.ok(first.spotlight, "the page is dimmed around the button");
+      assert.equal(
+        await app.execute(
+          `return document.elementFromPoint(...(() => { const r = document.querySelector('[data-tip-anchor="new-profile"]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })())?.closest('[data-tip-anchor="new-profile"]') !== null;`,
+        ),
+        true,
+        "the spotlit button still takes the click",
+      );
+      assert.equal(await app.invoke("get_onboarding_completed"), false);
+      await app.capture("onboarding-tour-create");
+
+      // A profile moves the tour on to that profile's DNS blocking.
+      await createUiProfile(app, "Tour Profile");
+      const second = await app.waitFor(
+        async () => {
+          const state = await tourState(app);
+          return state?.step === "1" && state.anchor !== "none" ? state : null;
+        },
+        { description: "the tour on the DNS control" },
+      );
+      assert.ok(
+        ["row-dns", "column-dns"].includes(second.anchor),
+        `the DNS step points at DNS blocking, not ${second.anchor}`,
+      );
+      await app.capture("onboarding-tour-dns");
+
+      await app.clickSelector('[data-slot="onboarding-tour-finish"]');
+      await app.waitForText(en.onboarding.thankYou.title);
+      await app.waitFor(() => app.invoke("get_onboarding_completed"), {
+        description: "onboarding completed by the finished tour",
+      });
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return !document.querySelector('[data-slot="onboarding-tour"]');`,
+          ),
+        { description: "the tour gone after its exit" },
+      );
+    },
+    { onboardingCompleted: false, seedDownloadedBrowser: true },
+  );
+});
+
+test("Escape skips the tour and still completes onboarding", async () => {
+  await withApp(
+    "ui-onboarding-tour-skip",
+    async (app) => {
+      // The welcome sets up Camoufox (fork); the harness registers Wayfern only.
+      await stubCommand(app, "get_downloaded_browser_versions", ["135.0"]);
+      await app.waitForText(en.welcome.title);
+      await app.clickText(en.welcome.skip, { roles: ["button"] });
+      await app.waitForText(en.welcome.ready.cta);
+      await app.clickText(en.welcome.ready.cta, { roles: ["button"] });
+      await app.waitFor(async () => (await tourState(app))?.step === "0", {
+        description: "the tour",
+      });
+      await app.pressShortcut({ key: "Escape" });
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return !document.querySelector('[data-slot="onboarding-tour"]');`,
+          ),
+        { description: "the tour gone" },
+      );
+      await app.waitFor(() => app.invoke("get_onboarding_completed"), {
+        description: "a skipped tour completes onboarding",
+      });
+      assert.equal(
+        await app.visibleTextIncludes(en.onboarding.thankYou.title),
+        false,
+        "only a finished tour is celebrated",
+      );
+    },
+    { onboardingCompleted: false, seedDownloadedBrowser: true },
+  );
+});
+
+test("interface sounds, their pack, volume and kinds stay as saved", async () => {
+  await withApp("ui-sounds-setting", async (app) => {
+    const sounds = async () => (await app.invoke("get_app_settings")).ui_sounds;
+    assert.equal(await sounds(), false, "the harness keeps the suite silent");
+    await app.clickSelector('[aria-label="Settings"]');
+    await app.waitForText(en.settings.sounds.enabledDescription);
+    const toggle = `[role="switch"][aria-label="${en.settings.sounds.enabled}"]`;
+    const pack = '[data-slot="settings-sound-pack-option"][data-value="retro"]';
+    assert.equal(
+      await app.execute(
+        `return Boolean(document.querySelector(arguments[0]));`,
+        [pack],
+      ),
+      false,
+      "the sound options stay hidden while sounds are off",
+    );
+    await app.clickSelector(toggle);
+    await app.clickSelector(pack);
+    await app.clickSelector(
+      `[role="switch"][aria-label="${en.settings.sounds.categories.events.label}"]`,
+    );
+    await app.execute(
+      `document.querySelector('[data-slot="settings-sound-volume"] [role="slider"]').focus();`,
+    );
+    await app.pressShortcut({ key: "\uE012" });
+    await saveSettings(app);
+    const saved = await app.invoke("get_app_settings");
+    assert.equal(saved.ui_sounds, true);
+    assert.equal(saved.ui_sound_pack, "retro");
+    assert.equal(saved.ui_sound_events, false);
+    assert.equal(saved.ui_sound_volume, 55);
+    await app.clickSelector(toggle);
+    await saveSettings(app);
+    assert.equal(await sounds(), false);
+    await app.restart();
+    const restarted = await app.invoke("get_app_settings");
+    assert.equal(restarted.ui_sounds, false, "the choice survives a restart");
+    assert.equal(restarted.ui_sound_pack, "retro");
+  });
+});
+
+test("system and bulk launch settings stay as saved", async () => {
+  await withApp("ui-system-launch-settings", async (app) => {
+    const before = await app.invoke("get_app_settings");
+    assert.equal(before.launch_at_login, false);
+    assert.equal(before.reopen_running_profiles, false);
+    assert.equal(before.system_notifications, true);
+    assert.equal(before.bulk_launch_delay_ms, 800);
+    assert.equal(before.bulk_launch_concurrency, 3);
+    await app.clickSelector('[aria-label="Settings"]');
+    await app.waitForText(en.settings.system.launchAtLoginDescription);
+    await app.clickSelector("#settings-launch-at-login");
+    await app.clickSelector("#settings-reopen-running");
+    await app.clickSelector("#settings-system-notifications");
+    // Each slider steps through its stops: 800 ms -> 1 s, 3 -> 4 at once.
+    for (const slot of [
+      "settings-bulk-launch-delay",
+      "settings-bulk-launch-concurrency",
+    ]) {
+      await app.execute(
+        `document.querySelector('[data-slot="' + arguments[0] + '"] [role="slider"]').focus();`,
+        [slot],
+      );
+      await app.pressShortcut({ key: "\uE014" });
+    }
+    await saveSettings(app);
+    const saved = await app.invoke("get_app_settings");
+    assert.equal(saved.launch_at_login, true);
+    assert.equal(saved.reopen_running_profiles, true);
+    assert.equal(saved.system_notifications, false);
+    assert.equal(saved.bulk_launch_delay_ms, 1000);
+    assert.equal(saved.bulk_launch_concurrency, 4);
+  });
+});
+
 test("predefined theme remains rendered across navigation and restart", async () => {
   await withApp("ui-theme-predefined", async (app) => {
     await app.clickSelector('[aria-label="Settings"]');
     await app.waitForText("Appearance");
-    await chooseSelectOption(app, "#theme-select", "Light");
+    await chooseThemeCard(app, "settings-theme-option", "light");
     await saveSettings(app);
 
     const persisted = await app.invoke("get_app_settings");
@@ -2453,8 +3583,8 @@ test("preset and manually customized themes survive navigation and restart", asy
   await withApp("ui-theme-custom", async (app) => {
     await app.clickSelector('[aria-label="Settings"]');
     await app.waitForText("Appearance");
-    await chooseSelectOption(app, "#theme-select", "Custom");
-    await chooseSelectOption(app, "#theme-preset-select", "Dracula");
+    await chooseThemeCard(app, "settings-theme-option", "custom");
+    await chooseThemeCard(app, "settings-theme-preset", "dracula");
     await saveSettings(app);
 
     const presetSettings = await app.invoke("get_app_settings");
@@ -2484,16 +3614,12 @@ test("preset and manually customized themes survive navigation and restart", asy
     await app.clickSelector('[aria-label="Settings"]');
     await app.waitForText("Appearance");
     assert.equal(
-      await app.execute(
-        `return document.querySelector("#theme-select")?.textContent?.trim();`,
-      ),
-      "Custom",
+      await checkedThemeCard(app, "settings-theme-option"),
+      "custom",
     );
     assert.equal(
-      await app.execute(
-        `return document.querySelector("#theme-preset-select")?.textContent?.trim();`,
-      ),
-      "Dracula",
+      await checkedThemeCard(app, "settings-theme-preset"),
+      "dracula",
     );
     await dragBackgroundColorPicker(app);
     await saveSettings(app);
@@ -2536,8 +3662,8 @@ test("a light custom preset keeps light component behavior after restart", async
   await withApp("ui-theme-custom-light", async (app) => {
     await app.clickSelector('[aria-label="Settings"]');
     await app.waitForText("Appearance");
-    await chooseSelectOption(app, "#theme-select", "Custom");
-    await chooseSelectOption(app, "#theme-preset-select", "Ayu Light");
+    await chooseThemeCard(app, "settings-theme-option", "custom");
+    await chooseThemeCard(app, "settings-theme-preset", "ayu-light");
     await saveSettings(app);
 
     const selected = await waitForTheme(
@@ -2992,6 +4118,478 @@ test("a folder with no manifest fails with the translated reason, not a raw code
 });
 
 test(
+  "scheduled recipes stay behind the plan, and a schedule is built from the form",
+  CLOUD_ONLY,
+  async () => {
+    await withApp(
+      "ui-agent-schedules",
+      async (app) => {
+        const profile = await createUiProfile(app, "Scheduled Profile");
+        const user = (plan) => ({
+          logged_in_at: new Date().toISOString(),
+          user: {
+            id: "ui-schedules",
+            email: "schedules@example.test",
+            plan,
+            planPeriod: "monthly",
+            subscriptionStatus: "active",
+            profileLimit: 50,
+            cloudProfilesUsed: 0,
+            proxyBandwidthLimitMb: 0,
+            proxyBandwidthUsedMb: 0,
+            proxyBandwidthExtraMb: 0,
+            isPrimaryDevice: true,
+          },
+        });
+        await stubCommand(app, "get_mcp_remote_status", {
+          enabled: true,
+          connected: true,
+          instanceId: "ui-schedules",
+          lastError: null,
+        });
+        await stubCommand(app, "get_agent_recipes", [
+          {
+            id: "r1",
+            name: "Check orders",
+            steps: [{ type: "navigate", url: "https://example.com" }],
+          },
+        ]);
+        await stubCommand(app, "list_agent_schedules", [
+          {
+            id: "s1",
+            name: "Hourly check",
+            enabled: true,
+            target: "fleet",
+            recipeId: "r1",
+            profileIds: [profile.id],
+            groupId: null,
+            cadence: "interval",
+            daysMask: 31,
+            runAtMinute: 540,
+            timezone: "UTC",
+            runOnceAt: null,
+            intervalMinutes: 60,
+            nextRunAt: new Date(Date.now() + 3_600_000).toISOString(),
+            lastRunAt: null,
+          },
+        ]);
+        await stubCommand(app, "create_agent_schedule", { id: "s2" });
+        const calls = (command) =>
+          app.execute(
+            "return (window.__donutStubbedCalls ?? []).filter((c) => c.command === arguments[0]).map((c) => c.payload);",
+            [command],
+          );
+
+        const signIn = async (plan) => {
+          await stubCommand(app, "cloud_get_user", user(plan));
+          await app.invoke("plugin:event|emit", {
+            event: "cloud-auth-changed",
+            payload: null,
+          });
+        };
+
+        // A plan without schedules never reaches the form.
+        await signIn("free");
+        await app.clickSelector(`[aria-label="${en.rail.agent}"]`);
+        await app.clickSelector('[data-testid="agent-tab-schedules"]');
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        assert.equal(
+          await app.execute(
+            `return !document.querySelector('[data-slot="agent-schedules"]');`,
+          ),
+          true,
+          "the schedules list is not shown without the plan",
+        );
+        await app.clickSelector(`[aria-label="${en.rail.profiles}"]`);
+
+        await signIn("pro");
+        // Turning paid opens the one-time welcome; close it first.
+        await app.waitFor(
+          () =>
+            app.execute(
+              `return Boolean(document.querySelector('[role="dialog"]'));`,
+            ),
+          { description: "the paid welcome" },
+        );
+        await dismissSurface(app);
+        await app.waitFor(
+          () =>
+            app.execute(`return !document.querySelector('[role="dialog"]');`),
+          { description: "the welcome closed" },
+        );
+        await app.clickSelector(`[aria-label="${en.rail.agent}"]`);
+        await app.clickSelector('[data-testid="agent-tab-schedules"]');
+        await app.waitFor(
+          () =>
+            app.execute(
+              `return document.querySelector('[data-slot="agent-schedule"]')?.innerText ?? null;`,
+            ),
+          { description: "the stored schedule" },
+        );
+        const row = await app.execute(
+          `return document.querySelector('[data-slot="agent-schedule"]').innerText;`,
+        );
+        assert.match(row, /Hourly check/);
+        assert.match(
+          row,
+          new RegExp(
+            en.agent.schedules.summaryInterval.replace("{{minutes}}", "60"),
+          ),
+        );
+
+        await app.clickSelector('[data-slot="agent-schedule-new"]');
+        await app.fillSelector("#agent-schedule-name", "Weekday check");
+        await app.clickSelector(`#agent-schedule-profile-${profile.id}`);
+        // A webhook must be https; the form says so and does not save.
+        const saveDisabled = () =>
+          app.execute(
+            `return document.querySelector('[data-slot="agent-schedule-save"]').disabled;`,
+          );
+        await app.fillSelector(
+          "#agent-schedule-webhook",
+          "http://hooks.example.test/donut",
+        );
+        await app.waitFor(saveDisabled, { description: "save refused" });
+        await app.fillSelector(
+          "#agent-schedule-webhook",
+          "https://hooks.example.test/donut",
+        );
+        await app.waitFor(async () => !(await saveDisabled()), {
+          description: "save allowed",
+        });
+        await app.capture("agent-schedule-editor");
+        await app.clickSelector('[data-slot="agent-schedule-save"]');
+        await app.waitFor(
+          async () => (await calls("create_agent_schedule")).length === 1,
+          {
+            description: "the schedule sent to the cloud",
+          },
+        );
+        const [created] = await calls("create_agent_schedule");
+        assert.equal(created.schedule.name, "Weekday check");
+        assert.equal(created.schedule.recipeId, "r1");
+        assert.equal(created.schedule.target, "fleet");
+        assert.deepEqual(created.schedule.profileIds, [profile.id]);
+        assert.equal(created.schedule.cadence, "weekly");
+        assert.equal(
+          created.schedule.daysMask,
+          0b0011111,
+          "Monday to Friday by default",
+        );
+        assert.equal(created.schedule.runAtMinute, 9 * 60);
+        assert.ok(created.schedule.timezone);
+        assert.equal(created.schedule.enabled, true);
+        assert.equal(created.schedule.notifyEmail, true, "email on by default");
+        assert.equal(
+          created.schedule.webhookUrl,
+          "https://hooks.example.test/donut",
+        );
+        assert.equal(
+          created.schedule.intervalMinutes,
+          undefined,
+          "only the weekly fields",
+        );
+
+        // A recipe also runs once on demand: the profile and the place it runs
+        // go to the cloud, which replays it.
+        await stubCommand(app, "run_agent_recipe_now", { id: "replay-1" });
+        await app.clickSelector('[data-testid="agent-tab-recipes"]');
+        await app.clickSelector(
+          `[data-slot="agent-recipe-run"][aria-label="${en.agent.recipes.runAria.replace("{{name}}", "Check orders")}"]`,
+        );
+        await app.clickSelector('[data-slot="agent-recipe-run-profile"]');
+        await app.clickText("Scheduled Profile", { roles: ["option"] });
+        await app.clickSelector('[data-slot="agent-recipe-run-start"]');
+        await app.waitFor(
+          async () => (await calls("run_agent_recipe_now")).length === 1,
+          { description: "the run sent to the cloud" },
+        );
+        const [run] = await calls("run_agent_recipe_now");
+        assert.equal(run.recipeId, "r1");
+        assert.equal(run.profileId, profile.id);
+        assert.equal(run.target, "desktop", "a connected desktop runs it here");
+      },
+      { seedDownloadedBrowser: true },
+    );
+  },
+);
+
+test(
+  "a launcher seat opens the team's profiles but cannot change them, and an owner reads the team's log",
+  CLOUD_ONLY,
+  async () => {
+    await withApp(
+      "ui-team-roles",
+      async (app) => {
+        const profile = await createUiProfile(app, "Team Profile");
+        const group = await app.invoke("create_profile_group", {
+          name: "Shop",
+        });
+        const calls = (command) =>
+          app.execute(
+            "return (window.__donutStubbedCalls ?? []).filter((c) => c.command === arguments[0]).map((c) => c.payload);",
+            [command],
+          );
+        const user = (teamRole) => ({
+          logged_in_at: new Date().toISOString(),
+          user: {
+            id: "ui-team-seat",
+            email: "seat@example.test",
+            plan: "team",
+            planPeriod: "monthly",
+            subscriptionStatus: "active",
+            profileLimit: 50,
+            cloudProfilesUsed: 0,
+            proxyBandwidthLimitMb: 0,
+            proxyBandwidthUsedMb: 0,
+            proxyBandwidthExtraMb: 0,
+            isPrimaryDevice: true,
+            teamId: "team-1",
+            teamName: "Shop team",
+            teamRole,
+          },
+        });
+        const signIn = async (teamRole) => {
+          await stubCommand(app, "cloud_get_user", user(teamRole));
+          await app.invoke("plugin:event|emit", {
+            event: "cloud-auth-changed",
+            payload: null,
+          });
+        };
+        // A paid seat opens the one-time welcome; close it when it comes.
+        const closeWelcome = async () => {
+          const opened = await app
+            .waitFor(
+              () =>
+                app.execute(
+                  `return Boolean(document.querySelector('[role="dialog"]'));`,
+                ),
+              { timeoutMs: 4000, description: "the paid welcome" },
+            )
+            .catch(() => false);
+          if (!opened) return;
+          await dismissSurface(app);
+          await app.waitFor(
+            () =>
+              app.execute(`return !document.querySelector('[role="dialog"]');`),
+            { description: "the welcome closed" },
+          );
+        };
+
+        const launcherSeat = path.join(app.root, "donut", "e2e-team-read-only");
+        await writeFile(launcherSeat, "");
+        await signIn("launcher");
+        await closeWelcome();
+        await app.waitFor(
+          () =>
+            app.execute(
+              `return document.querySelector('[data-testid="team-read-only-notice"]')?.innerText ?? null;`,
+            ),
+          { description: "the launcher notice" },
+        );
+        assert.equal(
+          await app.execute(
+            `return Boolean(document.querySelector('[data-tip-anchor="new-profile"]'));`,
+          ),
+          false,
+          "a launcher is not offered a new profile",
+        );
+        await app.capture("team-launcher-profiles");
+
+        // The app refuses the edit itself; the profile stays as the team set it.
+        assert.match(
+          await app.invokeError("rename_profile", {
+            profileId: profile.id,
+            newName: "Renamed by a launcher",
+          }),
+          /"code":"TEAM_ROLE_READ_ONLY"/,
+        );
+        assert.match(
+          await app.invokeError("create_profile_group", { name: "Blocked" }),
+          /"code":"TEAM_ROLE_READ_ONLY"/,
+        );
+        const profiles = await app.invoke("list_browser_profiles");
+        assert.equal(
+          profiles.find((p) => p.id === profile.id)?.name,
+          "Team Profile",
+        );
+
+        await stubCommand(app, "list_team_activity", {
+          items: [
+            {
+              id: 3,
+              at: new Date().toISOString(),
+              actor: {
+                userId: "u-admin",
+                email: "admin@example.test",
+                kind: "desktop",
+              },
+              action: "profile.update",
+              target: { type: "profile", id: profile.id, name: null },
+              detail: { fields: ["tags", "dns_server"] },
+              source: "client",
+            },
+            {
+              id: 2,
+              at: new Date(Date.now() - 60_000).toISOString(),
+              actor: {
+                userId: "u-launcher",
+                email: "launcher@example.test",
+                kind: "desktop",
+              },
+              action: "profile.launch",
+              target: { type: "profile", id: profile.id, name: null },
+              detail: null,
+              source: "server",
+            },
+            {
+              id: 1,
+              at: new Date(Date.now() - 120_000).toISOString(),
+              actor: {
+                userId: "u-launcher",
+                email: "launcher@example.test",
+                kind: "web",
+              },
+              action: "member.join",
+              target: { type: "member", id: "u-launcher", name: null },
+              detail: null,
+              source: "server",
+            },
+          ],
+          nextCursor: null,
+        });
+        await rm(launcherSeat);
+        await stubCommand(app, "list_team_members", [
+          {
+            userId: "ui-team-seat",
+            email: "seat@example.test",
+            role: "owner",
+            groupAccess: null,
+          },
+          {
+            userId: "u-admin",
+            email: "admin@example.test",
+            role: "admin",
+            groupAccess: null,
+          },
+          {
+            userId: "u-launcher",
+            email: "launcher@example.test",
+            role: "launcher",
+            groupAccess: null,
+          },
+        ]);
+        await signIn("owner");
+        await closeWelcome();
+        await app.clickSelector(`[aria-label="${en.rail.account}"]`);
+        await app.clickText(en.account.tabs.teamActivity, { roles: ["tab"] });
+        await app.waitFor(
+          () =>
+            app.execute(
+              `return document.querySelectorAll('[data-testid="team-activity"] li').length === 3;`,
+            ),
+          { description: "the team's log" },
+        );
+        const rows = await app.execute(
+          `return [...document.querySelectorAll('[data-testid="team-activity"] li')].map((row) => row.innerText);`,
+        );
+        // An id in the log reads as the name this computer has for it.
+        assert.match(
+          rows[0],
+          new RegExp(
+            en.teamActivity.actions.profileUpdate.replace(
+              "{{target}}",
+              "Team Profile",
+            ),
+          ),
+        );
+        assert.match(rows[0], new RegExp(en.teamActivity.fields.dnsServer));
+        assert.match(rows[0], new RegExp(en.teamActivity.via.desktop));
+        assert.match(
+          rows[1],
+          new RegExp(
+            en.teamActivity.actions.profileLaunch.replace(
+              "{{target}}",
+              "Team Profile",
+            ),
+          ),
+        );
+        assert.match(rows[2], new RegExp(en.teamActivity.actions.memberJoin));
+        await app.capture("team-activity-log");
+
+        // A filter reads the log again, narrowed in the cloud.
+        await app.clickSelector('[data-testid="team-activity-member"]');
+        await app.clickText("launcher@example.test", { roles: ["option"] });
+        await app.waitFor(
+          async () =>
+            (await calls("list_team_activity")).some(
+              (payload) => payload?.filter?.actorUserId === "u-launcher",
+            ),
+          { description: "the log read for one member" },
+        );
+
+        // The export saves what the filters show.
+        await stubCommand(app, "plugin:dialog|save", "/tmp/team-activity.csv");
+        await stubCommand(app, "export_team_activity_csv", 3);
+        await app.clickSelector('[data-testid="team-activity-export"]');
+        await app.waitFor(
+          async () => (await calls("export_team_activity_csv")).length === 1,
+          { description: "the CSV export" },
+        );
+        const [exported] = await calls("export_team_activity_csv");
+        assert.equal(exported.path, "/tmp/team-activity.csv");
+        assert.equal(exported.filter.actorUserId, "u-launcher");
+
+        // Access by group: the owner limits the launcher to one group.
+        await app.clickText(en.account.tabs.teamAccess, { roles: ["tab"] });
+        await app.waitFor(
+          () =>
+            app.execute(
+              `return document.querySelectorAll('[data-testid="team-access"] li').length === 3;`,
+            ),
+          { description: "the team's members" },
+        );
+        assert.equal(
+          await app.execute(
+            `return document.querySelectorAll('[data-member="ui-team-seat"] button').length;`,
+          ),
+          0,
+          "the owner is never limited",
+        );
+        await stubCommand(app, "set_team_member_access", {
+          userId: "u-launcher",
+          email: "launcher@example.test",
+          role: "launcher",
+          groupAccess: [group.id],
+        });
+        await app.clickSelector('[data-member="u-launcher"] button');
+        await app.clickSelector('label[for="access-some-u-launcher"]');
+        await app.clickSelector(`#access-u-launcher-${group.id}`);
+        await app.capture("team-access-editor");
+        await app.clickSelector('[data-testid="team-access-save"]');
+        await app.waitFor(
+          async () => (await calls("set_team_member_access")).length === 1,
+          { description: "the access sent to the cloud" },
+        );
+        const [access] = await calls("set_team_member_access");
+        assert.deepEqual(access, { userId: "u-launcher", groups: [group.id] });
+        await app.waitFor(
+          async () =>
+            (
+              await app.execute(
+                `return document.querySelector('[data-member="u-launcher"]')?.innerText ?? "";`,
+              )
+            ).includes(en.teamAccess.someGroups_one.replace("{{count}}", "1")),
+          { description: "the new access on the row" },
+        );
+        await dismissSurface(app);
+      },
+      { seedDownloadedBrowser: true },
+    );
+  },
+);
+
+test(
   "the agent page guides setup, then shows agents, requests, notes, take-overs and the pause live",
   CLOUD_ONLY,
   async () => {
@@ -3178,6 +4776,7 @@ test(
               en.agent.tabs.profiles,
               en.agent.tabs.activity,
               en.agent.tabs.recipes,
+              en.agent.tabs.schedules,
             ],
           );
           assert.match(await painted("agent-quota"), /1[,.\s ]?760/);
@@ -3235,6 +4834,13 @@ test(
           const row = await waitPainted(`agent-profile-${profile.id}`);
           assert.match(row, /Agent UI Profile/);
           assert.match(row, /LOCATOR_NO_MATCH/);
+          assert.deepEqual(
+            await offCenterSelectionControls(
+              app,
+              '[data-testid="agent-profiles"]',
+            ),
+            [],
+          );
           await app.clickSelector(
             `[data-testid="agent-profile-${profile.id}"] [data-testid="agent-take-over"]`,
           );
@@ -3566,6 +5172,245 @@ test("the navigation names every destination in a wide window and folds to icons
   });
 });
 
+test("bulk edit opens from the action bar and changes only the ticked rows", async () => {
+  await withApp(
+    "ui-bulk-edit",
+    async (app) => {
+      for (const name of ["Batch One", "Batch Two"]) {
+        await createUiProfile(app, name);
+      }
+      await app.invoke("update_profile_note", {
+        profileId: (await app.invoke("list_browser_profiles"))[0].id,
+        note: "Keep me",
+      });
+      await app.waitForText("Batch Two");
+
+      await app.clickSelector(`[aria-label="${en.common.aria.selectAll}"]`);
+      await app.clickSelector(`[aria-label="${en.bulkEdit.action}"]`);
+      await app.waitForText(en.bulkEdit.title);
+
+      const applyDisabled = () =>
+        app.execute(
+          `return document.querySelector('[data-slot="bulk-edit-apply"]')?.disabled ?? null;`,
+        );
+      assert.equal(
+        await applyDisabled(),
+        true,
+        "nothing ticked, nothing to apply",
+      );
+      await app.waitForText(en.bulkEdit.apply_other.replace("{{count}}", "2"));
+
+      await app.clickSelector("#bulk-edit-tagsAdd");
+      await app.fillSelector('[data-field="tagsAdd"] input', "ui-bulk, shop");
+      assert.equal(await applyDisabled(), false);
+      await app.capture("bulk-edit-dialog");
+      await app.clickSelector('[data-slot="bulk-edit-apply"]');
+
+      await app.waitFor(
+        async () =>
+          (await app.invoke("list_browser_profiles")).every(
+            (profile) =>
+              profile.tags?.includes("ui-bulk") &&
+              profile.tags.includes("shop"),
+          ),
+        { description: "tags on every selected profile" },
+      );
+      await app.waitFor(
+        async () => !(await app.visibleTextIncludes(en.bulkEdit.title)),
+        { description: "dialog closing after apply" },
+      );
+      const notes = (await app.invoke("list_browser_profiles")).map(
+        (profile) => profile.note ?? null,
+      );
+      assert.ok(notes.includes("Keep me"), "an unticked field stays as it is");
+    },
+    { seedDownloadedBrowser: true },
+  );
+});
+
+test("templates save from the create dialog and the inspector, and several profiles go to one batch", async () => {
+  await withApp(
+    "ui-templates",
+    async (app) => {
+      await stubCommand(app, "is_geoip_database_available", true);
+      const base = await createUiProfile(app, "Template Base");
+      await app.waitForText(base.name);
+      const templates = () => app.invoke("list_profile_templates");
+
+      await openProfileCreation(app);
+      await app.fillSelector("#profile-name", "Batch");
+      await app.clickSelector('[data-slot="template-picker"]');
+      await app.waitForText(en.templates.empty);
+      await app.fillSelector('[data-slot="template-name"]', "Quick");
+      await app.clickSelector('[data-slot="template-save"]');
+      await app.waitFor(
+        async () => (await templates()).some((t) => t.name === "Quick"),
+        { description: "the template saved from the form" },
+      );
+      const [quick] = await templates();
+      assert.equal(quick.settings.name_prefix, "Batch");
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return document.querySelector('[data-slot="template-picker"]')?.innerText.includes("Quick") ?? false;`,
+          ),
+        { description: "the saved template shown as applied" },
+      );
+
+      // The count moves nothing: every footer control keeps its place and
+      // size, and the dialog keeps its height.
+      const single = await createFooterLayout(app);
+      await app.clickSelector('[data-slot="profile-count-more"]');
+      await app.clickSelector('[data-slot="profile-count-more"]');
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return document.querySelector('#profile-count')?.value === "3";`,
+          ),
+        { description: "three profiles" },
+      );
+      assert.deepEqual(await createFooterLayout(app), single);
+      // The names the batch gets show on the stepper, not in the form.
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return document.querySelector('[data-slot="profile-count-hint"]')?.innerText.includes(arguments[0]) ?? false;`,
+            [en.templates.namesHint.replaceAll("{{name}}", "Batch")],
+          ),
+        { description: "the names hint on the stepper" },
+      );
+      assert.equal(
+        await app.execute(
+          `return document.querySelector('#enable-password')?.disabled ?? null;`,
+        ),
+        true,
+        "a password is for one profile only",
+      );
+      await app.capture("templates-create-many");
+
+      await stubCommand(app, "bulk_create_profiles", {
+        created: [{ id: "a" }, { id: "b" }, { id: "c" }],
+        error: null,
+        cancelled: false,
+      });
+      await app.clickSelector('[data-slot="profile-create-submit"]');
+      await app.waitFor(
+        () => app.execute(`return !document.querySelector('#profile-name');`),
+        { description: "the dialog closing after the batch" },
+      );
+      const [call] = await app.execute(
+        `return (window.__donutStubbedCalls ?? []).filter((c) => c.command === "bulk_create_profiles");`,
+      );
+      assert.equal(call.payload.count, 3);
+      assert.equal(call.payload.name, "Batch");
+      assert.equal(call.payload.settings.name_prefix, "Batch");
+      await app.waitForText(
+        en.templates.created_other.replace("{{count}}", "3"),
+      );
+
+      await openProfileCreation(app);
+      await app.clickSelector('[data-slot="template-picker"]');
+      await app.clickSelector('[data-slot="template-option"]');
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return document.querySelector('#profile-name')?.value === "Batch";`,
+          ),
+        { description: "the template's name prefix filling an empty name" },
+      );
+      await app.clickSelector('[data-slot="template-picker"]');
+      // With the trash on, the template goes to the trash at once: no
+      // confirmation, and the toast offers Undo.
+      await app.clickSelector('[data-slot="template-delete"]');
+      await app.waitFor(async () => (await templates()).length === 0, {
+        description: "the template deleted from the picker",
+      });
+      await app.waitForText(en.trash.moved.replace("{{name}}", "Quick"));
+      assert.ok(
+        (await app.invoke("list_trashed_entities")).some(
+          (entry) => entry.kind === "template" && entry.id === quick.id,
+        ),
+        "the template waits in the trash",
+      );
+      await dismissSurface(app);
+      await dismissSurface(app);
+
+      await app.clickSelector(
+        `[data-slot="profile-inspect-trigger"][data-profile-id="${base.id}"]`,
+      );
+      await app.clickSelector('[data-slot="profile-info-more"]');
+      await app.clickSelector('[data-slot="profile-info-save-template"]');
+      await app.waitForText(en.templates.saveFromProfileDescription);
+      await app.clickSelector('[data-slot="save-template-confirm"]');
+      await app.waitFor(
+        async () => (await templates()).some((t) => t.name === "Template Base"),
+        { description: "the template saved from the inspector" },
+      );
+    },
+    { seedDownloadedBrowser: true },
+  );
+});
+
+test("the trash page lists deleted entities by kind and restores one", async () => {
+  await withApp("ui-trash-page", async (app) => {
+    const group = await app.invoke("create_profile_group", {
+      name: "Trash Page Group",
+    });
+    const proxy = await app.invoke("create_stored_proxy", {
+      name: "Trash Page Proxy",
+      proxySettings: {
+        proxy_type: "http",
+        host: "127.0.0.1",
+        port: 8091,
+        username: null,
+        password: null,
+      },
+    });
+    await app.invoke("trash_entity", { kind: "group", id: group.id });
+    await app.invoke("trash_entity", { kind: "proxy", id: proxy.id });
+    const hasRow = (id) =>
+      app.execute(
+        `return Boolean(document.querySelector('[data-table-row="' + arguments[0] + '"]'));`,
+        [id],
+      );
+
+    const modifier =
+      process.platform === "darwin" ? { meta: true } : { ctrl: true };
+    await app.pressShortcut({ ...modifier, shift: true, key: "t" });
+    await app.waitFor(() => hasRow(`group:${group.id}`), {
+      description: "the trashed group on the trash page",
+    });
+    assert.equal(await hasRow(`proxy:${proxy.id}`), true);
+
+    // A kind tab shows that kind only.
+    await app.clickSelector('[role="tab"][data-kind="proxy"]');
+    await app.waitFor(async () => !(await hasRow(`group:${group.id}`)), {
+      description: "the proxy tab hides the group",
+    });
+    assert.equal(await hasRow(`proxy:${proxy.id}`), true);
+
+    await app.clickSelector(
+      `[data-table-row="proxy:${proxy.id}"] [data-slot="trash-restore"]`,
+    );
+    await app.waitFor(
+      async () =>
+        (await app.invoke("get_stored_proxies")).some(
+          (item) => item.id === proxy.id,
+        ),
+      { description: "the proxy restored" },
+    );
+    // The emptied tab falls back to everything that is left.
+    await app.waitFor(() => hasRow(`group:${group.id}`), {
+      description: "the list falls back to all kinds",
+    });
+    assert.deepEqual(
+      (await app.invoke("list_trashed_entities")).map((entry) => entry.id),
+      [group.id],
+    );
+    await app.capture("trash-page");
+  });
+});
+
 test("the group bookmark editor adds, reorders and removes a row", async () => {
   await withApp("ui-group-bookmarks", async (app) => {
     const group = await app.invoke("create_profile_group", { name: "Client" });
@@ -3745,6 +5590,197 @@ test("importing from a link validates the input and names the extension before i
   });
 });
 
+/** Theme tokens as the browser computes them, so they compare with any
+ * element's computed colour whatever notation the theme uses. */
+async function themeTokenColors(app) {
+  return app.execute(`
+    const probe = document.createElement("span");
+    document.body.append(probe);
+    const resolve = (name) => {
+      probe.style.color = "var(" + name + ")";
+      return getComputedStyle(probe).color;
+    };
+    const tokens = {
+      muted: resolve("--muted-foreground"),
+      warning: resolve("--warning"),
+      warningText: resolve("--warning-text"),
+    };
+    probe.remove();
+    return tokens;
+  `);
+}
+
+test("entity pages teach when empty, label protocols neutrally, and reach row actions by keyboard", async () => {
+  await withApp("ui-entity-pages", async (app) => {
+    const emptyState = (entity) =>
+      `[data-slot="entity-empty-state"][data-entity="${entity}"]`;
+
+    // Nothing stored yet: the page says what a group is for, and its one
+    // action makes the first one.
+    await openGroups(app);
+    await app.waitForText(en.entities.empty.groups.title);
+    assert.ok(await app.visibleTextIncludes(en.entities.empty.groups.body));
+    await app.clickTextIn(emptyState("groups"), en.groupManagement.newGroup, {
+      roles: ["button"],
+    });
+    await app.waitForText(en.groups.createTitle);
+    await app.fillSelector("#group-name", "Empty state group");
+    await app.clickTextIn('[role="dialog"]', en.common.buttons.create, {
+      roles: ["button"],
+    });
+    await app.waitFor(
+      async () => (await tableRows(app, "groups")).length === 1,
+      { description: "the first group replaces the empty state" },
+    );
+    assert.equal(
+      await app.execute("return document.querySelector(arguments[0]);", [
+        emptyState("groups"),
+      ]),
+      null,
+    );
+
+    await app.clickSelector(`[aria-label="${en.rail.network}"]`);
+    await app.waitForText(en.entities.empty.proxies.title);
+    await app.clickTextIn(
+      emptyState("proxies"),
+      en.proxies.management.newProxy,
+      { roles: ["button"] },
+    );
+    await app.waitFor(
+      () =>
+        app.execute(`return Boolean(document.querySelector("#proxy-name"));`),
+      { description: "the proxy form from the empty state" },
+    );
+    await dismissSurface(app);
+    await app.waitFor(
+      async () =>
+        !(await app.execute(
+          `return Boolean(document.querySelector("#proxy-name"));`,
+        )),
+      { description: "the proxy form to close" },
+    );
+    await app.clickText(en.proxies.management.tabVpns, {
+      roles: ["tab"],
+      exact: false,
+    });
+    await app.waitForText(en.entities.empty.vpns.title);
+    await app.clickText(en.proxies.management.tabProxies, {
+      roles: ["tab"],
+      exact: false,
+    });
+
+    const plain = await app.invoke("create_stored_proxy", {
+      name: "Badge HTTP",
+      proxySettings: {
+        proxy_type: "http",
+        host: "127.0.0.1",
+        port: 9,
+        username: null,
+        password: null,
+      },
+    });
+    await app.invoke("create_stored_proxy", {
+      name: "Badge Shadowsocks",
+      proxySettings: {
+        proxy_type: "ss",
+        host: "127.0.0.1",
+        port: 8388,
+        username: "aes-256-gcm",
+        password: "badge-secret",
+      },
+    });
+    await app.waitFor(
+      async () => (await tableRows(app, "proxies")).length === 2,
+      { description: "the proxies replace the empty state" },
+    );
+
+    // A protocol is a fact, not a state: an unencrypted first hop keeps the
+    // same quiet badge as an encrypted one, and neither is warning-coloured.
+    const tokens = await themeTokenColors(app);
+    const badges = await app.execute(
+      `return [...document.querySelectorAll('[data-table-id="proxies"] [data-slot="kind-badge"]')]
+         .map((badge) => ({
+           text: badge.innerText.trim(),
+           hop: badge.dataset.firstHop,
+           color: getComputedStyle(badge).color,
+         }));`,
+    );
+    assert.deepEqual(badges.map((badge) => badge.hop).sort(), [
+      "encrypted",
+      "plaintext",
+    ]);
+    for (const badge of badges) {
+      assert.equal(badge.color, tokens.muted, `${badge.text} badge colour`);
+      assert.notEqual(badge.color, tokens.warning, `${badge.text} badge`);
+      assert.notEqual(badge.color, tokens.warningText, `${badge.text} badge`);
+    }
+
+    // Row actions wait for hover or focus, and the keyboard reaches them:
+    // End moves to the actions cell, F2 enters it. The driver's key events
+    // are synthetic, so Enter cannot press a native button, and the headless
+    // window never has focus, so focus styles never apply: the test checks
+    // focus, then presses the focused action.
+    await app.execute(`document.querySelector(arguments[0]).focus();`, [
+      `[data-table-id="proxies"] tr[data-table-row="${plain.id}"] [data-table-column="name"]`,
+    ]);
+    await app.pressShortcut({ key: "\uE010" });
+    await app.waitFor(
+      () =>
+        app.execute(
+          `return document.activeElement?.dataset?.tableColumn === "actions";`,
+        ),
+      { description: "the actions cell to take focus" },
+    );
+    await app.pressShortcut({ key: "\uE032" });
+    await app.waitFor(
+      async () =>
+        (await app.execute(
+          `const active = document.activeElement;
+           return active?.matches('[data-slot="row-actions"] button')
+             ? active.getAttribute("aria-label")
+             : null;`,
+        )) ===
+        en.tables.rowAction
+          .replace("{{action}}", en.proxies.management.editProxy)
+          .replace("{{name}}", plain.name),
+      { description: "the edit action focused" },
+    );
+    await app.execute(`document.activeElement.click();`);
+    await app.waitFor(
+      async () =>
+        (await app.execute(
+          `return document.querySelector("#proxy-name")?.value ?? null;`,
+        )) === plain.name,
+      { description: "the edit form opened from the keyboard" },
+    );
+    await dismissSurface(app);
+
+    await app.invoke("create_vpn_config_manual", {
+      name: "Badge VPN",
+      vpnType: "WireGuard",
+      configData: wireGuardFixture(),
+    });
+    // The VPN form announces the change itself; the command does not.
+    await app.invoke("plugin:event|emit", {
+      event: "vpn-configs-changed",
+      payload: null,
+    });
+    await app.clickText(en.proxies.management.tabVpns, {
+      roles: ["tab"],
+      exact: false,
+    });
+    await app.waitFor(async () => (await tableRows(app, "vpns")).length === 1, {
+      description: "the VPN replaces the empty state",
+    });
+    assert.equal(
+      await app.execute(
+        `return getComputedStyle(document.querySelector('[data-table-id="vpns"] [data-slot="kind-badge"]')).color;`,
+      ),
+      tokens.muted,
+    );
+  });
+});
+
 test("a checked proxy shows its UDP verdict in the table and its check trail in the details", async () => {
   await withApp("ui-proxy-check-trail", async (app) => {
     const proxy = await app.invoke("create_stored_proxy", {
@@ -3783,6 +5819,21 @@ test("a checked proxy shows its UDP verdict in the table and its check trail in 
         )
       ).toLowerCase(),
       en.proxyCheck.udpNo.toLowerCase(),
+    );
+    // A proxy without UDP is a property, not a fault, so it is not painted
+    // as a warning.
+    const udpTokens = await themeTokenColors(app);
+    const udpColor = await app.execute(
+      `return getComputedStyle(document.querySelector('[data-slot="proxy-udp-verdict"]')).color;`,
+    );
+    assert.notEqual(udpColor, udpTokens.warning);
+    assert.notEqual(udpColor, udpTokens.warningText);
+    // The status pill states the failed check in words, beside the flag slot.
+    assert.equal(
+      await app.execute(
+        `return document.querySelector('[data-table-id="proxies"] [data-slot="check-pill"]')?.dataset?.checkState ?? null;`,
+      ),
+      "failed",
     );
 
     await app.clickSelector(`[aria-label="${en.appFeedback.routeDetails}"]`);
@@ -4112,27 +6163,98 @@ async function openTipsFromRail(app) {
   await app.clickSelector('[data-slot="rail-open-tips"]');
   await app.waitFor(
     () =>
-      app.execute(
-        `return document.querySelector(arguments[0])?.dataset.mode === "browse";`,
-        [TIPS_DIALOG],
-      ),
+      app.execute(`return Boolean(document.querySelector(arguments[0]));`, [
+        TIPS_DIALOG,
+      ]),
     { description: "the tips catalog" },
+  );
+}
+
+const COACH_MARK = '[data-slot="tip-coach-mark"]';
+
+/** The tip the coach mark shows, once it is placed and visible. */
+async function coachMarkTipId(app) {
+  return app.execute(
+    `const card = document.querySelector(arguments[0]);
+     if (!card || card.dataset.state !== "shown") return null;
+     const shell = card.parentElement;
+     return getComputedStyle(shell).visibility === "visible" ? card.dataset.tipId : null;`,
+    [COACH_MARK],
+  );
+}
+
+async function waitForCoachMark(app, id) {
+  await app.waitFor(async () => (await coachMarkTipId(app)) === id, {
+    description: `the ${id} coach mark`,
+    timeoutMs: 30_000,
+  });
+}
+
+async function waitForNoCoachMark(app) {
+  await app.waitFor(
+    () =>
+      app.execute(`return !document.querySelector(arguments[0]);`, [
+        COACH_MARK,
+      ]),
+    { description: "the coach mark gone" },
+  );
+}
+
+/**
+ * Where the coach mark points: its anchor id, the anchor's box, the card's
+ * box, the side the card took, and whether the anchor is described by it.
+ */
+async function coachMarkGeometry(app) {
+  return app.execute(
+    `const card = document.querySelector(arguments[0]);
+     if (!card) return null;
+     const id = card.dataset.anchor;
+     const anchor = [...document.querySelectorAll('[data-tip-anchor="' + id + '"]')]
+       .find((node) => (node.getAttribute("aria-describedby") ?? "").split(" ").includes(card.getAttribute("aria-describedby")));
+     const box = (node) => { const r = node.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }; };
+     return {
+       anchor: id,
+       side: card.dataset.side ?? null,
+       described: Boolean(anchor),
+       anchorBox: anchor ? box(anchor) : null,
+       cardBox: box(card),
+       beacon: Boolean(document.querySelector('[data-slot="coach-mark-beacon"]')),
+       viewport: { width: innerWidth, height: innerHeight },
+     };`,
+    [COACH_MARK],
   );
 }
 
 test("tips open from the rail, walk the catalog, and deep-link into the feature", async () => {
   await withApp("ui-tips-browse", async (app) => {
     await openTipsFromRail(app);
-    assert.ok(await app.visibleTextIncludes(en.tips.items.dnsBlocklist.title));
+    assert.ok(
+      await app.visibleTextIncludes(en.tips.items.commandPalette.title),
+    );
 
-    // Every essential is listed; a plan tip needs a plan, and there is none.
+    // Every essential is listed, in its section; a plan tip needs a plan,
+    // and there is none.
     const listed = await app.execute(
       `return [...document.querySelectorAll('[data-slot="tips-list-item"]')].map((node) => node.dataset.tipId);`,
     );
-    assert.ok(listed.includes("dnsBlocklist"));
-    assert.ok(listed.includes("trash"));
+    for (const id of ["dnsBlocklist", "trash", "vpn", "searchSyntax", "totp"]) {
+      assert.ok(listed.includes(id), `${id} is listed`);
+    }
     assert.ok(!listed.includes("cookieBot"));
+    assert.ok(!listed.includes("synchronizer"));
     assert.ok(!listed.includes("team"));
+    assert.equal(
+      await app.execute(
+        `return document.querySelectorAll('[data-slot="tips-section"]').length;`,
+      ),
+      4,
+      "four sections, and no plan section without a plan",
+    );
+    assert.equal(
+      await app.execute(`return document.activeElement?.dataset.slot;`),
+      "tip-advance",
+      "Enter walks on from the first moment",
+    );
 
     // The drawing is live SVG in the scene panel, not a picture.
     assert.equal(
@@ -4146,11 +6268,11 @@ test("tips open from the rail, walk the catalog, and deep-link into the feature"
     await app.waitFor(
       () =>
         app.execute(
-          `return document.querySelector('[data-slot="tip-detail"]')?.dataset.tipId === "proxyCheck";`,
+          `return document.querySelector('[data-slot="tip-detail"]')?.dataset.tipId === "searchSyntax";`,
         ),
       { description: "the second tip" },
     );
-    assert.ok(await app.visibleTextIncludes(en.tips.items.proxyCheck.title));
+    assert.ok(await app.visibleTextIncludes(en.tips.items.searchSyntax.title));
 
     // Picking from the catalog moves the sliding indicator onto that entry.
     await app.clickSelector(
@@ -4173,19 +6295,46 @@ test("tips open from the rail, walk the catalog, and deep-link into the feature"
     );
     await app.capture("tips-browse");
 
-    // Seen tips are remembered, so the automatic flow never repeats them.
+    // The arrows page through the catalog from the keyboard.
+    await app.pressShortcut({ key: "ArrowRight" });
+    await app.waitFor(
+      () =>
+        app.execute(
+          `return document.querySelector('[data-slot="tip-detail"]')?.dataset.tipId === "defaultBrowser";`,
+        ),
+      // The self-hosted sync tip leads to the Account page, which the fork
+      // leaves out.
+      { description: "the tip after the trash tip" },
+    );
+    await app.pressShortcut({ key: "ArrowLeft" });
+    await app.waitFor(
+      () =>
+        app.execute(
+          `return document.querySelector('[data-slot="tip-detail"]')?.dataset.tipId === "trash";`,
+        ),
+      { description: "back to the trash tip" },
+    );
+
+    // Read tips are remembered, so the inline tip never repeats them, and
+    // the catalog marks only the unread ones.
     await app.waitFor(
       async () => {
         const state = await app.invoke("get_tips_state");
-        return ["dnsBlocklist", "proxyCheck", "trash"].every((id) =>
+        return ["commandPalette", "searchSyntax", "trash"].every((id) =>
           state.seen.includes(id),
         );
       },
       { description: "seen tips persisted" },
     );
+    assert.deepEqual(
+      await app.execute(
+        `return ["commandPalette", "vpn"].map((id) => Boolean(document.querySelector('[data-slot="tips-list-item"][data-tip-id="' + id + '"] [data-slot="tips-unread-dot"]')));`,
+      ),
+      [false, true],
+    );
 
     // The action lands inside the feature: the DNS tip opens settings on
-    // its DNS section, and the dialog is gone by then.
+    // its DNS section, and the dialog leaves after its short exit.
     await app.clickSelector(
       '[data-slot="tips-list-item"][data-tip-id="dnsBlocklist"]',
     );
@@ -4197,12 +6346,12 @@ test("tips open from the rail, walk the catalog, and deep-link into the feature"
         ),
       { description: "the DNS settings section focused" },
     );
-    assert.equal(
-      await app.execute(
-        `return Boolean(document.querySelector(arguments[0]));`,
-        [TIPS_DIALOG],
-      ),
-      false,
+    await app.waitFor(
+      () =>
+        app.execute(`return !document.querySelector(arguments[0]);`, [
+          TIPS_DIALOG,
+        ]),
+      { timeoutMs: 2000, description: "the tips dialog to leave" },
     );
 
     // The chord opens the catalog too, and the switch turns the automatic
@@ -4214,10 +6363,9 @@ test("tips open from the rail, walk the catalog, and deep-link into the feature"
     });
     await app.waitFor(
       () =>
-        app.execute(
-          `return document.querySelector(arguments[0])?.dataset.mode === "browse";`,
-          [TIPS_DIALOG],
-        ),
+        app.execute(`return Boolean(document.querySelector(arguments[0]));`, [
+          TIPS_DIALOG,
+        ]),
       { description: "the tips catalog from the keyboard" },
     );
     assert.equal(
@@ -4243,14 +6391,14 @@ test("tips open from the rail, walk the catalog, and deep-link into the feature"
   });
 });
 
-test("one tip for an unused feature opens by itself as a single card, then waits 2 to 5 days", async () => {
-  // Every tip but two is seen already, and the only profile blocks ads, so
-  // the DNS tip is in use and the trash tip is the one the automatic flow
-  // may open. The flow is switched on only after that profile exists.
+test("one tip a day points at an unused feature on the Profiles page, and a dismissed one waits for tomorrow", async () => {
+  // Every tip but two is read already, and the only profile blocks ads, so
+  // the DNS tip is in use and the trash tip is the one the page may show.
+  // Tips are switched on only after that profile exists.
   const unseen = ["dnsBlocklist", "trash"];
   const seen = Object.keys(en.tips.items).filter((id) => !unseen.includes(id));
   await withApp(
-    "ui-tips-auto",
+    "ui-tips-inline",
     async (app) => {
       const profile = await createUiProfile(app, "Tips Blocker");
       await app.invoke("update_profile_dns_blocklist", {
@@ -4260,74 +6408,77 @@ test("one tip for an unused feature opens by itself as a single card, then waits
       await app.invoke("set_tips_auto_show", { enabled: true });
       await app.restart();
 
-      await app.waitFor(
-        () =>
-          app.execute(
-            `return document.querySelector(arguments[0])?.dataset.mode === "single";`,
-            [TIPS_DIALOG],
-          ),
-        { description: "the automatic tip", timeoutMs: 30_000 },
-      );
-      assert.equal(
-        await app.execute(
-          `return document.querySelector('[data-slot="tip-detail"]')?.dataset.tipId;`,
-        ),
-        "trash",
-        "the DNS tip is skipped because a profile already blocks ads",
-      );
+      await waitForCoachMark(app, "trash");
       assert.ok(await app.visibleTextIncludes(en.tips.items.trash.title));
-      assert.deepEqual(
+      assert.equal(
         await app.execute(
-          `return ['tips-list-item', 'tip-previous', 'tip-next'].map((slot) => document.querySelectorAll('[data-slot="' + slot + '"]').length);`,
+          `return Boolean(document.querySelector('[role="dialog"], [role="alertdialog"]'));`,
         ),
-        [0, 0, 0],
-        "one tip at a time: no catalog and no pager",
+        false,
+        "the tip is a coach mark on the page, not a dialog",
       );
       assert.equal(
         await app.execute(
-          `return document.querySelector('[data-slot="tip-advance"]')?.textContent.trim();`,
+          `return document.querySelector(arguments[0]).contains(document.activeElement);`,
+          [COACH_MARK],
         ),
-        en.tips.done,
+        false,
+        "the tip never takes the focus",
       );
-      await app.capture("tips-auto");
+      // The trash lives in the rail's More menu, so the mark points at the
+      // More button, with its card to the right of the rail.
+      const geometry = await coachMarkGeometry(app);
+      assert.equal(geometry.anchor, "rail-more");
+      assert.equal(geometry.side, "right");
+      assert.ok(geometry.described, "the anchor is described by the tip");
+      assert.ok(geometry.beacon, "a beacon marks the feature");
+      assert.ok(
+        geometry.cardBox.left >= geometry.anchorBox.right,
+        `the card sits beside its anchor: ${JSON.stringify(geometry)}`,
+      );
+      assert.ok(
+        geometry.cardBox.top >= 0 &&
+          geometry.cardBox.bottom <= geometry.viewport.height,
+        "the card stays on screen",
+      );
+      const pinned = await app.invoke("get_tips_state");
+      assert.equal(pinned.inline_tip, "trash");
+      assert.equal(pinned.auto_due, false);
+      assert.ok(
+        !pinned.seen.includes("trash") && !pinned.seen.includes("dnsBlocklist"),
+        "showing a tip is not reading it, and the skipped tip stays unread",
+      );
+      await app.capture("tips-coach-mark");
 
+      // The day's tip comes back after a restart until it is closed.
+      await app.restart();
+      await waitForCoachMark(app, "trash");
+
+      await app.clickSelector('[data-slot="tip-coach-dismiss"]');
+      await waitForNoCoachMark(app);
       const state = await app.waitFor(
         async () => {
           const current = await app.invoke("get_tips_state");
-          return current.seen.includes("trash") && current.auto_due === false
-            ? current
-            : null;
+          return current.seen.includes("trash") ? current : null;
         },
-        { description: "the automatic tip recorded" },
+        { description: "the dismissed tip recorded" },
       );
+      assert.equal(state.inline_tip, null);
+      assert.equal(state.auto_due, false);
+      const wait = state.next_auto_show_at - Math.floor(Date.now() / 1000);
       assert.ok(
-        !state.seen.includes("dnsBlocklist"),
-        "the skipped tip stays unseen",
-      );
-      const gap = state.next_auto_show_at - state.last_auto_shown_at;
-      assert.ok(
-        gap >= 2 * 24 * 60 * 60 && gap <= 5 * 24 * 60 * 60,
-        `the next automatic tip waits 2 to 5 days, not ${gap} seconds`,
+        wait >= 12 * 60 * 60 - 60 && wait <= 24 * 60 * 60,
+        `the next tip waits for the next day, not ${wait} seconds`,
       );
 
-      // Done closes the card instead of walking to another tip.
-      await app.clickSelector('[data-slot="tip-advance"]');
-      await app.waitFor(
-        () =>
-          app.execute(`return !document.querySelector(arguments[0]);`, [
-            TIPS_DIALOG,
-          ]),
-        { description: "the dialog closed" },
-      );
-
-      // A restart inside the gap shows nothing, and keeps the same wait.
+      // A restart the same day shows nothing, and keeps the same wait.
       await app.restart();
       await app.waitForText("Tips Blocker");
-      await new Promise((resolve) => setTimeout(resolve, 4_500));
+      await new Promise((resolve) => setTimeout(resolve, 6_000));
       assert.equal(
         await app.execute(
           `return Boolean(document.querySelector(arguments[0]));`,
-          [TIPS_DIALOG],
+          [COACH_MARK],
         ),
         false,
       );
@@ -4338,6 +6489,375 @@ test("one tip for an unused feature opens by itself as a single card, then waits
     },
     { settings: { tips_seen: seen } },
   );
+});
+
+/** Settings where only `id` is unread, and it is the tip on the page. */
+function pinnedTip(id) {
+  return {
+    tips_seen: Object.keys(en.tips.items).filter((other) => other !== id),
+    tips_auto_show: true,
+    tips_inline: id,
+  };
+}
+
+test("the coach mark's action opens its feature and closes the tip as read", async () => {
+  await withApp(
+    "ui-tips-inline-action",
+    async (app) => {
+      await createUiProfile(app, "Tips Action");
+      await app.waitForText("Tips Action");
+      await waitForCoachMark(app, "trash");
+      assert.ok(await app.visibleTextIncludes(en.tips.items.trash.title));
+
+      await app.clickSelector('[data-slot="tip-coach-action"]');
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return Boolean(document.querySelector('[data-slot="trash-page"]'));`,
+          ),
+        { description: "the trash page" },
+      );
+      const done = await app.waitFor(
+        async () => {
+          const current = await app.invoke("get_tips_state");
+          return current.seen.includes("trash") ? current : null;
+        },
+        { description: "the acted-on tip recorded" },
+      );
+      assert.equal(done.inline_tip, null);
+      assert.equal(done.auto_due, false);
+    },
+    { settings: pinnedTip("trash") },
+  );
+});
+
+test("turning tips off from the coach mark takes it away, unread, for the day", async () => {
+  await withApp(
+    "ui-tips-inline-off",
+    async (app) => {
+      await createUiProfile(app, "Tips Off");
+      await app.waitForText("Tips Off");
+      await waitForCoachMark(app, "vpn");
+      assert.equal((await coachMarkGeometry(app)).anchor, "rail-proxies");
+
+      await app.clickSelector('[data-slot="tip-coach-menu"]');
+      await app.clickSelector('[data-slot="tip-coach-off"]');
+      await waitForNoCoachMark(app);
+      assert.ok(await app.visibleTextIncludes(en.tips.coach.offTitle));
+      const off = await app.invoke("get_tips_state");
+      assert.equal(off.auto_show, false);
+      assert.equal(off.inline_tip, null);
+      assert.ok(!off.seen.includes("vpn"), "turned off is not read");
+      const wait = off.next_auto_show_at - Math.floor(Date.now() / 1000);
+      assert.ok(
+        wait >= 12 * 60 * 60 - 60 && wait <= 24 * 60 * 60,
+        `the removed tip counts as the day's tip, not ${wait} seconds`,
+      );
+
+      // Back on from the catalog, nothing new appears the same day.
+      await app.pressShortcut({
+        ...(process.platform === "darwin" ? { meta: true } : { ctrl: true }),
+        shift: true,
+        key: "h",
+      });
+      await app.waitFor(
+        () =>
+          app.execute(`return Boolean(document.querySelector(arguments[0]));`, [
+            TIPS_DIALOG,
+          ]),
+        { description: "the tips catalog" },
+      );
+      await app.clickSelector('[data-slot="tips-auto-show"]');
+      await app.waitFor(
+        async () => (await app.invoke("get_tips_state")).auto_show === true,
+        { description: "tips back on" },
+      );
+      await dismissSurface(app);
+      await new Promise((resolve) => setTimeout(resolve, 6_000));
+      assert.equal(
+        await app.execute(
+          `return Boolean(document.querySelector(arguments[0]));`,
+          [COACH_MARK],
+        ),
+        false,
+      );
+      assert.equal((await app.invoke("get_tips_state")).auto_due, false);
+    },
+    { settings: pinnedTip("vpn") },
+  );
+});
+
+test("a tip for a feature on the page points at it, and using the feature or Escape closes it as read", async () => {
+  await withApp(
+    "ui-tips-coach-anchor",
+    async (app) => {
+      await createUiProfile(app, "Tips Anchor");
+      await app.waitForText("Tips Anchor");
+      await waitForCoachMark(app, "dnsBlocklist");
+      // DNS blocking is a column on this page: the mark points at its header,
+      // under it, and the action still goes to the DNS settings.
+      const geometry = await coachMarkGeometry(app);
+      assert.equal(geometry.anchor, "column-dns");
+      assert.equal(geometry.side, "bottom");
+      assert.ok(geometry.cardBox.top >= geometry.anchorBox.bottom);
+      assert.ok(
+        await app.execute(
+          `return Boolean(document.querySelector('[data-slot="tip-coach-action"]'));`,
+        ),
+      );
+      await app.capture("tips-coach-mark-column");
+
+      // It follows its anchor: a narrower window moves the card with it.
+      const before = geometry.cardBox.left;
+      const rect = await app.session.command("GET", "/window/rect");
+      await app.session.command("POST", "/window/rect", {
+        width: rect.width + 120,
+        height: rect.height,
+      });
+      await app.waitFor(
+        async () => {
+          const moved = await coachMarkGeometry(app);
+          return (
+            moved?.anchor === "column-dns" &&
+            Math.abs(moved.cardBox.left - before) > 4 &&
+            moved.cardBox.top >= moved.anchorBox.bottom
+          );
+        },
+        { description: "the card following its anchor" },
+      );
+      await app.session.command("POST", "/window/rect", rect);
+
+      // Escape closes it as read, like Got it.
+      await app.pressShortcut({ key: "Escape" });
+      await waitForNoCoachMark(app);
+      const closed = await app.waitFor(
+        async () => {
+          const current = await app.invoke("get_tips_state");
+          return current.seen.includes("dnsBlocklist") ? current : null;
+        },
+        { description: "the tip closed by Escape recorded" },
+      );
+      assert.equal(closed.inline_tip, null);
+    },
+    { settings: pinnedTip("dnsBlocklist") },
+  );
+});
+
+test("clicking the feature a coach mark points at closes the tip as read", async () => {
+  await withApp(
+    "ui-tips-coach-activate",
+    async (app) => {
+      await createUiProfile(app, "Tips Activate");
+      await app.waitForText("Tips Activate");
+      await waitForCoachMark(app, "searchSyntax");
+      assert.equal((await coachMarkGeometry(app)).anchor, "profile-search");
+      await app.clickSelector('[data-tip-anchor="profile-search"] input');
+      await waitForNoCoachMark(app);
+      await app.waitFor(
+        async () =>
+          (await app.invoke("get_tips_state")).seen.includes("searchSyntax"),
+        { description: "the used feature closes its tip as read" },
+      );
+    },
+    { settings: pinnedTip("searchSyntax") },
+  );
+});
+
+const PROFILE_SCROLL = '[data-table-id="profiles"] .scroll-fade';
+
+/**
+ * The coach mark on the profile table: whether it shows, the anchor it
+ * describes (with its row), its ring, its card and the table's scroll box.
+ */
+async function tableCoachMark(app) {
+  return app.execute(
+    `const card = document.querySelector(arguments[0]);
+     const scroll = document.querySelector(arguments[1]);
+     if (!card || !scroll) return null;
+     const body = card.getAttribute("aria-describedby");
+     const anchor = [...document.querySelectorAll("[data-tip-anchor]")]
+       .find((node) => (node.getAttribute("aria-describedby") ?? "").split(" ").includes(body));
+     const ring = document.querySelector('[data-slot="coach-mark-ring"] rect');
+     const box = (node) => { const r = node.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom }; };
+     return {
+       shown: card.dataset.state === "shown" &&
+         getComputedStyle(card.parentElement).visibility === "visible",
+       anchor: card.dataset.anchor,
+       profileId: anchor?.dataset.profileId ?? null,
+       anchorBox: anchor ? box(anchor) : null,
+       ringBox: ring ? box(ring) : null,
+       cardBox: box(card),
+       tableBox: box(scroll),
+       firstRow: scroll.querySelector("tr[data-table-row]")?.dataset.tableRow ?? null,
+     };`,
+    [COACH_MARK, PROFILE_SCROLL],
+  );
+}
+
+/** The ring sits 4px around the anchor it describes, and the card is beside it. */
+function markHugsAnchor(mark) {
+  if (!mark?.shown || !mark.anchorBox || !mark.ringBox) return false;
+  const near = (a, b) => Math.abs(a - b) <= 3;
+  const { anchorBox: anchor, ringBox: ring, cardBox: card } = mark;
+  const covers =
+    card.left < anchor.right &&
+    anchor.left < card.right &&
+    card.top < anchor.bottom &&
+    anchor.top < card.bottom;
+  return (
+    near(ring.left, anchor.left - 4) &&
+    near(ring.top, anchor.top - 4) &&
+    near(ring.right, anchor.right + 4) &&
+    near(ring.bottom, anchor.bottom + 4) &&
+    !covers
+  );
+}
+
+/** A row's info button below the sticky header, inside the table's box. */
+function rowInView(mark) {
+  return (
+    mark.anchor === "row-inspect" &&
+    mark.anchorBox.top >= mark.tableBox.top + 32 &&
+    mark.anchorBox.bottom <= mark.tableBox.bottom
+  );
+}
+
+async function scrollProfileTable(app, top) {
+  await app.execute(
+    `const scroll = document.querySelector(arguments[0]);
+     scroll.scrollTop = arguments[1] === "end" ? scroll.scrollHeight : arguments[1];`,
+    [PROFILE_SCROLL, top],
+  );
+}
+
+test("a coach mark on a table row follows the scroll and moves to a row in view when its row leaves", async () => {
+  await withApp(
+    "ui-tips-coach-scroll",
+    async (app) => {
+      for (let i = 0; i < 30; i++)
+        await createUiProfile(app, `Scroll ${String(i + 1).padStart(2, "0")}`);
+      // A fresh start puts the table at its top and the mark on no row yet.
+      await app.restart();
+      await app.session.command("POST", "/window/rect", {
+        width: 1280,
+        height: 720,
+      });
+      await app.waitFor(
+        () =>
+          app.execute(
+            `const scroll = document.querySelector(arguments[0]);
+             return scroll?.querySelector("table")?.getAttribute("aria-rowcount") === "31" &&
+               scroll.scrollTop === 0 &&
+               scroll.scrollHeight > scroll.clientHeight + 400;`,
+            [PROFILE_SCROLL],
+          ),
+        { description: "thirty rows that scroll" },
+      );
+      await waitForCoachMark(app, "totp");
+
+      // The 2FA tip points at the first row's info button.
+      const first = await app.waitFor(
+        async () => {
+          const mark = await tableCoachMark(app);
+          return markHugsAnchor(mark) && rowInView(mark) ? mark : null;
+        },
+        { description: "the mark on a row's info button" },
+      );
+      assert.equal(first.profileId, first.firstRow);
+
+      // Its row scrolls away under the header: the mark moves to a row that
+      // shows, and never stays on the empty spot.
+      await scrollProfileTable(app, 360);
+      const moved = await app.waitFor(
+        async () => {
+          const mark = await tableCoachMark(app);
+          return markHugsAnchor(mark) &&
+            rowInView(mark) &&
+            mark.profileId !== first.profileId
+            ? mark
+            : null;
+        },
+        { description: "the mark on a row still in view" },
+      );
+
+      // A short scroll keeps that row in view: the mark follows it.
+      await scrollProfileTable(app, 336);
+      await app.waitFor(
+        async () => {
+          const mark = await tableCoachMark(app);
+          return (
+            markHugsAnchor(mark) &&
+            rowInView(mark) &&
+            mark.profileId === moved.profileId &&
+            Math.abs(mark.anchorBox.top - (moved.anchorBox.top + 24)) <= 2
+          );
+        },
+        { description: "the mark following its row" },
+      );
+
+      // To the end and back to the top: each time the followed row leaves,
+      // the mark lands on a row in view.
+      for (const top of ["end", 0]) {
+        const before = (await tableCoachMark(app)).profileId;
+        await scrollProfileTable(app, top);
+        await app.waitFor(
+          async () => {
+            const mark = await tableCoachMark(app);
+            return (
+              markHugsAnchor(mark) &&
+              rowInView(mark) &&
+              mark.profileId !== before
+            );
+          },
+          { description: `the mark in view after scrolling to ${top}` },
+        );
+      }
+    },
+    { settings: pinnedTip("totp") },
+  );
+});
+
+test("Show me in the catalog points the tip at its feature without spending the day's tip", async () => {
+  await withApp("ui-tips-show-me", async (app) => {
+    await createUiProfile(app, "Tips Show Me");
+    await app.waitForText("Tips Show Me");
+    await openTipsFromRail(app);
+    await app.clickSelector(
+      '[data-slot="tips-list-item"][data-tip-id="proxyCheck"]',
+    );
+    await app.clickSelector('[data-slot="tip-show-me"]');
+    await app.waitFor(
+      () =>
+        app.execute(`return !document.querySelector(arguments[0]);`, [
+          TIPS_DIALOG,
+        ]),
+      { description: "the catalog closed" },
+    );
+    await waitForCoachMark(app, "proxyCheck");
+    const geometry = await coachMarkGeometry(app);
+    assert.equal(geometry.anchor, "column-proxy");
+    assert.equal(
+      await app.execute(
+        `return document.querySelector(arguments[0]).dataset.preview;`,
+        [COACH_MARK],
+      ),
+      "true",
+    );
+    assert.equal(
+      await app.execute(
+        `return Boolean(document.querySelector('[data-slot="tip-coach-off"]'));`,
+      ),
+      false,
+      "a tip asked for is not the place to turn tips off",
+    );
+    const before = await app.invoke("get_tips_state");
+    await app.capture("tips-show-me");
+    await app.clickSelector('[data-slot="tip-coach-dismiss"]');
+    await waitForNoCoachMark(app);
+    const after = await app.invoke("get_tips_state");
+    assert.equal(after.inline_tip, before.inline_tip);
+    assert.equal(after.next_auto_show_at, before.next_auto_show_at);
+  });
 });
 
 test(
@@ -4390,6 +6910,7 @@ test(
             "cloudBackup",
             "cookieBot",
             "crossOs",
+            "synchronizer",
             "automation",
             "agent",
             "remoteControl",
@@ -4409,11 +6930,13 @@ test(
             ),
           { description: "the Cookie Bot tip" },
         );
-        assert.equal(
-          await app.execute(
-            `return Boolean(document.querySelector('[data-slot="paid-welcome"]'));`,
-          ),
-          false,
+        // The welcome leaves after its short exit, under the catalog.
+        await app.waitFor(
+          () =>
+            app.execute(
+              `return !document.querySelector('[data-slot="paid-welcome"]');`,
+            ),
+          { timeoutMs: 2000, description: "the paid welcome to leave" },
         );
         const listed = await app.execute(
           `return [...document.querySelectorAll('[data-slot="tips-list-item"]')].map((node) => node.dataset.tipId);`,
@@ -4456,6 +6979,311 @@ test(
     });
   },
 );
+
+test("profile statuses start from a common set and are picked from the table", async () => {
+  await withApp("ui-profile-statuses", async (app) => {
+    const profile = await createUiProfile(app, "Profile With Status");
+    await app.waitForText(profile.name);
+    const cell = '[data-slot="profile-status-cell"]';
+    const statusOf = async () =>
+      (await app.invoke("list_browser_profiles")).find(
+        (item) => item.id === profile.id,
+      ).status_id ?? null;
+
+    await app.clickSelector(cell);
+    await app.clickText(en.profileStatuses.manage, { roles: ["option"] });
+    await app.waitForText(en.profileStatuses.empty);
+    await app.capture("profile-statuses-empty");
+    await app.clickText(en.profileStatuses.addStarter, { roles: ["button"] });
+    await app.waitFor(
+      async () => (await app.invoke("list_profile_statuses")).length === 4,
+      { description: "the starter statuses" },
+    );
+    assert.deepEqual(
+      (await app.invoke("list_profile_statuses")).map((item) => item.name),
+      [
+        en.profileStatuses.starter.active,
+        en.profileStatuses.starter.warming,
+        en.profileStatuses.starter.review,
+        en.profileStatuses.starter.banned,
+      ],
+    );
+    await app.capture("profile-statuses-starter");
+    await dismissSurface(app);
+
+    await app.clickSelector(cell);
+    await app.clickText(en.profileStatuses.starter.banned, {
+      exact: false,
+      roles: ["option"],
+    });
+    const banned = (await app.invoke("list_profile_statuses")).find(
+      (item) => item.name === en.profileStatuses.starter.banned,
+    );
+    await app.waitFor(async () => (await statusOf()) === banned.id, {
+      description: "the picked status",
+    });
+    await app.waitFor(
+      () =>
+        app.execute(
+          `return document.querySelector(arguments[0])?.textContent.includes(arguments[1]);`,
+          [cell, en.profileStatuses.starter.banned],
+        ),
+      { description: "the cell shows the status" },
+    );
+    await app.capture("profile-status-cell");
+
+    await app.clickSelector(cell);
+    await app.clickText(en.profileStatuses.none, { roles: ["option"] });
+    await app.waitFor(async () => (await statusOf()) === null, {
+      description: "the status cleared",
+    });
+  });
+});
+
+test("the start pages section saves one page per line and reports a bad page", async () => {
+  await withApp("ui-start-pages", async (app) => {
+    const profile = await createUiProfile(app, "Profile Start Pages");
+    await app.waitForText(profile.name);
+    const stored = async () =>
+      (await app.invoke("list_browser_profiles")).find(
+        (item) => item.id === profile.id,
+      ).start_urls ?? [];
+    await app.clickSelector(
+      `[data-slot="profile-inspect-trigger"][data-profile-id="${profile.id}"]`,
+    );
+    await app.clickSelector(
+      '[data-slot="profile-info-section"][data-section="startPages"]',
+    );
+    await app.waitForText(en.startPages.description);
+    const field = '[data-slot="profile-start-pages-input"]';
+    await app.fillSelector(field, "mail.example\nfile:///etc/hosts");
+    await app.clickText(en.common.buttons.save, { exact: true });
+    await app.waitForText(
+      en.backendErrors.startUrlInvalid.replace("{{url}}", "file:///etc/hosts"),
+    );
+    assert.deepEqual(await stored(), []);
+    await app.fillSelector(field, "mail.example\nhttps://shop.example/cart");
+    await app.clickText(en.common.buttons.save, { exact: true });
+    await app.waitFor(
+      async () =>
+        JSON.stringify(await stored()) ===
+        JSON.stringify(["https://mail.example/", "https://shop.example/cart"]),
+      { description: "the saved start pages" },
+    );
+    await app.capture("profile-start-pages");
+    await app.clickSelector('[data-slot="profile-info-close"]');
+  });
+});
+
+test("2FA codes come from a pasted key and from a profile's saved keys", async () => {
+  await withApp("ui-two-factor", async (app) => {
+    const profile = await createUiProfile(app, "Profile Two Factor");
+    await app.waitForText(profile.name);
+
+    await app.pressShortcut({
+      key: "o",
+      shift: true,
+      ...(process.platform === "darwin" ? { meta: true } : { ctrl: true }),
+    });
+    await app.waitForText(en.totp.toolDescription);
+    await app.fillSelector("#totp-tool-key", "JBSWY3DPEHPK3PXP");
+    await app.waitFor(
+      () =>
+        app.execute(
+          `return /^\\d{3} \\d{3}$/.test(document.querySelector('[data-slot="totp-tool-dialog"] [data-slot="totp-code"] span')?.textContent ?? "");`,
+        ),
+      { description: "a code from the pasted key" },
+    );
+    await app.capture("totp-tool");
+    await dismissSurface(app);
+
+    await app.clickSelector(
+      `[data-slot="profile-inspect-trigger"][data-profile-id="${profile.id}"]`,
+    );
+    await app.clickSelector(
+      '[data-slot="profile-info-section"][data-section="twoFactor"]',
+    );
+    await app.waitForText(en.totp.empty);
+    await app.fillSelector(
+      '[data-slot="profile-totp-key"]',
+      "otpauth://totp/Mail:bob?secret=JBSWY3DPEHPK3PXP&issuer=Mail",
+    );
+    await app.clickText(en.totp.add, { roles: ["button"] });
+    await app.waitFor(
+      () =>
+        app.execute(
+          `return document.querySelectorAll('[data-slot="profile-totp-entry"] [data-slot="totp-code"]').length === 1;`,
+        ),
+      { description: "the saved key shows a live code" },
+    );
+    await app.capture("profile-totp-section");
+    assert.equal(
+      (await app.invoke("list_profile_totp", { profileId: profile.id }))[0]
+        .label,
+      "Mail",
+    );
+    await app.clickSelector('[data-slot="profile-info-close"]');
+  });
+});
+
+test("the profile network section saves, refuses and clears a DNS server", async () => {
+  await withApp("ui-dns-server", async (app) => {
+    const profile = await createUiProfile(app, "Profile DNS Server");
+    await app.waitForText(profile.name);
+    const stored = async () =>
+      (await app.invoke("list_browser_profiles")).find(
+        (item) => item.id === profile.id,
+      ).dns_server ?? null;
+    const field = '[data-slot="dns-server-field"] input';
+    const saveEnabled = () =>
+      app.execute(
+        `return [...document.querySelectorAll('[data-slot="dns-server-field"] button[type="submit"]')].some((button) => !button.disabled);`,
+      );
+
+    await app.clickSelector(
+      `[data-slot="profile-inspect-trigger"][data-profile-id="${profile.id}"]`,
+    );
+    await app.clickSelector(
+      '[data-slot="profile-info-section"][data-section="network"]',
+    );
+    await app.waitForText(en.profileInfo.sectionDesc.network);
+    await app.waitForText(en.dnsServer.summary.default);
+
+    await app.fillSelector(field, "1.1.1.1");
+    await app.waitForText(
+      `${en.dnsServer.summary.https.replace("{{server}}", "cloudflare-dns.com")} ${en.dnsServer.summary.upgraded}`,
+    );
+    await app.capture("profile-dns-server-upgraded");
+    await app.clickText(en.common.buttons.save, { exact: true });
+    await app.waitFor(async () => (await stored()) === "1.1.1.1", {
+      description: "the saved DNS server",
+    });
+    await app.waitFor(
+      () =>
+        app.execute(
+          `return !document.querySelector('[data-slot="dns-server-field"] button[type="submit"]');`,
+        ),
+      { description: "nothing left to save" },
+    );
+
+    await app.fillSelector(field, "not a server");
+    await app.waitForText(en.backendErrors.dnsServerInvalid);
+    assert.equal(await saveEnabled(), false);
+    assert.equal(await stored(), "1.1.1.1");
+
+    await app.fillSelector(field, "tcp://1.1.1.1");
+    await app.waitForText(
+      en.dnsServer.summary.tcp.replace("{{server}}", "1.1.1.1"),
+    );
+    await app.capture("profile-dns-server-plain");
+    // Typed away rather than cleared, so the field sees real input events.
+    await app.fillSelector(field, "x");
+    await app.session.sendKeys(
+      await app.execute("return document.querySelector(arguments[0]);", [
+        field,
+      ]),
+      "\uE003",
+    );
+    await app.waitForText(en.dnsServer.summary.default);
+    await app.clickText(en.common.buttons.save, { exact: true });
+    await app.waitFor(async () => (await stored()) === null, {
+      description: "the cleared DNS server",
+    });
+    await app.clickSelector('[data-slot="profile-info-close"]');
+  });
+});
+
+test("a Pro user's fingerprint tab shows the device, and says why when it cannot", async () => {
+  await withApp("ui-fingerprint-view", async (app) => {
+    const created = await createUiProfile(app, "Identity Device");
+    // An identity-backed profile stores the identity, never the device, on a
+    // version that reads it from the browser.
+    const file = path.join(
+      app.dataRoot,
+      "data",
+      "profiles",
+      created.id,
+      "metadata.json",
+    );
+    const stored = JSON.parse(await readFile(file, "utf8"));
+    stored.version = "154.0.8037.57";
+    delete stored.wayfern_config.fingerprint;
+    stored.wayfern_config.identity_id = "6f9619ff-8b86-4d01-b42d-00c04fc964ff";
+    await writeFile(file, JSON.stringify(stored));
+    await app.restart();
+    await app.waitForText("Identity Device");
+    await stubCommand(app, "cloud_get_user", {
+      logged_in_at: "2020-01-01T00:00:00Z",
+      user: {
+        id: "fingerprint-pro",
+        email: "fingerprint@example.test",
+        plan: "pro",
+        planPeriod: "monthly",
+        subscriptionStatus: "active",
+        profileLimit: 50,
+        isPrimaryDevice: true,
+      },
+    });
+    await app.invoke("plugin:event|emit", {
+      event: "cloud-auth-changed",
+      payload: null,
+    });
+    await app.clickSelector(
+      `[data-slot="profile-inspect-trigger"][data-profile-id="${created.id}"]`,
+    );
+    await app.clickSelector(
+      '[data-slot="profile-info-section"][data-section="fingerprint"]',
+    );
+
+    // This suite has no browser build, so the read fails: the tab says so and
+    // keeps the fields shut instead of showing them empty.
+    const state = '[data-slot="fingerprint-device-state"]';
+    await app.waitFor(
+      () =>
+        app.execute(
+          `return document.querySelector(arguments[0])?.dataset.state === "failed";`,
+          [state],
+        ),
+      { description: "the failed device read is shown" },
+    );
+    assert.equal(
+      await app.execute(
+        `return document.querySelector("#user-agent").matches(":disabled");`,
+      ),
+      true,
+    );
+    await app.capture("fingerprint-view-failed");
+
+    // A read that works fills the fields with the device the profile presents.
+    const device = {
+      userAgent: "Mozilla/5.0 (Macintosh) E2E/1.0",
+      platform: "MacIntel",
+      hardwareConcurrency: 8,
+    };
+    await stubCommand(app, "get_profile_fingerprint", JSON.stringify(device));
+    await app.clickTextIn(state, en.common.buttons.retry, {
+      roles: ["button"],
+    });
+    await app.waitFor(
+      () =>
+        app.execute(
+          `const input = document.querySelector("#user-agent");
+           return input && !input.matches(":disabled") && input.value === arguments[0];`,
+          [device.userAgent],
+        ),
+      { description: "the device fills the fingerprint fields" },
+    );
+    assert.equal(
+      await app.execute(
+        `return Boolean(document.querySelector(arguments[0]));`,
+        [state],
+      ),
+      false,
+    );
+    await app.capture("fingerprint-view-shown");
+    await restoreStubs(app);
+  });
+});
 
 test("Pro users can edit and save launch arguments in each profile", async () => {
   await withApp(
@@ -4523,7 +7351,7 @@ test("Pro users can edit and save launch arguments in each profile", async () =>
               .launch_args?.length === 2,
           { description: "saved launch arguments" },
         );
-        await openEditor();
+        // Saving keeps the panel open, with the saved value in the editor.
         assert.equal(
           await app.execute(
             'return document.querySelector("#wayfern-launch-args").value;',
@@ -4547,6 +7375,8 @@ test("Pro users can edit and save launch arguments in each profile", async () =>
           input.split("\n"),
         );
         await app.clickSelector('[data-slot="profile-info-close"]');
+        // The refused draft is still unsaved, so closing asks first.
+        await app.clickSelector('[data-slot="leave-prompt-discard"]');
         await restoreStubs(app);
         await app.invoke("plugin:event|emit", {
           event: "cloud-auth-changed",
@@ -4577,51 +7407,103 @@ test("Pro users can edit and save launch arguments in each profile", async () =>
   );
 });
 
-test("the create dialog warns a free user who creates quickly and holds a capped plan at its hourly limit", async () => {
+test("the create dialog warns a free user who creates quickly, holds a capped plan at its hourly limit, and never offers more profiles than fit", async () => {
   await withApp(
     "ui-profile-hourly-limit",
     async (app) => {
       const createDisabled = () =>
         app.execute(
-          `const dialog = document.querySelector('[role="dialog"]');
-         const button = [...(dialog?.querySelectorAll('button') ?? [])]
-           .find((node) => node.textContent.trim() === arguments[0]);
+          `const button = document.querySelector('[data-slot="profile-create-submit"]');
          return button ? button.disabled : null;`,
-          [en.common.buttons.create],
         );
+      const stepper = () =>
+        app.execute(
+          `return {
+             value: document.querySelector('#profile-count')?.value ?? null,
+             more: document.querySelector('[data-slot="profile-count-more"]')?.disabled ?? null,
+             hint: document.querySelector('[data-slot="profile-count-hint"]')?.innerText ?? "",
+             stressed: document.querySelector('[data-slot="profile-count-hint"] [data-limit]')?.innerText ?? null,
+           };`,
+        );
+      // Typing past the cap clamps to it as the digits arrive.
+      const typeCount = async (count, shown = count) => {
+        await app.clickSelector("#profile-count");
+        await app.fillSelector("#profile-count", String(count));
+        await app.waitFor(
+          async () => (await stepper()).value === String(shown),
+          {
+            description: `count ${count} shown as ${shown}`,
+          },
+        );
+      };
+      const closeDialog = async () => {
+        await app.clickTextIn('[role="dialog"]', en.common.buttons.cancel, {
+          roles: ["button"],
+        });
+        await app.waitFor(
+          () => app.execute(`return !document.querySelector('#profile-name');`),
+          { description: "create dialog closed" },
+        );
+      };
 
-      // Free: past the allowance the dialog warns, and Create still works.
+      // Free: past the allowance the dialog warns, and one profile can
+      // still be created, but not a batch.
       await stubCommand(app, "get_profile_creation_allowance", {
         enforcement: "soft",
         per_hour: 8,
         used: 8,
         retry_after_secs: 1_200,
+        remaining: 0,
       });
       await openProfileCreation(app);
       await app.waitForText(en.createProfile.hourlyLimit.warningTitle);
       await app.waitForText(en.createProfile.hourlyLimit.warning);
       await app.fillSelector("#profile-name", "Quick profile");
       assert.equal(await createDisabled(), false);
-      await app.clickTextIn('[role="dialog"]', en.common.buttons.cancel, {
-        roles: ["button"],
-      });
-      await app.waitFor(
-        () => app.execute(`return !document.querySelector('#profile-name');`),
-        { description: "create dialog closed" },
-      );
+      assert.equal((await stepper()).more, true, "no batch past the allowance");
+      await closeDialog();
 
-      // Solo at its cap: Create is disabled and its tooltip says why and when.
+      // Every browser seat taken: Create waits for a browser to close, and
+      // its tooltip says so without naming a number.
+      await stubCommand(app, "get_profile_creation_allowance", {
+        enforcement: "soft",
+        per_hour: 8,
+        used: 0,
+        retry_after_secs: null,
+        remaining: 8,
+        close_a_browser: true,
+      });
+      await openProfileCreation(app);
+      await app.fillSelector("#profile-name", "Seat profile");
+      await app.waitFor(async () => (await createDisabled()) === true, {
+        description: "Create disabled while no browser seat is free",
+      });
+      await app.execute(
+        `document.querySelector('[data-slot="profile-create-close-a-browser"]')
+           .dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerType: 'mouse' }));`,
+      );
+      await app.waitForText(en.backendErrors.tooManyBrowsersRunning);
+      assert.doesNotMatch(en.backendErrors.tooManyBrowsersRunning, /\d/);
+      await closeDialog();
+
+      // Solo at its cap: Create is disabled and the dialog says why and when.
       await stubCommand(app, "get_profile_creation_allowance", {
         enforcement: "hard",
         per_hour: 10,
         used: 10,
         retry_after_secs: 1_200,
+        remaining: 0,
       });
       await openProfileCreation(app);
       await app.fillSelector("#profile-name", "Capped profile");
       await app.waitFor(async () => (await createDisabled()) === true, {
         description: "Create disabled at the hourly cap",
       });
+      await app.waitForText(
+        en.createProfile.hourlyLimit.reached
+          .replace("{{limit}}", "10")
+          .replace("{{minutes}}", "20"),
+      );
       assert.equal(
         await app.execute(
           `return document.body.innerText.includes(arguments[0]);`,
@@ -4630,37 +7512,612 @@ test("the create dialog warns a free user who creates quickly and holds a capped
         false,
         "a capped plan is refused, not warned",
       );
+      assert.equal((await stepper()).more, true);
+      await closeDialog();
 
-      const target = await app.execute(
-        `const rect = document.querySelector('[data-slot="hourly-limit"]').getBoundingClientRect();
-       return { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) };`,
-      );
-      try {
-        await app.session.command("POST", "/actions", {
-          actions: [
-            {
-              type: "pointer",
-              id: "hourly-limit-pointer",
-              actions: [
-                {
-                  type: "pointerMove",
-                  x: target.x,
-                  y: target.y,
-                  origin: "viewport",
-                },
-              ],
-            },
-          ],
-        });
-      } finally {
-        await app.session.command("DELETE", "/actions");
+      // Solo with three left: the stepper stops at three and says why.
+      await stubCommand(app, "get_profile_creation_allowance", {
+        enforcement: "hard",
+        per_hour: 10,
+        used: 7,
+        retry_after_secs: null,
+        remaining: 3,
+      });
+      await openProfileCreation(app);
+      await app.fillSelector("#profile-name", "Three left");
+      for (let i = 0; i < 2; i += 1) {
+        await app.clickSelector('[data-slot="profile-count-more"]');
       }
-      await app.waitForText(
-        en.createProfile.hourlyLimit.reached
-          .replace("{{limit}}", "10")
-          .replace("{{minutes}}", "20"),
+      await app.waitFor(async () => (await stepper()).value === "3", {
+        description: "count at the allowance",
+      });
+      let state = await stepper();
+      assert.equal(state.more, true, "+ stops at the allowance");
+      await typeCount(9, 3);
+      state = await stepper();
+      assert.equal(
+        state.stressed,
+        en.templates.allowanceLeft_other.replace("{{count}}", "3"),
       );
+      assert.equal(await createDisabled(), false);
+      await closeDialog();
+
+      // Pro: nothing in the footer moves from one profile to a hundred,
+      // and a hundred is the most one batch makes.
+      await stubCommand(app, "get_profile_creation_allowance", {
+        enforcement: "hard",
+        per_hour: 100,
+        used: 0,
+        retry_after_secs: null,
+        remaining: 100,
+      });
+      await openProfileCreation(app);
+      await app.fillSelector("#profile-name", "Many");
+      await app.waitFor(async () => (await createDisabled()) === false, {
+        description: "creation available",
+      });
+      const single = await createFooterLayout(app);
+      for (const count of [9, 10, 100]) {
+        await typeCount(count);
+        assert.deepEqual(
+          await createFooterLayout(app),
+          single,
+          `the footer at ${count} profiles`,
+        );
+      }
+      await typeCount(250, 100);
+      state = await stepper();
+      assert.equal(state.more, true, "+ stops at a hundred");
+      assert.equal(
+        state.stressed,
+        en.backendErrors.bulkCreateCountInvalid.replace("{{max}}", "100"),
+      );
+      await app.capture("profile-create-count-cap");
+      await closeDialog();
     },
     { seedDownloadedBrowser: true },
   );
 });
+
+/**
+ * Where each footer control of the create dialog sits in the dialog, and the
+ * dialog's height. Layout boxes, not painted ones: the dialog scales in as it
+ * opens, which moves painted boxes by a pixel for a moment.
+ */
+function createFooterLayout(app) {
+  return app.execute(`
+    const dialog = document.querySelector('#profile-name').closest('[role="dialog"]');
+    const footer = dialog.querySelector('[data-slot="dialog-footer"]');
+    const box = (node) => {
+      let x = 0;
+      let y = 0;
+      for (let at = node; at && at !== dialog; at = at.offsetParent) {
+        x += at.offsetLeft;
+        y += at.offsetTop;
+      }
+      return [x, y, node.offsetWidth, node.offsetHeight];
+    };
+    return {
+      dialog: dialog.offsetHeight,
+      controls: [...footer.querySelectorAll("button, input")].map(box),
+    };
+  `);
+}
+
+/** Stands in for the cloud feedback route and keeps every request it gets. */
+async function feedbackCaptureServer() {
+  const received = [];
+  let status = 201;
+  const server = http.createServer((request, response) => {
+    let body = "";
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => {
+      body += chunk;
+    });
+    request.on("end", () => {
+      received.push({
+        method: request.method,
+        url: request.url,
+        headers: request.headers,
+        body: body ? JSON.parse(body) : null,
+      });
+      response.writeHead(status, { "content-type": "application/json" });
+      response.end(
+        JSON.stringify(
+          status < 300
+            ? {
+                id: `fb-${received.length}`,
+                createdAt: new Date().toISOString(),
+              }
+            : { statusCode: status, message: "Too Many Requests" },
+        ),
+      );
+    });
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  return {
+    received,
+    url: `http://127.0.0.1:${server.address().port}/api/feedback`,
+    respondWith(next) {
+      status = next;
+    },
+    close: () => new Promise((resolve) => server.close(resolve)),
+  };
+}
+
+const FEEDBACK_DIALOG = '[data-dialog="feedback"]';
+const MOD = process.platform === "darwin" ? { meta: true } : { ctrl: true };
+
+function feedbackLogsSwitch(app) {
+  return app.execute(
+    `return document.querySelector('[data-slot="feedback-include-logs"]')?.dataset.state ?? null;`,
+  );
+}
+
+function feedbackMessage(app) {
+  return app.execute(
+    `return document.querySelector('[data-slot="feedback-message"]')?.value ?? null;`,
+  );
+}
+
+test(
+  "feedback goes from the More menu to the team, with the logs the person previewed",
+  CLOUD_ONLY,
+  async () => {
+    const capture = await feedbackCaptureServer();
+    try {
+      await withApp(
+        "ui-feedback",
+        async (app) => {
+          // Refused before anything leaves the machine.
+          assert.match(
+            await app.invokeError("send_feedback", {
+              kind: "bug",
+              message: "   ",
+              includeLogs: false,
+              email: null,
+              locale: "en",
+            }),
+            /FEEDBACK_MESSAGE_EMPTY/,
+          );
+          assert.match(
+            await app.invokeError("send_feedback", {
+              kind: "idea",
+              message: "More themes",
+              includeLogs: false,
+              email: "not-an-address",
+              locale: "en",
+            }),
+            /FEEDBACK_EMAIL_INVALID/,
+          );
+          assert.equal(capture.received.length, 0);
+          await app.waitFor(
+            async () =>
+              (await app.invoke("preview_feedback_logs")).includes(
+                "Donut started",
+              ),
+            { description: "this session's log in the excerpt" },
+          );
+
+          // Facts lead the excerpt; a profile shows by alias, never by its
+          // name or id, in the facts and in the log lines alike.
+          const profile = await createUiProfile(app, "Secret Shop Account");
+          const excerpt = await app.invoke("preview_feedback_logs");
+          assert.ok(excerpt.startsWith("===== facts =====\n"), excerpt);
+          assert.match(excerpt, /^app=\S+ os=\S+ arch=\S+ install=\S+/m);
+          assert.match(excerpt, /^profile-1 browser=wayfern /m);
+          assert.ok(!excerpt.includes("Secret Shop Account"));
+          assert.ok(!excerpt.includes(profile.id));
+
+          await app.clickSelector(`[aria-label="${en.rail.more.label}"]`);
+          await app.clickSelector('[data-slot="rail-open-feedback"]');
+          await app.waitFor(
+            () =>
+              app.execute(
+                `return Boolean(document.querySelector(arguments[0]));`,
+                [FEEDBACK_DIALOG],
+              ),
+            { description: "the feedback dialog" },
+          );
+          assert.equal(
+            await app.execute(`return document.activeElement?.dataset?.slot;`),
+            "feedback-message",
+            "the message box has focus at once",
+          );
+          assert.equal(
+            await app.execute(
+              `return document.querySelector('[data-slot="feedback-send"]').disabled;`,
+            ),
+            true,
+            "nothing to send yet",
+          );
+
+          await app.capture("feedback-open");
+
+          // A bug brings the logs and the agent triage; an idea does not,
+          // until the person decides.
+          assert.equal(await feedbackLogsSwitch(app), "checked");
+          assert.ok(await app.visibleTextIncludes(en.feedback.triage.label));
+          await app.execute(
+            `window.__copied = [];
+           navigator.clipboard.writeText = async (text) => { window.__copied.push(text); };`,
+          );
+          await app.clickSelector('[data-slot="feedback-copy-triage"]');
+          await app.waitForText(en.feedback.triage.copied);
+          const [triagePrompt] = await app.execute(`return window.__copied;`);
+          assert.ok(triagePrompt.includes("/docs/TRIAGE.md"), triagePrompt);
+          assert.ok(triagePrompt.includes("get_diagnostics"), triagePrompt);
+          await app.clickSelector(
+            '[data-slot="feedback-kind"][data-kind="idea"]',
+          );
+          assert.equal(await feedbackLogsSwitch(app), "unchecked");
+          assert.equal(
+            await app.execute(
+              `return Boolean(document.querySelector('[data-slot="feedback-agent-triage"]'));`,
+            ),
+            false,
+            "an idea has no agent triage",
+          );
+          assert.equal(
+            await app.execute(
+              `return document.querySelector('[data-slot="feedback-message"]').placeholder;`,
+            ),
+            en.feedback.kinds.idea.placeholder,
+          );
+          await app.clickSelector(
+            '[data-slot="feedback-kind"][data-kind="bug"]',
+          );
+          assert.equal(await feedbackLogsSwitch(app), "checked");
+
+          await app.clickSelector('[data-slot="feedback-preview-logs"]');
+          await app.waitFor(
+            () =>
+              app.execute(
+                `return document.querySelector('[data-slot="feedback-logs-preview"]')?.value.includes("Donut started") ?? false;`,
+              ),
+            { description: "the log preview" },
+          );
+
+          await app.fillSelector(
+            '[data-slot="feedback-message"]',
+            "The proxy check never finishes",
+          );
+          await app.fillSelector(
+            '[data-slot="feedback-email"]',
+            "me@example.com",
+          );
+          await app.capture("feedback-compose");
+          await app.clickSelector('[data-slot="feedback-send"]');
+          await app.waitFor(
+            () =>
+              app.execute(
+                `return Boolean(document.querySelector('[data-slot="feedback-sent"]'));`,
+              ),
+            { description: "the thank-you view" },
+          );
+          assert.ok(await app.visibleTextIncludes(en.feedback.success.title));
+          assert.ok(
+            await app.visibleTextIncludes(
+              en.feedback.success.reply.replace("{{email}}", "me@example.com"),
+            ),
+          );
+          await app.capture("feedback-sent");
+
+          assert.equal(capture.received.length, 1);
+          const [sent] = capture.received;
+          assert.equal(sent.method, "POST");
+          assert.equal(sent.url, "/api/feedback");
+          assert.equal(
+            sent.headers.authorization,
+            undefined,
+            "signed out, so no account",
+          );
+          assert.equal(sent.body.kind, "bug");
+          assert.equal(sent.body.source, "person");
+          assert.equal(sent.body.message, "The proxy check never finishes");
+          assert.equal(sent.body.email, "me@example.com");
+          assert.equal(sent.body.locale, "en");
+          assert.equal(typeof sent.body.appVersion, "string");
+          assert.ok(sent.body.logs.includes("Donut started"));
+
+          await app.clickSelector('[data-slot="feedback-sent"] button');
+          await app.waitFor(
+            async () =>
+              (await app.execute(
+                `return Boolean(document.querySelector(arguments[0]));`,
+                [FEEDBACK_DIALOG],
+              )) === false,
+            { description: "the dialog closed" },
+          );
+          await app.waitFor(
+            async () =>
+              (await app.invoke("get_app_settings")).feedback_sent_at > 0,
+            { description: "the sent feedback remembered for the tips" },
+          );
+
+          // The chord opens a fresh dialog: a sent draft does not come back.
+          await app.pressShortcut({ ...MOD, shift: true, key: "f" });
+          await app.waitFor(async () => (await feedbackMessage(app)) === "", {
+            description: "an empty dialog from the keyboard",
+          });
+
+          // A refusal keeps the draft and says why.
+          capture.respondWith(429);
+          await app.clickSelector(
+            '[data-slot="feedback-kind"][data-kind="idea"]',
+          );
+          await app.fillSelector(
+            '[data-slot="feedback-message"]',
+            "Dark tray icon",
+          );
+          await app.pressShortcut({ ...MOD, key: "\uE007" });
+          await app.waitForText(en.backendErrors.feedbackRateLimited);
+          assert.equal(await feedbackMessage(app), "Dark tray icon");
+          assert.equal(capture.received.length, 2);
+          assert.equal(capture.received[1].body.kind, "idea");
+          assert.equal(
+            capture.received[1].body.logs,
+            undefined,
+            "an idea was sent without logs",
+          );
+
+          // Closing keeps the unsent draft. The feedback tip leads back to it.
+          await app.pressShortcut({ key: "Escape" });
+          await app.waitFor(
+            async () =>
+              (await app.execute(
+                `return Boolean(document.querySelector(arguments[0]));`,
+                [FEEDBACK_DIALOG],
+              )) === false,
+            { description: "the dialog closed with a draft" },
+          );
+          await openTipsFromRail(app);
+          await app.clickSelector(
+            '[data-slot="tips-list-item"][data-tip-id="feedback"]',
+          );
+          assert.ok(
+            await app.visibleTextIncludes(en.tips.items.feedback.title),
+          );
+          await app.capture("feedback-tip");
+          await app.clickSelector('[data-slot="tip-action"]');
+          await app.waitFor(
+            async () => (await feedbackMessage(app)) === "Dark tray icon",
+            { description: "the draft back in the dialog from the tip" },
+          );
+        },
+        { extraEnv: { DONUT_E2E_FEEDBACK_URL: capture.url } },
+      );
+    } finally {
+      await capture.close();
+    }
+  },
+);
+
+async function signInAs(app, id, plan, subscriptionStatus, extra = {}) {
+  await stubCommand(app, "cloud_get_user", {
+    logged_in_at: new Date().toISOString(),
+    user: {
+      id,
+      email: `${id}@example.test`,
+      plan,
+      planPeriod: "monthly",
+      subscriptionStatus,
+      profileLimit: plan === "free" ? 0 : 20,
+      cloudProfilesUsed: 0,
+      proxyBandwidthLimitMb: 0,
+      proxyBandwidthUsedMb: 0,
+      proxyBandwidthExtraMb: 0,
+      isPrimaryDevice: true,
+      ...extra,
+    },
+  });
+  await app.invoke("plugin:event|emit", {
+    event: "cloud-auth-changed",
+    payload: null,
+  });
+}
+
+const SYNC_SOURCE_LINE = '[data-slot="account-sync-source"]';
+
+function pickedSyncSource(app) {
+  return app.execute(
+    `return document.querySelector('[data-slot="account-sync-source-choice"] [role="radio"][aria-checked="true"]')?.textContent?.trim() ?? null;`,
+  );
+}
+
+test(
+  "a paid account keeps its own sync server behind one quiet line",
+  CLOUD_ONLY,
+  async () => {
+    await withApp("ui-account-sync-server", async (app) => {
+      await app.waitForText("No profiles yet");
+      const own = en.account.ownServer;
+      const server = "https://sync.example.test";
+      try {
+        await stubCommand(app, "get_sync_source", {
+          active: "cloud",
+          account_server: null,
+          self_hosted_server: null,
+        });
+        await stubCommand(app, "check_sync_server_connection", {
+          server_reachable: true,
+          storage_ready: true,
+          storage_endpoint: null,
+          storage_reachable: null,
+          storage_error: null,
+          account_url: server,
+        });
+        await stubCommand(app, "set_account_sync_server", {
+          active: "account",
+          account_server: server,
+          self_hosted_server: null,
+        });
+        await stubCommand(app, "set_sync_source", {
+          active: "cloud",
+          account_server: server,
+          self_hosted_server: null,
+        });
+        await stubCommand(app, "restart_sync_service", null);
+        await signInAs(app, "ui-account-sync-server", "solo", "active");
+        // A paid account opens the one-time welcome; close it when it comes.
+        const welcomed = await app
+          .waitFor(
+            () =>
+              app.execute(
+                `return Boolean(document.querySelector('[role="dialog"]'));`,
+              ),
+            { timeoutMs: 4000, description: "the paid welcome" },
+          )
+          .catch(() => false);
+        if (welcomed) await dismissSurface(app);
+
+        await app.clickSelector(`[aria-label="${en.rail.account}"]`);
+        const line = await app.waitFor(
+          () =>
+            app.execute(
+              `return document.querySelector(arguments[0])?.innerText ?? "";`,
+              [SYNC_SOURCE_LINE],
+            ),
+          { description: "the sync server line" },
+        );
+        assert.ok(line.includes(own.label), line);
+        assert.ok(line.includes(own.donutCloud), line);
+        // Signed in, there is no self-hosted tab, and the address form waits
+        // behind Change.
+        assert.equal(
+          await app.execute(
+            `return [...document.querySelectorAll('[role="tab"]')].some((tab) => tab.textContent.trim() === arguments[0]);`,
+            [en.account.tabs.selfHosted],
+          ),
+          false,
+        );
+        assert.equal(
+          await app.execute(
+            `return Boolean(document.querySelector('#account-sync-server-url, #self-hosted-token'));`,
+          ),
+          false,
+        );
+
+        await app.clickTextIn(SYNC_SOURCE_LINE, own.change);
+        await app.fillSelector("#account-sync-server-url", `${server}/`);
+        await app.clickTextIn(
+          SYNC_SOURCE_LINE,
+          en.account.selfHosted.testConnection,
+        );
+        await app.waitForText(own.accountsOn);
+        await app.clickTextIn(SYNC_SOURCE_LINE, en.common.buttons.save);
+        await app.waitForText(
+          own.switched.replace("{{server}}", "sync.example.test"),
+        );
+        await app.waitFor(
+          async () => (await pickedSyncSource(app)) === "sync.example.test",
+          { description: "the own server picked" },
+        );
+        assert.ok(await app.visibleTextIncludes(own.cloudOnly));
+        await app.capture("account-sync-server");
+
+        // Back to Donut cloud in one click; the server stays offered.
+        await app.clickTextIn(SYNC_SOURCE_LINE, own.donutCloud, {
+          roles: ["radio"],
+        });
+        await app.waitFor(
+          async () => (await pickedSyncSource(app)) === own.donutCloud,
+          { description: "Donut cloud picked" },
+        );
+        await app.waitForText(own.backToCloud);
+
+        const calls = await app.execute(
+          `return (window.__donutStubbedCalls ?? []).filter((call) => ["set_account_sync_server", "set_sync_source", "restart_sync_service"].includes(call.command));`,
+        );
+        assert.deepEqual(
+          calls.map((call) => call.command),
+          [
+            "set_account_sync_server",
+            "restart_sync_service",
+            "set_sync_source",
+            "restart_sync_service",
+          ],
+        );
+        assert.equal(calls[0].payload.serverUrl, `${server}/`);
+        assert.equal(calls[2].payload.source, "cloud");
+      } finally {
+        await restoreStubs(app);
+      }
+    });
+  },
+);
+
+test(
+  "a signed-in free account starts on Donut cloud and may pick a server set up signed out",
+  CLOUD_ONLY,
+  async () => {
+    await withApp("ui-account-sync-choice", async (app) => {
+      await app.waitForText("No profiles yet");
+      const own = en.account.ownServer;
+      const shared = "https://shared.example.test";
+      try {
+        await stubCommand(app, "get_sync_source", {
+          active: "cloud",
+          account_server: null,
+          self_hosted_server: shared,
+        });
+        await stubCommand(app, "set_sync_source", {
+          active: "self_hosted",
+          account_server: null,
+          self_hosted_server: shared,
+        });
+        await stubCommand(app, "restart_sync_service", null);
+        await signInAs(app, "ui-account-sync-choice", "free", "inactive");
+
+        await app.clickSelector(`[aria-label="${en.rail.account}"]`);
+        await app.waitFor(
+          async () => (await pickedSyncSource(app)) === own.donutCloud,
+          { description: "Donut cloud picked by default" },
+        );
+        // A free account gets no way to add a server.
+        assert.equal(
+          await app.execute(
+            `return [...document.querySelectorAll(arguments[0] + " button")].some((button) => button.textContent.trim() === arguments[1]);`,
+            [SYNC_SOURCE_LINE, own.change],
+          ),
+          false,
+        );
+
+        await app.clickTextIn(SYNC_SOURCE_LINE, "shared.example.test", {
+          roles: ["radio"],
+        });
+        await app.waitFor(
+          async () => (await pickedSyncSource(app)) === "shared.example.test",
+          { description: "the shared-token server picked" },
+        );
+        await app.waitForText(
+          own.switched.replace("{{server}}", "shared.example.test"),
+        );
+        assert.ok(await app.visibleTextIncludes(own.cloudOnly));
+
+        const calls = await app.execute(
+          `return (window.__donutStubbedCalls ?? []).filter((call) => call.command === "set_sync_source");`,
+        );
+        assert.equal(calls.length, 1);
+        assert.equal(calls[0].payload.source, "self_hosted");
+
+        // A team seat is never offered a sync-token server.
+        await signInAs(app, "ui-account-sync-choice", "free", "inactive", {
+          teamId: "team-1",
+          teamName: "Team",
+          teamRole: "member",
+        });
+        await app.waitFor(
+          () =>
+            app.execute(
+              `return ![...document.querySelectorAll('[data-slot="account-sync-source-choice"] [role="radio"]')].some((radio) => radio.textContent.trim() === arguments[0]);`,
+              ["shared.example.test"],
+            ),
+          { description: "no sync-token server for a team seat" },
+        );
+      } finally {
+        await restoreStubs(app);
+      }
+    });
+  },
+);

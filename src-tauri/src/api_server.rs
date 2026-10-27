@@ -25,6 +25,11 @@ use tower_http::cors::CorsLayer;
 use utoipa::{OpenApi, ToSchema};
 use utoipa_axum::{router::OpenApiRouter, routes};
 
+/// Refused requests come in bursts from one client; one line per route and
+/// status a minute is enough to see who is refused and how often.
+static REFUSED_REQUESTS: crate::log_streak::Throttle =
+  crate::log_streak::Throttle::new(std::time::Duration::from_secs(60));
+
 // API Types
 #[derive(Debug, Serialize, Deserialize, Clone, ToSchema)]
 pub struct ApiProfile {
@@ -42,6 +47,14 @@ pub struct ApiProfile {
   pub is_running: bool,
   pub proxy_bypass_rules: Vec<String>,
   pub vpn_id: Option<String>,
+  /// The DNS server the profile resolves names with, through its own proxy
+  /// or VPN. `null` when the proxy resolves them.
+  pub dns_server: Option<String>,
+  /// The profile's status id (see `/v1/statuses`), or `null`.
+  pub status_id: Option<String>,
+  /// Pages a launch from the app opens, in order, instead of the last
+  /// session. A run with a `url` opens only that URL.
+  pub start_urls: Vec<String>,
   /// Extension group loaded into the browser at launch. Settable via
   /// `PUT /v1/profiles/{id}`; exposed here so a caller can read back what it
   /// set instead of having to go through the desktop app.
@@ -61,9 +74,10 @@ pub struct ApiProfile {
   /// OS the profile was created on (`"macos"`, `"windows"`, `"linux"`).
   /// `null` when neither `host_os` nor the browser config records one.
   pub host_os: Option<String>,
-  /// True when the profile belongs to a different OS than this machine.
-  /// Such a profile cannot be launched locally, and must only ever run on a
-  /// remote host of its own OS — Chromium profile state is OS-specific.
+  /// True when the profile cannot be launched on this machine because a
+  /// browser bound to its OS created it on another OS; such a profile can only
+  /// run on a remote host of its own OS. Always false for Wayfern profiles,
+  /// which sync their data and launch on every OS.
   pub is_cross_os: bool,
   /// The fingerprint operating system set at creation via `wayfern_config.os`
   /// (`"windows"`, `"macos"`, `"linux"`, `"android"` or `"ios"`), or `null`
@@ -93,6 +107,9 @@ impl From<&crate::profile::types::BrowserProfile> for ApiProfile {
       is_running: profile.process_id.is_some(),
       proxy_bypass_rules: profile.proxy_bypass_rules.clone(),
       vpn_id: profile.vpn_id.clone(),
+      dns_server: profile.dns_server.clone(),
+      status_id: profile.status_id.clone(),
+      start_urls: profile.start_urls.clone(),
       extension_group_id: profile.extension_group_id.clone(),
       ephemeral: profile.ephemeral,
       temporary: profile.temporary,
@@ -119,6 +136,14 @@ pub struct ApiProfilesResponse {
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct ApiProfileResponse {
   pub profile: ApiProfile,
+}
+
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+pub struct ApiProfileFingerprintResponse {
+  /// The device the profile presents, as a JSON-encoded object: the shape
+  /// `wayfern_config.fingerprint` takes on create. `null` when there is none
+  /// to show.
+  pub fingerprint: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -159,6 +184,20 @@ pub struct CreateProfileRequest {
   /// its browser stops, and is swept at startup if it outlived a crash.
   /// Defaults to false.
   pub temporary: Option<bool>,
+  /// DNS server to resolve names with, through the profile's proxy or VPN:
+  /// `https://host/path` (DNS over HTTPS), `tls://host[:port]` (DNS over TLS),
+  /// `tcp://host[:port]` (plain DNS), or a bare `host[:port]`. A bare address
+  /// of a well-known public resolver such as `1.1.1.1` uses its DNS over
+  /// HTTPS endpoint. Omit it, send `null`, or send an empty string to let the
+  /// proxy resolve names. Anything else is rejected with 400.
+  #[serde(default)]
+  pub dns_server: Option<String>,
+  /// Optional status id from `/v1/statuses`.
+  #[serde(default)]
+  pub status_id: Option<String>,
+  /// Optional start pages, at most 20 http(s) URLs. A bare host gets `https://`.
+  #[serde(default)]
+  pub start_urls: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -189,6 +228,15 @@ pub struct UpdateProfileRequest {
   #[serde(default)]
   #[schema(value_type = Option<Object>)]
   pub camoufox_config: Option<serde_json::Value>,
+  /// Omitted or `null` leaves the DNS server unchanged; an empty string
+  /// clears it, so the proxy resolves names again. Same formats as on create.
+  /// Takes effect at the next launch.
+  pub dns_server: Option<String>,
+  /// Omitted or `null` leaves the status unchanged; an empty string clears it.
+  pub status_id: Option<String>,
+  /// Replaces the start pages; an empty list removes them. Omitted or `null`
+  /// leaves them unchanged.
+  pub start_urls: Option<Vec<String>>,
 }
 
 #[derive(Clone)]
@@ -213,12 +261,115 @@ struct UpdateGroupRequest {
   name: String,
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+struct BulkEditRequest {
+  profile_ids: Vec<String>,
+  /// Fields left out stay as they are; `null` clears a field that can be
+  /// empty. `new_device: true` makes the next launch generate a new device.
+  patch: crate::profile::patch::ProfilePatch,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+struct BulkEditResponse {
+  /// How many of the profiles actually changed.
+  changed: usize,
+}
+
+/// A profile status: a named, colored label for where a profile's account
+/// stands.
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+struct ApiStatusResponse {
+  id: String,
+  name: String,
+  /// `#rrggbb`.
+  color: String,
+}
+
+impl From<crate::profile_statuses::ProfileStatus> for ApiStatusResponse {
+  fn from(status: crate::profile_statuses::ProfileStatus) -> Self {
+    Self {
+      id: status.id,
+      name: status.name,
+      color: status.color,
+    }
+  }
+}
+
+/// Playwright's `storageState`: cookies and each origin's Local Storage.
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
+struct ApiStorageState {
+  /// Playwright cookies (`name`, `value`, `domain`, `path`, `expires`,
+  /// `httpOnly`, `secure`, `sameSite`).
+  #[serde(default)]
+  #[schema(value_type = Vec<Object>)]
+  cookies: Vec<serde_json::Value>,
+  #[serde(default)]
+  origins: Vec<crate::local_storage::OriginStorage>,
+}
+
+#[derive(Debug, Deserialize)]
+struct StorageStateQuery {
+  #[serde(default)]
+  include_cookies: bool,
+  #[serde(default)]
+  indexed_db: bool,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+struct TemplateRequest {
+  /// 1 to 60 characters, unique (case-insensitive).
+  name: String,
+  #[serde(default)]
+  settings: crate::profile_templates::TemplateSettings,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+struct CreateFromTemplateRequest {
+  /// 1 to 100.
+  count: u32,
+  /// One profile takes this name; several take it followed by numbers that
+  /// continue after the highest in use. Defaults to the template's name
+  /// prefix, else its name.
+  #[serde(default)]
+  name: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+struct ApiBulkCreateResponse {
+  /// The profiles made, in order.
+  profiles: Vec<ApiProfile>,
+  /// Why creation stopped before `count` (an error code JSON), or `null`.
+  error: Option<String>,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+struct StatusRequest {
+  /// 1 to 40 characters, unique (case-insensitive).
+  name: String,
+  /// `#rrggbb`.
+  color: String,
+}
+
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 struct ApiProxyResponse {
   id: String,
   name: String,
   #[schema(value_type = Object)]
   proxy_settings: ProxySettings,
+  /// The provider's "change IP" link, or `null`. Call
+  /// `POST /v1/proxies/{id}/rotate` to use it.
+  rotation_url: Option<String>,
+}
+
+impl From<crate::proxy_manager::StoredProxy> for ApiProxyResponse {
+  fn from(proxy: crate::proxy_manager::StoredProxy) -> Self {
+    Self {
+      id: proxy.id,
+      name: proxy.name,
+      proxy_settings: proxy.proxy_settings,
+      rotation_url: proxy.rotation_url,
+    }
+  }
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -226,6 +377,9 @@ struct CreateProxyRequest {
   name: String,
   #[schema(value_type = Object)]
   proxy_settings: ProxySettings,
+  /// Optional http(s) "change IP" link from the proxy provider.
+  #[serde(default)]
+  rotation_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -233,6 +387,10 @@ struct UpdateProxyRequest {
   name: Option<String>,
   #[schema(value_type = Option<Object>)]
   proxy_settings: Option<ProxySettings>,
+  /// Omitted or `null` leaves the "change IP" link unchanged; an empty string
+  /// clears it.
+  #[serde(default)]
+  rotation_url: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -303,7 +461,11 @@ pub struct ToastPayload {
 struct RunProfileResponse {
   profile_id: String,
   remote_debugging_port: u16,
+  /// The mode asked for. A browser that was already running keeps its own.
   headless: bool,
+  /// True when the profile was already running and was taken over as it is,
+  /// with no restart.
+  attached: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -337,7 +499,8 @@ pub struct RunRemoteResponse {
   pub profile_id: String,
   /// Remote session id, for polling or closing the session.
   pub session_id: String,
-  /// Operating system the session was scheduled onto — always the profile's own.
+  /// Operating system of the host the session was scheduled onto: `linux` for
+  /// a profile that runs on every OS, else the OS that created the profile.
   pub platform: String,
   pub status: String,
 }
@@ -363,14 +526,15 @@ struct ApiRemoteSessionsResponse {
 /// Enrol a profile in the nightly cookie bot, or replace its enrolment.
 ///
 /// `platform` and `profile_name` are optional because this machine already
-/// knows both: the platform is the profile's own operating system, and a
+/// knows both: the platform is the one this profile runs on remotely, and a
 /// caller-supplied one that disagrees is a mistake, not a choice.
 #[derive(Debug, Deserialize, ToSchema)]
 struct SetCookieBotScheduleRequest {
   /// Defaults to the profile's local name.
   profile_name: Option<String>,
-  /// `windows`, `macos` or `linux`. Defaults to the profile's own operating
-  /// system, and must match it when supplied.
+  /// `windows`, `macos` or `linux`: the OS of the host the bot runs the
+  /// profile on, `linux` for a profile that runs on every OS, else the OS that
+  /// created the profile. Defaults to that OS, and must match it when supplied.
   platform: Option<String>,
   /// Whether the nightly run is armed. A disabled schedule keeps its settings.
   enabled: bool,
@@ -516,9 +680,43 @@ struct BatchRunRequest {
   url: Option<String>,
   /// Launch headless. Defaults to false.
   headless: Option<bool>,
+  /// Pause between the starts of two launches, in milliseconds (0 to 60000).
+  /// Defaults to the app's bulk launch delay.
+  #[schema(minimum = 0, maximum = 60000)]
+  delay_ms: Option<u32>,
+  /// How many profiles may be starting at the same time (1 to 20). Defaults
+  /// to the app's bulk launch concurrency.
+  #[schema(minimum = 1, maximum = 20)]
+  concurrency: Option<u32>,
 }
 
-#[derive(Debug, Serialize, ToSchema)]
+/// The pacing of one batch run: the request's values, else the app's bulk
+/// launch settings, clamped to the same bounds the settings use.
+fn batch_run_pacing(
+  request: &BatchRunRequest,
+  settings: Option<&crate::settings_manager::AppSettings>,
+) -> (std::time::Duration, usize) {
+  use crate::settings_manager::{
+    DEFAULT_BULK_LAUNCH_CONCURRENCY, DEFAULT_BULK_LAUNCH_DELAY_MS, MAX_BULK_LAUNCH_CONCURRENCY,
+    MAX_BULK_LAUNCH_DELAY_MS,
+  };
+  let delay_ms = request
+    .delay_ms
+    .or(settings.map(|s| s.bulk_launch_delay_ms))
+    .unwrap_or(DEFAULT_BULK_LAUNCH_DELAY_MS)
+    .min(MAX_BULK_LAUNCH_DELAY_MS);
+  let concurrency = request
+    .concurrency
+    .or(settings.map(|s| s.bulk_launch_concurrency))
+    .unwrap_or(DEFAULT_BULK_LAUNCH_CONCURRENCY)
+    .clamp(1, MAX_BULK_LAUNCH_CONCURRENCY);
+  (
+    std::time::Duration::from_millis(u64::from(delay_ms)),
+    concurrency as usize,
+  )
+}
+
+#[derive(Debug, Clone, Serialize, ToSchema)]
 struct BatchRunResult {
   profile_id: String,
   /// Whether this profile launched successfully.
@@ -616,6 +814,7 @@ struct ImportProxiesResponse {
   paths(
     get_profiles,
     get_profile,
+    get_profile_fingerprint_api,
     create_profile,
     update_profile,
     delete_profile,
@@ -645,17 +844,30 @@ struct ImportProxiesResponse {
     detect_import_profiles,
     import_profiles_api,
     import_profile_cookies,
+    export_storage_state,
+    import_storage_state,
     get_groups,
     get_group,
     create_group,
     update_group,
     delete_group,
+    get_statuses,
+    create_status,
+    update_status,
+    delete_status,
+    bulk_edit_profiles,
+    get_templates,
+    create_template,
+    update_template,
+    delete_template,
+    create_profiles_from_template,
     get_tags,
     get_proxies,
     get_proxy,
     create_proxy,
     import_proxies_api,
     update_proxy,
+    rotate_proxy,
     delete_proxy,
     get_vpns,
     get_vpn,
@@ -690,12 +902,24 @@ struct ImportProxiesResponse {
     ApiProfile,
     ApiProfilesResponse,
     ApiProfileResponse,
+    ApiProfileFingerprintResponse,
     CreateProfileRequest,
     UpdateProfileRequest,
     ApiGroupResponse,
     CreateGroupRequest,
     UpdateGroupRequest,
+    ApiStatusResponse,
+    StatusRequest,
+    BulkEditRequest,
+    BulkEditResponse,
+    TemplateRequest,
+    CreateFromTemplateRequest,
+    ApiBulkCreateResponse,
+    crate::profile_templates::ProfileTemplate,
+    crate::profile_templates::TemplateSettings,
+    crate::profile::patch::ProfilePatch,
     ApiProxyResponse,
+    crate::proxy_rotation::RotationResult,
     CreateProxyRequest,
     UpdateProxyRequest,
     ApiVpnResponse,
@@ -716,6 +940,7 @@ struct ImportProxiesResponse {
     StartCookieBotRunRequest,
     crate::remote_session::RemoteSessionState,
     crate::cookie_bot::CookieBotSchedule,
+    crate::cookie_bot_exit::ExitCheckView,
     crate::cookie_bot::CookieBotScheduleList,
     crate::cookie_bot::CookieBotScheduleSaved,
     crate::cookie_bot::CookieBotScheduleDeleted,
@@ -745,6 +970,10 @@ struct ImportProxiesResponse {
     crate::proxy_distribution::ProxyAssignmentResult,
     OpenUrlRequest,
     ImportCookiesRequest,
+    ApiStorageState,
+    crate::local_storage::OriginStorage,
+    crate::local_storage::StorageItem,
+    crate::local_storage::StorageStateImport,
     ImportCookiesResponse,
     CreateExtensionRequest,
     UpdateExtensionRequest,
@@ -789,6 +1018,8 @@ struct ImportProxiesResponse {
   tags(
     (name = "profiles", description = "Profile management endpoints"),
     (name = "groups", description = "Group management endpoints"),
+    (name = "statuses", description = "Profile status management endpoints"),
+    (name = "templates", description = "Profile templates and creating profiles from them"),
     (name = "tags", description = "Tag management endpoints"),
     (name = "proxies", description = "Proxy management endpoints"),
     (name = "vpns", description = "VPN management endpoints"),
@@ -880,6 +1111,8 @@ impl ApiServer {
       .port();
 
     let v1_routes = build_v1_router();
+    #[cfg(feature = "e2e")]
+    let v1_routes = v1_routes.route("/v1/e2e/mcp", axum::routing::post(e2e_mcp_message));
 
     let api = ApiDoc::openapi();
 
@@ -900,9 +1133,8 @@ impl ApiServer {
         "/v1/openapi.json",
         get(move || async move { Json(api_for_v1) }),
       )
-      // Outermost layer: logs every request so customer reports show what
-      // their automation is actually calling, what the response status was,
-      // and how long it took. Never logs request bodies or auth headers.
+      // Outermost layer: logs failed requests with route, status and duration.
+      // Never logs request bodies, query strings or auth headers.
       .layer(middleware::from_fn(request_logging_middleware))
       .layer(CorsLayer::permissive())
       .with_state(state);
@@ -937,6 +1169,29 @@ impl ApiServer {
   }
 }
 
+/// The suites' way into the MCP tool engine, which the app otherwise serves
+/// only over the remote bridge. Built into E2E builds only, never published.
+#[cfg(feature = "e2e")]
+async fn e2e_mcp_message(headers: HeaderMap, body: axum::body::Bytes) -> Response {
+  use crate::mcp_server::{McpOutcome, McpServer};
+  let session = headers
+    .get("mcp-session-id")
+    .and_then(|value| value.to_str().ok());
+  match McpServer::instance()
+    .handle_message_with(session, &body, None)
+    .await
+  {
+    McpOutcome::Body {
+      body,
+      new_session_id,
+    } => Json(serde_json::json!({ "session_id": new_session_id, "body": body })).into_response(),
+    McpOutcome::Accepted => StatusCode::ACCEPTED.into_response(),
+    McpOutcome::UnknownSession => StatusCode::NOT_FOUND.into_response(),
+    McpOutcome::BadRequest => StatusCode::BAD_REQUEST.into_response(),
+    McpOutcome::RateLimited { .. } => StatusCode::TOO_MANY_REQUESTS.into_response(),
+  }
+}
+
 /// Register every `/v1` handler.
 ///
 /// Pulled out of `start` so a test can build it. Axum panics when two handlers
@@ -951,6 +1206,7 @@ fn build_v1_router() -> Router<ApiServerState> {
   let (routes, _) = OpenApiRouter::new()
     .routes(routes!(get_profiles, create_profile))
     .routes(routes!(get_profile, update_profile, delete_profile))
+    .routes(routes!(get_profile_fingerprint_api))
     .routes(routes!(run_profile))
     .routes(routes!(run_profile_remote))
     // One `routes!` per PATH, not per handler: the GET and the DELETE share
@@ -980,12 +1236,20 @@ fn build_v1_router() -> Router<ApiServerState> {
     .routes(routes!(detect_import_profiles))
     .routes(routes!(import_profiles_api))
     .routes(routes!(import_profile_cookies))
+    .routes(routes!(export_storage_state, import_storage_state))
     .routes(routes!(get_groups, create_group))
     .routes(routes!(get_group, update_group, delete_group))
+    .routes(routes!(get_statuses, create_status))
+    .routes(routes!(update_status, delete_status))
+    .routes(routes!(bulk_edit_profiles))
+    .routes(routes!(get_templates, create_template))
+    .routes(routes!(update_template, delete_template))
+    .routes(routes!(create_profiles_from_template))
     .routes(routes!(get_tags))
     .routes(routes!(get_proxies, create_proxy))
     .routes(routes!(import_proxies_api))
     .routes(routes!(get_proxy, update_proxy, delete_proxy))
+    .routes(routes!(rotate_proxy))
     .routes(routes!(get_vpns, create_vpn))
     .routes(routes!(import_vpn))
     .routes(routes!(export_vpn))
@@ -1063,7 +1327,7 @@ async fn auth_middleware(
   let token = match auth_header {
     Some(token) => token,
     None => {
-      log::warn!("[api] Rejected {path}: missing Authorization header");
+      log::debug!("API auth refused reason=missing_header path={path}");
       return Err(StatusCode::UNAUTHORIZED);
     }
   };
@@ -1073,13 +1337,11 @@ async fn auth_middleware(
   let stored_token = match settings_manager.get_api_token(&state.app_handle).await {
     Ok(Some(stored_token)) => stored_token,
     Ok(None) => {
-      log::warn!(
-        "[api] Rejected {path}: API server has no stored token (was the API toggled off?)"
-      );
+      log::debug!("API auth refused reason=no_stored_token path={path}");
       return Err(StatusCode::UNAUTHORIZED);
     }
     Err(e) => {
-      log::error!("[api] Failed to read stored API token: {e}");
+      log::error!("API token not readable err=\"{e}\"");
       return Err(StatusCode::INTERNAL_SERVER_ERROR);
     }
   };
@@ -1092,7 +1354,7 @@ async fn auth_middleware(
   let stored_bytes = stored_token.as_bytes();
   let matches = token_bytes.len() == stored_bytes.len() && token_bytes.ct_eq(stored_bytes).into();
   if !matches {
-    log::warn!("[api] Rejected {path}: token mismatch");
+    log::debug!("API auth refused reason=token_mismatch path={path}");
     return Err(StatusCode::UNAUTHORIZED);
   }
 
@@ -1100,12 +1362,16 @@ async fn auth_middleware(
   Ok(next.run(request).await)
 }
 
-/// Logs every request: method, path, query, response status, duration.
+/// Logs a failed request with its route, status and duration; a successful
+/// one at debug. 401 and 429 are logged by their own middleware.
 /// Skips Authorization header and request bodies entirely.
 async fn request_logging_middleware(request: axum::extract::Request, next: Next) -> Response {
   let method = request.method().clone();
-  let path = request.uri().path().to_string();
-  let query = request.uri().query().map(|q| q.to_string());
+  let route = request
+    .extensions()
+    .get::<axum::extract::MatchedPath>()
+    .map(|matched| matched.as_str().to_string())
+    .unwrap_or_else(|| request.uri().path().to_string());
   let started = std::time::Instant::now();
 
   let response = next.run(request).await;
@@ -1113,20 +1379,25 @@ async fn request_logging_middleware(request: axum::extract::Request, next: Next)
   let status = response.status();
   let elapsed_ms = started.elapsed().as_millis();
 
+  if !(status.is_client_error() || status.is_server_error()) {
+    log::debug!(
+      "API request method={method} path={route} status={} elapsed_ms={elapsed_ms}",
+      status.as_u16()
+    );
+    return response;
+  }
   let level = if status.is_server_error() {
     log::Level::Error
-  } else if status.is_client_error() {
-    log::Level::Warn
   } else {
-    log::Level::Info
+    log::Level::Warn
   };
-
-  match query {
-    Some(q) => log::log!(
+  if let Some(dropped) = REFUSED_REQUESTS.allow(&format!("{method} {route} {}", status.as_u16())) {
+    log::log!(
       level,
-      "[api] {method} {path}?{q} -> {status} ({elapsed_ms} ms)"
-    ),
-    None => log::log!(level, "[api] {method} {path} -> {status} ({elapsed_ms} ms)"),
+      "API request failed method={method} path={route} status={} elapsed_ms={elapsed_ms}{}",
+      status.as_u16(),
+      crate::log_streak::suppressed(dropped)
+    );
   }
 
   response
@@ -1208,10 +1479,9 @@ async fn rate_limit_middleware(request: axum::extract::Request, next: Next) -> R
 
   match crate::automation_rate_limiter::check_automation_rate_limit().await {
     crate::automation_rate_limiter::RateLimitOutcome::Limited { retry_after_secs } => {
-      log::warn!(
-        "[api] Rejected {}: automation rate limit exceeded; retry in {}s",
-        request.uri().path(),
-        retry_after_secs
+      log::debug!(
+        "API automation rate limited path={} retry_after_s={retry_after_secs}",
+        request.uri().path()
       );
       (
         StatusCode::TOO_MANY_REQUESTS,
@@ -1290,7 +1560,12 @@ fn manager_error_response(err: impl std::fmt::Display) -> (StatusCode, String) {
     if let Some(code) = value.get("code").and_then(|c| c.as_str()) {
       let status = if code.ends_with("_NOT_FOUND") {
         StatusCode::NOT_FOUND
-      } else if LAUNCH_CONFLICT_CODES.contains(&code) {
+      } else if LAUNCH_CONFLICT_CODES.contains(&code)
+        || code == "BULK_CREATE_BUSY"
+        || code == "LOCAL_STORAGE_BROWSER_RUNNING"
+        || code == "LOCAL_STORAGE_REMOTE_SESSION"
+        || code == "LOCAL_STORAGE_PROFILE_PROTECTED"
+      {
         // Someone or something else holds this profile: another team member, a
         // browser already open, or a remote session whose work has not been
         // pulled back yet. All of them are "try again later", not "your request
@@ -1298,9 +1573,10 @@ fn manager_error_response(err: impl std::fmt::Display) -> (StatusCode, String) {
         StatusCode::CONFLICT
       } else if code == "INTERNAL_ERROR" {
         StatusCode::INTERNAL_SERVER_ERROR
-      } else if code == "PROFILE_LOCK_UNAVAILABLE" {
-        // The lock service could not be reached. The launch is refused because
-        // it cannot be proven safe, which is an upstream failure, not the
+      } else if code == "PROFILE_LOCK_UNAVAILABLE" || code == "PROFILE_DATA_NOT_DOWNLOADED" {
+        // The lock service, or the sync storage holding a profile's first
+        // download, could not be reached. The launch is refused because it
+        // cannot be proven safe, which is an upstream failure, not the
         // caller's fault.
         StatusCode::SERVICE_UNAVAILABLE
       } else if code.ends_with("_REQUIRES_PRO")
@@ -1312,6 +1588,7 @@ fn manager_error_response(err: impl std::fmt::Display) -> (StatusCode, String) {
         // being re-implemented in each handler to get the status right.
         StatusCode::PAYMENT_REQUIRED
       } else if code == "WAYFERN_INSTANCE_LIMIT_REACHED"
+        || code == "TOO_MANY_BROWSERS_RUNNING"
         || code == "WAYFERN_GENERATION_LIMIT_REACHED"
         || code == "PROFILE_GENERATION_LIMIT_REACHED"
       {
@@ -1443,6 +1720,45 @@ async fn get_profile(
   }
 }
 
+/// The device a Wayfern profile presents. Reading it starts the profile's
+/// browser version headless for a moment; nothing is launched for a profile
+/// that stores its device.
+#[utoipa::path(
+  get,
+  path = "/v1/profiles/{id}/fingerprint",
+  params(
+    ("id" = String, Path, description = "Profile ID")
+  ),
+  responses(
+    (status = 200, description = "The device the profile presents", body = ApiProfileFingerprintResponse),
+    (status = 400, description = "The browser could not rebuild the device"),
+    (status = 401, description = "Unauthorized"),
+    (status = 402, description = "The profile's fingerprint OS needs a paid plan"),
+    (status = 404, description = "Profile not found"),
+    (status = 500, description = "Internal server error"),
+    (status = 503, description = "The device could not be read right now; try again")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "profiles"
+)]
+async fn get_profile_fingerprint_api(
+  Path(id): Path<String>,
+) -> Result<Json<ApiProfileFingerprintResponse>, (StatusCode, String)> {
+  let profile = ProfileManager::instance()
+    .list_profiles()
+    .map_err(manager_error_response)?
+    .into_iter()
+    .find(|p| p.id.to_string() == id)
+    .ok_or((StatusCode::NOT_FOUND, "profile not found".to_string()))?;
+  crate::wayfern_manager::WayfernManager::instance()
+    .profile_fingerprint(&profile)
+    .await
+    .map(|fingerprint| Json(ApiProfileFingerprintResponse { fingerprint }))
+    .map_err(manager_error_response)
+}
+
 /// Create a profile.
 ///
 /// - `browser` must be `"wayfern"` or `"camoufox"`; any other value is rejected
@@ -1469,7 +1785,7 @@ async fn get_profile(
   request_body = CreateProfileRequest,
   responses(
     (status = 200, description = "Profile created successfully", body = ApiProfileResponse),
-    (status = 400, description = "Invalid browser, invalid wayfern_config, or no downloaded version available"),
+    (status = 400, description = "Invalid browser, invalid wayfern_config, invalid dns_server, or no downloaded version available"),
     (status = 401, description = "Unauthorized"),
     (status = 402, description = "Selected proxy requires payment, or a cross-OS fingerprint or custom launch arguments require Pro"),
     (status = 429, description = "Hourly profile generation limit reached; the body carries retryAfterSeconds"),
@@ -1583,6 +1899,20 @@ async fn create_profile(
     });
   }
 
+  if let Some(status_id) = request.status_id.as_deref().filter(|id| !id.is_empty()) {
+    if !crate::profile_statuses::exists(status_id) {
+      return Err(manager_error_response(crate::backend_error(
+        "PROFILE_STATUS_NOT_FOUND",
+      )));
+    }
+  }
+  let start_urls = request
+    .start_urls
+    .clone()
+    .map(crate::profile::manager::checked_start_urls)
+    .transpose()
+    .map_err(manager_error_response)?;
+
   // Create profile using the async create_profile_with_group method
   match profile_manager
     .create_profile_with_group(
@@ -1598,11 +1928,26 @@ async fn create_profile(
       request.group_id.clone(),
       request.ephemeral.unwrap_or(false) || request.temporary.unwrap_or(false),
       None,
+      request.dns_server.clone(),
       request.launch_hook.clone(),
     )
     .await
   {
     Ok(mut profile) => {
+      if let Some(status_id) = request.status_id.clone().filter(|id| !id.is_empty()) {
+        if let Err(e) =
+          profile_manager.set_profiles_status(&[profile.id.to_string()], Some(status_id.clone()))
+        {
+          return Err(manager_error_response(e));
+        }
+        profile.status_id = Some(status_id);
+      }
+      if let Some(start_urls) = start_urls.filter(|urls| !urls.is_empty()) {
+        match profile_manager.update_profile_start_urls(&profile.id.to_string(), start_urls) {
+          Ok(updated) => profile = updated,
+          Err(e) => return Err(manager_error_response(e)),
+        }
+      }
       if request.temporary.unwrap_or(false) {
         match profile_manager.mark_profile_temporary(&profile.id.to_string()) {
           Ok(updated) => profile = updated,
@@ -1645,8 +1990,9 @@ async fn create_profile(
         let _ = crate::events::emit_empty("profile-generation-limit-reached");
       }
       log::warn!(
-        "[api] Could not create profile '{}': {body}",
-        Plain(&request.name)
+        "API profile create failed status={} err=\"{}\"",
+        status.as_u16(),
+        Plain(&body)
       );
       Err((status, body))
     }
@@ -1686,6 +2032,22 @@ async fn update_profile(
       StatusCode::BAD_REQUEST,
       "Cannot set both proxy_id and vpn_id".to_string(),
     ));
+  }
+  // Checked before any field changes, so a bad value leaves the profile as it was.
+  if let Some(dns_server) = &request.dns_server {
+    crate::profile_dns::normalize_dns_server(Some(dns_server.clone()))
+      .map_err(manager_error_response)?;
+  }
+  if let Some(status_id) = request.status_id.as_deref().filter(|id| !id.is_empty()) {
+    if !crate::profile_statuses::exists(status_id) {
+      return Err(manager_error_response(crate::backend_error(
+        "PROFILE_STATUS_NOT_FOUND",
+      )));
+    }
+  }
+  if let Some(start_urls) = &request.start_urls {
+    crate::profile::manager::checked_start_urls(start_urls.clone())
+      .map_err(manager_error_response)?;
   }
 
   // Update profile fields
@@ -1817,6 +2179,25 @@ async fn update_profile(
     if let Err(e) =
       profile_manager.update_profile_clear_on_close(&state.app_handle, &id, clear_on_close)
     {
+      return Err(manager_error_response(e));
+    }
+  }
+
+  if let Some(dns_server) = request.dns_server {
+    if let Err(e) = profile_manager.update_profile_dns_server(&id, Some(dns_server)) {
+      return Err(manager_error_response(e));
+    }
+  }
+
+  if let Some(start_urls) = request.start_urls {
+    if let Err(e) = profile_manager.update_profile_start_urls(&id, start_urls) {
+      return Err(manager_error_response(e));
+    }
+  }
+
+  if let Some(status_id) = request.status_id {
+    let status_id = Some(status_id).filter(|id| !id.is_empty());
+    if let Err(e) = profile_manager.set_profiles_status(std::slice::from_ref(&id), status_id) {
       return Err(manager_error_response(e));
     }
   }
@@ -2041,6 +2422,257 @@ async fn delete_group(
   }
 }
 
+// API Handlers - Statuses
+#[utoipa::path(
+  get,
+  path = "/v1/statuses",
+  responses(
+    (status = 200, description = "Every profile status, in their order", body = Vec<ApiStatusResponse>),
+    (status = 401, description = "Unauthorized")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "statuses"
+)]
+async fn get_statuses() -> Json<Vec<ApiStatusResponse>> {
+  Json(
+    crate::profile_statuses::list()
+      .into_iter()
+      .map(ApiStatusResponse::from)
+      .collect(),
+  )
+}
+
+#[utoipa::path(
+  post,
+  path = "/v1/statuses",
+  request_body = StatusRequest,
+  responses(
+    (status = 200, description = "Status created", body = ApiStatusResponse),
+    (status = 400, description = "Empty, too long or duplicate name, invalid color, or 100 statuses already"),
+    (status = 401, description = "Unauthorized")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "statuses"
+)]
+async fn create_status(
+  Json(request): Json<StatusRequest>,
+) -> Result<Json<ApiStatusResponse>, (StatusCode, String)> {
+  crate::profile_statuses::create(&request.name, &request.color)
+    .map(|status| Json(status.into()))
+    .map_err(manager_error_response)
+}
+
+#[utoipa::path(
+  put,
+  path = "/v1/statuses/{id}",
+  params(
+    ("id" = String, Path, description = "Status ID")
+  ),
+  request_body = StatusRequest,
+  responses(
+    (status = 200, description = "Status updated", body = ApiStatusResponse),
+    (status = 400, description = "Empty, too long or duplicate name, or invalid color"),
+    (status = 401, description = "Unauthorized"),
+    (status = 404, description = "Status not found")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "statuses"
+)]
+async fn update_status(
+  Path(id): Path<String>,
+  Json(request): Json<StatusRequest>,
+) -> Result<Json<ApiStatusResponse>, (StatusCode, String)> {
+  crate::profile_statuses::update(&id, &request.name, &request.color)
+    .map(|status| Json(status.into()))
+    .map_err(manager_error_response)
+}
+
+#[utoipa::path(
+  delete,
+  path = "/v1/statuses/{id}",
+  params(
+    ("id" = String, Path, description = "Status ID")
+  ),
+  responses(
+    (status = 204, description = "Status deleted and taken off every profile that had it"),
+    (status = 401, description = "Unauthorized"),
+    (status = 404, description = "Status not found")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "statuses"
+)]
+async fn delete_status(Path(id): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
+  crate::profile_statuses::delete(&id)
+    .map(|()| StatusCode::NO_CONTENT)
+    .map_err(manager_error_response)
+}
+
+#[utoipa::path(
+  post,
+  path = "/v1/profiles/bulk-edit",
+  request_body = BulkEditRequest,
+  responses(
+    (status = 200, description = "Every profile was checked first, then the changed ones were saved", body = BulkEditResponse),
+    (status = 400, description = "A value is invalid (DNS_SERVER_INVALID, START_URL_INVALID, WEBRTC_MODE_INVALID, ...); nothing changed"),
+    (status = 401, description = "Unauthorized"),
+    (status = 404, description = "A profile, status, group or extension group does not exist; nothing changed"),
+    (status = 409, description = "A listed profile is running; nothing changed")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "profiles"
+)]
+async fn bulk_edit_profiles(
+  Json(request): Json<BulkEditRequest>,
+) -> Result<Json<BulkEditResponse>, (StatusCode, String)> {
+  ProfileManager::instance()
+    .apply_patch(&request.profile_ids, request.patch)
+    .map(|changed| Json(BulkEditResponse { changed }))
+    .map_err(manager_error_response)
+}
+
+// API Handlers - Templates
+#[utoipa::path(
+  get,
+  path = "/v1/templates",
+  responses(
+    (status = 200, description = "Every profile template, in their order", body = Vec<crate::profile_templates::ProfileTemplate>),
+    (status = 401, description = "Unauthorized")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "templates"
+)]
+async fn get_templates() -> Json<Vec<crate::profile_templates::ProfileTemplate>> {
+  Json(crate::profile_templates::list())
+}
+
+#[utoipa::path(
+  post,
+  path = "/v1/templates",
+  request_body = TemplateRequest,
+  responses(
+    (status = 200, description = "Template created. Device fields in `wayfern_config` are dropped: every profile made from it gets its own device", body = crate::profile_templates::ProfileTemplate),
+    (status = 400, description = "Empty, too long or duplicate name, an invalid value, both a proxy and a VPN, or 100 templates already"),
+    (status = 401, description = "Unauthorized"),
+    (status = 404, description = "A status, group or extension group does not exist")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "templates"
+)]
+async fn create_template(
+  Json(request): Json<TemplateRequest>,
+) -> Result<Json<crate::profile_templates::ProfileTemplate>, (StatusCode, String)> {
+  crate::profile_templates::create(&request.name, request.settings)
+    .await
+    .map(Json)
+    .map_err(manager_error_response)
+}
+
+#[utoipa::path(
+  put,
+  path = "/v1/templates/{id}",
+  params(
+    ("id" = String, Path, description = "Template ID")
+  ),
+  request_body = TemplateRequest,
+  responses(
+    (status = 200, description = "Template replaced", body = crate::profile_templates::ProfileTemplate),
+    (status = 400, description = "Empty, too long or duplicate name, an invalid value, or both a proxy and a VPN"),
+    (status = 401, description = "Unauthorized"),
+    (status = 404, description = "Template, status, group or extension group not found")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "templates"
+)]
+async fn update_template(
+  Path(id): Path<String>,
+  Json(request): Json<TemplateRequest>,
+) -> Result<Json<crate::profile_templates::ProfileTemplate>, (StatusCode, String)> {
+  crate::profile_templates::update(&id, &request.name, request.settings)
+    .await
+    .map(Json)
+    .map_err(manager_error_response)
+}
+
+#[utoipa::path(
+  delete,
+  path = "/v1/templates/{id}",
+  params(
+    ("id" = String, Path, description = "Template ID")
+  ),
+  responses(
+    (status = 204, description = "Template deleted; profiles made from it keep their settings"),
+    (status = 401, description = "Unauthorized"),
+    (status = 404, description = "Template not found")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "templates"
+)]
+async fn delete_template(Path(id): Path<String>) -> Result<StatusCode, (StatusCode, String)> {
+  crate::profile_templates::delete(&id)
+    .map(|()| StatusCode::NO_CONTENT)
+    .map_err(manager_error_response)
+}
+
+#[utoipa::path(
+  post,
+  path = "/v1/templates/{id}/profiles",
+  params(
+    ("id" = String, Path, description = "Template ID")
+  ),
+  request_body = CreateFromTemplateRequest,
+  responses(
+    (status = 200, description = "Profiles made with the newest downloaded Wayfern, each with its own device. When `error` is set, creation stopped early and `profiles` lists what was made", body = ApiBulkCreateResponse),
+    (status = 400, description = "Count outside 1 to 100, empty name, a name in use, or a proxy or VPN that does not work"),
+    (status = 401, description = "Unauthorized"),
+    (status = 402, description = "The template's fingerprint OS needs a paid plan"),
+    (status = 404, description = "Template not found"),
+    (status = 409, description = "Another bulk creation is running"),
+    (status = 429, description = "The hourly profile allowance is used up; nothing was made")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "templates"
+)]
+async fn create_profiles_from_template(
+  State(state): State<ApiServerState>,
+  Path(id): Path<String>,
+  Json(request): Json<CreateFromTemplateRequest>,
+) -> Result<Json<ApiBulkCreateResponse>, (StatusCode, String)> {
+  crate::profile_templates::create_from_template(
+    &state.app_handle,
+    &id,
+    request.name.as_deref(),
+    request.count,
+  )
+  .await
+  .map(|result| {
+    Json(ApiBulkCreateResponse {
+      profiles: result.created.iter().map(ApiProfile::from).collect(),
+      error: result.error,
+    })
+  })
+  .map_err(manager_error_response)
+}
+
 // API Handlers - Tags
 #[utoipa::path(
   get,
@@ -2084,14 +2716,7 @@ async fn get_proxies(
 ) -> Result<Json<Vec<ApiProxyResponse>>, StatusCode> {
   let proxies = PROXY_MANAGER.get_stored_proxies();
   Ok(Json(
-    proxies
-      .into_iter()
-      .map(|p| ApiProxyResponse {
-        id: p.id,
-        name: p.name,
-        proxy_settings: p.proxy_settings,
-      })
-      .collect(),
+    proxies.into_iter().map(ApiProxyResponse::from).collect(),
   ))
 }
 
@@ -2118,11 +2743,7 @@ async fn get_proxy(
 ) -> Result<Json<ApiProxyResponse>, StatusCode> {
   let proxies = PROXY_MANAGER.get_stored_proxies();
   if let Some(proxy) = proxies.into_iter().find(|p| p.id == id) {
-    Ok(Json(ApiProxyResponse {
-      id: proxy.id,
-      name: proxy.name,
-      proxy_settings: proxy.proxy_settings,
-    }))
+    Ok(Json(ApiProxyResponse::from(proxy)))
   } else {
     Err(StatusCode::NOT_FOUND)
   }
@@ -2147,6 +2768,8 @@ async fn create_proxy(
   State(state): State<ApiServerState>,
   Json(request): Json<CreateProxyRequest>,
 ) -> Result<Json<ApiProxyResponse>, (StatusCode, String)> {
+  let rotation_url = crate::proxy_rotation::checked_rotation_url(request.rotation_url)
+    .map_err(manager_error_response)?;
   let result = PROXY_MANAGER.create_stored_proxy(
     &state.app_handle,
     request.name.clone(),
@@ -2154,11 +2777,11 @@ async fn create_proxy(
   );
 
   match result {
-    Ok(proxy) => Ok(Json(ApiProxyResponse {
-      id: proxy.id,
-      name: proxy.name,
-      proxy_settings: proxy.proxy_settings,
-    })),
+    Ok(proxy) if rotation_url.is_some() => PROXY_MANAGER
+      .set_rotation_url(&proxy.id, rotation_url)
+      .map(|proxy| Json(ApiProxyResponse::from(proxy)))
+      .map_err(manager_error_response),
+    Ok(proxy) => Ok(Json(ApiProxyResponse::from(proxy))),
     Err(e) => Err(manager_error_response(e)),
   }
 }
@@ -2225,11 +2848,7 @@ async fn import_proxies_api(
     proxies: result
       .proxies
       .into_iter()
-      .map(|p| ApiProxyResponse {
-        id: p.id,
-        name: p.name,
-        proxy_settings: p.proxy_settings,
-      })
+      .map(ApiProxyResponse::from)
       .collect(),
   }))
 }
@@ -2258,17 +2877,58 @@ async fn update_proxy(
   State(state): State<ApiServerState>,
   Json(request): Json<UpdateProxyRequest>,
 ) -> Result<Json<ApiProxyResponse>, (StatusCode, String)> {
+  // Checked first, so a bad link leaves the proxy as it was.
+  let rotation_url = request
+    .rotation_url
+    .map(|url| crate::proxy_rotation::checked_rotation_url(Some(url)))
+    .transpose()
+    .map_err(manager_error_response)?;
   let result =
     PROXY_MANAGER.update_stored_proxy(&state.app_handle, &id, request.name, request.proxy_settings);
 
   match result {
-    Ok(proxy) => Ok(Json(ApiProxyResponse {
-      id: proxy.id,
-      name: proxy.name,
-      proxy_settings: proxy.proxy_settings,
-    })),
+    Ok(_) if rotation_url.is_some() => PROXY_MANAGER
+      .set_rotation_url(&id, rotation_url.flatten())
+      .map(|proxy| Json(ApiProxyResponse::from(proxy)))
+      .map_err(manager_error_response),
+    Ok(proxy) => Ok(Json(ApiProxyResponse::from(proxy))),
     Err(e) => Err(manager_error_response(e)),
   }
+}
+
+#[utoipa::path(
+  post,
+  path = "/v1/proxies/{id}/rotate",
+  params(
+    ("id" = String, Path, description = "Proxy ID")
+  ),
+  responses(
+    (status = 200, description = "The provider accepted the IP change. Every profile behind the proxy moves to the new IP.", body = crate::proxy_rotation::RotationResult),
+    (status = 400, description = "The proxy has no change-IP link (PROXY_ROTATION_URL_MISSING)"),
+    (status = 401, description = "Unauthorized"),
+    (status = 404, description = "Proxy not found"),
+    (status = 502, description = "The provider refused or did not answer (PROXY_ROTATION_FAILED, PROXY_ROTATION_TIMEOUT, PROXY_ROTATION_UNREACHABLE, SYSTEM_PROXY_UNREACHABLE)")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "proxies"
+)]
+async fn rotate_proxy(
+  Path(id): Path<String>,
+) -> Result<Json<crate::proxy_rotation::RotationResult>, (StatusCode, String)> {
+  crate::proxy_rotation::rotate(&id)
+    .await
+    .map(Json)
+    .map_err(|e| {
+      if e.contains("PROXY_NOT_FOUND") {
+        (StatusCode::NOT_FOUND, e)
+      } else if e.contains("PROXY_ROTATION_URL_MISSING") {
+        (StatusCode::BAD_REQUEST, e)
+      } else {
+        (StatusCode::BAD_GATEWAY, e)
+      }
+    })
 }
 
 #[utoipa::path(
@@ -2934,7 +3594,7 @@ async fn remove_extension_from_group_api(
     (status = 404, description = "Profile not found"),
     (status = 409, description = "Profile is locked by another team member, running on the remote fleet, or waiting for a finished remote session to be pulled back"),
     (status = 429, description = "Automation request rate limit exceeded"),
-    (status = 503, description = "The profile lock service could not be reached"),
+    (status = 503, description = "The profile lock service could not be reached, or the profile's files could not be downloaded from sync before its first launch here"),
     (status = 500, description = "Internal server error")
   ),
   security(
@@ -2987,6 +3647,26 @@ async fn run_profile(
     ));
   }
 
+  // A browser the person already opened is handed over as it is, never
+  // restarted: its DevTools port is the answer, with the URL in a new tab.
+  if let Some(port) = crate::browser_tabs::local_port(profile).await {
+    if let Some(url) = url.as_deref() {
+      crate::browser_tabs::open(profile, url)
+        .await
+        .map_err(manager_error_response)?;
+    }
+    log::info!(
+      "Running browser taken over profile={} cdp_port={port}",
+      profile.id
+    );
+    return Ok(Json(RunProfileResponse {
+      profile_id: profile.id.to_string(),
+      remote_debugging_port: port,
+      headless,
+      attached: true,
+    }));
+  }
+
   // Team lock check. Routed through the shared mapper so a profile held by the
   // user's OWN remote session is a 409 that says so, rather than a bare status
   // with no body, which is what an automation client had to guess from.
@@ -3021,10 +3701,11 @@ async fn run_profile(
     profile_id: updated_profile.id.to_string(),
     remote_debugging_port,
     headless,
+    attached: false,
   }))
 }
 
-// API Handler - Launch this profile on a REMOTE VM of its own operating system
+// API Handler - Launch this profile on a REMOTE VM of the OS `remote_platform` picks
 #[utoipa::path(
   post,
   path = "/v1/profiles/{id}/run-remote",
@@ -3087,9 +3768,9 @@ async fn run_profile_remote(
     }
   }
 
-  // Deliberately NO is_cross_os() guard here. Local /run refuses a foreign
-  // profile because this machine is the wrong OS; running it remotely on a host
-  // of its OWN OS is precisely what this endpoint exists for.
+  // Deliberately NO is_cross_os() guard here. Local /run refuses a profile
+  // bound to another OS because this machine is the wrong OS; running it
+  // remotely on a host of its OWN OS is precisely what this endpoint exists for.
   let outcome =
     crate::remote_session::start_remote_session(state.app_handle.clone(), profile, request.url)
       .await
@@ -3193,7 +3874,10 @@ fn sync_mode_error_response(err: String) -> (StatusCode, String) {
 pub async fn remote_launch_precondition(
   profile: &crate::profile::types::BrowserProfile,
 ) -> Result<(), String> {
-  remote_launch_profile_rules(profile)?;
+  if let Some(refusal) = crate::sync::account_server::cloud_run_refusal() {
+    return Err(refusal);
+  }
+  remote_launch_profile_rules(profile, crate::sync::encryption::has_e2e_password())?;
 
   // The manifest is written last, so a host pulling mid-upload gets files
   // that are about to be replaced and a manifest that does not describe them.
@@ -3217,6 +3901,7 @@ pub async fn remote_launch_precondition(
 /// scheduler, and so the live check above cannot be reached without them.
 pub fn remote_launch_profile_rules(
   profile: &crate::profile::types::BrowserProfile,
+  sync_password_stored: bool,
 ) -> Result<(), String> {
   if !profile.is_sync_enabled() {
     return Err(
@@ -3235,7 +3920,17 @@ pub fn remote_launch_profile_rules(
         .to_string(),
     );
   }
-  if profile.resolved_os().is_none() {
+  if crate::sync::encryption::remote_seal(profile, sync_password_stored)
+    == Some(crate::sync::encryption::RemoteSeal::SyncPassword)
+  {
+    return Err(
+      "the account's sync password seals the profile's synced settings, its \
+       proxy included; a remote host cannot decrypt them. Remove the sync \
+       password to run the profile remotely."
+        .to_string(),
+    );
+  }
+  if profile.remote_platform().is_none() {
     return Err(
       "profile has no recorded operating system, so it cannot be scheduled \
        onto a matching host"
@@ -3546,7 +4241,7 @@ async fn pump_cdp(session_id: String, client: WebSocket, upstream: crate::cdp_ta
     () = to_client => {}
   }
   log::info!(
-    "CDP proxy for remote session {} closed",
+    "Remote session CDP proxy closed session={}",
     ShortId(&session_id)
   );
 }
@@ -3666,7 +4361,7 @@ fn cookie_bot_eligible_profile(
     .find(|p| p.id.to_string() == profile_id)
     .ok_or((StatusCode::NOT_FOUND, "profile not found".to_string()))?;
 
-  crate::cookie_bot::bot_precondition(&profile, &crate::cookie_bot::exit_reachability(&profile))
+  crate::cookie_bot::run_precondition(&profile)
     .map_err(|reason| (StatusCode::BAD_REQUEST, reason))?;
   Ok(profile)
 }
@@ -3772,7 +4467,7 @@ async fn set_cookie_bot_schedule(
   // than the request is what stops a caller enrolling a macOS profile onto a
   // Windows host.
   let platform = profile
-    .resolved_os()
+    .remote_platform()
     .ok_or((
       StatusCode::BAD_REQUEST,
       serde_json::json!({ "code": "COOKIE_BOT_UNKNOWN_PLATFORM" }).to_string(),
@@ -4073,7 +4768,7 @@ async fn get_cookie_bot_usage(
     (status = 404, description = "Profile not found"),
     (status = 409, description = "Profile is locked by another team member, or waiting for a finished remote session to be pulled back"),
     (status = 429, description = "Automation request rate limit exceeded"),
-    (status = 503, description = "The profile lock service could not be reached"),
+    (status = 503, description = "The profile lock service could not be reached, or the profile's files could not be downloaded from sync before its first launch here"),
     (status = 500, description = "Internal server error")
   ),
   security(
@@ -4189,7 +4884,9 @@ async fn kill_profile(
 
 // API Handler - Batch run profiles (paid: browser automation). Mirrors the
 // single `/run` gate; never breaks the batch on a single profile's failure —
-// each profile gets its own result entry.
+// each profile gets its own result entry, in request order. Launches start
+// `delay_ms` apart with at most `concurrency` starting at once, like a bulk
+// launch in the app.
 #[utoipa::path(
   post,
   path = "/v1/profiles/batch/run",
@@ -4230,69 +4927,122 @@ async fn batch_run_profiles(
   }
 
   let headless = request.headless.unwrap_or(false);
+  let settings = crate::settings_manager::SettingsManager::instance()
+    .load_settings()
+    .ok();
+  let (delay, concurrency) = batch_run_pacing(&request, settings.as_ref());
   let profile_manager = ProfileManager::instance();
   let profiles = profile_manager
     .list_profiles()
     .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-  let mut results = Vec::new();
-  for profile_id in &request.profile_ids {
-    let fail = |error: &str| BatchRunResult {
-      profile_id: profile_id.clone(),
-      ok: false,
-      remote_debugging_port: None,
-      error: Some(error.to_string()),
-    };
+  let fail = |profile_id: &str, error: &str| BatchRunResult {
+    profile_id: profile_id.to_string(),
+    ok: false,
+    remote_debugging_port: None,
+    error: Some(error.to_string()),
+  };
 
+  // One slot per input, filled in whatever order the launches finish.
+  let mut results: Vec<Option<BatchRunResult>> = vec![None; request.profile_ids.len()];
+  let slots = Arc::new(tokio::sync::Semaphore::new(concurrency));
+  let mut launches = tokio::task::JoinSet::new();
+  let mut last_start: Option<tokio::time::Instant> = None;
+
+  for (index, profile_id) in request.profile_ids.iter().enumerate() {
     let Some(profile) = profiles.iter().find(|p| p.id.to_string() == *profile_id) else {
-      results.push(fail("profile not found"));
+      results[index] = Some(fail(profile_id, "profile not found"));
       continue;
     };
     if profile.is_cross_os() {
-      results.push(fail("cross-OS profiles cannot be launched"));
-      continue;
-    }
-    if crate::team_lock::acquire_team_lock_if_needed(profile)
-      .await
-      .is_err()
-    {
-      results.push(fail("profile is locked by another team member"));
+      results[index] = Some(fail(profile_id, "cross-OS profiles cannot be launched"));
       continue;
     }
 
-    let port = match tokio::net::TcpListener::bind("127.0.0.1:0").await {
-      Ok(listener) => match listener.local_addr() {
-        Ok(addr) => addr.port(),
-        Err(_) => {
-          results.push(fail("failed to allocate debugging port"));
-          continue;
-        }
-      },
-      Err(_) => {
-        results.push(fail("failed to allocate debugging port"));
-        continue;
-      }
+    let Ok(slot) = slots.clone().acquire_owned().await else {
+      results[index] = Some(fail(profile_id, "launch failed: batch stopped"));
+      continue;
     };
+    if let Some(previous) = last_start {
+      tokio::time::sleep_until(previous + delay).await;
+    }
+    last_start = Some(tokio::time::Instant::now());
 
-    match crate::browser_runner::launch_browser_profile_impl(
-      state.app_handle.clone(),
-      profile.clone(),
-      request.url.clone(),
-      crate::browser_runner::LaunchOptions::automation(Some(port), headless),
-    )
-    .await
-    {
-      Ok(_) => results.push(BatchRunResult {
-        profile_id: profile_id.clone(),
-        ok: true,
-        remote_debugging_port: Some(port),
-        error: None,
-      }),
-      Err(e) => results.push(fail(&format!("launch failed: {e}"))),
+    let app_handle = state.app_handle.clone();
+    let profile = profile.clone();
+    let profile_id = profile_id.clone();
+    let url = request.url.clone();
+    launches.spawn(async move {
+      let _slot = slot;
+      (
+        index,
+        launch_batch_profile(app_handle, profile, profile_id, url, headless).await,
+      )
+    });
+  }
+
+  while let Some(joined) = launches.join_next().await {
+    match joined {
+      Ok((index, result)) => results[index] = Some(result),
+      Err(e) => log::error!("Batch launch task panicked err=\"{e}\""),
     }
   }
 
+  let results = results
+    .into_iter()
+    .zip(&request.profile_ids)
+    .map(|(result, profile_id)| {
+      result.unwrap_or_else(|| fail(profile_id, "launch failed: internal error"))
+    })
+    .collect();
   Ok(Json(BatchRunResponse { results }))
+}
+
+/// One profile of a batch run, from its team lock to its launch.
+async fn launch_batch_profile(
+  app_handle: tauri::AppHandle,
+  profile: crate::profile::types::BrowserProfile,
+  profile_id: String,
+  url: Option<String>,
+  headless: bool,
+) -> BatchRunResult {
+  let fail = |error: &str| BatchRunResult {
+    profile_id: profile_id.clone(),
+    ok: false,
+    remote_debugging_port: None,
+    error: Some(error.to_string()),
+  };
+  if crate::team_lock::acquire_team_lock_if_needed(&profile)
+    .await
+    .is_err()
+  {
+    return fail("profile is locked by another team member");
+  }
+
+  let port = match tokio::net::TcpListener::bind("127.0.0.1:0").await {
+    Ok(listener) => match listener.local_addr() {
+      Ok(addr) => addr.port(),
+      Err(_) => return fail("failed to allocate debugging port"),
+    },
+    Err(_) => return fail("failed to allocate debugging port"),
+  };
+
+  match crate::browser_runner::launch_browser_profile_impl(
+    app_handle,
+    profile,
+    url,
+    crate::browser_runner::LaunchOptions::automation(Some(port), headless),
+  )
+  .await
+  {
+    Ok(_) => BatchRunResult {
+      profile_id: profile_id.clone(),
+      ok: true,
+      remote_debugging_port: Some(port),
+      error: None,
+    },
+    Err(e) => fail(&format!("launch failed: {e}")),
+  }
 }
 
 // API Handler - Distribute proxies one to one across profiles.
@@ -4477,6 +5227,78 @@ async fn import_profiles_api(
       request.duplicate_strategy.unwrap_or_default(),
       wayfern_config,
     )
+    .await
+    .map(Json)
+    .map_err(manager_error_response)
+}
+
+#[utoipa::path(
+  get,
+  path = "/v1/profiles/{id}/storage-state",
+  params(
+    ("id" = String, Path, description = "Profile ID"),
+    ("include_cookies" = Option<bool>, Query, description = "Also export the profile's cookies; false when left out"),
+    ("indexed_db" = Option<bool>, Query, description = "Also export each origin's IndexedDB (`origins[].indexedDB`). The profile must be closed; it opens headless for a moment and no request leaves the computer. False when left out")
+  ),
+  responses(
+    (status = 200, description = "Playwright storageState: each origin's Local Storage, and the cookies and IndexedDB when asked for. Readable while the browser runs unless IndexedDB is asked for; writes from the last seconds may not be on disk yet", body = ApiStorageState),
+    (status = 400, description = "The profile is ephemeral and keeps no Local Storage on disk, the IndexedDB is over 24 MiB, or the browser could not read it"),
+    (status = 401, description = "Unauthorized"),
+    (status = 404, description = "Profile not found"),
+    (status = 409, description = "The profile is password-protected, IndexedDB was asked for while the browser runs, or a remote session owns it"),
+    (status = 500, description = "Internal server error")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "cookies"
+)]
+async fn export_storage_state(
+  State(state): State<ApiServerState>,
+  Path(id): Path<String>,
+  Query(query): Query<StorageStateQuery>,
+) -> Result<Json<ApiStorageState>, (StatusCode, String)> {
+  let text = crate::local_storage::export_storage_state_with(
+    &state.app_handle,
+    &id,
+    query.include_cookies,
+    query.indexed_db,
+  )
+  .await
+  .map_err(manager_error_response)?;
+  serde_json::from_str(&text)
+    .map(Json)
+    .map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))
+}
+
+#[utoipa::path(
+  post,
+  path = "/v1/profiles/{id}/storage-state",
+  params(
+    ("id" = String, Path, description = "Profile ID")
+  ),
+  request_body = ApiStorageState,
+  responses(
+    (status = 200, description = "Imported. An item replaces the one of the same name; the origin's other items stay", body = crate::local_storage::StorageStateImport),
+    (status = 400, description = "Not a storageState, an origin that is not http(s), more than 10 MiB for one origin, or an ephemeral profile"),
+    (status = 401, description = "Unauthorized"),
+    (status = 404, description = "Profile not found"),
+    (status = 409, description = "The browser is running, the profile is password-protected, or a remote session owns it"),
+    (status = 500, description = "Internal server error")
+  ),
+  security(
+    ("bearer_auth" = [])
+  ),
+  tag = "cookies"
+)]
+async fn import_storage_state(
+  State(state): State<ApiServerState>,
+  Path(id): Path<String>,
+  Json(body): Json<ApiStorageState>,
+) -> Result<Json<crate::local_storage::StorageStateImport>, (StatusCode, String)> {
+  let content =
+    serde_json::to_string(&body).map_err(|e| (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()))?;
+  crate::local_storage::import_storage_state(&state.app_handle, &id, &content)
     .await
     .map(Json)
     .map_err(manager_error_response)
@@ -4721,6 +5543,29 @@ fn resolve_error_response(error: crate::cdp_target::ResolveError) -> (StatusCode
 /// The body is the same `{"code": ..., ...}` envelope the MCP transport puts
 /// in its error `data`, plus `message`, so a locator that matched three
 /// buttons hands a REST client the same candidate list an agent gets.
+/// An agent call's answer. A browser that refuses automation as unpaid on an
+/// account whose plan includes it gets the real reason: another desktop is the
+/// primary one, or the browser's own plan token is stale.
+async fn agent_reply<T>(
+  id: &str,
+  result: Result<T, crate::mcp_server::AgentError>,
+) -> Result<Json<T>, (StatusCode, String)> {
+  use crate::mcp_server::AgentError;
+  match result {
+    Ok(value) => Ok(Json(value)),
+    Err(AgentError::PaymentRequired(message)) => {
+      let reason = match crate::cloud_auth::CLOUD_AUTH.wayfern_device_refusal() {
+        Some(device) => Some(device),
+        None => crate::mcp_server::stale_plan_token_refusal(Some(id)).await,
+      };
+      Err(agent_error_response(AgentError::PaymentRequired(
+        reason.unwrap_or(message),
+      )))
+    }
+    Err(error) => Err(agent_error_response(error)),
+  }
+}
+
 fn agent_error_response(error: crate::mcp_server::AgentError) -> (StatusCode, String) {
   use crate::cdp_target::CdpError;
   use crate::mcp_server::AgentError;
@@ -4736,6 +5581,8 @@ fn agent_error_response(error: crate::mcp_server::AgentError) -> (StatusCode, St
     AgentError::AuthorizationUnavailable(_) => StatusCode::SERVICE_UNAVAILABLE,
     AgentError::PickerTimedOut { .. } => StatusCode::REQUEST_TIMEOUT,
     AgentError::PickerCancelled { .. } => StatusCode::CONFLICT,
+    // The page did not take the text: a conflict with its state, not a fault.
+    AgentError::TypeNotApplied { .. } => StatusCode::CONFLICT,
     AgentError::Cdp(CdpError::Unauthorized(_)) => StatusCode::UNAUTHORIZED,
     // Nothing answers on the profile's socket: the browser is gone, or is not
     // drivable yet. Both read as "start it and try again".
@@ -4777,10 +5624,7 @@ async fn agent_perceive_api(
   Json(request): Json<crate::wayfern_cdp::PerceptionRequest>,
 ) -> Result<Json<crate::wayfern_cdp::PerceptionPage>, (StatusCode, String)> {
   let ctx = agent_context_for(&id).await?;
-  crate::mcp_server::agent_perceive(&ctx, &request)
-    .await
-    .map(Json)
-    .map_err(agent_error_response)
+  agent_reply(&id, crate::mcp_server::agent_perceive(&ctx, &request).await).await
 }
 
 #[utoipa::path(
@@ -4811,10 +5655,11 @@ async fn agent_resolve_locator_api(
   Json(request): Json<crate::mcp_server::AgentResolveRequest>,
 ) -> Result<Json<crate::wayfern_cdp::LocatorResolution>, (StatusCode, String)> {
   let ctx = agent_context_for(&id).await?;
-  crate::mcp_server::agent_resolve_locator(&ctx, &request)
-    .await
-    .map(Json)
-    .map_err(agent_error_response)
+  agent_reply(
+    &id,
+    crate::mcp_server::agent_resolve_locator(&ctx, &request).await,
+  )
+  .await
 }
 
 #[utoipa::path(
@@ -4845,10 +5690,11 @@ async fn agent_click_api(
   Json(request): Json<crate::mcp_server::AgentClickRequest>,
 ) -> Result<Json<crate::mcp_server::AgentClick>, (StatusCode, String)> {
   let ctx = agent_context_for(&id).await?;
-  crate::mcp_server::agent_click_locator(&ctx, &request)
-    .await
-    .map(Json)
-    .map_err(agent_error_response)
+  agent_reply(
+    &id,
+    crate::mcp_server::agent_click_locator(&ctx, &request).await,
+  )
+  .await
 }
 
 #[utoipa::path(
@@ -4859,12 +5705,12 @@ async fn agent_click_api(
   ),
   request_body = crate::mcp_server::AgentTypeRequest,
   responses(
-    (status = 200, description = "The text was typed", body = crate::mcp_server::AgentTyping),
+    (status = 200, description = "The text was typed, and the field read back holds it (`verified`)", body = crate::mcp_server::AgentTyping),
     (status = 400, description = "Malformed request, no element matched, several did, or the text would take longer than the typing budget (`code` TYPING_TOO_LONG)"),
     (status = 401, description = "Unauthorized"),
     (status = 402, description = "Active paid plan with browser automation required"),
     (status = 404, description = "Profile not found"),
-    (status = 409, description = "The profile is not running"),
+    (status = 409, description = "The profile is not running, or the field did not take the focus or the text (`code` TYPE_NOT_APPLIED, `reason` not_focused or value)"),
     (status = 429, description = "Automation request rate limit exceeded"),
     (status = 502, description = "The browser did not answer as documented"),
     (status = 500, description = "Internal server error")
@@ -4879,10 +5725,12 @@ async fn agent_type_api(
   Json(request): Json<crate::mcp_server::AgentTypeRequest>,
 ) -> Result<Json<crate::mcp_server::AgentTyping>, (StatusCode, String)> {
   let ctx = agent_context_for(&id).await?;
-  crate::mcp_server::agent_type_locator(&ctx, &request, crate::mcp_server::MAX_TYPING_SECONDS)
-    .await
-    .map(Json)
-    .map_err(agent_error_response)
+  agent_reply(
+    &id,
+    crate::mcp_server::agent_type_locator(&ctx, &request, crate::mcp_server::MAX_TYPING_SECONDS)
+      .await,
+  )
+  .await
 }
 
 #[utoipa::path(
@@ -4913,10 +5761,7 @@ async fn agent_extract_api(
   Json(request): Json<crate::wayfern_cdp::ExtractionRequest>,
 ) -> Result<Json<crate::wayfern_cdp::Extraction>, (StatusCode, String)> {
   let ctx = agent_context_for(&id).await?;
-  crate::mcp_server::agent_extract(&ctx, &request)
-    .await
-    .map(Json)
-    .map_err(agent_error_response)
+  agent_reply(&id, crate::mcp_server::agent_extract(&ctx, &request).await).await
 }
 
 #[utoipa::path(
@@ -4952,10 +5797,11 @@ async fn agent_pick_api(
     .timeout_ms
     .unwrap_or(crate::mcp_server::DEFAULT_PICK_TIMEOUT_MS)
     .clamp(1_000, crate::mcp_server::MAX_PICK_TIMEOUT_MS);
-  crate::mcp_server::agent_pick_element(&ctx, timeout_ms)
-    .await
-    .map(Json)
-    .map_err(agent_error_response)
+  agent_reply(
+    &id,
+    crate::mcp_server::agent_pick_element(&ctx, timeout_ms).await,
+  )
+  .await
 }
 
 #[cfg(test)]
@@ -4980,8 +5826,12 @@ mod url_guard_tests {
       .split("struct ")
       .skip(1)
       .filter(|chunk| {
-        let head = &chunk[..chunk.len().min(600)];
-        head.contains("url: Option<String>") || head.contains("url: String")
+        // A field named exactly `url`: what a browser is sent to. Links with
+        // their own name (`rotation_url`) are checked where they are used.
+        chunk[..chunk.len().min(600)].lines().any(|line| {
+          let field = line.trim().trim_start_matches("pub ");
+          field.starts_with("url: Option<String>") || field.starts_with("url: String")
+        })
       })
       .map(|chunk| chunk.split(['{', ' ', '<']).next().unwrap_or("?"))
       .collect();
@@ -5050,12 +5900,12 @@ mod tests {
   // would launch an empty browser and push that emptiness over the real one.
   #[test]
   fn remote_launch_requires_cloud_sync() {
-    let err = remote_launch_profile_rules(&profile_with(SyncMode::Disabled, Some("macos")))
+    let err = remote_launch_profile_rules(&profile_with(SyncMode::Disabled, Some("macos")), false)
       .expect_err("a non-synced profile must be refused");
     assert!(err.contains("cloud sync"), "unhelpful message: {err}");
 
     assert!(
-      remote_launch_profile_rules(&profile_with(SyncMode::Regular, Some("macos"))).is_ok(),
+      remote_launch_profile_rules(&profile_with(SyncMode::Regular, Some("macos")), false).is_ok(),
       "a synced profile must be allowed"
     );
   }
@@ -5067,7 +5917,7 @@ mod tests {
     // the corruption back over the user's real profile. Refusing here also
     // saves taking the profile lock and a slot on leased hardware for a
     // session that cannot possibly work.
-    let err = remote_launch_profile_rules(&profile_with(SyncMode::Encrypted, Some("macos")))
+    let err = remote_launch_profile_rules(&profile_with(SyncMode::Encrypted, Some("macos")), false)
       .expect_err("an encrypted profile must be refused");
     assert!(
       err.contains("encrypted") && err.contains("Regular"),
@@ -5076,10 +5926,21 @@ mod tests {
   }
 
   #[test]
+  fn remote_launch_refuses_a_profile_sealed_by_the_sync_password() {
+    // The password seals the profile's metadata and proxy even on Regular
+    // sync: a host would launch it without its proxy, or not at all.
+    let profile = profile_with(SyncMode::Regular, Some("macos"));
+    let err = remote_launch_profile_rules(&profile, true)
+      .expect_err("a profile sealed by the sync password must be refused");
+    assert!(err.contains("sync password"), "unhelpful message: {err}");
+    assert!(remote_launch_profile_rules(&profile, false).is_ok());
+  }
+
+  #[test]
   fn remote_launch_requires_a_known_operating_system() {
-    // Without one there is no way to pick a matching host, and guessing would
-    // be the cross-OS mismatch this whole design exists to prevent.
-    assert!(remote_launch_profile_rules(&profile_with(SyncMode::Regular, None)).is_err());
+    // Without one a Linux host has no OS to present the profile as, and a
+    // guess would change the OS the profile reports to sites.
+    assert!(remote_launch_profile_rules(&profile_with(SyncMode::Regular, None), false).is_err());
   }
 
   #[test]
@@ -5091,14 +5952,16 @@ mod tests {
       "windows"
     };
     let foreign = profile_with(SyncMode::Regular, Some(other));
+    // A Wayfern profile from another OS runs locally too, and remotely.
+    assert!(!foreign.is_cross_os());
+    assert!(remote_launch_profile_rules(&foreign, false).is_ok());
 
-    assert!(
-      foreign.is_cross_os(),
-      "test setup: profile should be foreign"
-    );
+    let mut bound = foreign.clone();
+    bound.browser = "camoufox".to_string();
+    assert!(bound.is_cross_os(), "test setup: profile should be foreign");
     // Local /run refuses this; running it remotely on a host of its own OS is
     // exactly what /run-remote is for.
-    assert!(remote_launch_profile_rules(&foreign).is_ok());
+    assert!(remote_launch_profile_rules(&bound, false).is_ok());
   }
 
   #[tokio::test]
@@ -5109,6 +5972,8 @@ mod tests {
     // over the real profile.
     let scheduler = std::sync::Arc::new(crate::sync::SyncScheduler::new());
     crate::sync::set_global_scheduler(scheduler.clone());
+    let data = tempfile::tempdir().unwrap();
+    let _data = crate::app_dirs::set_test_data_dir(data.path().to_path_buf());
 
     let mut profile = profile_with(SyncMode::Regular, Some("macos"));
     profile.id = uuid::Uuid::new_v4();
@@ -5142,9 +6007,9 @@ mod tests {
     assert!(encrypted.cloud_sync_enabled);
   }
 
-  // A profile must only ever run on its own operating system: Chromium's
-  // on-disk state is OS-specific, so replaying a macOS profile on Windows is a
-  // mismatch no amount of user-agent spoofing repairs.
+  // `host_os` reports where the profile was created; `is_cross_os` reports
+  // whether that stops it from launching here, which it never does for a
+  // Wayfern profile.
   #[test]
   fn api_profile_reports_its_operating_system() {
     let host = crate::profile::types::get_host_os();
@@ -5159,7 +6024,13 @@ mod tests {
     };
     let foreign = ApiProfile::from(&profile_with(SyncMode::Regular, Some(other)));
     assert_eq!(foreign.host_os.as_deref(), Some(other));
-    assert!(foreign.is_cross_os);
+    assert!(!foreign.is_cross_os);
+
+    let mut bound = profile_with(SyncMode::Regular, Some(other));
+    bound.browser = "camoufox".to_string();
+    let bound = ApiProfile::from(&bound);
+    assert_eq!(bound.host_os.as_deref(), Some(other));
+    assert!(bound.is_cross_os);
   }
 
   #[test]
@@ -5640,6 +6511,203 @@ mod tests {
   }
 
   #[test]
+  fn openapi_documents_batch_run_pacing() {
+    let spec = serde_json::to_value(ApiDoc::openapi()).expect("spec serializes");
+    let required = schema_required(&spec, "BatchRunRequest");
+    for field in ["delay_ms", "concurrency"] {
+      assert!(
+        !required.iter().any(|f| f == field),
+        "BatchRunRequest.{field} must be optional, required list: {required:?}"
+      );
+    }
+    let properties = &spec["components"]["schemas"]["BatchRunRequest"]["properties"];
+    assert_eq!(properties["delay_ms"]["maximum"], 60000);
+    assert_eq!(properties["concurrency"]["minimum"], 1);
+    assert_eq!(properties["concurrency"]["maximum"], 20);
+  }
+
+  #[test]
+  fn batch_run_pacing_takes_the_request_then_the_settings() {
+    let request = |delay_ms, concurrency| BatchRunRequest {
+      profile_ids: Vec::new(),
+      url: None,
+      headless: None,
+      delay_ms,
+      concurrency,
+    };
+    let settings = crate::settings_manager::AppSettings {
+      bulk_launch_delay_ms: 1500,
+      bulk_launch_concurrency: 5,
+      ..Default::default()
+    };
+
+    let (delay, concurrency) = batch_run_pacing(&request(None, None), Some(&settings));
+    assert_eq!(delay, std::time::Duration::from_millis(1500));
+    assert_eq!(concurrency, 5);
+
+    let (delay, concurrency) = batch_run_pacing(&request(Some(0), Some(1)), Some(&settings));
+    assert_eq!(delay, std::time::Duration::ZERO);
+    assert_eq!(concurrency, 1);
+
+    let (delay, concurrency) = batch_run_pacing(&request(Some(999_999), Some(0)), None);
+    assert_eq!(delay, std::time::Duration::from_millis(60_000));
+    assert_eq!(concurrency, 1, "zero would never start a launch");
+
+    let (delay, concurrency) = batch_run_pacing(&request(None, Some(500)), None);
+    assert_eq!(delay, std::time::Duration::from_millis(800));
+    assert_eq!(concurrency, 20);
+  }
+
+  #[test]
+  fn openapi_documents_start_pages() {
+    let spec = serde_json::to_value(ApiDoc::openapi()).expect("spec serializes");
+    for schema in ["CreateProfileRequest", "UpdateProfileRequest"] {
+      assert!(
+        !schema_required(&spec, schema)
+          .iter()
+          .any(|f| f == "start_urls"),
+        "{schema}.start_urls must be optional"
+      );
+    }
+    assert!(
+      schema_required(&spec, "ApiProfile")
+        .iter()
+        .any(|f| f == "start_urls"),
+      "ApiProfile always reports its start pages"
+    );
+  }
+
+  #[test]
+  fn openapi_documents_profile_statuses() {
+    let spec = serde_json::to_value(ApiDoc::openapi()).expect("spec serializes");
+    for path in ["/v1/statuses", "/v1/statuses/{id}"] {
+      assert!(
+        spec["paths"][path].is_object(),
+        "{path} must be in the spec"
+      );
+    }
+    for schema in ["CreateProfileRequest", "UpdateProfileRequest", "ApiProfile"] {
+      assert_eq!(
+        spec["components"]["schemas"][schema]["properties"]["status_id"]["type"],
+        serde_json::json!(["string", "null"]),
+        "{schema}.status_id must be a nullable string"
+      );
+      assert!(
+        !schema_required(&spec, schema)
+          .iter()
+          .any(|f| f == "status_id"),
+        "{schema}.status_id must be optional"
+      );
+    }
+  }
+
+  #[test]
+  fn openapi_documents_bulk_edit_and_templates() {
+    let spec = serde_json::to_value(ApiDoc::openapi()).expect("spec serializes");
+    for path in [
+      "/v1/profiles/bulk-edit",
+      "/v1/templates",
+      "/v1/templates/{id}",
+      "/v1/templates/{id}/profiles",
+    ] {
+      assert!(
+        spec["paths"][path].is_object(),
+        "{path} must be in the spec"
+      );
+    }
+    let patch = &spec["components"]["schemas"]["ProfilePatch"];
+    assert!(patch["properties"]["status_id"].is_object());
+    assert!(
+      schema_required(&spec, "ProfilePatch").is_empty(),
+      "every patch field is optional"
+    );
+    assert!(
+      schema_required(&spec, "TemplateSettings").is_empty(),
+      "every template setting is optional"
+    );
+    assert!(!schema_required(&spec, "CreateFromTemplateRequest")
+      .iter()
+      .any(|f| f == "name"));
+    assert!(spec["paths"]["/v1/templates/{id}/profiles"]["post"]["responses"]["429"].is_object());
+  }
+
+  #[test]
+  fn openapi_documents_the_profile_fingerprint() {
+    let spec = serde_json::to_value(ApiDoc::openapi()).expect("spec serializes");
+    let get = &spec["paths"]["/v1/profiles/{id}/fingerprint"]["get"];
+    for status in ["200", "404"] {
+      assert!(get["responses"][status].is_object(), "{status} documented");
+    }
+    let fingerprint =
+      &spec["components"]["schemas"]["ApiProfileFingerprintResponse"]["properties"]["fingerprint"];
+    assert_eq!(
+      fingerprint["type"],
+      serde_json::json!(["string", "null"]),
+      "the device is a JSON-encoded string, or null when there is none to show"
+    );
+    assert!(schema_required(&spec, "ApiProfileFingerprintResponse").is_empty());
+  }
+
+  #[test]
+  fn openapi_documents_the_storage_state() {
+    let spec = serde_json::to_value(ApiDoc::openapi()).expect("spec serializes");
+    let path = &spec["paths"]["/v1/profiles/{id}/storage-state"];
+    assert!(path["get"].is_object() && path["post"].is_object());
+    assert!(path["post"]["responses"]["409"].is_object());
+    let origin = &spec["components"]["schemas"]["OriginStorage"];
+    assert!(
+      origin["properties"]["localStorage"].is_object(),
+      "Playwright's spelling"
+    );
+    assert!(
+      schema_required(&spec, "ApiStorageState").is_empty(),
+      "cookies and origins may each be left out"
+    );
+  }
+
+  #[test]
+  fn openapi_documents_the_profile_dns_server() {
+    let spec = serde_json::to_value(ApiDoc::openapi()).expect("spec serializes");
+    for schema in ["CreateProfileRequest", "UpdateProfileRequest", "ApiProfile"] {
+      let property = &spec["components"]["schemas"][schema]["properties"]["dns_server"];
+      assert_eq!(
+        property["type"],
+        serde_json::json!(["string", "null"]),
+        "{schema}.dns_server must be a nullable string, got: {property}"
+      );
+      assert!(
+        !schema_required(&spec, schema)
+          .iter()
+          .any(|f| f == "dns_server"),
+        "{schema}.dns_server must be optional"
+      );
+    }
+    let create =
+      spec["components"]["schemas"]["CreateProfileRequest"]["properties"]["dns_server"].to_string();
+    assert!(
+      create.contains("https://") && create.contains("tls://") && create.contains("empty string")
+    );
+    let update =
+      spec["components"]["schemas"]["UpdateProfileRequest"]["properties"]["dns_server"].to_string();
+    assert!(update.contains("empty string"));
+  }
+
+  #[test]
+  fn openapi_documents_the_exit_check_of_an_enrolment() {
+    let spec = serde_json::to_value(ApiDoc::openapi()).expect("spec serializes");
+    let view = &spec["components"]["schemas"]["ExitCheckView"];
+    for field in ["checked_at", "ok", "alive"] {
+      assert!(view["properties"].get(field).is_some(), "{field}: {view}");
+    }
+    assert!(
+      !schema_required(&spec, "CookieBotSchedule")
+        .iter()
+        .any(|f| f == "exit_check"),
+      "a schedule read elsewhere has no exit check"
+    );
+  }
+
+  #[test]
   fn openapi_optional_fields_are_not_required() {
     let spec = serde_json::to_value(ApiDoc::openapi()).expect("spec serializes");
 
@@ -6072,6 +7140,7 @@ mod tests {
         "WAYFERN_INSTANCE_LIMIT_REACHED",
         StatusCode::TOO_MANY_REQUESTS,
       ),
+      ("TOO_MANY_BROWSERS_RUNNING", StatusCode::TOO_MANY_REQUESTS),
       (
         "WAYFERN_GENERATION_LIMIT_REACHED",
         StatusCode::TOO_MANY_REQUESTS,
@@ -6099,6 +7168,16 @@ mod tests {
     let (status, _) =
       manager_error_response(serde_json::json!({ "code": "PROFILE_LOCK_UNAVAILABLE" }).to_string());
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+  }
+
+  #[test]
+  fn a_first_download_that_cannot_complete_is_not_the_callers_fault() {
+    let (status, body) = manager_error_response(crate::backend_error_with_detail(
+      "PROFILE_DATA_NOT_DOWNLOADED",
+      "offline",
+    ));
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+    assert!(body.contains("PROFILE_DATA_NOT_DOWNLOADED"));
   }
 
   #[test]
@@ -6740,3 +7819,7 @@ mod tests {
     }
   }
 }
+
+#[cfg(all(test, feature = "e2e"))]
+#[path = "api_server_fingerprint_browser_tests.rs"]
+mod fingerprint_browser_tests;

@@ -19,8 +19,8 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mts",
-    "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "build": "tsrs",
+    "typecheck": "tsrs --noEmit",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -32,10 +32,10 @@
   "homepage": "https://donutbrowser.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zhom/donutbrowser.git",
+    "url": "git+https://github.com/donutbrowser/donutbrowser.git",
     "directory": "sdk/node"
   },
   "devDependencies": {
-    "typescript": "^7.0.2"
+    "tsrs": "^0.18.0-ts7.1.0-dev.20260929"
   }
 }

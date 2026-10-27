@@ -10,6 +10,7 @@ interface Capabilities {
   cookieBot: boolean;
   remoteInteractive: boolean;
   remoteControl: boolean;
+  scheduledAutomation: boolean;
 }
 
 const NONE: Entitlements = {
@@ -21,6 +22,7 @@ const NONE: Entitlements = {
   cookieBot: false,
   remoteInteractive: false,
   remoteControl: false,
+  scheduledAutomation: false,
   profileLimit: 0,
   requestsPerHour: 0,
   remoteBrowserHours: 0,
@@ -39,6 +41,7 @@ const PLAN_CAPABILITIES: Record<string, Capabilities> = {
     cookieBot: true,
     remoteInteractive: false,
     remoteControl: true,
+    scheduledAutomation: true,
   },
   pro: {
     browserAutomation: true,
@@ -48,6 +51,7 @@ const PLAN_CAPABILITIES: Record<string, Capabilities> = {
     cookieBot: true,
     remoteInteractive: true,
     remoteControl: true,
+    scheduledAutomation: true,
   },
   team: {
     browserAutomation: true,
@@ -57,6 +61,7 @@ const PLAN_CAPABILITIES: Record<string, Capabilities> = {
     cookieBot: true,
     remoteInteractive: true,
     remoteControl: true,
+    scheduledAutomation: true,
   },
   enterprise: {
     browserAutomation: true,
@@ -66,6 +71,7 @@ const PLAN_CAPABILITIES: Record<string, Capabilities> = {
     cookieBot: true,
     remoteInteractive: true,
     remoteControl: true,
+    scheduledAutomation: true,
   },
 };
 
@@ -80,6 +86,7 @@ const DEFAULT_PAID: Capabilities = {
   cookieBot: true,
   remoteInteractive: true,
   remoteControl: false,
+  scheduledAutomation: false,
 };
 
 /**
@@ -133,6 +140,7 @@ function resolveCloudEntitlements(
       // backend with no remote-control endpoint to be entitled to, so `false`
       // is the true answer rather than a conservative guess.
       remoteControl: server.remoteControl ?? false,
+      scheduledAutomation: server.scheduledAutomation ?? false,
       remoteBrowserHours: server.remoteBrowserHours ?? 0,
     };
   }
@@ -153,6 +161,7 @@ function resolveCloudEntitlements(
     cookieBot: caps.cookieBot,
     remoteInteractive: caps.remoteInteractive,
     remoteControl: caps.remoteControl,
+    scheduledAutomation: caps.scheduledAutomation,
     profileLimit: user.profileLimit,
     requestsPerHour: caps.browserAutomation ? DEFAULT_REQUESTS_PER_HOUR : 0,
     remoteBrowserHours: 0,
@@ -176,6 +185,14 @@ export function effectivePlanOf(user: CloudUser | null | undefined): string {
  * goes through here so a plan change is one edit, and so the Pro badge and the
  * control it guards can never disagree.
  */
+/** Recipes on a schedule: Solo, Pro, Team and Enterprise. */
+export function canUseScheduledAutomation(
+  user: CloudUser | null | undefined,
+): boolean {
+  const entitlements = getEntitlements(user);
+  return entitlements.active && entitlements.scheduledAutomation;
+}
+
 export function canUseCookieBot(user: CloudUser | null | undefined): boolean {
   const entitlements = getEntitlements(user);
   return entitlements.active && entitlements.cookieBot;
@@ -205,5 +222,24 @@ export function isTeamOwner(user: CloudUser | null | undefined): boolean {
     getEntitlements(user).teamCollaboration &&
     user?.teamRole === "owner" &&
     Boolean(user.teamId)
+  );
+}
+
+/**
+ * A team seat that may open the team's profiles and keep what a session
+ * changes, but not change the team's profiles, proxies or groups.
+ */
+export function isTeamLauncher(user: CloudUser | null | undefined): boolean {
+  return Boolean(user?.teamId) && user?.teamRole === "launcher";
+}
+
+/** Owners and admins read the team's activity log. The cloud checks again. */
+export function canViewTeamActivity(
+  user: CloudUser | null | undefined,
+): boolean {
+  return (
+    getEntitlements(user).teamCollaboration &&
+    Boolean(user?.teamId) &&
+    (user?.teamRole === "owner" || user?.teamRole === "admin")
   );
 }

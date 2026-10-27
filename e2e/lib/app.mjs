@@ -156,6 +156,9 @@ export class AppSession {
             // A tip opening by itself mid-test is a modal nobody asked for;
             // the tips suite turns it back on for the one session that wants it.
             tips_auto_show: false,
+            // Hundreds of scripted clicks must not play through the speakers
+            // of the machine running the suite.
+            ui_sounds: false,
             ...this.settings,
           },
           null,
@@ -470,7 +473,7 @@ export class AppSession {
         // Resolve the current control on each attempt, as a browser locator does.
         element = typeof target === "function" ? await target() : target;
         if (!element) return false;
-        return this.execute(
+        const verdict = await this.execute(
           `
             const node = arguments[0];
             if (!(node instanceof Element) || !node.isConnected) return false;
@@ -480,10 +483,22 @@ export class AppSession {
             const x = Math.floor(rect.left + rect.width / 2);
             const y = Math.floor(rect.top + rect.height / 2);
             const hit = document.elementFromPoint(x, y);
-            return Boolean(hit && (hit === node || node.contains(hit)));
+            if (hit && (hit === node || node.contains(hit))) return true;
+            const name = (el) => el
+              ? el.tagName.toLowerCase() +
+                (el.dataset?.slot ? '[data-slot="' + el.dataset.slot + '"]' : "") +
+                (el.className && typeof el.className === "string" ? '.' + el.className.trim().split(/\\s+/).slice(0, 6).join(".") : "")
+              : "nothing";
+            return "its center (" + x + "," + y + ") hits " + name(hit) +
+              (hit?.contains(node) ? " (an ancestor)" : "") +
+              ", viewport " + innerWidth + "x" + innerHeight +
+              ", opacity " + getComputedStyle(node).opacity;
           `,
           [element],
         );
+        // The last miss names what covers the control, for the timeout message.
+        if (typeof verdict === "string") throw new Error(verdict);
+        return verdict;
       },
       { description: `pointer-interactable ${description}` },
     );

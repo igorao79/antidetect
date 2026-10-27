@@ -64,6 +64,16 @@ struct HandoffEntry {
 type Store = HashMap<String, HandoffEntry>;
 
 static STORE: RwLock<Option<Store>> = RwLock::new(None);
+/// When this machine last finished pulling each profile's remote work, unix
+/// seconds. A session that ended before then is already here, even when the
+/// pull moved nothing and `last_sync` stayed put.
+static SETTLED: RwLock<Option<HashMap<String, u64>>> = RwLock::new(None);
+/// How long a local launch at app start waits for the first look at the
+/// sessions that ended while the app was shut.
+const STARTUP_CHECK_WAIT: Duration = Duration::from_secs(8);
+static STARTUP_CHECK: std::sync::LazyLock<tokio::sync::watch::Sender<bool>> =
+  std::sync::LazyLock::new(|| tokio::sync::watch::channel(false).0);
+static STARTUP_CHECK_UNTIL: std::sync::OnceLock<std::time::Instant> = std::sync::OnceLock::new();
 static PULL_WORKERS: Mutex<Option<HashMap<String, Arc<Notify>>>> = Mutex::new(None);
 
 fn with_workers<T>(f: impl FnOnce(&mut HashMap<String, Arc<Notify>>) -> T) -> T {
@@ -138,8 +148,8 @@ fn load_from_disk() -> Store {
       // Losing the file means losing the gate, so say so loudly rather than
       // starting empty and quietly permitting a launch over pending work.
       log::error!(
-        "Could not read {}: {e}. Profiles with unsynced remote work will not be gated until \
-         the next session event.",
+        "Remote handoff store unreadable; unsynced remote work is not gated until the next \
+         session event path=\"{}\" err=\"{e}\"",
         path.display()
       );
       Store::new()
@@ -151,17 +161,23 @@ fn persist(store: &Store) {
   let path = store_path();
   if let Some(parent) = path.parent() {
     if let Err(e) = std::fs::create_dir_all(parent) {
-      log::warn!("Could not create {}: {e}", parent.display());
+      log::warn!(
+        "Remote handoff store dir create failed path=\"{}\" err=\"{e}\"",
+        parent.display()
+      );
       return;
     }
   }
   match serde_json::to_vec_pretty(store) {
     Ok(bytes) => {
       if let Err(e) = crate::app_dirs::write_owner_only(&path, &bytes) {
-        log::warn!("Could not write {}: {e}", path.display());
+        log::warn!(
+          "Remote handoff store write failed path=\"{}\" err=\"{e}\"",
+          path.display()
+        );
       }
     }
-    Err(e) => log::warn!("Could not encode the remote handoff store: {e}"),
+    Err(e) => log::warn!("Remote handoff store encode failed err=\"{e}\""),
   }
 }
 
@@ -326,6 +342,7 @@ pub(crate) fn pending_session_for(profile_id: &str) -> Option<String> {
 
 /// A completed pull must not clear a newer session's gate.
 pub(crate) fn clear_pending(profile_id: &str, session_id: &str) {
+  let mut cleared = false;
   mutate(|store| {
     let matches = store.get(profile_id).is_some_and(|entry| {
       entry.state == HandoffState::PendingSync && entry.session_id == session_id
@@ -333,8 +350,137 @@ pub(crate) fn clear_pending(profile_id: &str, session_id: &str) {
     if matches {
       store.remove(profile_id);
     }
+    cleared = matches;
     matches
   });
+  if cleared {
+    note_settled(profile_id);
+  }
+}
+
+fn settled_path() -> std::path::PathBuf {
+  crate::app_dirs::settings_dir().join("remote_handoff_settled.json")
+}
+
+fn with_settled<T>(f: impl FnOnce(&mut HashMap<String, u64>) -> T) -> T {
+  let mut guard = SETTLED
+    .write()
+    .unwrap_or_else(std::sync::PoisonError::into_inner);
+  let settled = guard.get_or_insert_with(|| {
+    std::fs::read(settled_path())
+      .ok()
+      .and_then(|bytes| serde_json::from_slice(&bytes).ok())
+      .unwrap_or_default()
+  });
+  f(settled)
+}
+
+fn note_settled(profile_id: &str) {
+  with_settled(|settled| {
+    settled.insert(profile_id.to_string(), now_secs());
+    match serde_json::to_vec(settled) {
+      Ok(bytes) => {
+        if let Err(e) = crate::app_dirs::write_owner_only(&settled_path(), &bytes) {
+          log::warn!("Remote handoff settled times write failed err=\"{e}\"");
+        }
+      }
+      Err(e) => log::warn!("Remote handoff settled times encode failed err=\"{e}\""),
+    }
+  });
+}
+
+/// Whether work that ended at `ended_at` has yet to reach this machine.
+fn unpulled(ended_at: u64, last_sync: Option<u64>, settled_at: Option<u64>) -> bool {
+  ended_at > last_sync.unwrap_or(0).max(settled_at.unwrap_or(0))
+}
+
+/// Gate the profiles whose session finished while this machine was not
+/// watching and whose work it has not pulled since. Each item is a profile id,
+/// a session id and when that session ended, unix seconds; a profile's newest
+/// session decides. Returns the profiles newly gated.
+///
+/// The backend lists finished sessions alongside live ones on every connect,
+/// so an ended session alone proves nothing: comparing it with the last sync
+/// of this profile on this machine is what tells new work from old.
+pub fn gate_unpulled(finished: &[(String, String, u64)]) -> Vec<String> {
+  let mut newest: HashMap<&str, (&str, u64)> = HashMap::new();
+  for (profile_id, session_id, ended_at) in finished {
+    let slot = newest
+      .entry(profile_id.as_str())
+      .or_insert((session_id.as_str(), *ended_at));
+    if *ended_at > slot.1 {
+      *slot = (session_id.as_str(), *ended_at);
+    }
+  }
+  if newest.is_empty() {
+    return Vec::new();
+  }
+  let Ok(profiles) = crate::profile::ProfileManager::instance().list_profiles() else {
+    return Vec::new();
+  };
+  let mut gated = Vec::new();
+  for (profile_id, (session_id, ended_at)) in newest {
+    let Some(profile) = profiles
+      .iter()
+      .find(|profile| profile.id.to_string() == profile_id)
+    else {
+      continue;
+    };
+    let settled_at = with_settled(|settled| settled.get(profile_id).copied());
+    if !unpulled(ended_at, profile.last_sync, settled_at) {
+      continue;
+    }
+    let mut newly = false;
+    mutate(|store| {
+      if store.contains_key(profile_id) {
+        return false;
+      }
+      store.insert(
+        profile_id.to_string(),
+        HandoffEntry {
+          session_id: session_id.to_string(),
+          state: HandoffState::PendingSync,
+          observed_at: now_secs(),
+        },
+      );
+      newly = true;
+      true
+    });
+    if newly {
+      log::info!(
+        "Remote session ended while unwatched; work awaits pull profile={profile_id} session={}",
+        ShortId(session_id)
+      );
+      gated.push(profile_id.to_string());
+    }
+  }
+  gated
+}
+
+/// Start the window in which a local launch waits for the first look at the
+/// sessions that ended while the app was shut.
+pub fn begin_startup_check() {
+  let _ = STARTUP_CHECK_UNTIL.set(std::time::Instant::now() + STARTUP_CHECK_WAIT);
+}
+
+/// That first look is done, or cannot happen (signed out, offline).
+pub fn finish_startup_check() {
+  STARTUP_CHECK.send_replace(true);
+}
+
+/// Wait, briefly and only at app start, until the sessions that ended while
+/// the app was shut have gated their profiles. A profile reopened at start
+/// would otherwise open the copy a host has since replaced.
+pub async fn await_startup_check() {
+  let Some(until) = STARTUP_CHECK_UNTIL.get() else {
+    return;
+  };
+  let left = until.saturating_duration_since(std::time::Instant::now());
+  if left.is_zero() {
+    return;
+  }
+  let mut done = STARTUP_CHECK.subscribe();
+  let _ = tokio::time::timeout(left, done.wait_for(|done| *done)).await;
 }
 
 /// Bring stored `Running` entries back in line with what the backend reports.
@@ -355,8 +501,7 @@ pub fn reconcile(live_session_ids: &std::collections::HashSet<String>) -> Vec<St
       .collect();
     for (profile_id, session_id) in stale {
       log::info!(
-        "Remote session {} for profile {profile_id} ended while this machine was not \
-         watching; its work is still in cloud storage",
+        "Remote session ended unobserved; work awaits pull profile={profile_id} session={}",
         ShortId(&session_id)
       );
       store.insert(
@@ -446,17 +591,25 @@ where
   E: Fn() -> bool,
 {
   let mut attempt = 0u32;
+  let mut tries = 0u32;
+  let mut failures = 0u32;
   while let Some(session_id) = worker.pending_session() {
     let profile_id = &worker.profile_id;
+    tries = tries.saturating_add(1);
     match pull().await {
       Ok(outcome) if outcome.is_completed() => {
-        log::info!("Pulled remote session work for profile {profile_id}");
+        log::info!(
+          "Remote session work pulled profile={profile_id} session={} tries={tries} failures={failures}",
+          ShortId(&session_id)
+        );
         clear_pending(profile_id, &session_id);
         attempt = 0;
+        tries = 0;
+        failures = 0;
         continue;
       }
       Ok(crate::sync::ProfileSyncOutcome::Skipped(reason)) => {
-        log::debug!("Post-session pull for profile {profile_id} is waiting: {reason}");
+        log::debug!("Post-session pull waiting profile={profile_id} reason=\"{reason}\"");
       }
       Ok(_) => unreachable!("is_completed covers every completed outcome"),
       Err(e) => {
@@ -464,7 +617,17 @@ where
           clear_pending(profile_id, &session_id);
           continue;
         }
-        log::warn!("Post-session pull for profile {profile_id} failed: {e}");
+        failures = failures.saturating_add(1);
+        // Retried with backoff; only the first failure of a run is a warning.
+        let level = if failures == 1 {
+          log::Level::Warn
+        } else {
+          log::Level::Debug
+        };
+        log::log!(
+          level,
+          "Post-session pull failed; retrying profile={profile_id} failures={failures} err=\"{e}\""
+        );
       }
     }
     if worker.pending_session().is_none() {
@@ -499,6 +662,9 @@ pub(crate) fn lock_for_test() -> std::sync::MutexGuard<'static, ()> {
   *STORE
     .write()
     .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(Store::new());
+  *SETTLED
+    .write()
+    .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(HashMap::new());
   lock
 }
 
@@ -624,7 +790,52 @@ mod tests {
     *STORE
       .write()
       .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(Store::new());
+    *SETTLED
+      .write()
+      .unwrap_or_else(std::sync::PoisonError::into_inner) = Some(HashMap::new());
     (dir, guard, lock)
+  }
+
+  #[test]
+  fn work_that_ended_after_the_last_sync_is_still_owed() {
+    assert!(unpulled(200, Some(100), None));
+    assert!(!unpulled(100, Some(200), None), "already synced since");
+    assert!(
+      !unpulled(150, Some(100), Some(200)),
+      "a pull that moved nothing still settled it"
+    );
+    assert!(unpulled(1, None, None));
+  }
+
+  #[test]
+  fn a_finished_session_the_machine_never_watched_gates_its_profile_once() {
+    let _iso = isolated();
+    let profile = crate::profile::BrowserProfile {
+      id: uuid::Uuid::new_v4(),
+      name: "handoff-unwatched".to_string(),
+      browser: "wayfern".to_string(),
+      last_sync: Some(1_000),
+      ..crate::profile::BrowserProfile::default()
+    };
+    crate::profile::ProfileManager::instance()
+      .save_profile(&profile)
+      .expect("a saved profile");
+    let id = profile.id.to_string();
+    let ended = 1_100;
+    let finished = vec![
+      (id.clone(), "old".to_string(), ended - 50),
+      (id.clone(), "new".to_string(), ended),
+    ];
+
+    assert_eq!(gate_unpulled(&finished), vec![id.clone()]);
+    assert_eq!(pending_session_for(&id).as_deref(), Some("new"));
+    assert!(gate_unpulled(&finished).is_empty(), "already gated");
+
+    clear_pending(&id, "new");
+    assert!(
+      gate_unpulled(&finished).is_empty(),
+      "a settled session is not gated again on the next snapshot"
+    );
   }
 
   #[test]

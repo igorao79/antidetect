@@ -20,6 +20,10 @@ pub struct ProxyConfig {
   /// only reach domains in the file; everything else is blocked.
   #[serde(default)]
   pub dns_allowlist_mode: bool,
+  /// The profile's own DNS server (see `profile_dns`). `None` leaves name
+  /// resolution to the upstream.
+  #[serde(default)]
+  pub dns_server: Option<String>,
   /// Protocol the local worker serves to the browser: "socks5" (Wayfern/Chromium so QUIC and
   /// WebRTC UDP can be proxied without leaking the real IP). Independent of
   /// `upstream_url`, which is the real upstream proxy/VPN this worker dials.
@@ -63,6 +67,7 @@ impl ProxyConfig {
       bypass_rules: Vec::new(),
       blocklist_file: None,
       dns_allowlist_mode: false,
+      dns_server: None,
       local_protocol: None,
       browser_pid: None,
       browser_pid_start_time: None,
@@ -92,6 +97,11 @@ impl ProxyConfig {
 
   pub fn with_dns_allowlist_mode(mut self, allowlist_mode: bool) -> Self {
     self.dns_allowlist_mode = allowlist_mode;
+    self
+  }
+
+  pub fn with_dns_server(mut self, dns_server: Option<String>) -> Self {
+    self.dns_server = dns_server;
     self
   }
 
@@ -127,10 +137,28 @@ pub fn build_proxy_url(
   } else if let Some(user) = username {
     url.push_str(&format!("{}@", urlencoding::encode(user)));
   }
-  url.push_str(host);
+  url.push_str(&url_host(host));
   url.push(':');
   url.push_str(&port.to_string());
   url
+}
+
+/// `host` without the brackets of an IPv6 address, for a socket connect.
+pub fn bare_host(host: &str) -> &str {
+  host
+    .strip_prefix('[')
+    .and_then(|h| h.strip_suffix(']'))
+    .unwrap_or(host)
+}
+
+/// `host` as the host of a URL: a bare IPv6 address gets its brackets, or
+/// its last group reads as the port.
+pub fn url_host(host: &str) -> std::borrow::Cow<'_, str> {
+  if host.parse::<std::net::Ipv6Addr>().is_ok() {
+    format!("[{host}]").into()
+  } else {
+    host.into()
+  }
 }
 
 /// Rewrite a stored upstream URL into something `reqwest::Proxy` accepts.

@@ -56,6 +56,13 @@ async function configureSync(app) {
   assert.deepEqual(await app.invoke("get_sync_settings"), saved);
   await app.invoke("restart_sync_service");
   await new Promise((resolve) => setTimeout(resolve, 750));
+  // The header indicator reads this once; null until the first pass ran.
+  const health = await app.invoke("get_sync_health");
+  assert.ok(
+    health === null ||
+      ["idle", "syncing", "offline", "error"].includes(health.state),
+    `sync health must be a known state, got ${JSON.stringify(health)}`,
+  );
 }
 
 async function createProfile(app, name) {
@@ -563,6 +570,99 @@ test("the first sync of an empty profile publishes a manifest and records comple
   }
 });
 
+test("a restore point keeps a profile's files and puts them back on every device", async () => {
+  const app = appFromEnvironment("sync-restore-points");
+  try {
+    await app.start();
+    await configureSync(app);
+    const profile = await createProfile(app, "Restore Point Profile");
+    const data = path.join(
+      app.dataRoot,
+      "data",
+      "profiles",
+      profile.id,
+      "profile",
+      "Default",
+    );
+    await mkdir(data, { recursive: true });
+    const preferences = path.join(data, "Preferences");
+    await writeFile(preferences, "kept preferences");
+    await app.invoke("set_profile_sync_mode", {
+      profileId: profile.id,
+      syncMode: "Regular",
+    });
+    const synced = async () =>
+      (await app.invoke("list_browser_profiles")).find(
+        (item) => item.id === profile.id,
+      )?.last_sync;
+    await app.invoke("request_profile_sync", { profileId: profile.id });
+    await waitFor(
+      app,
+      async () => (await synced()) > 0,
+      "the first sync of the profile",
+    );
+
+    const point = await app.invoke("create_restore_point", {
+      profileId: profile.id,
+    });
+    assert.equal(point.kind, "manual");
+    assert.ok(point.files >= 1, JSON.stringify(point));
+    const listed = await app.invoke("list_restore_points", {
+      profileId: profile.id,
+    });
+    assert.ok(
+      listed.some((item) => item.id === point.id),
+      JSON.stringify(listed),
+    );
+
+    // A change after the point, synced up.
+    const before = await synced();
+    await new Promise((resolve) => setTimeout(resolve, 1_100));
+    await writeFile(preferences, "changed preferences");
+    await app.invoke("request_profile_sync", { profileId: profile.id });
+    await waitFor(
+      app,
+      async () => (await synced()) > before,
+      "the changed profile synced",
+    );
+
+    await app.invoke("restore_restore_point", {
+      profileId: profile.id,
+      id: point.id,
+    });
+    assert.equal(await readFile(preferences, "utf8"), "kept preferences");
+    const remoteManifest = JSON.parse(
+      (await downloadRemote(`profiles/${profile.id}/manifest.json`)).toString(
+        "utf8",
+      ),
+    );
+    assert.ok(
+      remoteManifest.files.some((file) => file.path.endsWith("Preferences")),
+    );
+    // The data the restore replaced is a restore point of its own.
+    const after = await app.invoke("list_restore_points", {
+      profileId: profile.id,
+    });
+    assert.equal(after.length, listed.length + 1);
+
+    await app.invoke("delete_restore_point", {
+      profileId: profile.id,
+      id: point.id,
+    });
+    assert.equal(
+      (await app.invoke("list_restore_points", { profileId: profile.id })).some(
+        (item) => item.id === point.id,
+      ),
+      false,
+    );
+  } catch (error) {
+    await app.capture("failure");
+    throw error;
+  } finally {
+    await app.close();
+  }
+});
+
 test("global config sealing and encrypted profile sync reject a wrong password, round-trip with the right one, and roll over", async () => {
   const source = appFromEnvironment("sync-encrypted-source");
   const receiver = appFromEnvironment("sync-encrypted-receiver");
@@ -986,6 +1086,112 @@ test("a synced profile restored from the trash keeps its sync, and a delete made
   }
 });
 
+test("a synced group and proxy sent to the trash leave the cloud, and a restore brings them back synced", async () => {
+  assert.ok(syncUrl && syncToken, "Sync infrastructure was not started");
+  const app = appFromEnvironment("sync-entity-trash");
+  try {
+    await app.start();
+    await configureSync(app);
+
+    const remoteHas = async (key) =>
+      (await listRemote(key)).some((object) => object.key === key);
+    const group = await app.invoke("create_profile_group", {
+      name: "Trashed Synced Group",
+    });
+    const proxy = await app.invoke("create_stored_proxy", {
+      name: "Trashed Synced Proxy",
+      proxySettings: {
+        proxy_type: "http",
+        host: "127.0.0.1",
+        port: 8090,
+        username: null,
+        password: null,
+      },
+    });
+    await app.invoke("set_group_sync_enabled", {
+      groupId: group.id,
+      enabled: true,
+    });
+    await app.invoke("set_proxy_sync_enabled", {
+      proxyId: proxy.id,
+      enabled: true,
+    });
+    const entities = [
+      { kind: "group", id: group.id, folder: "groups" },
+      { kind: "proxy", id: proxy.id, folder: "proxies" },
+    ];
+    for (const { id, folder } of entities) {
+      await waitFor(
+        app,
+        () => remoteHas(`${folder}/${id}.json`),
+        `${folder} entity uploaded`,
+      );
+    }
+
+    // From the cloud's side a trashed entity is deleted, as a permanent
+    // delete leaves it: no object, and a tombstone for the other devices.
+    for (const { kind, id } of entities) {
+      assert.deepEqual(await app.invoke("trash_entity", { kind, id }), {
+        trashed: true,
+      });
+    }
+    for (const { id, folder } of entities) {
+      await waitFor(
+        app,
+        async () =>
+          (await remoteHas(`tombstones/${folder}/${id}.json`)) &&
+          !(await remoteHas(`${folder}/${id}.json`)),
+        `${folder} entity deleted in the cloud`,
+      );
+    }
+    const trashed = await app.invoke("list_trashed_entities");
+    for (const { kind, id } of entities) {
+      assert.equal(
+        trashed.find((entry) => entry.kind === kind && entry.id === id)
+          ?.sync_enabled,
+        true,
+      );
+    }
+
+    // The restore clears the tombstone before it turns sync back on, so the
+    // entity uploads again and no device erases it.
+    for (const { kind, id, folder } of entities) {
+      const restored = await app.invoke("restore_trashed_entity", { kind, id });
+      assert.equal(restored.sync_stayed_off, false);
+      assert.equal(
+        await remoteHas(`tombstones/${folder}/${id}.json`),
+        false,
+        `the ${kind} restore clears its tombstone`,
+      );
+    }
+    for (const { id, folder } of entities) {
+      await waitFor(
+        app,
+        () => remoteHas(`${folder}/${id}.json`),
+        `${folder} entity uploaded again`,
+      );
+    }
+    assert.equal(
+      (await app.invoke("get_profile_groups")).find(
+        (item) => item.id === group.id,
+      )?.sync_enabled,
+      true,
+    );
+    assert.equal(
+      (await app.invoke("get_stored_proxies")).find(
+        (item) => item.id === proxy.id,
+      )?.sync_enabled,
+      true,
+    );
+    assert.deepEqual(await app.invoke("list_trashed_entities"), []);
+  } catch (error) {
+    await app.capture("failure");
+    throw error;
+  } finally {
+    await app.close();
+  }
+});
+
 // A self-hosted server reaches its storage over an address only it can
 // resolve — the documented compose file points S3_ENDPOINT at
 // http://minio:9000, a Docker service name that exists on the compose network
@@ -1064,6 +1270,100 @@ test("the connection check fails a server whose storage host this device cannot 
     throw error;
   } finally {
     await new Promise((resolve) => misconfigured.close(resolve));
+    await app.close();
+  }
+});
+
+// A paid account syncs with its own server only while signed in, with a token
+// the Donut API binds to that server's address, and a signed-in device picks
+// between Donut cloud and its stored servers. The suites cannot sign in, so
+// this covers what a device sees on its own: the address the server names on
+// /readyz, the refusals that keep a signed-out device from storing a server or
+// a pick, and the shared-token server as the signed-out source.
+test("an own sync server is read from /readyz and needs a signed-in account", async () => {
+  const app = appFromEnvironment("sync-account-server");
+  const accountServer = createServer((request, response) => {
+    if (request.url === "/readyz") {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(
+        JSON.stringify({
+          status: "ready",
+          s3: true,
+          accountUrl: "https://sync.example.test",
+        }),
+      );
+      return;
+    }
+    response.writeHead(404);
+    response.end();
+  });
+  await new Promise((resolve) => accountServer.listen(0, "127.0.0.1", resolve));
+  const accountServerUrl = `http://127.0.0.1:${accountServer.address().port}`;
+
+  try {
+    await app.start();
+
+    const check = await app.invoke("check_sync_server_connection", {
+      serverUrl: accountServerUrl,
+    });
+    assert.equal(check.server_reachable, true);
+    assert.equal(check.account_url, "https://sync.example.test");
+
+    const nothing = {
+      active: null,
+      account_server: null,
+      self_hosted_server: null,
+    };
+    assert.deepEqual(await app.invoke("get_sync_source"), nothing);
+    const refused = await app.invokeError("set_account_sync_server", {
+      serverUrl: accountServerUrl,
+    });
+    assert.match(refused, /"code":"ACCOUNT_SYNC_SIGN_IN_REQUIRED"/);
+    // Forgetting the own server is always allowed, and stores nothing.
+    assert.deepEqual(
+      await app.invoke("set_account_sync_server", { serverUrl: null }),
+      nothing,
+    );
+    for (const source of ["cloud", "account", "self_hosted"]) {
+      assert.match(
+        await app.invokeError("set_sync_source", { source }),
+        /"code":"ACCOUNT_SYNC_SIGN_IN_REQUIRED"/,
+      );
+    }
+
+    // A settings save from the frontend never writes the server or the pick.
+    const settings = await app.invoke("get_app_settings");
+    await app.invoke("save_app_settings", {
+      settings: {
+        ...settings,
+        account_sync_server_url: accountServerUrl,
+        sync_source: "account",
+      },
+    });
+    assert.deepEqual(await app.invoke("get_sync_source"), nothing);
+    assert.equal((await app.invoke("get_app_settings")).sync_source, null);
+
+    // Signed out, the shared-token server is the source.
+    const saved = await app.invoke("save_sync_settings", {
+      syncServerUrl: accountServerUrl,
+      syncToken: "e2e-shared-token",
+    });
+    assert.equal(saved.source, "self_hosted");
+    assert.deepEqual(await app.invoke("get_sync_source"), {
+      active: "self_hosted",
+      account_server: null,
+      self_hosted_server: accountServerUrl,
+    });
+    await app.invoke("save_sync_settings", {
+      syncServerUrl: null,
+      syncToken: null,
+    });
+    assert.deepEqual(await app.invoke("get_sync_source"), nothing);
+  } catch (error) {
+    await app.capture("failure");
+    throw error;
+  } finally {
+    await new Promise((resolve) => accountServer.close(resolve));
     await app.close();
   }
 });

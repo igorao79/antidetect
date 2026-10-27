@@ -863,6 +863,36 @@ test("MCP clients are installed only against the remote endpoint", async () => {
       "DONUT_MCP_TOKEN",
     );
     assert.equal(agents.find((agent) => agent.id === "cursor").token_env, null);
+    assert.ok(agents.some((agent) => agent.id === "pi"));
+    assert.ok(agents.some((agent) => agent.id === "mastracode"));
+
+    // Toolsets: only known groups, saved in display order; every group is the
+    // same as none (all tools), and core alone is the core tools only.
+    await assertCommandErrorCode(
+      app,
+      "set_mcp_toolsets",
+      "MCP_TOOLSET_UNKNOWN",
+      {
+        toolsets: ["network", "everything"],
+      },
+    );
+    assert.deepEqual(
+      await app.invoke("set_mcp_toolsets", {
+        toolsets: ["cookies", "network"],
+      }),
+      [],
+      "no client is connected, so none can fail",
+    );
+    assert.deepEqual((await app.invoke("get_app_settings")).mcp_toolsets, [
+      "network",
+      "cookies",
+    ]);
+    await app.invoke("set_mcp_toolsets", { toolsets: ["core"] });
+    assert.deepEqual((await app.invoke("get_app_settings")).mcp_toolsets, [
+      "core",
+    ]);
+    await app.invoke("set_mcp_toolsets", { toolsets: [] });
+    assert.deepEqual((await app.invoke("get_app_settings")).mcp_toolsets, []);
 
     await assertCommandErrorCode(app, "add_mcp_to_agent", "MCP_AGENT_UNKNOWN", {
       agentId: "missing-e2e-agent",
@@ -888,6 +918,21 @@ test("MCP clients are installed only against the remote endpoint", async () => {
       ).connected,
       false,
       "a refused remote install must not have written an entry",
+    );
+
+    // The retry for clients a rotation missed writes the stored key and never
+    // mints, so with no key it is refused with the same code, not answered
+    // with every client as failed.
+    await assertCommandErrorCode(
+      app,
+      "refresh_mcp_agents",
+      "MCP_REMOTE_KEY_MISSING",
+    );
+    assert.ok(
+      (await app.invoke("list_mcp_agents")).every(
+        (agent) => agent.current === false,
+      ),
+      "with no key, no client holds the current one",
     );
   });
 });
@@ -1522,6 +1567,12 @@ test("offline cloud, update, team-lock, trial, and synchronizer contracts are de
         }),
         notSignedIn,
       );
+      assert.match(
+        await app.invokeError("start_profile_remote_session", {
+          profileId: missingProfileId,
+        }),
+        notSignedIn,
+      );
       // The local-launch gate. Nothing has run remotely in this session, so it
       // is empty — but it must answer, because a UI that cannot read it shows
       // an enabled Run button over a profile the backend will refuse.
@@ -1649,6 +1700,84 @@ test("offline cloud, update, team-lock, trial, and synchronizer contracts are de
         /"code":"PROFILE_NOT_FOUND"/,
       );
 
+      // Schedules live in the cloud too, which checks the plan on every save
+      // and every fire; signed out, every call refuses with a code, and what
+      // the app can check itself is checked before anything is sent.
+      const scheduleId = "00000000-0000-0000-0000-000000000000";
+      assert.match(await app.invokeError("list_agent_schedules"), notSignedIn);
+
+      // The team's log is read in the cloud, by owners and admins only.
+      // Without a team seat there is no log to ask for.
+      assert.match(
+        await app.invokeError("list_team_activity", {
+          cursor: null,
+          limit: 50,
+        }),
+        /"code":"TEAM_ACTIVITY_FORBIDDEN"/,
+      );
+      assert.match(
+        await app.invokeError("export_team_activity_csv", {
+          path: "/nonexistent/activity.csv",
+          filter: { targetType: "profile" },
+        }),
+        /"code":"TEAM_ACTIVITY_FORBIDDEN"/,
+      );
+      assert.match(
+        await app.invokeError("list_team_members"),
+        /"code":"TEAM_ACCESS_FORBIDDEN"/,
+      );
+      assert.match(
+        await app.invokeError("set_team_member_access", {
+          userId: "u-1",
+          groups: ["g1"],
+        }),
+        /"code":"TEAM_ACCESS_FORBIDDEN"/,
+      );
+      assert.match(
+        await app.invokeError("create_agent_schedule", {
+          schedule: {
+            name: "Nightly",
+            recipeId: "r",
+            target: "fleet",
+            profileIds: ["p"],
+          },
+        }),
+        notSignedIn,
+      );
+      assert.match(
+        await app.invokeError("create_agent_schedule", {
+          schedule: ["not", "an", "object"],
+        }),
+        /"code":"AGENT_SCHEDULE_INVALID"/,
+      );
+      assert.match(
+        await app.invokeError("update_agent_schedule", {
+          id: scheduleId,
+          patch: { enabled: false },
+        }),
+        notSignedIn,
+      );
+      assert.match(
+        await app.invokeError("update_agent_schedule", { id: "  ", patch: {} }),
+        /"code":"AGENT_SCHEDULE_NOT_FOUND"/,
+      );
+      assert.match(
+        await app.invokeError("delete_agent_schedule", { id: scheduleId }),
+        notSignedIn,
+      );
+      assert.match(
+        await app.invokeError("run_agent_schedule_now", { id: scheduleId }),
+        notSignedIn,
+      );
+      assert.match(
+        await app.invokeError("list_agent_schedule_runs", { id: scheduleId }),
+        notSignedIn,
+      );
+      assert.match(
+        await app.invokeError("test_agent_schedule_notice", { id: scheduleId }),
+        notSignedIn,
+      );
+
       // Recipes live in the cloud; signed out, every call refuses with a code.
       assert.match(await app.invokeError("get_agent_recipes"), notSignedIn);
       assert.match(
@@ -1671,6 +1800,35 @@ test("offline cloud, update, team-lock, trial, and synchronizer contracts are de
           id: "00000000-0000-0000-0000-000000000000",
         }),
         notSignedIn,
+      );
+      const run = {
+        recipeId: "00000000-0000-0000-0000-000000000000",
+        profileId: "00000000-0000-0000-0000-000000000001",
+        name: "E2E run",
+      };
+      assert.match(
+        await app.invokeError("run_agent_recipe_now", {
+          ...run,
+          target: "desktop",
+        }),
+        notSignedIn,
+      );
+      // A run that names no place to run, or a fleet run with no OS the fleet
+      // leases, is refused before any network call.
+      assert.match(
+        await app.invokeError("run_agent_recipe_now", {
+          ...run,
+          target: "moon",
+        }),
+        /"code":"AGENT_TARGET_INVALID"/,
+      );
+      assert.match(
+        await app.invokeError("run_agent_recipe_now", {
+          ...run,
+          target: "fleet",
+          platform: "android",
+        }),
+        /"code":"AGENT_PLATFORM_INVALID"/,
       );
       assert.match(
         await app.invokeError("create_agent_recipe", {

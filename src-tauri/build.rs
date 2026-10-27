@@ -18,6 +18,13 @@ fn main() {
     println!("cargo:rustc-link-lib=framework=CoreServices");
   }
 
+  // WinFsp's DLL loads at the first call into it, so Donut starts on machines
+  // that do not have WinFsp (src/ramfs).
+  #[cfg(windows)]
+  if build_target.contains("windows") {
+    winfsp::build::winfsp_link_delayload();
+  }
+
   // Inject build version based on environment variables set by CI
   if let Ok(build_tag) = std::env::var("BUILD_TAG") {
     // Custom BUILD_TAG takes highest priority (used for nightly builds)
@@ -106,19 +113,15 @@ fn external_binaries_exist() -> bool {
 
   let binaries_dir = PathBuf::from(&manifest_dir).join("binaries");
 
-  // Check for all required external binaries (must match tauri.conf.json externalBin)
-  let donut_proxy_name = if target.contains("windows") {
-    format!("donut-proxy-{}.exe", target)
-  } else {
-    format!("donut-proxy-{}", target)
-  };
+  // Must match tauri.conf.json externalBin. donut-proxy is a cargo bin of this
+  // crate, which the bundler packages on its own.
   let xray_name = if target.contains("windows") {
     format!("xray-{}.exe", target)
   } else {
     format!("xray-{}", target)
   };
 
-  binaries_dir.join(&donut_proxy_name).exists() && binaries_dir.join(&xray_name).exists()
+  binaries_dir.join(&xray_name).exists()
 }
 
 fn ensure_dist_folder_exists() {

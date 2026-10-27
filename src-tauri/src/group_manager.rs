@@ -122,10 +122,11 @@ impl GroupManager {
 
     // Emit event for reactive UI updates
     if let Err(e) = events::emit_empty("groups-changed") {
-      log::error!("Failed to emit groups-changed event: {e}");
+      log::warn!("Event emit failed event=groups-changed err=\"{e}\"");
     }
 
     if group.sync_enabled {
+      crate::team_activity::record("group.create", &group.id, Some(&group.name), None);
       if let Some(scheduler) = crate::sync::get_global_scheduler() {
         let id = group.id.clone();
         tauri::async_runtime::spawn(async move {
@@ -180,10 +181,16 @@ impl GroupManager {
 
     // Emit event for reactive UI updates
     if let Err(e) = events::emit_empty("groups-changed") {
-      log::error!("Failed to emit groups-changed event: {e}");
+      log::warn!("Event emit failed event=groups-changed err=\"{e}\"");
     }
 
     if updated_group.sync_enabled {
+      crate::team_activity::record(
+        "group.update",
+        &updated_group.id,
+        Some(&updated_group.name),
+        None,
+      );
       if let Some(scheduler) = crate::sync::get_global_scheduler() {
         let id = updated_group.id.clone();
         tauri::async_runtime::spawn(async move {
@@ -278,19 +285,22 @@ impl GroupManager {
 
     // If sync was enabled, also delete from S3
     if was_sync_enabled {
+      crate::team_activity::record("group.delete", &id, None, None);
       let group_id_owned = id.clone();
       let app_handle_clone = app_handle.clone();
       tauri::async_runtime::spawn(async move {
         match crate::sync::SyncEngine::create_from_settings(&app_handle_clone).await {
           Ok(engine) => {
             if let Err(e) = engine.delete_group(&group_id_owned).await {
-              log::warn!("Failed to delete group {} from sync: {}", group_id_owned, e);
+              log::warn!("Remote group delete failed group={group_id_owned} err=\"{e}\"");
             } else {
-              log::info!("Group {} deleted from S3 sync storage", group_id_owned);
+              log::info!("Remote group deleted group={group_id_owned}");
             }
           }
           Err(e) => {
-            log::debug!("Sync not configured, skipping remote deletion: {}", e);
+            log::debug!(
+              "Remote group delete skipped: sync not configured group={group_id_owned} err=\"{e}\""
+            );
           }
         }
       });
@@ -298,7 +308,7 @@ impl GroupManager {
 
     // Emit event for reactive UI updates
     if let Err(e) = events::emit_empty("groups-changed") {
-      log::error!("Failed to emit groups-changed event: {e}");
+      log::warn!("Event emit failed event=groups-changed err=\"{e}\"");
     }
 
     Ok(())
@@ -330,10 +340,16 @@ impl GroupManager {
     self.save_groups_data(&groups_data)?;
 
     if let Err(e) = events::emit_empty("groups-changed") {
-      log::error!("Failed to emit groups-changed event: {e}");
+      log::warn!("Event emit failed event=groups-changed err=\"{e}\"");
     }
 
     if updated_group.sync_enabled {
+      crate::team_activity::record(
+        "group.update",
+        &updated_group.id,
+        Some(&updated_group.name),
+        crate::team_activity::fields(&["bookmarks"]),
+      );
       if let Some(scheduler) = crate::sync::get_global_scheduler() {
         let id = updated_group.id.clone();
         tauri::async_runtime::spawn(async move {

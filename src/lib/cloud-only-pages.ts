@@ -22,6 +22,8 @@ export const CLOUD_ONLY_SHORTCUTS: ReadonlySet<string> = new Set([
   "goCookieBot",
   "goAgent",
   "goAccount",
+  // Feedback is sent to Donut's servers.
+  "sendFeedback",
 ]);
 
 /** Table columns that show or switch sync, in every table that has one. */

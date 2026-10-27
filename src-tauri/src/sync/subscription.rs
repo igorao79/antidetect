@@ -1,4 +1,5 @@
 use crate::events;
+use crate::log_streak::Streak;
 use crate::settings_manager::SettingsManager;
 use reqwest::Client;
 use serde::Deserialize;
@@ -26,6 +27,7 @@ pub enum SyncWorkItem {
   Vpn(String),
   Extension(String),
   ExtensionGroup(String),
+  Config(super::config_entities::ConfigKind, String),
   Tombstone(String, String),
 }
 
@@ -34,12 +36,18 @@ pub enum SyncWorkItem {
 #[derive(Clone, Copy)]
 enum TokenSource {
   Cloud,
+  /// The customer's own server, with a token the Donut API binds to it.
+  Account,
   SelfHosted,
 }
 
 const RECONNECT_BASE_DELAY: Duration = Duration::from_secs(6);
 const RECONNECT_MAX_DELAY: Duration = Duration::from_secs(600);
 const STOP_POLL_INTERVAL: Duration = Duration::from_secs(1);
+
+static SSE_CONNECT: Streak = Streak::new(module_path!(), "Sync SSE connect");
+// Cloud token failures are already logged by `cloud_auth`.
+static SELF_HOSTED_TOKEN: Streak = Streak::new(module_path!(), "Self-hosted sync token read");
 
 #[derive(Debug)]
 enum StreamFailure {
@@ -85,7 +93,7 @@ fn stream_failure(status: u16, headers: &reqwest::header::HeaderMap) -> StreamFa
   match status {
     401 | 403 => StreamFailure::Refused(status),
     429 => StreamFailure::RateLimited(crate::cloud_auth::retry_after(headers)),
-    _ => StreamFailure::Failed(format!("SSE connection failed with status: {status}")),
+    _ => StreamFailure::Failed(format!("status={status}")),
   }
 }
 
@@ -128,13 +136,26 @@ impl SyncSubscription {
     app_handle: &tauri::AppHandle,
     work_tx: mpsc::UnboundedSender<SyncWorkItem>,
   ) -> Result<Option<Self>, String> {
+    if let Some(server) = super::account_server::configured().await {
+      let token = crate::cloud_auth::CLOUD_AUTH
+        .server_sync_token(&server)
+        .await?;
+      return Ok(Some(Self::new(
+        server,
+        token,
+        TokenSource::Account,
+        work_tx,
+      )));
+    }
+
     // Cloud auth takes priority
-    if crate::cloud_auth::CLOUD_AUTH.is_logged_in().await {
+    if crate::cloud_auth::CLOUD_AUTH.is_logged_in().await
+      && !super::account_server::self_hosted_picked().await
+    {
       let url = crate::cloud_auth::CLOUD_SYNC_URL.to_string();
       let token = crate::cloud_auth::CLOUD_AUTH
         .get_or_refresh_sync_token()
-        .await
-        .map_err(|e| format!("Failed to get cloud sync token: {e}"))?;
+        .await?;
       let Some(token) = token else {
         return Ok(None);
       };
@@ -191,6 +212,7 @@ impl SyncSubscription {
     tokio::spawn(async move {
       let mut refused: Option<String> = None;
       let mut failures: u32 = 0;
+      let mut stop_reason = "requested";
 
       while running.load(Ordering::SeqCst) {
         let mut wait_at_least = Duration::ZERO;
@@ -211,22 +233,28 @@ impl SyncSubscription {
           }
           match outcome {
             Ok(()) => {
-              log::info!("SSE connection closed gracefully");
+              log::debug!("Sync SSE stream closed by server");
             }
             Err(StreamFailure::Refused(status)) => {
-              log::warn!("Sync subscription refused with status {status}");
-              if matches!(source, TokenSource::Cloud) {
-                crate::cloud_auth::CloudAuthManager::discard_cloud_sync_token(&current);
+              log::warn!("Sync subscription refused status={status}");
+              match source {
+                TokenSource::Cloud => {
+                  crate::cloud_auth::CloudAuthManager::discard_cloud_sync_token(&current)
+                }
+                TokenSource::Account => {
+                  crate::cloud_auth::CloudAuthManager::discard_server_sync_token(&current)
+                }
+                TokenSource::SelfHosted => {}
               }
               refused = Some(current);
               token = None;
             }
             Err(StreamFailure::RateLimited(retry)) => {
-              log::warn!("Sync subscription rate limited for {}s", retry.as_secs());
+              SSE_CONNECT.failed(format!("rate limited retry_after_s={}", retry.as_secs()));
               wait_at_least = retry;
             }
             Err(StreamFailure::Failed(e)) => {
-              log::warn!("SSE connection error: {e}");
+              SSE_CONNECT.failed(e);
             }
           }
         }
@@ -237,7 +265,7 @@ impl SyncSubscription {
 
         failures = failures.saturating_add(1);
         let delay = reconnect_delay(failures).max(wait_at_least);
-        log::debug!("Reconnecting the sync subscription in {}s", delay.as_secs());
+        log::debug!("Sync SSE reconnect scheduled delay_s={}", delay.as_secs());
         sleep_while_running(&running, delay).await;
 
         if running.load(Ordering::SeqCst) {
@@ -246,8 +274,11 @@ impl SyncSubscription {
           // the construction-time token otherwise produces an endless 401
           // reconnect loop until the app is restarted.
           let fetched = Self::fetch_sync_token(source, &app_handle).await;
-          if let Err(e) = &fetched {
-            log::warn!("Failed to refresh sync token: {e}");
+          if matches!(source, TokenSource::SelfHosted) {
+            match &fetched {
+              Ok(_) => SELF_HOSTED_TOKEN.succeeded(),
+              Err(e) => SELF_HOSTED_TOKEN.failed(e),
+            }
           }
           match next_token(refused.as_deref(), fetched) {
             TokenStep::Use(fresh) => {
@@ -256,7 +287,7 @@ impl SyncSubscription {
             }
             TokenStep::Keep | TokenStep::Wait => {}
             TokenStep::Stop => {
-              log::info!("Sync token no longer available; stopping subscription");
+              stop_reason = "no_token";
               break;
             }
           }
@@ -264,7 +295,7 @@ impl SyncSubscription {
       }
 
       running.store(false, Ordering::SeqCst);
-      log::info!("Sync subscription stopped");
+      log::info!("Sync subscription stopped reason={stop_reason}");
     });
   }
 
@@ -275,14 +306,22 @@ impl SyncSubscription {
     app_handle: &tauri::AppHandle,
   ) -> Result<Option<String>, String> {
     match source {
-      TokenSource::Cloud => crate::cloud_auth::CLOUD_AUTH
-        .get_or_refresh_sync_token()
-        .await
-        .map_err(|e| format!("Failed to refresh cloud sync token: {e}")),
+      TokenSource::Cloud => {
+        crate::cloud_auth::CLOUD_AUTH
+          .get_or_refresh_sync_token()
+          .await
+      }
+      TokenSource::Account => match super::account_server::configured().await {
+        Some(server) => crate::cloud_auth::CLOUD_AUTH
+          .server_sync_token(&server)
+          .await
+          .map(Some),
+        None => Ok(None),
+      },
       TokenSource::SelfHosted => SettingsManager::instance()
         .get_sync_token(app_handle)
         .await
-        .map_err(|e| format!("Failed to refresh self-hosted sync token: {e}")),
+        .map_err(|e| e.to_string()),
     }
   }
 
@@ -302,7 +341,7 @@ impl SyncSubscription {
       .header("Accept", "text/event-stream")
       .send()
       .await
-      .map_err(|e| StreamFailure::Failed(format!("Failed to connect to SSE: {e}")))?;
+      .map_err(|e| StreamFailure::Failed(e.to_string()))?;
 
     if !response.status().is_success() {
       return Err(stream_failure(
@@ -312,17 +351,24 @@ impl SyncSubscription {
     }
 
     *connected = true;
-    log::info!("Connected to sync subscription");
+    log::debug!("Sync SSE connected");
     let _ = events::emit("sync-subscription-status", "connected");
 
     let mut buffer = String::new();
     let mut bytes_stream = response.bytes_stream();
+    // A proxy can accept the connection and cut it before any data; only data
+    // proves the link works, so that is what ends a failure streak.
+    let mut proven = false;
 
     use futures_util::StreamExt;
 
     while running.load(Ordering::SeqCst) {
       match tokio::time::timeout(Duration::from_secs(60), bytes_stream.next()).await {
         Ok(Some(Ok(bytes))) => {
+          if !proven {
+            proven = true;
+            SSE_CONNECT.succeeded();
+          }
           let chunk = String::from_utf8_lossy(&bytes);
           buffer.push_str(&chunk);
 
@@ -336,13 +382,13 @@ impl SyncSubscription {
           }
         }
         Ok(Some(Err(e))) => {
-          return Err(StreamFailure::Failed(format!("SSE stream error: {e}")));
+          return Err(StreamFailure::Failed(format!("stream: {e}")));
         }
         Ok(None) => {
           return Ok(());
         }
         Err(_) => {
-          log::debug!("SSE timeout, continuing...");
+          log::debug!("Sync SSE idle for 60s");
         }
       }
     }
@@ -373,6 +419,14 @@ impl SyncSubscription {
       }
     }
     key
+  }
+
+  /// `statuses/<id>.json` and the other config-entity keys.
+  fn config_key(key: &str) -> Option<(super::config_entities::ConfigKind, &str)> {
+    let (folder, rest) = key.split_once('/')?;
+    let kind = super::config_entities::ConfigKind::from_folder(folder)?;
+    let id = rest.strip_suffix(".json")?;
+    crate::app_dirs::is_plain_path_part(id).then_some((kind, id))
   }
 
   fn handle_event(event: &SubscribeEvent, work_tx: &mpsc::UnboundedSender<SyncWorkItem>) {
@@ -432,9 +486,16 @@ impl SyncSubscription {
         .strip_prefix("extension_groups/")
         .and_then(|s| s.strip_suffix(".json"))
         .map(|s| SyncWorkItem::ExtensionGroup(s.to_string()))
+    } else if let Some((kind, id)) = Self::config_key(key) {
+      Some(SyncWorkItem::Config(kind, id.to_string()))
     } else if key.starts_with("tombstones/") {
       key.strip_prefix("tombstones/").and_then(|rest| {
-        if rest.starts_with("profiles/") {
+        if let Some((kind, id)) = Self::config_key(rest) {
+          Some(SyncWorkItem::Tombstone(
+            kind.tombstone_type().to_string(),
+            id.to_string(),
+          ))
+        } else if rest.starts_with("profiles/") {
           rest
             .strip_prefix("profiles/")
             .and_then(|s| s.strip_suffix(".json"))
@@ -473,7 +534,7 @@ impl SyncSubscription {
     };
 
     if let Some(item) = work_item {
-      log::debug!("Queueing sync work: {:?}", item);
+      log::debug!("Sync work queued item={item:?}");
       let _ = work_tx.send(item);
     }
   }
@@ -521,9 +582,9 @@ impl SubscriptionManager {
     if let Some(sub) = subscription {
       sub.start(app_handle).await;
       self.subscription = Some(sub);
-      log::info!("Sync subscription manager started");
+      log::info!("Sync subscription started");
     } else {
-      log::debug!("Sync not configured, subscription not started");
+      log::debug!("Sync subscription not started: sync not configured");
     }
 
     Ok(())
@@ -534,7 +595,6 @@ impl SubscriptionManager {
       sub.stop();
     }
     self.subscription = None;
-    log::info!("Sync subscription manager stopped");
   }
 
   pub fn is_running(&self) -> bool {
@@ -545,6 +605,47 @@ impl SubscriptionManager {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  fn work_for(key: &str) -> Option<SyncWorkItem> {
+    let (tx, mut rx) = mpsc::unbounded_channel();
+    let event = SubscribeEvent {
+      event_type: "change".to_string(),
+      key: Some(key.to_string()),
+      last_modified: None,
+      size: None,
+    };
+    SyncSubscription::handle_event(&event, &tx);
+    rx.try_recv().ok()
+  }
+
+  #[test]
+  fn config_entity_keys_become_work_and_tombstones() {
+    use crate::sync::config_entities::ConfigKind;
+    assert!(matches!(
+      work_for("statuses/s1.json"),
+      Some(SyncWorkItem::Config(ConfigKind::Status, id)) if id == "s1"
+    ));
+    assert!(matches!(
+      work_for("teams/t9/templates/t1.json"),
+      Some(SyncWorkItem::Config(ConfigKind::Template, id)) if id == "t1"
+    ));
+    assert!(matches!(
+      work_for("tombstones/statuses/s1.json"),
+      Some(SyncWorkItem::Tombstone(kind, id)) if kind == "status" && id == "s1"
+    ));
+    assert!(matches!(
+      work_for("tombstones/templates/t1.json"),
+      Some(SyncWorkItem::Tombstone(kind, id)) if kind == "template" && id == "t1"
+    ));
+    for key in [
+      "statuses/../x.json",
+      "statuses/a/b.json",
+      "statuses/s1.txt",
+      "unknown/x.json",
+    ] {
+      assert!(work_for(key).is_none(), "{key}");
+    }
+  }
 
   #[test]
   fn reconnects_back_off_from_six_seconds_to_ten_minutes() {
