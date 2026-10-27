@@ -3,7 +3,18 @@
 // the engines listed. Reads the browser's parent process, which Owl launches
 // Camoufox with `--remote-allow-system-access` for.
 const [endpoint] = process.argv.slice(2);
-const ws = new WebSocket(endpoint);
+// The browser opens its BiDi port a moment after the start call returns.
+let ws;
+for (const end = Date.now() + 30000; ; ) {
+  try {
+    ws = new WebSocket(endpoint);
+    await new Promise((resolve, reject) => { ws.onopen = resolve; ws.onerror = reject; });
+    break;
+  } catch {
+    if (Date.now() > end) { console.log(JSON.stringify({ error: "no BiDi connection" })); process.exit(1); }
+    await new Promise((r) => setTimeout(r, 250));
+  }
+}
 let id = 0; const pending = new Map();
 const send = (method, params = {}) => new Promise((resolve, reject) => {
   const mid = ++id; pending.set(mid, { resolve, reject });
@@ -14,7 +25,6 @@ ws.onmessage = (ev) => {
   const p = pending.get(msg.id); if (!p) return; pending.delete(msg.id);
   msg.type === "error" ? p.reject(new Error(msg.error + ": " + msg.message)) : p.resolve(msg.result);
 };
-await new Promise((r) => (ws.onopen = r));
 try {
   await send("session.new", { capabilities: {} });
   const { context } = (await send("browsingContext.getTree", { "moz:scope": "chrome", maxDepth: 0 })).contexts[0];

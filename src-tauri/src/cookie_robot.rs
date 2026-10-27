@@ -24,6 +24,8 @@ const SECONDS_RANGE: std::ops::RangeInclusive<u64> = 3..=600;
 /// How long a freshly launched browser gets to open its debugging endpoint.
 const ENDPOINT_TIMEOUT: Duration = Duration::from_secs(40);
 const COMMAND_TIMEOUT: Duration = Duration::from_secs(15);
+/// How long a Camoufox tab gets to leave its initial `about:blank`.
+const START_PAGE_TIMEOUT: Duration = Duration::from_secs(10);
 /// A page still loading after this is left as it is and scrolled anyway.
 const LOAD_TIMEOUT: Duration = Duration::from_secs(40);
 
@@ -482,13 +484,7 @@ impl Page {
                 COMMAND_TIMEOUT,
               )
               .await?;
-            let tree = page
-              .call("browsingContext.getTree", json!({}), COMMAND_TIMEOUT)
-              .await?;
-            let context = tree["contexts"][0]["context"]
-              .as_str()
-              .ok_or("the browser has no tab to drive")?
-              .to_string();
+            let context = page.started_tab().await?;
             page.protocol = Protocol::Bidi { context };
           } else {
             page.call("Page.enable", json!({}), COMMAND_TIMEOUT).await?;
@@ -502,6 +498,26 @@ impl Page {
     Err(format!(
       "the browser's debugging endpoint did not open: {last_error}"
     ))
+  }
+
+  /// The BiDi tab to drive, once Firefox has put its start page in place of
+  /// the initial `about:blank`. A navigation sent before that is dropped with
+  /// no answer, which lost a new profile's first site.
+  async fn started_tab(&mut self) -> Result<String, String> {
+    let deadline = Instant::now() + START_PAGE_TIMEOUT;
+    loop {
+      let tree = self
+        .call("browsingContext.getTree", json!({}), COMMAND_TIMEOUT)
+        .await?;
+      let tab = &tree["contexts"][0];
+      let context = tab["context"]
+        .as_str()
+        .ok_or("the browser has no tab to drive")?;
+      if tab["url"] != "about:blank" || Instant::now() >= deadline {
+        return Ok(context.to_string());
+      }
+      tokio::time::sleep(Duration::from_millis(250)).await;
+    }
   }
 
   /// Send one command and wait for its answer, skipping the events and stale
