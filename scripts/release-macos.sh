@@ -96,7 +96,13 @@ notarized=$(xcrun notarytool submit "$bundle/$dmg" --wait \
   --key "$APPLE_API_KEY_PATH" --key-id "$APPLE_API_KEY" --issuer "$APPLE_API_ISSUER" 2>&1)
 echo "$notarized"
 echo "$notarized" | grep -q "status: Accepted"
-xcrun stapler staple "$bundle/$dmg"
+# Apple's ticket service drops a connection now and then (0.33.8's first run
+# lost its build to one), so a failed staple is tried again.
+for attempt in 1 2 3 4 5; do
+  xcrun stapler staple "$bundle/$dmg" && break
+  [ "$attempt" = 5 ] && exit 1
+  sleep 20
+done
 spctl --assess --type open --context context:primary-signature -v "$bundle/$dmg"
 # The checksum the updater checks is taken of the stapled image.
 (cd "$bundle" && shasum -a 256 "$dmg" > SHA256SUMS.txt)
