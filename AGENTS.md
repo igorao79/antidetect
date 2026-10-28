@@ -160,15 +160,19 @@ Fork-specific rules:
   Donut's builds; upstream's updater, which checks at start and every hour, downloads
   the .dmg, verifies it against the release's `SHA256SUMS.txt` and offers a restart). Only a
   build made with `STABLE_RELEASE` (version `v<x.y.z>`) takes updates; a plain `pnpm tauri
-  build` calls itself `dev-<x.y.z>` and never updates. To ship: bump the version in
-  `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`, commit, and push to
-  `main-antidetect`. Every push there starts `release-macos.yml`, which publishes when the
-  version has no release yet; other pushes stop at its check (`gh workflow run
-  release-macos.yml` starts it by hand). GitHub's macOS runner runs `scripts/release-macos.sh`,
+  build` calls itself `dev-<x.y.z>` and never updates. Every push to `main-antidetect` that
+  changes the app (not only `*.md`, `.github/`, `e2e/`, `scripts/scenarios/`) ships a release:
+  `release-macos.yml` asks `scripts/next-version.mjs`, which, when the version in
+  `src-tauri/tauri.conf.json` is already released, writes the next patch number to
+  `package.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock` and `tauri.conf.json`; the
+  workflow commits that to the branch as "Owl <version>" and builds it. A version raised by
+  hand (a minor one) ships as it is. Pull before working on the branch again, the bump commit
+  is only on GitHub (`gh workflow run release-macos.yml` starts a release by hand). GitHub's
+  macOS runner runs `scripts/release-macos.sh`,
   which builds, writes `SHA256SUMS.txt` and publishes the release, with the signing certificate
   and the API key from the repository's Actions secrets (listed in the workflow). The script
   also runs on this Mac.
-  Publishing is public (the repository is public): ask before pushing a version bump to
+  Publishing is public (the repository is public): ask before pushing app changes to
   `main-antidetect` or starting the workflow. Settings → Advanced
   turns the automatic install off (`disable_auto_updates`), and About checks for updates when
   it opens and has its own button (upstream's, through `check_for_app_updates_manual`). A

@@ -2,9 +2,13 @@
 # runner, so a release does not take a developer's Mac for half an hour. It
 # runs scripts/release-macos.sh, the same script a local release runs.
 #
-# Starts on every push to main-antidetect and publishes when the pushed version
-# (src-tauri/tauri.conf.json) has no release yet, so a version bump is what
-# ships; other pushes stop after the check. It can also be started by hand:
+# Starts on every push to main-antidetect that changes the app (docs, CI,
+# tests and test scenarios do not) and ships it as a new version: when the
+# version in src-tauri/tauri.conf.json is already released, the next patch
+# number is committed to main-antidetect as "Owl <version>" and that commit is
+# built. A version raised by hand to one with no release ships as it is. Pull
+# before the next push: the bump commit lands on the branch. It can also be
+# started by hand:
 #
 #   gh workflow run release-macos.yml -R igorao79/antidetect
 #
@@ -24,6 +28,12 @@ name: Release macOS
 on:
   push:
     branches: [main-antidetect]
+    paths-ignore:
+      - "**.md"
+      - ".github/**"
+      - "e2e/**"
+      - "scripts/scenarios/**"
+      - "scripts/upstream-review.mjs"
   workflow_dispatch:
 
 permissions:
@@ -34,29 +44,37 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # On a cheap runner, so a push that ships nothing never waits for a Mac.
-  check:
+  # On a cheap runner, so the bump does not wait for a Mac.
+  version:
     runs-on: ubuntu-latest
     outputs:
-      new_version: ${{ steps.version.outputs.new_version }}
+      version: ${{ steps.next.outputs.version }}
+      sha: ${{ steps.commit.outputs.sha }}
     steps:
+      # The branch as it is now, not the pushed commit: a run that waited
+      # behind another starts from that run's bump.
       - uses: actions/checkout@v4
-      - id: version
+        with:
+          ref: ${{ github.ref_name }}
+      - id: next
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag="v$(node -p 'require("./src-tauri/tauri.conf.json").version')"
-          if gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            echo "$tag is already released; nothing to publish."
-            echo "new_version=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "$tag has no release yet."
-            echo "new_version=true" >> "$GITHUB_OUTPUT"
+          gh release list -R "$GITHUB_REPOSITORY" --limit 1000 --json tagName -q '.[].tagName' \
+            | node scripts/next-version.mjs | tee -a "$GITHUB_OUTPUT"
+      # Pushed with the workflow's own token, which starts no other run.
+      - id: commit
+        run: |
+          if [ "${{ steps.next.outputs.bumped }}" = true ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+            git commit -qam "Owl ${{ steps.next.outputs.version }}"
+            git push -q origin "HEAD:${{ github.ref_name }}"
           fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
   release:
-    needs: check
-    if: needs.check.outputs.new_version == 'true'
+    needs: version
     runs-on: macos-15
     timeout-minutes: 120
     env:
@@ -69,6 +87,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.version.outputs.sha }}
           # The release notes list the commits since the previous release.
           fetch-depth: 0
 
