@@ -2,7 +2,9 @@
 # runner, so a release does not take a developer's Mac for half an hour. It
 # runs scripts/release-macos.sh, the same script a local release runs.
 #
-# Started by hand after the version bump is pushed:
+# Starts on every push to main-antidetect and publishes when the pushed version
+# (src-tauri/tauri.conf.json) has no release yet, so a version bump is what
+# ships; other pushes stop after the check. It can also be started by hand:
 #
 #   gh workflow run release-macos.yml -R igorao79/antidetect
 #
@@ -20,6 +22,8 @@
 name: Release macOS
 
 on:
+  push:
+    branches: [main-antidetect]
   workflow_dispatch:
 
 permissions:
@@ -30,7 +34,29 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # On a cheap runner, so a push that ships nothing never waits for a Mac.
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version.outputs.new_version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="v$(node -p 'require("./src-tauri/tauri.conf.json").version')"
+          if gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "$tag is already released; nothing to publish."
+            echo "new_version=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "$tag has no release yet."
+            echo "new_version=true" >> "$GITHUB_OUTPUT"
+          fi
+
   release:
+    needs: check
+    if: needs.check.outputs.new_version == 'true'
     runs-on: macos-15
     timeout-minutes: 120
     env:

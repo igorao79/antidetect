@@ -1,0 +1,43 @@
+# Once a week, the Donut Browser commits Owl has not merged go to DeepSeek,
+# and its short review of them, with what it recommends for Owl, goes to the
+# team's Telegram group (scripts/upstream-review.mjs). Also started by hand:
+#
+#   gh workflow run upstream-review.yml -R igorao79/antidetect
+#
+# Secrets (Settings → Secrets and variables → Actions):
+#   DEEPSEEK_API_KEY    DeepSeek API key
+#   TELEGRAM_BOT_TOKEN  the bot's token from @BotFather; the bot is in the group
+#   TELEGRAM_CHAT_ID    the group's id, -100…
+name: Upstream review
+
+on:
+  schedule:
+    # Mondays, 09:00 Moscow time.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Fetch Donut Browser
+        run: |
+          git remote add upstream https://github.com/zhom/donutbrowser.git
+          git fetch --quiet upstream '+refs/heads/main:refs/remotes/upstream/main' 'refs/tags/v*:refs/tags/v*'
+
+      - name: Review and send
+        env:
+          DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: node scripts/upstream-review.mjs

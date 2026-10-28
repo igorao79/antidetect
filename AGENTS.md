@@ -11,7 +11,13 @@ Files of upstream's that the fork does not use (CI and release workflows, Linux 
 packaging, Nix, community docs, changelog, template images) are removed. Upstream was last
 merged at v0.35.5 (October 2026, 184 commits, its `d2b2f828`); upstream's Rust rewrite of
 `donut-sync` was left out (see the Owl server below), and upstream files the fork deleted stay
-deleted on every merge.
+deleted on every merge. A merge commit keeps only the fork's parent, so pushing it does not
+publish upstream's history; graft the upstream parent back locally
+(`git replace --graft <merge> <fork parent> <upstream commit>`) for the next merge, and write
+the merged upstream commit and its version to `.github/upstream-merged`. Every Monday
+`upstream-review.yml` (`scripts/upstream-review.mjs`) sends the week's unmerged upstream
+commits from that commit on to DeepSeek and its review, with what it recommends for Owl, to
+the team's Telegram group (secrets listed in the workflow).
 
 Fork-specific rules:
 
@@ -155,12 +161,15 @@ Fork-specific rules:
   the .dmg, verifies it against the release's `SHA256SUMS.txt` and offers a restart). Only a
   build made with `STABLE_RELEASE` (version `v<x.y.z>`) takes updates; a plain `pnpm tauri
   build` calls itself `dev-<x.y.z>` and never updates. To ship: bump the version in
-  `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`, commit, push, and run
-  `gh workflow run release-macos.yml`: GitHub's macOS runner runs `scripts/release-macos.sh`,
+  `package.json`, `src-tauri/Cargo.toml` and `src-tauri/tauri.conf.json`, commit, and push to
+  `main-antidetect`. Every push there starts `release-macos.yml`, which publishes when the
+  version has no release yet; other pushes stop at its check (`gh workflow run
+  release-macos.yml` starts it by hand). GitHub's macOS runner runs `scripts/release-macos.sh`,
   which builds, writes `SHA256SUMS.txt` and publishes the release, with the signing certificate
   and the API key from the repository's Actions secrets (listed in the workflow). The script
   also runs on this Mac.
-  Publishing is public (the repository is public): ask before running it. Settings → Advanced
+  Publishing is public (the repository is public): ask before pushing a version bump to
+  `main-antidetect` or starting the workflow. Settings → Advanced
   turns the automatic install off (`disable_auto_updates`), and About checks for updates when
   it opens and has its own button (upstream's, through `check_for_app_updates_manual`). A
   release is signed
