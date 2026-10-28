@@ -8,7 +8,7 @@
 //   node scripts/upstream-review.mjs --dry-run  # prints the prompt, sends nothing
 //
 // DEEPSEEK_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID; optional
-// DEEPSEEK_MODEL (deepseek-chat), UPSTREAM_REF (upstream/main), REVIEW_DAYS (7).
+// DEEPSEEK_MODEL (deepseek-flash), UPSTREAM_REF (upstream/main), REVIEW_DAYS (7).
 // The last merged upstream commit is read from .github/upstream-merged, which
 // every upstream merge updates: the published history has no upstream commits
 // to find it by.
@@ -22,7 +22,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const dryRun = process.argv.includes("--dry-run");
 const upstreamRef = process.env.UPSTREAM_REF || "upstream/main";
 const days = Number(process.env.REVIEW_DAYS || 7);
-const model = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+const model = process.env.DEEPSEEK_MODEL || "deepseek-flash";
 const UPSTREAM_URL = "https://github.com/zhom/donutbrowser";
 // One commit's diff, and all of them together, stay within DeepSeek's context.
 const COMMIT_DIFF_CHARS = 6000;
@@ -149,7 +149,8 @@ async function review() {
     body: JSON.stringify({
       model,
       temperature: 0.3,
-      max_tokens: 2000,
+      // Flash thinks before it answers, and the thinking counts here too.
+      max_tokens: 16000,
       messages: [
         { role: "system", content: system },
         { role: "user", content: user },
