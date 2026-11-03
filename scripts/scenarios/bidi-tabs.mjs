@@ -1,8 +1,9 @@
-// usage: node bidi-tabs.mjs <ws_endpoint> [--mark <url part> | --open <url>]
+// usage: node bidi-tabs.mjs <ws_endpoint> [--mark <url part> | --open <url> | --loaded]
 // Lists the open tabs (url and sessionStorage.owl); --mark sets sessionStorage.owl
 // in every tab whose url contains <url part>, from a script of the page; --open
 // opens <url> in a new background tab first. Every tab is brought to the front
-// once, so tabs a restored session loads on demand show their address.
+// once, so tabs a restored session loads on demand show their address. --loaded
+// brings none to the front and lists each tab's url and whether its page has loaded.
 const [endpoint, flag, part] = process.argv.slice(2);
 const ws = new WebSocket(endpoint);
 let id = 0; const pending = new Map();
@@ -29,10 +30,18 @@ try {
   // Firefox's own pages (a new tab is chrome://browser/content/blanktab.html)
   // cannot be activated over BiDi.
   const activate = (context) => send("browsingContext.activate", { context }).catch(() => {});
-  for (const { context } of contexts) await activate(context);
-  if (contexts.length) await activate(contexts[0].context);
+  if (flag !== "--loaded") {
+    for (const { context } of contexts) await activate(context);
+    if (contexts.length) await activate(contexts[0].context);
+  }
   const tabs = [];
   for (const { context, url } of (await send("browsingContext.getTree", {})).contexts) {
+    if (flag === "--loaded") {
+      const r = await send("script.evaluate", { expression: `performance.getEntriesByType("navigation")[0]?.responseStatus > 0`, target: { context }, awaitPromise: false })
+        .catch(() => null);
+      tabs.push({ url, loaded: r?.result?.value === true });
+      continue;
+    }
     // Written by a script of the page itself: Firefox's session store records
     // what a page writes, not a value set from outside over BiDi.
     const mark = flag === "--mark" && url.includes(part)

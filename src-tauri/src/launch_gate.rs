@@ -326,7 +326,7 @@ async fn gate_exit(
   if upstream.is_none() && !declares_route {
     return Ok(());
   }
-  if gate_disabled() {
+  if gate_disabled() || crate::camoufox_manager::profile_location_follows_exit(profile) {
     return Ok(());
   }
 
@@ -474,7 +474,8 @@ pub async fn get_profile_pre_launch_checks(profile_id: String) -> Result<PreLaun
     .collect();
   let exit_measurement_unreliable = vpn_extension_detect::has_proxy_control(&scan);
 
-  let disabled = gate_disabled();
+  let disabled =
+    gate_disabled() || crate::camoufox_manager::profile_location_follows_exit(&profile);
   let key = fingerprint_consistency::exit_cache_key(&profile);
 
   let consistency = if disabled {

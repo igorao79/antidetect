@@ -50,6 +50,25 @@ impl Default for CamoufoxConfig {
   }
 }
 
+impl CamoufoxConfig {
+  /// Whether every launch locates the profile at its exit, rather than the user
+  /// having turned automatic location off or named an address.
+  pub fn location_follows_exit(&self) -> bool {
+    matches!(self.geoip, None | Some(serde_json::Value::Bool(true)))
+  }
+}
+
+/// A Camoufox profile whose location is set from the exit at every launch, so
+/// there is no stored location the exit could disagree with. A profile with no
+/// config launches on the default one.
+pub fn profile_location_follows_exit(profile: &crate::profile::BrowserProfile) -> bool {
+  profile.browser == "camoufox"
+    && profile
+      .camoufox_config
+      .as_ref()
+      .is_none_or(CamoufoxConfig::location_follows_exit)
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[allow(non_snake_case)]
 pub struct CamoufoxLaunchResult {
@@ -168,13 +187,18 @@ fn resume_as_recovery(profile_path: &std::path::Path) {
 }
 
 /// The `user.js` prefs that make a persistent profile reopen its session.
-const SESSION_RESTORE_PREFS: [(&str, &str); 6] = [
+/// camoufox.cfg restores every tab at launch; `restore_on_demand` loads only the
+/// one in front, since the rest all went through the profile's one proxy at once
+/// and providers answered with 429s that left pages blank. `restore_tabs_lazily`
+/// stays off as camoufox.cfg has it: on, WebDriver BiDi sees only the loaded tabs.
+const SESSION_RESTORE_PREFS: [(&str, &str); 7] = [
   ("browser.startup.page", "3"),
   ("privacy.clearOnShutdown.openWindows", "false"),
   ("browser.sessionstore.resume_from_crash", "true"),
   ("browser.sessionstore.max_resumed_crashes", "9999"),
   ("browser.sessionstore.privacy_level", "0"),
   ("browser.sessionstore.interval", "5000"),
+  ("browser.sessionstore.restore_on_demand", "true"),
 ];
 
 impl CamoufoxManager {
@@ -1039,5 +1063,44 @@ mod tests {
     assert_eq!(default_config.fingerprint, None);
     assert_eq!(default_config.randomize_fingerprint_on_launch, None);
     assert_eq!(default_config.os, None);
+  }
+
+  #[test]
+  fn only_automatic_location_on_camoufox_follows_the_exit() {
+    let profile =
+      |browser: &str, geoip: Option<Option<serde_json::Value>>| crate::profile::BrowserProfile {
+        browser: browser.into(),
+        camoufox_config: geoip.map(|geoip| CamoufoxConfig {
+          geoip,
+          ..Default::default()
+        }),
+        ..Default::default()
+      };
+    let on = serde_json::Value::Bool(true);
+    let off = serde_json::Value::Bool(false);
+    let address = serde_json::Value::String("203.0.113.7".into());
+
+    assert!(profile_location_follows_exit(&profile("camoufox", None)));
+    assert!(profile_location_follows_exit(&profile(
+      "camoufox",
+      Some(None)
+    )));
+    assert!(profile_location_follows_exit(&profile(
+      "camoufox",
+      Some(Some(on.clone()))
+    )));
+    assert!(!profile_location_follows_exit(&profile(
+      "camoufox",
+      Some(Some(off))
+    )));
+    assert!(!profile_location_follows_exit(&profile(
+      "camoufox",
+      Some(Some(address))
+    )));
+    assert!(!profile_location_follows_exit(&profile("wayfern", None)));
+    assert!(!profile_location_follows_exit(&profile(
+      "wayfern",
+      Some(Some(on))
+    )));
   }
 }

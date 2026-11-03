@@ -10,10 +10,11 @@ wait_api()
 
 MARK = "owl-restore"
 SECOND = f"https://example.org/?{MARK}-second"
-def tabs(started, mark=False, open_url=None):
+def tabs(started, mark=False, open_url=None, loaded=False):
     args = ["node", "bidi-tabs.mjs", started["ws_endpoint"]]
     if mark: args += ["--mark", MARK]
     if open_url: args += ["--open", open_url]
+    if loaded: args += ["--loaded"]
     out = subprocess.run(args, cwd=HERE, capture_output=True, text=True, timeout=60)
     return json.loads(out.stdout) if out.stdout.strip().startswith("[") else []
 
@@ -44,6 +45,9 @@ try:
 
     status, st = start(u)
     check("the profile starts again without a page", status == 200, f"{status} {str(st)[:200]}")
+    time.sleep(6)
+    idle = tabs(st, loaded=True)
+    check("only the tab in front loads at launch", len(idle) == 2 and sum(t["loaded"] for t in idle) == 1, str(idle))
     # Session storage is put back a moment after the restored page loads.
     after = wait_tabs(st, lambda ts: any(MARK in t["url"] and t["owl"] == "1" for t in ts)
                       and any(t["url"] == SECOND for t in ts))

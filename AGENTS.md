@@ -86,6 +86,11 @@ Fork-specific rules:
   after a crash, without the restore prompt. Ephemeral profiles keep their no-history prefs.
   `s16_session_restore.py` checks it; session storage comes back a moment after the
   restored page loads, and a value set from outside over BiDi is not recorded at all.
+  Only the tab in front loads at launch, the rest when they come to the front
+  (`restore_on_demand`, over camoufox.cfg's `false`): a session of 58 tabs loading through one
+  proxy got 429s from the provider, and a page with no answer to a failed request (the bare
+  `web.telegram.org/`) stayed blank. `restore_tabs_lazily` stays off, or BiDi sees only the
+  loaded tabs.
 - Own Owl server (`donut-sync/`, `workspace.rs`, `workspace-page.tsx`,
   `workspace-share-dialog.tsx`, the Integrations page's Server tab). Anyone runs one with
   `docker compose up` in `donut-sync/` (one container, objects on its own disk in the
@@ -269,6 +274,10 @@ running dev app):
   address (unless the profile turned automatic location off). A new Camoufox fingerprint is
   located through a proxy check, never by handing the proxy to reqwest, which looks up this
   machine's own address for every type it cannot dial (SSH, Shadowsocks, share links).
+  So upstream's exit/fingerprint gate has nothing to compare on such a profile and skips it
+  (`profile_location_follows_exit`, in `launch_gate.rs`): it reads Wayfern's config only, and
+  announced "nothing verified" at every Camoufox launch through a proxy. A profile with
+  automatic location off still gets that notice.
 - A profile speaks the main language of its exit country: the most spoken of its official
   languages (`geolocation::get_profile_geolocation`). Upstream's draw across CLDR speaker
   shares counts second languages and dialects (a German exit came out `de` 37% of the time,

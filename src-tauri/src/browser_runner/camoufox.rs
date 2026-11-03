@@ -23,7 +23,7 @@ async fn refresh_location(
   config: &mut CamoufoxConfig,
   local_proxy_url: &str,
 ) {
-  if !matches!(config.geoip, None | Some(serde_json::Value::Bool(true))) {
+  if !config.location_follows_exit() {
     return;
   }
   let Some(stored) = config.fingerprint.as_deref() else {
