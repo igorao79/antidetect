@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { AppUpdateToast } from "@/components/app-update-toast";
 import { translateBackendError } from "@/lib/backend-errors";
-import { showToast } from "@/lib/toast-utils";
+import { showErrorToast, showSuccessToast, showToast } from "@/lib/toast-utils";
 import { playUiSound } from "@/lib/ui-sounds";
 import type { AppUpdateInfo, AppUpdateProgress } from "@/types";
 
@@ -35,16 +35,13 @@ export function useAppUpdateNotifications() {
         "check_for_app_updates",
       );
 
-      // Don't show update if this version was already dismissed
-      if (update && update.new_version !== dismissedVersion) {
+      if (update) {
         setUpdateInfo(update);
-      } else if (update) {
-        console.log("Update available but dismissed:", update.new_version);
       }
     } catch (error) {
       console.error("Failed to check for app updates:", error);
     }
-  }, [isClient, dismissedVersion]);
+  }, [isClient]);
 
   /** Checks now, even for a dismissed version. Throws when the check fails. */
   const checkForAppUpdatesManual = useCallback(async () => {
@@ -52,9 +49,38 @@ export function useAppUpdateNotifications() {
       "check_for_app_updates_manual",
     );
     autoDownloadedVersion.current = null;
+    setDismissedVersion(null);
     setUpdateInfo(update);
     return update;
   }, []);
+
+  /** A check asked for outside About, which says how it went in a toast. */
+  const checkForAppUpdatesNow = useCallback(async () => {
+    const id = "app-update-check";
+    showToast({
+      id,
+      type: "loading",
+      title: t("about.update.checking"),
+      duration: Number.POSITIVE_INFINITY,
+    });
+    try {
+      const found = await checkForAppUpdatesManual();
+      if (!found) {
+        showSuccessToast(t("about.update.current"), { id });
+      } else if (found.auto_install) {
+        showToast({
+          id,
+          type: "info",
+          title: t("about.update.available", { version: found.new_version }),
+        });
+      } else {
+        toast.dismiss(id);
+      }
+    } catch (error) {
+      console.error("Failed to check for app updates:", error);
+      showErrorToast(t("about.update.failed"), { id });
+    }
+  }, [t, checkForAppUpdatesManual]);
 
   const handleAppUpdate = useCallback(
     async (appUpdateInfo: AppUpdateInfo) => {
@@ -108,13 +134,11 @@ export function useAppUpdateNotifications() {
   const dismissAppUpdate = useCallback(() => {
     if (!isClient) return;
 
-    // Remember the dismissed version so we don't show it again
+    // Only the toast goes: the update stays known, for the rail's button.
     if (updateInfo) {
       setDismissedVersion(updateInfo.new_version);
-      console.log("Dismissed app update version:", updateInfo.new_version);
     }
 
-    setUpdateInfo(null);
     toast.dismiss("app-update");
   }, [isClient, updateInfo]);
 
@@ -185,6 +209,7 @@ export function useAppUpdateNotifications() {
   useEffect(() => {
     if (!isClient || !updateInfo) return;
     if (!updateReady && updateInfo.auto_install) return;
+    if (updateInfo.new_version === dismissedVersion) return;
 
     toast.custom(
       () => (
@@ -216,6 +241,7 @@ export function useAppUpdateNotifications() {
     updateReady,
     isUpdating,
     isClient,
+    dismissedVersion,
   ]);
 
   // Check for app updates on startup
@@ -233,6 +259,7 @@ export function useAppUpdateNotifications() {
     updateReady,
     checkForAppUpdates,
     checkForAppUpdatesManual,
+    checkForAppUpdatesNow,
     dismissAppUpdate,
     installAppUpdate: handleAppUpdate,
     restartToUpdate: handleRestart,

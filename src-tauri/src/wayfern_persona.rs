@@ -285,7 +285,7 @@ pub fn get_profile_persona(
 ) -> Result<Vec<PersonaField>, String> {
   let profile = crate::profile::ProfileManager::instance()
     .list_profiles()
-    .map_err(|e| format!("Failed to list profiles: {e}"))?
+    .map_err(|e| crate::coded_failure("PROFILES_LOAD_FAILED", e))?
     .into_iter()
     .find(|profile| profile.id.to_string() == profile_id)
     .ok_or_else(|| crate::backend_error("PROFILE_NOT_FOUND"))?;

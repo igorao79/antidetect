@@ -243,14 +243,7 @@ export function useBrowserDownload() {
           // Dismiss any existing download toast and show error
           dismissToast(`download-${browserStr}-${version}`);
 
-          let errorMessage = i18n.t("common.errors.unknown");
-          if (error instanceof Error) {
-            errorMessage = error.message;
-          } else if (typeof error === "string") {
-            errorMessage = error;
-          } else if (error && typeof error === "object" && "message" in error) {
-            errorMessage = String(error.message);
-          }
+          const errorMessage = translateBackendError(i18n.t, error);
 
           // Ensure the long-running download toast is dismissed, and show a finite error toast
           dismissToast(`download-${browserStr}-${version}`);

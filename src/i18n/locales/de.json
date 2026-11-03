@@ -317,6 +317,36 @@
       "concurrency": "Gleichzeitig startende Profile",
       "concurrencyDescription": "Wie viele Profile gleichzeitig starten können. Eine kleinere Zahl belastet deinen Computer weniger.",
       "seconds": "{{value}} s"
+    },
+    "disableAutoUpdates": "Automatische App-Updates deaktivieren",
+    "disableAutoUpdatesDescription": "Owl lädt und installiert seine Updates nicht selbst. Es zeigt weiterhin an, wenn eine neue Version verfügbar ist. Browser-Updates sind davon nicht betroffen.",
+    "themeColors": {
+      "background": "Hintergrund",
+      "foreground": "Vordergrund",
+      "card": "Karte",
+      "card-foreground": "Kartentext",
+      "popover-foreground": "Popover-Text",
+      "primary": "Primär",
+      "primary-foreground": "Primärtext",
+      "secondary": "Sekundär",
+      "secondary-foreground": "Sekundärtext",
+      "muted": "Gedämpft",
+      "muted-foreground": "Gedämpfter Text",
+      "accent": "Akzent",
+      "accent-foreground": "Akzenttext",
+      "destructive": "Gefahr",
+      "destructive-foreground": "Gefahrentext",
+      "success": "Erfolg",
+      "success-foreground": "Erfolgstext",
+      "warning": "Warnung",
+      "warning-foreground": "Warnungstext",
+      "border": "Rahmen",
+      "chart-1": "Diagramm 1",
+      "chart-2": "Diagramm 2",
+      "chart-3": "Diagramm 3",
+      "chart-4": "Diagramm 4",
+      "chart-5": "Diagramm 5",
+      "popover": "Popover"
     }
   },
   "header": {
@@ -630,9 +660,9 @@
       "warning": "Bitte warten Sie einen Moment. Zu viele neue Profile in einer Stunde führen zu einer vorübergehenden Sperre von 24 Stunden oder mehr, in der Sie keine neuen Identitäten erzeugen können. Wenn Sie ein höheres Stundenlimit brauchen, unterstützen Sie Owl mit einem kostenpflichtigen Tarif."
     },
     "engine": {
-      "label": "Browser engine",
-      "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
-      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
+      "label": "Browser-Engine",
+      "camoufoxHint": "Camoufox: Anti-Detect-Firefox. Kostenlos; Fingerprints werden lokal erzeugt.",
+      "wayfernHint": "Wayfern: Anti-Detect-Chromium. Erfordert ein Wayfern-Abo."
     },
     "group": {
       "notFound": "Keine Gruppen gefunden."
@@ -1260,7 +1290,7 @@
     "camoufox": {
       "fingerprint": {
         "osCpuPlaceholder": "e.g., Intel Mac OS X 10.15",
-        "webglRendererPlaceholder": "e.g., llvmpipe, or similar"
+        "webglRendererPlaceholder": "z. B. llvmpipe oder ähnlich"
       }
     }
   },
@@ -1368,7 +1398,7 @@
       "yes": "Ja",
       "no": "Nein",
       "sameSiteUnspecified": "Nicht angegeben",
-      "sameSiteNone": "None",
+      "sameSiteNone": "Keine",
       "sameSiteLax": "Lax",
       "sameSiteStrict": "Strict",
       "issuesTitle": "Probleme",
@@ -1647,7 +1677,7 @@
     "launchArgs": "Startargumente",
     "launchArgsDescription": "Gib ein Argument pro Zeile ein, als --name oder --name=value. Nur unterstützte Argumente werden angenommen, zum Beispiel --disable-gpu, --mute-audio oder --disable-features=Name. Owl verwaltet die Argumente für Profil, Proxy, Fenster und Debugging.",
     "launchArgsSkipped": "Die eigenen Startargumente wurden für {{profile}} nicht verwendet. {{reason}}",
-    "refreshFingerprint": "Refresh Fingerprint",
+    "refreshFingerprint": "Fingerprint neu erzeugen",
     "readingDevice": "Fingerprint dieses Profils wird gelesen…"
   },
   "warnings": {
@@ -1777,7 +1807,7 @@
       "security": "Die Profildaten mit einem Passwort verschlüsseln.",
       "launchHook": "Bei jedem Start des Profils eine GET-Anfrage an diese URL senden.",
       "requests": "Anfragen des Browsers, während er läuft. Zugangsdaten sind verborgen.",
-      "logs": "Donuts Protokollzeilen zu diesem Profil."
+      "logs": "Owl-Protokollzeilen zu diesem Profil."
     },
     "badges": {
       "locked": "Gesperrt",
@@ -1785,7 +1815,7 @@
     },
     "cookies": {
       "runningNotice": "Cookies können nicht gelesen werden, solange der Browser läuft. Schließen Sie zuerst dieses Profil.",
-      "domainsHeader": "Domains ({{count}})"
+      "domainsHeader": "Domänen ({{count}})"
     },
     "security": {
       "protected": "Dieses Profil ist mit einem Passwort verschlüsselt.",
@@ -1813,7 +1843,7 @@
       "hint": "Erstellen Sie ein normales Profil, wenn die Daten erhalten bleiben sollen."
     },
     "localStorage": {
-      "title": "Local Storage",
+      "title": "Lokaler Speicher",
       "stats": "Websites: {{origins}} · Einträge: {{items}}",
       "hint": "Eine Playwright-storageState-Datei mit den Cookies und dem Local Storage. Zum Importieren muss der Browser geschlossen sein.",
       "exported": "Speicherzustand exportiert",
@@ -2128,9 +2158,9 @@
       "peerEndpointPlaceholder": "z. B. vpn.example.com:51820",
       "allowedIps": "Erlaubte IPs",
       "allowedIpsPlaceholder": "z. B. 0.0.0.0/0, ::/0",
-      "keepaliveOptional": "Persistent Keepalive (optional)",
+      "keepaliveOptional": "Persistentes Keepalive (optional)",
       "keepalivePlaceholder": "z. B. 25",
-      "presharedKeyOptional": "Preshared Key (optional)",
+      "presharedKeyOptional": "Vorab geteilter Schlüssel (optional)",
       "presharedKeyPlaceholder": "Base64-kodierter Preshared Key",
       "updateButton": "VPN aktualisieren",
       "createButton": "VPN erstellen",
@@ -2648,7 +2678,7 @@
     "lockedOut": "Zu viele Fehlversuche. Versuchen Sie es in {{duration}} erneut.",
     "lockedOutDuration": {
       "seconds": "{{seconds}} s",
-      "minutes": "{{minutes}} min",
+      "minutes": "{{minutes}} Min.",
       "hours": "{{hours}} h"
     },
     "profileNotFound": "Profil nicht gefunden",
@@ -3020,7 +3050,53 @@
     "vpnUnreachable": "Der VPN-Server antwortet nicht.",
     "entityInUse": "Wird von {{count}} Profilen verwendet. Weisen Sie ihnen zuerst einen anderen Proxy oder ein anderes VPN zu.",
     "syncPasswordBlocksRemoteRun": "Das Passwort der Sync-Verschlüsselung verschlüsselt die synchronisierten Einstellungen dieses Profils, und ein Remote-Host kann sie nicht entschlüsseln. Um es remote auszuführen, entfernen Sie das Passwort in den Einstellungen der Sync-Verschlüsselung.",
-    "templateEngineUnsupported": "Die Vorlage nennt eine Engine, die diese App nicht hat."
+    "templateEngineUnsupported": "Die Vorlage nennt eine Engine, die diese App nicht hat.",
+    "appUpdateCheckFailed": "Konnte nicht nach Updates suchen: {{detail}}",
+    "appUpdateInstallFailed": "Konnte das Update nicht herunterladen: {{detail}}",
+    "appRestartFailed": "Konnte Owl nicht neu starten: {{detail}}",
+    "browserUpdateCheckFailed": "Konnte nicht nach Browser-Updates suchen: {{detail}}",
+    "browserUpdateFailed": "Konnte das Browser-Update nicht abschließen: {{detail}}",
+    "browserVersionsUnavailable": "Konnte die Browser-Versionen nicht abrufen: {{detail}}",
+    "browserVersionsRefreshFailed": "Konnte die Browser-Versionen nicht aktualisieren: {{detail}}",
+    "browserDownloadFailed": "Konnte den Browser nicht herunterladen: {{detail}}",
+    "browserLaunchFailed": "Konnte den Browser nicht starten: {{detail}}",
+    "browserOpenUrlFailed": "Konnte den Link nicht im Browser öffnen: {{detail}}",
+    "browserStopFailed": "Konnte den Browser nicht beenden: {{detail}}",
+    "downloadNotActive": "Dieser Download läuft nicht mehr.",
+    "extensionSaveFailed": "Konnte die Erweiterung nicht speichern: {{detail}}",
+    "extensionDeleteFailed": "Konnte die Erweiterung nicht löschen: {{detail}}",
+    "extensionsLoadFailed": "Konnte die Erweiterungen nicht laden: {{detail}}",
+    "extensionGroupSaveFailed": "Konnte die Erweiterungsgruppe nicht speichern: {{detail}}",
+    "extensionGroupDeleteFailed": "Konnte die Erweiterungsgruppe nicht löschen: {{detail}}",
+    "extensionGroupsLoadFailed": "Konnte die Erweiterungsgruppen nicht laden: {{detail}}",
+    "extensionGroupChangeFailed": "Konnte die Erweiterungsgruppe nicht ändern: {{detail}}",
+    "profilesLoadFailed": "Konnte die Profile nicht laden: {{detail}}",
+    "profilesDeleteFailed": "Konnte die Profile nicht löschen: {{detail}}",
+    "profileStatusSaveFailed": "Konnte den Profilstatus nicht setzen: {{detail}}",
+    "groupsLoadFailed": "Konnte die Gruppen nicht laden: {{detail}}",
+    "groupSaveFailed": "Konnte die Gruppe nicht speichern: {{detail}}",
+    "groupDeleteFailed": "Konnte die Gruppe nicht löschen: {{detail}}",
+    "groupAssignFailed": "Konnte die Profile nicht in die Gruppe verschieben: {{detail}}",
+    "geoipDownloadFailed": "Konnte die Standortdatenbank nicht herunterladen: {{detail}}",
+    "proxySaveFailed": "Konnte den Proxy nicht speichern: {{detail}}",
+    "proxyDeleteFailed": "Konnte den Proxy nicht löschen: {{detail}}",
+    "proxyImportFailed": "Konnte die Proxys nicht importieren: {{detail}}",
+    "vpnConnectFailed": "Konnte das VPN nicht verbinden: {{detail}}",
+    "vpnDisconnectFailed": "Konnte das VPN nicht trennen: {{detail}}",
+    "vpnSaveFailed": "Konnte das VPN nicht speichern: {{detail}}",
+    "vpnDeleteFailed": "Konnte das VPN nicht löschen: {{detail}}",
+    "vpnLoadFailed": "Konnte die VPNs nicht laden: {{detail}}",
+    "trafficClearFailed": "Konnte die Traffic-Statistik nicht löschen: {{detail}}",
+    "fingerprintGenerateFailed": "Konnte den Fingerprint nicht erzeugen: {{detail}}",
+    "cookiesReadFailed": "Konnte die Cookies des Profils nicht lesen: {{detail}}",
+    "settingsLoadFailed": "Konnte die Einstellungen nicht laden: {{detail}}",
+    "settingsSaveFailed": "Konnte die Einstellungen nicht speichern: {{detail}}",
+    "apiTokenFailed": "Konnte das API-Token nicht aktualisieren: {{detail}}",
+    "syncSettingsFailed": "Konnte die Synchronisierungseinstellungen nicht ändern: {{detail}}",
+    "syncEntitiesLoadFailed": "Konnte nicht ermitteln, was synchronisiert werden kann: {{detail}}",
+    "logFolderFailed": "Konnte den Protokollordner nicht öffnen: {{detail}}",
+    "tagsLoadFailed": "Konnte die Tags nicht laden: {{detail}}",
+    "synchronizerFailed": "Der Synchronizer konnte das nicht ausführen: {{detail}}"
   },
   "rail": {
     "profiles": "Profile",
@@ -3329,7 +3405,7 @@
         "vpn": "VPN-Unterstützung (WireGuard)",
         "profiles": "Unbegrenzt lokale Profile",
         "api": "API zur Profilverwaltung",
-        "openSource": "Open Source",
+        "openSource": "Quelloffen",
         "groups": "Profilgruppen",
         "cookies": "Cookie-Import & -Export"
       }
@@ -3365,6 +3441,7 @@
     "noOtherTargets": "Keine anderen Wayfern-Profile ausgewählt"
   },
   "about": {
+    "licenseNotice": "Open-Source-Anti-Detect-Browser.",
     "basedOn": "Basiert auf Donut Browser (AGPL-3.0).",
     "licenses": "Lizenzen",
     "searchLicenses": "Lizenzen suchen…",
@@ -3459,7 +3536,7 @@
     },
     "chart": {
       "machineTime": "Rechnerzeit pro Tag",
-      "minutes": "{{minutes}} min",
+      "minutes": "{{minutes}} Min.",
       "total": "{{duration}} insgesamt",
       "empty": "Keine Durchläufe in diesem Zeitraum",
       "noRuns": "Keine Durchläufe",
@@ -3655,7 +3732,7 @@
     },
     "preset": {
       "light": "Leicht",
-      "balanced": "Standard",
+      "balanced": "Ausgewogen",
       "deep": "Gründlich"
     },
     "template": {
@@ -3757,8 +3834,8 @@
     "next": {
       "label": "Nächster Durchlauf",
       "now": "Startet jetzt",
-      "inMinutes_one": "In {{count}} min",
-      "inMinutes_other": "In {{count}} min",
+      "inMinutes_one": "In {{count}} Min.",
+      "inMinutes_other": "In {{count}} Min.",
       "inHours_one": "In {{count}} h",
       "inHours_other": "In {{count}} h",
       "today": "Heute",
@@ -4576,12 +4653,12 @@
     "rowAction": "{{action}}: {{name}}"
   },
   "camoufoxDialog": {
-    "invalidFingerprint": "Invalid fingerprint configuration",
-    "invalidFingerprintDescription": "The fingerprint configuration contains invalid JSON. Please check your advanced settings.",
-    "saveFailed": "Failed to save configuration",
-    "unknownError": "Unknown error occurred",
-    "titleView": "View Fingerprint Settings - {{name}} ({{browser}})",
-    "titleConfigure": "Configure Fingerprint Settings - {{name}} ({{browser}})"
+    "invalidFingerprint": "Ungültige Fingerprint-Konfiguration",
+    "invalidFingerprintDescription": "Die Fingerprint-Konfiguration enthält ungültiges JSON. Bitte prüfe die erweiterten Einstellungen.",
+    "saveFailed": "Konfiguration konnte nicht gespeichert werden",
+    "unknownError": "Ein unbekannter Fehler ist aufgetreten",
+    "titleView": "Fingerprint-Einstellungen anzeigen – {{name}} ({{browser}})",
+    "titleConfigure": "Fingerprint-Einstellungen konfigurieren – {{name}} ({{browser}})"
   },
   "cookieRobot": {
     "title": "Cookie Robot",

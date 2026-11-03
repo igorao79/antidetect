@@ -317,6 +317,36 @@
       "concurrency": "Aynı anda başlayan profil sayısı",
       "concurrencyDescription": "Aynı anda kaç profilin başlayabileceği. Daha düşük bir sayı bilgisayarınızı daha az yorar.",
       "seconds": "{{value}} sn"
+    },
+    "disableAutoUpdates": "Uygulama otomatik güncellemelerini devre dışı bırak",
+    "disableAutoUpdatesDescription": "Owl güncellemelerini kendisi indirmez ve yüklemez. Yeni bir sürüm çıktığında yine de gösterir. Tarayıcı güncellemeleri bundan etkilenmez.",
+    "themeColors": {
+      "background": "Arka plan",
+      "foreground": "Ön plan",
+      "card": "Kart",
+      "card-foreground": "Kart metni",
+      "popover": "Açılır pencere",
+      "popover-foreground": "Açılır pencere metni",
+      "primary": "Birincil",
+      "primary-foreground": "Birincil metin",
+      "secondary": "İkincil",
+      "secondary-foreground": "İkincil metin",
+      "muted": "Sessiz",
+      "muted-foreground": "Sessiz metin",
+      "accent": "Vurgu",
+      "accent-foreground": "Vurgu metni",
+      "destructive": "Tehlikeli",
+      "destructive-foreground": "Tehlikeli metin",
+      "success": "Başarı",
+      "success-foreground": "Başarı metni",
+      "warning": "Uyarı",
+      "warning-foreground": "Uyarı metni",
+      "border": "Kenarlık",
+      "chart-1": "Grafik 1",
+      "chart-2": "Grafik 2",
+      "chart-3": "Grafik 3",
+      "chart-4": "Grafik 4",
+      "chart-5": "Grafik 5"
     }
   },
   "header": {
@@ -630,9 +660,9 @@
       "warning": "Lütfen biraz bekleyin. Bir saatte çok fazla profil oluşturmak, 24 saat veya daha uzun süren geçici bir engele yol açar; bu süre boyunca yeni kimlik oluşturamazsınız. Daha yüksek bir saatlik sınıra ihtiyacınız varsa, Owl'u ücretli bir planla desteklemeyi düşünün."
     },
     "engine": {
-      "label": "Browser engine",
-      "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
-      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
+      "label": "Tarayıcı motoru",
+      "camoufoxHint": "Camoufox: tespit edilmesini önleyen Firefox. Ücretsiz; parmak izleri yerel olarak üretilir.",
+      "wayfernHint": "Wayfern: tespit edilmesini önleyen Chromium. Wayfern aboneliği gerektirir."
     },
     "group": {
       "notFound": "Grup bulunamadı."
@@ -1259,8 +1289,8 @@
     },
     "camoufox": {
       "fingerprint": {
-        "osCpuPlaceholder": "e.g., Intel Mac OS X 10.15",
-        "webglRendererPlaceholder": "e.g., llvmpipe, or similar"
+        "osCpuPlaceholder": "örn. Intel Mac OS X 10.15",
+        "webglRendererPlaceholder": "örn. llvmpipe veya benzeri"
       }
     }
   },
@@ -1361,7 +1391,7 @@
       "colName": "Ad",
       "colPath": "Yol",
       "colExpires": "Bitiş",
-      "colSecure": "Secure",
+      "colSecure": "Güvenli",
       "colHttpOnly": "HttpOnly",
       "colSameSite": "SameSite",
       "session": "Oturum",
@@ -1566,7 +1596,7 @@
     "osCpu": "İşletim Sistemi CPU",
     "hardwareConcurrency": "Donanım Eşzamanlılığı",
     "maxTouchPoints": "Maks. Dokunma Noktası",
-    "doNotTrack": "Do Not Track",
+    "doNotTrack": "Takip Etme",
     "selectDntPlaceholder": "DNT değeri seçin",
     "dntAllowed": "0 (izlemeye izin verilir)",
     "dntNotAllowed": "1 (izlemeye izin verilmez)",
@@ -1647,7 +1677,7 @@
     "launchArgs": "Başlatma argümanları",
     "launchArgsDescription": "Her satıra bir argüman girin: --name veya --name=value. Yalnızca desteklenen argümanlar kabul edilir; örneğin --disable-gpu, --mute-audio veya --disable-features=Name. Profil, proxy, pencere ve hata ayıklama argümanlarını Owl yönetir.",
     "launchArgsSkipped": "{{profile}} için özel başlatma argümanları kullanılmadı. {{reason}}",
-    "refreshFingerprint": "Refresh Fingerprint",
+    "refreshFingerprint": "Parmak izini yenile",
     "readingDevice": "Bu profilin parmak izi okunuyor…"
   },
   "warnings": {
@@ -1813,7 +1843,7 @@
       "hint": "Bunun kalıcı olmasını istiyorsanız normal bir profil oluşturun."
     },
     "localStorage": {
-      "title": "Local Storage",
+      "title": "Yerel Depolama",
       "stats": "Siteler: {{origins}} · Öğeler: {{items}}",
       "hint": "Çerezleri ve Local Storage'ı tek bir Playwright storageState dosyasında toplar. İçe aktarmak için tarayıcı kapalı olmalıdır.",
       "exported": "Depolama durumu dışa aktarıldı",
@@ -3020,7 +3050,53 @@
     "vpnUnreachable": "VPN sunucusu yanıt vermiyor.",
     "entityInUse": "{{count}} profil tarafından kullanılıyor. Önce onları başka bir proxy'ye veya VPN'e geçirin.",
     "syncPasswordBlocksRemoteRun": "Eşitleme şifrelemesi parolası bu profilin eşitlenen ayarlarını şifreler ve uzak sunucu bunları çözemez. Uzakta çalıştırmak için Eşitleme şifrelemesi ayarlarından parolayı kaldırın.",
-    "templateEngineUnsupported": "Şablon, bu uygulamada olmayan bir motor belirtiyor."
+    "templateEngineUnsupported": "Şablon, bu uygulamada olmayan bir motor belirtiyor.",
+    "appUpdateCheckFailed": "Güncellemeler denetlenemedi: {{detail}}",
+    "appUpdateInstallFailed": "Güncelleme indirilemedi: {{detail}}",
+    "appRestartFailed": "Owl yeniden başlatılamadı: {{detail}}",
+    "browserUpdateCheckFailed": "Tarayıcı güncellemeleri denetlenemedi: {{detail}}",
+    "browserUpdateFailed": "Tarayıcı güncellemesi tamamlanamadı: {{detail}}",
+    "browserVersionsUnavailable": "Tarayıcı sürümleri alınamadı: {{detail}}",
+    "browserVersionsRefreshFailed": "Tarayıcı sürümleri yenilenemedi: {{detail}}",
+    "browserDownloadFailed": "Tarayıcı indirilemedi: {{detail}}",
+    "browserLaunchFailed": "Tarayıcı başlatılamadı: {{detail}}",
+    "browserOpenUrlFailed": "Bağlantı tarayıcıda açılamadı: {{detail}}",
+    "browserStopFailed": "Tarayıcı durdurulamadı: {{detail}}",
+    "downloadNotActive": "Bu indirme artık devam etmiyor.",
+    "extensionSaveFailed": "Eklenti kaydedilemedi: {{detail}}",
+    "extensionDeleteFailed": "Eklenti silinemedi: {{detail}}",
+    "extensionsLoadFailed": "Eklentiler yüklenemedi: {{detail}}",
+    "extensionGroupSaveFailed": "Eklenti grubu kaydedilemedi: {{detail}}",
+    "extensionGroupDeleteFailed": "Eklenti grubu silinemedi: {{detail}}",
+    "extensionGroupsLoadFailed": "Eklenti grupları yüklenemedi: {{detail}}",
+    "extensionGroupChangeFailed": "Eklenti grubu değiştirilemedi: {{detail}}",
+    "profilesLoadFailed": "Profiller yüklenemedi: {{detail}}",
+    "profilesDeleteFailed": "Profiller silinemedi: {{detail}}",
+    "profileStatusSaveFailed": "Profil durumu ayarlanamadı: {{detail}}",
+    "groupsLoadFailed": "Gruplar yüklenemedi: {{detail}}",
+    "groupSaveFailed": "Grup kaydedilemedi: {{detail}}",
+    "groupDeleteFailed": "Grup silinemedi: {{detail}}",
+    "groupAssignFailed": "Profiller gruba taşınamadı: {{detail}}",
+    "geoipDownloadFailed": "Konum veritabanı indirilemedi: {{detail}}",
+    "proxySaveFailed": "Proxy kaydedilemedi: {{detail}}",
+    "proxyDeleteFailed": "Proxy silinemedi: {{detail}}",
+    "proxyImportFailed": "Proxy'ler içe aktarılamadı: {{detail}}",
+    "vpnConnectFailed": "VPN bağlanamadı: {{detail}}",
+    "vpnDisconnectFailed": "VPN bağlantısı kesilemedi: {{detail}}",
+    "vpnSaveFailed": "VPN kaydedilemedi: {{detail}}",
+    "vpnDeleteFailed": "VPN silinemedi: {{detail}}",
+    "vpnLoadFailed": "VPN'ler yüklenemedi: {{detail}}",
+    "trafficClearFailed": "Trafik istatistikleri temizlenemedi: {{detail}}",
+    "fingerprintGenerateFailed": "Parmak izi oluşturulamadı: {{detail}}",
+    "cookiesReadFailed": "Profilin çerezleri okunamadı: {{detail}}",
+    "settingsLoadFailed": "Ayarlar yüklenemedi: {{detail}}",
+    "settingsSaveFailed": "Ayarlar kaydedilemedi: {{detail}}",
+    "apiTokenFailed": "API jetonu güncellenemedi: {{detail}}",
+    "syncSettingsFailed": "Senkronizasyon ayarları güncellenemedi: {{detail}}",
+    "syncEntitiesLoadFailed": "Senkronize edilecek öğeler okunamadı: {{detail}}",
+    "logFolderFailed": "Günlük klasörü açılamadı: {{detail}}",
+    "tagsLoadFailed": "Etiketler yüklenemedi: {{detail}}",
+    "synchronizerFailed": "Eşzamanlayıcı bu işlemi yapamadı: {{detail}}"
   },
   "rail": {
     "profiles": "Profiller",
@@ -3129,7 +3205,7 @@
     "automationActiveHere": "Tarayıcı otomasyonu bu cihazda etkin.",
     "viewTeamUsage": "Ekip kullanımını görüntüle",
     "ownServer": {
-      "donutCloud": "Donut cloud",
+      "donutCloud": "Donut bulutu",
       "accountsOn": "Bu sunucu Donut hesaplarını kabul ediyor.",
       "cloudOnly": "Uzak oturumlar ve Cookie Bot, Donut cloud eşitlemesi gerektirir.",
       "teamNote": "Ekibinizin tüm üyeleri aynı sunucuyu kullanmalıdır.",
@@ -3365,6 +3441,7 @@
     "noOtherTargets": "Başka Wayfern profili seçilmedi"
   },
   "about": {
+    "licenseNotice": "Açık kaynaklı anti-detect tarayıcı.",
     "basedOn": "Donut Browser (AGPL-3.0) tabanlıdır.",
     "licenses": "Lisanslar",
     "searchLicenses": "Lisanslarda ara…",
@@ -4576,12 +4653,12 @@
     "rowAction": "{{action}}: {{name}}"
   },
   "camoufoxDialog": {
-    "invalidFingerprint": "Invalid fingerprint configuration",
-    "invalidFingerprintDescription": "The fingerprint configuration contains invalid JSON. Please check your advanced settings.",
-    "saveFailed": "Failed to save configuration",
-    "unknownError": "Unknown error occurred",
-    "titleView": "View Fingerprint Settings - {{name}} ({{browser}})",
-    "titleConfigure": "Configure Fingerprint Settings - {{name}} ({{browser}})"
+    "invalidFingerprint": "Geçersiz parmak izi yapılandırması",
+    "invalidFingerprintDescription": "Parmak izi yapılandırması geçersiz JSON içeriyor. Lütfen gelişmiş ayarlarınızı kontrol edin.",
+    "saveFailed": "Yapılandırma kaydedilemedi",
+    "unknownError": "Bilinmeyen bir hata oluştu",
+    "titleView": "Parmak İzi Ayarlarını Görüntüle - {{name}} ({{browser}})",
+    "titleConfigure": "Parmak İzi Ayarlarını Yapılandır - {{name}} ({{browser}})"
   },
   "cookieRobot": {
     "title": "Cookie Robot",

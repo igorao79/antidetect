@@ -53,6 +53,7 @@ import { ProxyAssignmentDialog } from "@/components/proxy-assignment-dialog";
 import { ProxyDistributionDialog } from "@/components/proxy-distribution-dialog";
 import { ProxyManagementDialog } from "@/components/proxy-management-dialog";
 import { type AppPage, pageDirection, RailNav } from "@/components/rail-nav";
+import { RailUpdateButton } from "@/components/rail-update-button";
 import { SettingsDialog } from "@/components/settings-dialog";
 import { ShortcutsPage } from "@/components/shortcuts-page";
 import { SyncAllDialog } from "@/components/sync-all-dialog";
@@ -2857,6 +2858,7 @@ export default function Home() {
     handleKillProfile,
     stopAllRunning,
     goToProfilesThen,
+    checkForUpdates: appUpdate.checkForAppUpdatesNow,
   });
   trayRef.current = {
     profiles,
@@ -2865,6 +2867,7 @@ export default function Home() {
     handleKillProfile,
     stopAllRunning,
     goToProfilesThen,
+    checkForUpdates: appUpdate.checkForAppUpdatesNow,
   };
   useEffect(() => {
     // The backend brings the window forward itself for Show, Open and a
@@ -2875,7 +2878,8 @@ export default function Home() {
         | "stop-all"
         | "stop-profile"
         | "launch-profile"
-        | "open-profile";
+        | "open-profile"
+        | "check-updates";
       profile_id?: string;
     }>("tray-action", (event) => {
       const tray = trayRef.current;
@@ -2906,6 +2910,9 @@ export default function Home() {
               setProfileInfoDialog(profile);
             });
           }
+          break;
+        case "check-updates":
+          void tray.checkForUpdates();
           break;
       }
     });
@@ -3030,6 +3037,7 @@ export default function Home() {
         />
         <div className="flex min-h-0 flex-1">
           <RailNav
+            updateButton={<RailUpdateButton update={appUpdate} />}
             currentPage={currentPage}
             onNavigate={handleRailNavigate}
             onOpenAbout={() => {

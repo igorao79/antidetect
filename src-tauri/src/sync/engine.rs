@@ -4457,7 +4457,7 @@ pub fn get_unsynced_entity_counts() -> Result<UnsyncedEntityCounts, String> {
     let gm = crate::group_manager::GROUP_MANAGER.lock().unwrap();
     let groups = gm
       .get_all_groups()
-      .map_err(|e| format!("Failed to get groups: {e}"))?;
+      .map_err(|e| crate::coded_failure("SYNC_ENTITIES_LOAD_FAILED", e))?;
     groups.iter().filter(|g| !g.sync_enabled).count()
   };
 
@@ -4465,7 +4465,7 @@ pub fn get_unsynced_entity_counts() -> Result<UnsyncedEntityCounts, String> {
     let storage = crate::vpn::VPN_STORAGE.lock().unwrap();
     let configs = storage
       .list_configs()
-      .map_err(|e| format!("Failed to list VPN configs: {e}"))?;
+      .map_err(|e| crate::coded_failure("SYNC_ENTITIES_LOAD_FAILED", e))?;
     configs.iter().filter(|c| !c.sync_enabled).count()
   };
 
@@ -4473,7 +4473,7 @@ pub fn get_unsynced_entity_counts() -> Result<UnsyncedEntityCounts, String> {
     let em = crate::extension_manager::EXTENSION_MANAGER.lock().unwrap();
     let exts = em
       .list_extensions()
-      .map_err(|e| format!("Failed to list extensions: {e}"))?;
+      .map_err(|e| crate::coded_failure("SYNC_ENTITIES_LOAD_FAILED", e))?;
     exts.iter().filter(|e| !e.sync_enabled).count()
   };
 
@@ -4481,7 +4481,7 @@ pub fn get_unsynced_entity_counts() -> Result<UnsyncedEntityCounts, String> {
     let em = crate::extension_manager::EXTENSION_MANAGER.lock().unwrap();
     let groups = em
       .list_groups()
-      .map_err(|e| format!("Failed to list extension groups: {e}"))?;
+      .map_err(|e| crate::coded_failure("SYNC_ENTITIES_LOAD_FAILED", e))?;
     groups.iter().filter(|g| !g.sync_enabled).count()
   };
 
@@ -4518,7 +4518,7 @@ pub async fn enable_sync_for_all_entities(app_handle: tauri::AppHandle) -> Resul
     let groups = {
       let gm = crate::group_manager::GROUP_MANAGER.lock().unwrap();
       gm.get_all_groups()
-        .map_err(|e| format!("Failed to get groups: {e}"))?
+        .map_err(|e| crate::coded_failure("SYNC_ENTITIES_LOAD_FAILED", e))?
     };
     for group in &groups {
       if !group.sync_enabled {
@@ -4535,7 +4535,7 @@ pub async fn enable_sync_for_all_entities(app_handle: tauri::AppHandle) -> Resul
       let storage = crate::vpn::VPN_STORAGE.lock().unwrap();
       storage
         .list_configs()
-        .map_err(|e| format!("Failed to list VPN configs: {e}"))?
+        .map_err(|e| crate::coded_failure("SYNC_ENTITIES_LOAD_FAILED", e))?
     };
     for config in &configs {
       if !config.sync_enabled {
@@ -4551,7 +4551,7 @@ pub async fn enable_sync_for_all_entities(app_handle: tauri::AppHandle) -> Resul
     let exts = {
       let em = crate::extension_manager::EXTENSION_MANAGER.lock().unwrap();
       em.list_extensions()
-        .map_err(|e| format!("Failed to list extensions: {e}"))?
+        .map_err(|e| crate::coded_failure("SYNC_ENTITIES_LOAD_FAILED", e))?
     };
     for ext in &exts {
       // Linked extensions are machine-local by definition and are skipped
@@ -4569,7 +4569,7 @@ pub async fn enable_sync_for_all_entities(app_handle: tauri::AppHandle) -> Resul
     let groups = {
       let em = crate::extension_manager::EXTENSION_MANAGER.lock().unwrap();
       em.list_groups()
-        .map_err(|e| format!("Failed to list extension groups: {e}"))?
+        .map_err(|e| crate::coded_failure("SYNC_ENTITIES_LOAD_FAILED", e))?
     };
     for group in &groups {
       if !group.sync_enabled {

@@ -413,7 +413,7 @@ pub async fn get_profile_groups() -> Result<Vec<ProfileGroup>, String> {
   let group_manager = GROUP_MANAGER.lock().unwrap();
   group_manager
     .get_all_groups()
-    .map_err(|e| format!("Failed to get profile groups: {e}"))
+    .map_err(|e| crate::coded_failure("GROUPS_LOAD_FAILED", e))
 }
 
 #[tauri::command]
@@ -421,7 +421,7 @@ pub async fn get_groups_with_profile_counts() -> Result<Vec<GroupWithCount>, Str
   let profile_manager = crate::profile::ProfileManager::instance();
   let profiles = profile_manager
     .list_profiles()
-    .map_err(|e| format!("Failed to list profiles: {e}"))?;
+    .map_err(|e| crate::coded_failure("PROFILES_LOAD_FAILED", e))?;
   Ok(get_groups_with_counts(&profiles))
 }
 
@@ -433,7 +433,7 @@ pub async fn create_profile_group(
   let group_manager = GROUP_MANAGER.lock().unwrap();
   group_manager
     .create_group(&app_handle, name)
-    .map_err(|e| e.to_string())
+    .map_err(|e| crate::coded_failure("GROUP_SAVE_FAILED", e))
 }
 
 #[tauri::command]
@@ -445,7 +445,7 @@ pub async fn update_profile_group(
   let group_manager = GROUP_MANAGER.lock().unwrap();
   group_manager
     .update_group(&app_handle, group_id, name)
-    .map_err(|e| e.to_string())
+    .map_err(|e| crate::coded_failure("GROUP_SAVE_FAILED", e))
 }
 
 #[tauri::command]
@@ -456,7 +456,7 @@ pub async fn delete_profile_group(
   let group_manager = GROUP_MANAGER.lock().unwrap();
   group_manager
     .delete_group(&app_handle, group_id)
-    .map_err(|e| e.to_string())
+    .map_err(|e| crate::coded_failure("GROUP_DELETE_FAILED", e))
 }
 
 #[tauri::command]
@@ -468,7 +468,7 @@ pub async fn assign_profiles_to_group(
   let profile_manager = crate::profile::ProfileManager::instance();
   profile_manager
     .assign_profiles_to_group(&app_handle, profile_ids, group_id)
-    .map_err(|e| format!("Failed to assign profiles to group: {e}"))
+    .map_err(|e| crate::coded_failure("GROUP_ASSIGN_FAILED", e))
 }
 
 #[tauri::command]
@@ -480,8 +480,8 @@ pub async fn delete_selected_profiles(
   tauri::async_runtime::spawn_blocking(move || {
     crate::profile::ProfileManager::instance()
       .delete_multiple_profiles(&app_handle, profile_ids)
-      .map_err(|e| format!("Failed to delete profiles: {e}"))
+      .map_err(|e| crate::coded_failure("PROFILES_DELETE_FAILED", e))
   })
   .await
-  .map_err(|e| format!("Failed to delete profiles: {e}"))?
+  .map_err(|e| crate::coded_failure("PROFILES_DELETE_FAILED", e))?
 }

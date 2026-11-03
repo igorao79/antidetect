@@ -621,7 +621,7 @@ pub async fn check_for_browser_updates() -> Result<Vec<UpdateNotification>, Stri
   let notifications = updater
     .check_for_updates()
     .await
-    .map_err(|e| format!("Failed to check for updates: {e}"))?;
+    .map_err(|e| crate::coded_failure("BROWSER_UPDATE_CHECK_FAILED", e))?;
   let grouped = updater.group_update_notifications(notifications);
   Ok(grouped)
 }
@@ -631,7 +631,7 @@ pub async fn dismiss_update_notification(notification_id: String) -> Result<(), 
   let updater = AutoUpdater::instance();
   updater
     .dismiss_update_notification(&notification_id)
-    .map_err(|e| format!("Failed to dismiss notification: {e}"))
+    .map_err(|e| crate::coded_failure("SETTINGS_SAVE_FAILED", e))
 }
 
 #[tauri::command]
@@ -644,7 +644,7 @@ pub async fn complete_browser_update_with_auto_update(
   updater
     .complete_browser_update_with_auto_update(&app_handle, &browser, &new_version)
     .await
-    .map_err(|e| format!("Failed to complete browser update: {e}"))
+    .map_err(|e| crate::coded_failure("BROWSER_UPDATE_FAILED", e))
 }
 
 #[tauri::command]

@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { translateBackendError } from "@/lib/backend-errors";
 import { getBrowserIcon } from "@/lib/browser-utils";
 import type {
   BrowserProfile,
@@ -125,24 +126,27 @@ export function CookieCopyDialog({
     return count;
   }, [selection, cookieData]);
 
-  const loadCookies = useCallback(async (profileId: string) => {
-    setIsLoadingCookies(true);
-    setError(null);
-    setCookieData(null);
-    setSelection({});
+  const loadCookies = useCallback(
+    async (profileId: string) => {
+      setIsLoadingCookies(true);
+      setError(null);
+      setCookieData(null);
+      setSelection({});
 
-    try {
-      const result = await invoke<CookieReadResult>("read_profile_cookies", {
-        profileId,
-      });
-      setCookieData(result);
-    } catch (err) {
-      console.error("Failed to load cookies:", err);
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setIsLoadingCookies(false);
-    }
-  }, []);
+      try {
+        const result = await invoke<CookieReadResult>("read_profile_cookies", {
+          profileId,
+        });
+        setCookieData(result);
+      } catch (err) {
+        console.error("Failed to load cookies:", err);
+        setError(translateBackendError(t, err));
+      } finally {
+        setIsLoadingCookies(false);
+      }
+    },
+    [t],
+  );
 
   const handleSourceChange = useCallback(
     (profileId: string) => {
@@ -297,7 +301,7 @@ export function CookieCopyDialog({
       console.error("Failed to copy cookies:", err);
       toast.error(
         t("cookies.copy.failedMessage", {
-          error: err instanceof Error ? err.message : String(err),
+          error: translateBackendError(t, err),
         }),
       );
     } finally {

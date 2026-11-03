@@ -1395,7 +1395,7 @@ pub async fn download_browser(
           crate::log_redaction::text(&err)
         );
       }
-      crate::wrap_backend_error(e, "Failed to download browser")
+      crate::coded_failure("BROWSER_DOWNLOAD_FAILED", e)
     })
 }
 
@@ -1411,9 +1411,7 @@ pub async fn cancel_download(browser_str: String, version: String) -> Result<(),
     token.cancel();
     Ok(())
   } else {
-    Err(format!(
-      "No active download found for {browser_str} {version}"
-    ))
+    Err(crate::backend_error("DOWNLOAD_NOT_ACTIVE"))
   }
 }
 

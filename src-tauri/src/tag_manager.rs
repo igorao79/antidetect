@@ -72,7 +72,7 @@ pub fn get_all_tags() -> Result<Vec<String>, String> {
   let tag_manager = crate::tag_manager::TAG_MANAGER.lock().unwrap();
   tag_manager
     .get_all_tags()
-    .map_err(|e| format!("Failed to get tags: {e}"))
+    .map_err(|e| crate::coded_failure("TAGS_LOAD_FAILED", e))
 }
 
 pub static TAG_MANAGER: std::sync::LazyLock<std::sync::Mutex<TagManager>> =

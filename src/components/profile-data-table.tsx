@@ -2842,9 +2842,9 @@ export function ProfilesDataTable({
       setRenameError(null);
     } catch (error) {
       setRenameError(
-        error instanceof Error
-          ? error.message
-          : t("errors.renameProfileFailed", { error: String(error) }),
+        t("errors.renameProfileFailed", {
+          error: translateBackendError(t, error),
+        }),
       );
     } finally {
       setIsRenamingSaving(false);

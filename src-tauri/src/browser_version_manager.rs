@@ -420,7 +420,7 @@ pub async fn get_browser_release_types(
   service
     .get_browser_release_types(&browser_str)
     .await
-    .map_err(|e| format!("Failed to get release types: {e}"))
+    .map_err(|e| crate::coded_failure("BROWSER_VERSIONS_UNAVAILABLE", e))
 }
 
 #[cfg(test)]

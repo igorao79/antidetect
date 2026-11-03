@@ -181,7 +181,10 @@ Fork-specific rules:
   `main-antidetect` or starting the workflow. Settings → Advanced
   turns the automatic install off (`disable_auto_updates`), and About checks for updates when
   it opens and has its own button (upstream's, through `check_for_app_updates_manual`). A
-  release is signed
+  known update also has a button in the rail (`rail-update-button.tsx`) that stays after its
+  toast is put off: it starts the download, shows progress and restarts. The tray's "Check for
+  updates" brings the window forward and reports the result in a toast
+  (`checkForAppUpdatesNow`). A release is signed
   with the Developer ID certificate in the keychain and notarized (the app by Tauri with its
   ticket stapled, then the .dmg by `notarytool` and stapled), so macOS opens it without a
   warning and keeps camera and microphone grants across updates; the identity and the App
@@ -537,6 +540,8 @@ User-facing errors returned from a Tauri command MUST be JSON `{ "code": "FOO_BA
 4. Add `backendErrors.fooBar` to every locale file in `src/i18n/locales/`.
 
 Raw error strings reach the user untranslated; that's the bug pattern this rule blocks.
+
+A command whose failure comes from further down maps it with `crate::coded_failure("FOO_FAILED", e)`: the translated sentence names what failed, the lower-level text is its `{{detail}}`, and a coded error from below wins. Convert at the command, not in the manager: `manager_error_response` in the REST API sets its status from the manager's message text. On the frontend, show an error with `translateBackendError(t, err)`, never `String(err)` or `err.message`, which would print a code as JSON.
 
 ## REST API (`src-tauri/src/api_server.rs`): endpoints must stay in the OpenAPI spec
 

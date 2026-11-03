@@ -471,7 +471,7 @@ async fn handle_url_open(app: tauri::AppHandle, url: String) -> Result<(), Strin
     }
 
     events::emit("show-profile-selector", url.clone())
-      .map_err(|e| format!("Failed to emit URL open event: {e}"))?;
+      .map_err(|e| backend_error_with_detail("INTERNAL_ERROR", e))?;
   } else {
     // Window doesn't exist yet - add to pending URLs
     let mut pending = PENDING_URLS.lock().unwrap();
@@ -492,6 +492,16 @@ pub(crate) fn wrap_backend_error(e: impl std::fmt::Display, context: &str) -> St
   }
 }
 
+/// `e` as `code`, keeping its text as the message's detail. A coded error from
+/// further down wins, also when something put its own context before it.
+pub(crate) fn coded_failure(code: &str, e: impl std::fmt::Display) -> String {
+  let msg = e.to_string();
+  match msg.find("{\"code\":") {
+    Some(start) => msg[start..].to_string(),
+    None => backend_error_with_detail(code, msg),
+  }
+}
+
 #[tauri::command]
 async fn create_stored_proxy(
   app_handle: tauri::AppHandle,
@@ -501,9 +511,12 @@ async fn create_stored_proxy(
   if let Some(settings) = proxy_settings {
     crate::proxy_manager::PROXY_MANAGER
       .create_stored_proxy(&app_handle, name, settings)
-      .map_err(|e| wrap_backend_error(e, "Failed to create stored proxy"))
+      .map_err(|e| crate::coded_failure("PROXY_SAVE_FAILED", e))
   } else {
-    Err("proxy_settings is required".to_string())
+    Err(backend_error_with_detail(
+      "INTERNAL_ERROR",
+      "proxy_settings is required",
+    ))
   }
 }
 
@@ -544,14 +557,14 @@ async fn update_stored_proxy(
 ) -> Result<crate::proxy_manager::StoredProxy, String> {
   crate::proxy_manager::PROXY_MANAGER
     .update_stored_proxy(&app_handle, &proxy_id, name, proxy_settings)
-    .map_err(|e| wrap_backend_error(e, "Failed to update stored proxy"))
+    .map_err(|e| crate::coded_failure("PROXY_SAVE_FAILED", e))
 }
 
 #[tauri::command]
 async fn delete_stored_proxy(app_handle: tauri::AppHandle, proxy_id: String) -> Result<(), String> {
   crate::proxy_manager::PROXY_MANAGER
     .delete_stored_proxy(&app_handle, &proxy_id)
-    .map_err(|e| format!("Failed to delete stored proxy: {e}"))
+    .map_err(|e| crate::coded_failure("PROXY_DELETE_FAILED", e))
 }
 
 #[tauri::command]
@@ -564,7 +577,7 @@ async fn check_proxy_validity(
   } else {
     crate::proxy_manager::PROXY_MANAGER
       .get_proxy_settings_by_id(&proxy_id)
-      .ok_or_else(|| format!("Proxy '{proxy_id}' not found"))?
+      .ok_or_else(|| backend_error("PROXY_NOT_FOUND"))?
   };
   crate::proxy_manager::PROXY_MANAGER
     .check_proxy_validity(&proxy_id, &settings)
@@ -588,7 +601,10 @@ fn export_proxies(format: String) -> Result<String, String> {
   match format.as_str() {
     "json" => crate::proxy_manager::PROXY_MANAGER.export_proxies_json(),
     "txt" => Ok(crate::proxy_manager::PROXY_MANAGER.export_proxies_txt()),
-    _ => Err(format!("Unsupported export format: {format}")),
+    _ => Err(backend_error_with_detail(
+      "INTERNAL_ERROR",
+      format!("Unsupported export format: {format}"),
+    )),
   }
 }
 
@@ -599,7 +615,7 @@ async fn import_proxies_json(
 ) -> Result<crate::proxy_manager::ProxyImportResult, String> {
   crate::proxy_manager::PROXY_MANAGER
     .import_proxies_json(&app_handle, &content)
-    .map_err(|e| format!("Failed to import proxies: {e}"))
+    .map_err(|e| crate::coded_failure("PROXY_IMPORT_FAILED", e))
 }
 
 #[tauri::command]
@@ -615,7 +631,7 @@ async fn import_proxies_from_parsed(
 ) -> Result<crate::proxy_manager::ProxyImportResult, String> {
   crate::proxy_manager::PROXY_MANAGER
     .import_proxies_from_parsed(&app_handle, parsed_proxies, name_prefix)
-    .map_err(|e| format!("Failed to import proxies: {e}"))
+    .map_err(|e| crate::coded_failure("PROXY_IMPORT_FAILED", e))
 }
 
 #[tauri::command]
@@ -624,7 +640,7 @@ async fn read_profile_cookies(
 ) -> Result<cookie_manager::CookieReadResult, String> {
   tokio::task::spawn_blocking(move || cookie_manager::CookieManager::read_cookies(&profile_id))
     .await
-    .map_err(|e| format!("Failed to read profile cookies: {e}"))?
+    .map_err(|e| crate::coded_failure("COOKIES_READ_FAILED", e))?
 }
 
 #[tauri::command]
@@ -633,7 +649,7 @@ async fn get_profile_cookie_stats(
 ) -> Result<cookie_manager::CookieStats, String> {
   tokio::task::spawn_blocking(move || cookie_manager::CookieManager::read_stats(&profile_id))
     .await
-    .map_err(|e| format!("Failed to read profile cookie stats: {e}"))?
+    .map_err(|e| crate::coded_failure("COOKIES_READ_FAILED", e))?
 }
 
 #[tauri::command]
@@ -1635,7 +1651,7 @@ async fn get_profile_traffic_snapshot(
 #[tauri::command]
 async fn clear_all_traffic_stats() -> Result<(), String> {
   crate::traffic_stats::clear_all_traffic_stats()
-    .map_err(|e| format!("Failed to clear traffic stats: {e}"))
+    .map_err(|e| crate::coded_failure("TRAFFIC_CLEAR_FAILED", e))
 }
 
 #[tauri::command]
@@ -1662,7 +1678,7 @@ async fn download_geoip_database(app_handle: tauri::AppHandle) -> Result<(), Str
   downloader
     .download_geoip_database(&app_handle)
     .await
-    .map_err(|e| format!("Failed to download GeoIP database: {e}"))
+    .map_err(|e| crate::coded_failure("GEOIP_DOWNLOAD_FAILED", e))
 }
 
 // VPN commands
@@ -1674,7 +1690,7 @@ async fn import_vpn_config(
 ) -> Result<vpn::VpnImportResult, String> {
   let storage = vpn::VPN_STORAGE
     .lock()
-    .map_err(|e| format!("Failed to lock VPN storage: {e}"))?;
+    .map_err(|e| crate::coded_failure("VPN_LOAD_FAILED", e))?;
 
   match storage.import_config(&content, &filename, name.clone()) {
     Ok(config) => {
@@ -1709,22 +1725,22 @@ async fn import_vpn_config(
 async fn list_vpn_configs() -> Result<Vec<vpn::VpnConfig>, String> {
   let storage = vpn::VPN_STORAGE
     .lock()
-    .map_err(|e| format!("Failed to lock VPN storage: {e}"))?;
+    .map_err(|e| crate::coded_failure("VPN_LOAD_FAILED", e))?;
 
   storage
     .list_configs()
-    .map_err(|e| format!("Failed to list VPN configs: {e}"))
+    .map_err(|e| crate::coded_failure("VPN_LOAD_FAILED", e))
 }
 
 #[tauri::command]
 async fn get_vpn_config(vpn_id: String) -> Result<vpn::VpnConfig, String> {
   let storage = vpn::VPN_STORAGE
     .lock()
-    .map_err(|e| format!("Failed to lock VPN storage: {e}"))?;
+    .map_err(|e| crate::coded_failure("VPN_LOAD_FAILED", e))?;
 
   storage
     .load_config(&vpn_id)
-    .map_err(|e| format!("Failed to load VPN config: {e}"))
+    .map_err(|e| crate::coded_failure("VPN_LOAD_FAILED", e))
 }
 
 #[tauri::command]
@@ -1736,7 +1752,7 @@ async fn delete_vpn_config(app_handle: tauri::AppHandle, vpn_id: String) -> Resu
   let was_sync_enabled = {
     let storage = vpn::VPN_STORAGE
       .lock()
-      .map_err(|e| format!("Failed to lock VPN storage: {e}"))?;
+      .map_err(|e| crate::coded_failure("VPN_LOAD_FAILED", e))?;
     storage
       .load_config(&vpn_id)
       .map(|c| c.sync_enabled)
@@ -1747,11 +1763,11 @@ async fn delete_vpn_config(app_handle: tauri::AppHandle, vpn_id: String) -> Resu
   {
     let storage = vpn::VPN_STORAGE
       .lock()
-      .map_err(|e| format!("Failed to lock VPN storage: {e}"))?;
+      .map_err(|e| crate::coded_failure("VPN_LOAD_FAILED", e))?;
 
     storage
       .delete_config(&vpn_id)
-      .map_err(|e| format!("Failed to delete VPN config: {e}"))?;
+      .map_err(|e| crate::coded_failure("VPN_DELETE_FAILED", e))?;
   }
 
   // If sync was enabled, also delete from remote
@@ -1789,11 +1805,11 @@ async fn create_vpn_config_manual(
   let config = {
     let storage = vpn::VPN_STORAGE
       .lock()
-      .map_err(|e| format!("Failed to lock VPN storage: {e}"))?;
+      .map_err(|e| crate::coded_failure("VPN_LOAD_FAILED", e))?;
 
     storage
       .create_config_manual(&name, vpn_type, &config_data)
-      .map_err(|e| format!("Failed to create VPN config: {e}"))?
+      .map_err(|e| crate::coded_failure("VPN_SAVE_FAILED", e))?
   };
 
   if config.sync_enabled {
@@ -1814,11 +1830,11 @@ async fn update_vpn_config(vpn_id: String, name: String) -> Result<vpn::VpnConfi
   let config = {
     let storage = vpn::VPN_STORAGE
       .lock()
-      .map_err(|e| format!("Failed to lock VPN storage: {e}"))?;
+      .map_err(|e| crate::coded_failure("VPN_LOAD_FAILED", e))?;
 
     storage
       .update_config_name(&vpn_id, &name)
-      .map_err(|e| format!("Failed to update VPN config: {e}"))?
+      .map_err(|e| crate::coded_failure("VPN_SAVE_FAILED", e))?
   };
 
   if config.sync_enabled {
@@ -1966,7 +1982,7 @@ pub async fn validate_profile_network(
     }
     let settings = crate::proxy_manager::PROXY_MANAGER
       .get_proxy_settings_by_id(proxy_id)
-      .ok_or_else(|| format!("Proxy '{proxy_id}' not found"))?;
+      .ok_or_else(|| backend_error("PROXY_NOT_FOUND"))?;
     match crate::proxy_manager::PROXY_MANAGER
       .check_proxy_validity(proxy_id, &settings)
       .await
@@ -1992,13 +2008,13 @@ async fn connect_vpn(vpn_id: String) -> Result<(), String> {
   // Start VPN worker process (detached, survives GUI shutdown)
   vpn_worker_runner::start_vpn_worker(&vpn_id)
     .await
-    .map_err(|e| format!("Failed to connect VPN: {e}"))?;
+    .map_err(|e| crate::coded_failure("VPN_CONNECT_FAILED", e))?;
 
   // Update last_used timestamp
   {
     let storage = vpn::VPN_STORAGE
       .lock()
-      .map_err(|e| format!("Failed to lock VPN storage: {e}"))?;
+      .map_err(|e| crate::coded_failure("VPN_LOAD_FAILED", e))?;
     let _ = storage.update_last_used(&vpn_id);
   }
 
@@ -2009,7 +2025,7 @@ async fn connect_vpn(vpn_id: String) -> Result<(), String> {
 async fn disconnect_vpn(vpn_id: String) -> Result<(), String> {
   vpn_worker_runner::stop_vpn_worker_by_vpn_id(&vpn_id)
     .await
-    .map_err(|e| format!("Failed to disconnect VPN: {e}"))?;
+    .map_err(|e| crate::coded_failure("VPN_DISCONNECT_FAILED", e))?;
   Ok(())
 }
 
@@ -2116,8 +2132,8 @@ async fn generate_sample_fingerprint(
   };
 
   if browser == "camoufox" {
-    let config: crate::camoufox_manager::CamoufoxConfig =
-      serde_json::from_str(&config_json).map_err(|e| format!("Failed to parse config: {e}"))?;
+    let config: crate::camoufox_manager::CamoufoxConfig = serde_json::from_str(&config_json)
+      .map_err(|e| crate::coded_failure("FINGERPRINT_GENERATE_FAILED", e))?;
     let manager = crate::camoufox_manager::CamoufoxManager::instance();
     manager
       .generate_fingerprint_config(&app_handle, &temp_profile, &config)
@@ -2127,10 +2143,10 @@ async fn generate_sample_fingerprint(
         identity_id: None,
         location: None,
       })
-      .map_err(|e| format!("Failed to generate fingerprint: {e}"))
+      .map_err(|e| crate::coded_failure("FINGERPRINT_GENERATE_FAILED", e))
   } else if browser == "wayfern" {
-    let config: crate::wayfern_manager::WayfernConfig =
-      serde_json::from_str(&config_json).map_err(|e| format!("Failed to parse config: {e}"))?;
+    let config: crate::wayfern_manager::WayfernConfig = serde_json::from_str(&config_json)
+      .map_err(|e| crate::coded_failure("FINGERPRINT_GENERATE_FAILED", e))?;
     let manager = crate::wayfern_manager::WayfernManager::instance();
     manager
       .generate_fingerprint_config(&app_handle, &temp_profile, &config)
@@ -2148,8 +2164,9 @@ async fn generate_sample_fingerprint(
         )
       })
   } else {
-    Err(format!(
-      "Unsupported browser for fingerprint generation: {browser}"
+    Err(backend_error_with_detail(
+      "INTERNAL_ERROR",
+      format!("Unsupported browser for fingerprint generation: {browser}"),
     ))
   }
 }
@@ -4076,6 +4093,17 @@ mod tests {
       "PROFILE_NOT_FOUND"
     );
     assert_eq!(super::wrap_backend_error(&coded, "ignored"), coded);
+
+    let failed = super::coded_failure("SETTINGS_SAVE_FAILED", "disk unavailable");
+    let parsed = serde_json::from_str::<serde_json::Value>(&failed).unwrap();
+    assert_eq!(parsed["code"], "SETTINGS_SAVE_FAILED");
+    assert_eq!(parsed["params"]["detail"], "disk unavailable");
+    assert_eq!(super::coded_failure("SETTINGS_SAVE_FAILED", &coded), coded);
+    assert_eq!(
+      super::coded_failure("SETTINGS_SAVE_FAILED", format!("Failed to save: {coded}")),
+      coded,
+      "context before a coded error does not hide it"
+    );
 
     let wrapped = super::wrap_backend_error("disk unavailable", "Failed to save");
     let parsed = serde_json::from_str::<serde_json::Value>(&wrapped).unwrap();

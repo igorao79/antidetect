@@ -2161,7 +2161,7 @@ pub async fn check_for_app_updates() -> Result<Option<AppUpdateInfo>, String> {
     .check_for_updates()
     .await
     .map(with_install_policy)
-    .map_err(|e| format!("Failed to check for app updates: {e}"))
+    .map_err(|e| crate::coded_failure("APP_UPDATE_CHECK_FAILED", e))
 }
 
 /// Every install hears about a new version, also a portable one and one with
@@ -2184,16 +2184,7 @@ pub async fn download_and_prepare_app_update(
   updater
     .download_and_prepare_update(&app_handle, &update_info)
     .await
-    .map_err(|e| {
-      let msg = e.to_string();
-      // Structured error codes (`{"code": ...}`) must reach the frontend
-      // unwrapped so translateBackendError can resolve them.
-      if msg.starts_with('{') {
-        msg
-      } else {
-        format!("Failed to download and prepare app update: {msg}")
-      }
-    })
+    .map_err(|e| crate::coded_failure("APP_UPDATE_INSTALL_FAILED", e))
 }
 
 #[tauri::command]
@@ -2202,7 +2193,7 @@ pub async fn restart_application() -> Result<(), String> {
   updater
     .restart_application()
     .await
-    .map_err(|e| crate::wrap_backend_error(e, "Failed to restart application"))
+    .map_err(|e| crate::coded_failure("APP_RESTART_FAILED", e))
 }
 
 #[tauri::command]
@@ -2220,7 +2211,7 @@ pub async fn check_for_app_updates_manual() -> Result<Option<AppUpdateInfo>, Str
     .check(true)
     .await
     .map(with_install_policy)
-    .map_err(|e| format!("Failed to check for app updates: {e}"))
+    .map_err(|e| crate::coded_failure("APP_UPDATE_CHECK_FAILED", e))
 }
 
 // Global singleton instance

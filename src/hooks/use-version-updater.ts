@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useCallback, useEffect, useRef, useState } from "react";
 import i18n from "@/i18n";
+import { translateBackendError } from "@/lib/backend-errors";
 import { getBrowserDisplayName } from "@/lib/browser-utils";
 import {
   showAutoUpdateToast,
@@ -243,18 +244,7 @@ export function useVersionUpdater() {
               } catch (error) {
                 console.error("Failed to handle browser auto-update:", error);
 
-                let errorMessage = i18n.t("common.errors.unknown");
-                if (error instanceof Error) {
-                  errorMessage = error.message;
-                } else if (typeof error === "string") {
-                  errorMessage = error;
-                } else if (
-                  error &&
-                  typeof error === "object" &&
-                  "message" in error
-                ) {
-                  errorMessage = String(error.message);
-                }
+                const errorMessage = translateBackendError(i18n.t, error);
 
                 showErrorToast(
                   i18n.t("versionUpdater.toast.autoUpdateFailed", {
@@ -366,14 +356,7 @@ export function useVersionUpdater() {
       return results;
     } catch (error) {
       console.error("Failed to trigger manual update:", error);
-      let errorMessage = i18n.t("common.errors.unknown");
-      if (error instanceof Error) {
-        errorMessage = error.message;
-      } else if (typeof error === "string") {
-        errorMessage = error;
-      } else if (error && typeof error === "object" && "message" in error) {
-        errorMessage = String(error.message);
-      }
+      const errorMessage = translateBackendError(i18n.t, error);
 
       showErrorToast(i18n.t("versionUpdater.toast.updateAllFailed"), {
         description: errorMessage,

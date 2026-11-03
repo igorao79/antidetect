@@ -445,7 +445,7 @@ pub async fn trigger_manual_version_update(
   updater_guard
     .trigger_manual_update(&app_handle)
     .await
-    .map_err(|e| format!("Failed to trigger manual update: {e}"))
+    .map_err(|e| crate::coded_failure("BROWSER_VERSIONS_REFRESH_FAILED", e))
 }
 
 #[tauri::command]
@@ -469,7 +469,7 @@ pub async fn clear_all_version_cache_and_refetch(
   // Clear all cache first
   api_client
     .clear_all_cache()
-    .map_err(|e| format!("Failed to clear version cache: {e}"))?;
+    .map_err(|e| crate::coded_failure("BROWSER_VERSIONS_REFRESH_FAILED", e))?;
 
   // Disable all browsers during the update process
   let supported_browsers = version_updater
@@ -480,14 +480,14 @@ pub async fn clear_all_version_cache_and_refetch(
   let mut state = version_updater
     .auto_updater
     .load_auto_update_state()
-    .map_err(|e| format!("Failed to load auto update state: {e}"))?;
+    .map_err(|e| crate::coded_failure("BROWSER_VERSIONS_REFRESH_FAILED", e))?;
   for browser in &supported_browsers {
     state.disabled_browsers.insert(browser.clone());
   }
   version_updater
     .auto_updater
     .save_auto_update_state(&state)
-    .map_err(|e| format!("Failed to save auto update state: {e}"))?;
+    .map_err(|e| crate::coded_failure("BROWSER_VERSIONS_REFRESH_FAILED", e))?;
 
   let updater = get_version_updater();
   let updater_guard = updater.lock().await;
@@ -495,7 +495,7 @@ pub async fn clear_all_version_cache_and_refetch(
   let result = updater_guard
     .trigger_manual_update(&app_handle)
     .await
-    .map_err(|e| format!("Failed to trigger version update: {e}"));
+    .map_err(|e| crate::coded_failure("BROWSER_VERSIONS_REFRESH_FAILED", e));
 
   // Re-enable all browsers after the update completes (regardless of success/failure)
   let mut final_state = version_updater

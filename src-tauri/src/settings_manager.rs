@@ -852,13 +852,13 @@ pub async fn get_app_settings(app_handle: tauri::AppHandle) -> Result<AppSetting
   let manager = SettingsManager::instance();
   let mut settings = manager
     .load_settings()
-    .map_err(|e| format!("Failed to load settings: {e}"))?;
+    .map_err(|e| crate::coded_failure("SETTINGS_LOAD_FAILED", e))?;
 
   // Always load tokens for display purposes if they exist
   settings.api_token = manager
     .get_api_token(&app_handle)
     .await
-    .map_err(|e| format!("Failed to load API token: {e}"))?;
+    .map_err(|e| crate::coded_failure("API_TOKEN_FAILED", e))?;
 
   // Same posture as the API token: sent so the page can copy it, never
   // persisted (see `SettingsManager::save_settings`).
@@ -890,7 +890,7 @@ pub async fn save_app_settings(
       manager
         .store_api_token(&app_handle, token)
         .await
-        .map_err(|e| format!("Failed to store API token: {e}"))?;
+        .map_err(|e| crate::coded_failure("API_TOKEN_FAILED", e))?;
     } else {
       // Check if a token already exists on disk before generating a new one
       let existing = manager.get_api_token(&app_handle).await.ok().flatten();
@@ -900,7 +900,7 @@ pub async fn save_app_settings(
         let token = manager
           .generate_api_token(&app_handle)
           .await
-          .map_err(|e| format!("Failed to generate API token: {e}"))?;
+          .map_err(|e| crate::coded_failure("API_TOKEN_FAILED", e))?;
         settings.api_token = Some(token);
       }
     }
@@ -910,7 +910,7 @@ pub async fn save_app_settings(
     manager
       .remove_api_token(&app_handle)
       .await
-      .map_err(|e| format!("Failed to remove API token: {e}"))?;
+      .map_err(|e| crate::coded_failure("API_TOKEN_FAILED", e))?;
     settings.api_token = None;
   }
 
@@ -963,7 +963,7 @@ pub async fn save_app_settings(
 
   manager
     .save_settings(&persist_settings)
-    .map_err(|e| format!("Failed to save settings: {e}"))?;
+    .map_err(|e| crate::coded_failure("SETTINGS_SAVE_FAILED", e))?;
   drop(tips_serial);
 
   {
@@ -1073,11 +1073,14 @@ fn last_lines(text: &str, max_bytes: usize) -> &str {
 pub async fn read_log_files(app_handle: tauri::AppHandle) -> Result<String, String> {
   let dir = crate::app_dirs::log_dir(&app_handle);
   if !dir.exists() {
-    return Err("Log directory does not exist yet".to_string());
+    return Err(crate::coded_failure(
+      "LOG_FOLDER_FAILED",
+      "Log directory does not exist yet",
+    ));
   }
   crate::diagnostics::excerpt(dir, 5 * 1024 * 1024, crate::diagnostics::Reader::Person)
     .await
-    .map_err(|e| format!("Failed to read log dir: {e}"))
+    .map_err(|e| crate::coded_failure("LOG_FOLDER_FAILED", e))
 }
 
 /// Reveal the log directory in the OS file manager.
@@ -1085,7 +1088,7 @@ pub async fn read_log_files(app_handle: tauri::AppHandle) -> Result<String, Stri
 pub async fn open_log_directory(app_handle: tauri::AppHandle) -> Result<(), String> {
   let dir = crate::app_dirs::log_dir(&app_handle);
   if !dir.exists() {
-    std::fs::create_dir_all(&dir).map_err(|e| format!("Failed to create log dir: {e}"))?;
+    std::fs::create_dir_all(&dir).map_err(|e| crate::coded_failure("LOG_FOLDER_FAILED", e))?;
   }
   let path = dir.to_string_lossy().to_string();
 
@@ -1094,7 +1097,7 @@ pub async fn open_log_directory(app_handle: tauri::AppHandle) -> Result<(), Stri
     let child = std::process::Command::new("open")
       .arg(&path)
       .spawn()
-      .map_err(|e| format!("Failed to open log dir: {e}"))?;
+      .map_err(|e| crate::coded_failure("LOG_FOLDER_FAILED", e))?;
     log::info!(
       "Process spawned pid={} purpose=\"reveal log dir\" tool=open",
       child.id()
@@ -1105,7 +1108,7 @@ pub async fn open_log_directory(app_handle: tauri::AppHandle) -> Result<(), Stri
     let child = std::process::Command::new("explorer")
       .arg(&path)
       .spawn()
-      .map_err(|e| format!("Failed to open log dir: {e}"))?;
+      .map_err(|e| crate::coded_failure("LOG_FOLDER_FAILED", e))?;
     log::info!(
       "Process spawned pid={} purpose=\"reveal log dir\" tool=explorer",
       child.id()
@@ -1116,7 +1119,7 @@ pub async fn open_log_directory(app_handle: tauri::AppHandle) -> Result<(), Stri
     let child = std::process::Command::new("xdg-open")
       .arg(&path)
       .spawn()
-      .map_err(|e| format!("Failed to open log dir: {e}"))?;
+      .map_err(|e| crate::coded_failure("LOG_FOLDER_FAILED", e))?;
     log::info!(
       "Process spawned pid={} purpose=\"reveal log dir\" tool=xdg-open",
       child.id()
@@ -1143,14 +1146,14 @@ pub async fn get_sync_settings(app_handle: tauri::AppHandle) -> Result<SyncSetti
       crate::cloud_auth::CLOUD_AUTH
         .get_or_refresh_sync_token()
         .await
-        .map_err(|e| format!("Failed to get cloud sync token: {e}"))?,
+        .map_err(|e| crate::coded_failure("SYNC_SETTINGS_FAILED", e))?,
     ),
     Some(SyncSource::SelfHosted(server)) => (
       Some(server.clone()),
       SettingsManager::instance()
         .get_sync_token(&app_handle)
         .await
-        .map_err(|e| format!("Failed to load sync token: {e}"))?,
+        .map_err(|e| crate::coded_failure("SYNC_SETTINGS_FAILED", e))?,
     ),
     None => (None, None),
   };
@@ -1182,18 +1185,18 @@ pub async fn save_sync_settings(
 
   manager
     .save_sync_server_url(sync_server_url.clone())
-    .map_err(|e| format!("Failed to save sync server URL: {e}"))?;
+    .map_err(|e| crate::coded_failure("SYNC_SETTINGS_FAILED", e))?;
 
   if let Some(ref token) = sync_token {
     manager
       .store_sync_token(&app_handle, token)
       .await
-      .map_err(|e| format!("Failed to store sync token: {e}"))?;
+      .map_err(|e| crate::coded_failure("SYNC_SETTINGS_FAILED", e))?;
   } else {
     manager
       .remove_sync_token(&app_handle)
       .await
-      .map_err(|e| format!("Failed to remove sync token: {e}"))?;
+      .map_err(|e| crate::coded_failure("SYNC_SETTINGS_FAILED", e))?;
   }
 
   Ok(SyncSettings {
@@ -1210,11 +1213,11 @@ pub async fn dismiss_window_resize_warning() -> Result<(), String> {
   let manager = SettingsManager::instance();
   let mut settings = manager
     .load_settings()
-    .map_err(|e| format!("Failed to load settings: {e}"))?;
+    .map_err(|e| crate::coded_failure("SETTINGS_LOAD_FAILED", e))?;
   settings.window_resize_warning_dismissed = true;
   manager
     .save_settings(&settings)
-    .map_err(|e| format!("Failed to save settings: {e}"))
+    .map_err(|e| crate::coded_failure("SETTINGS_SAVE_FAILED", e))
 }
 
 #[tauri::command]
@@ -1222,7 +1225,7 @@ pub async fn get_window_resize_warning_dismissed() -> Result<bool, String> {
   let manager = SettingsManager::instance();
   let settings = manager
     .load_settings()
-    .map_err(|e| format!("Failed to load settings: {e}"))?;
+    .map_err(|e| crate::coded_failure("SETTINGS_LOAD_FAILED", e))?;
   Ok(settings.window_resize_warning_dismissed)
 }
 
@@ -1231,7 +1234,7 @@ pub async fn get_onboarding_completed() -> Result<bool, String> {
   let manager = SettingsManager::instance();
   let settings = manager
     .load_settings()
-    .map_err(|e| format!("Failed to load settings: {e}"))?;
+    .map_err(|e| crate::coded_failure("SETTINGS_LOAD_FAILED", e))?;
   Ok(settings.onboarding_completed)
 }
 
@@ -1240,11 +1243,11 @@ pub async fn complete_onboarding() -> Result<(), String> {
   let manager = SettingsManager::instance();
   let mut settings = manager
     .load_settings()
-    .map_err(|e| format!("Failed to load settings: {e}"))?;
+    .map_err(|e| crate::coded_failure("SETTINGS_LOAD_FAILED", e))?;
   settings.onboarding_completed = true;
   manager
     .save_settings(&settings)
-    .map_err(|e| format!("Failed to save settings: {e}"))
+    .map_err(|e| crate::coded_failure("SETTINGS_SAVE_FAILED", e))
 }
 
 /// What the tips flow needs to decide what to show and what to skip.
@@ -1480,7 +1483,7 @@ pub async fn get_tips_state() -> Result<TipsState, String> {
   let manager = SettingsManager::instance();
   let settings = manager
     .load_settings()
-    .map_err(|e| format!("Failed to load settings: {e}"))?;
+    .map_err(|e| crate::coded_failure("SETTINGS_LOAD_FAILED", e))?;
   Ok(TipsState::of(&settings, unix_now()))
 }
 
@@ -1557,11 +1560,11 @@ pub async fn observe_cloud_plan(
   let manager = SettingsManager::instance();
   let mut settings = manager
     .load_settings()
-    .map_err(|e| format!("Failed to load settings: {e}"))?;
+    .map_err(|e| crate::coded_failure("SETTINGS_LOAD_FAILED", e))?;
   let due = paid_welcome_due(&mut settings, &user_id, paid, fresh_login);
   manager
     .save_settings(&settings)
-    .map_err(|e| format!("Failed to save settings: {e}"))?;
+    .map_err(|e| crate::coded_failure("SETTINGS_SAVE_FAILED", e))?;
   Ok(due)
 }
 

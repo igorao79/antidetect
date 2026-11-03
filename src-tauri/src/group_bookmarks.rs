@@ -616,7 +616,7 @@ pub fn sync_for_launch(profile: &BrowserProfile) {
 pub async fn apply_group_bookmarks_to_profile(profile_id: String) -> Result<bool, String> {
   let profiles = crate::profile::ProfileManager::instance()
     .list_profiles()
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| crate::coded_failure("PROFILES_LOAD_FAILED", e))?;
   let profile = profiles
     .into_iter()
     .find(|profile| profile.id.to_string() == profile_id)
@@ -633,7 +633,9 @@ pub async fn get_group_bookmarks(group_id: String) -> Result<Vec<GroupBookmark>,
   let manager = crate::group_manager::GROUP_MANAGER
     .lock()
     .map_err(|_| json!({ "code": "INTERNAL_ERROR" }).to_string())?;
-  let groups = manager.get_all_groups().map_err(|e| e.to_string())?;
+  let groups = manager
+    .get_all_groups()
+    .map_err(|e| crate::coded_failure("GROUPS_LOAD_FAILED", e))?;
   groups
     .into_iter()
     .find(|g| g.id == group_id)
@@ -654,7 +656,7 @@ pub async fn set_group_bookmarks(
     .map_err(|_| json!({ "code": "INTERNAL_ERROR" }).to_string())?;
   manager
     .set_group_bookmarks(&app_handle, &group_id, cleaned.clone())
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| crate::coded_failure("GROUP_SAVE_FAILED", e))?;
   Ok(cleaned)
 }
 

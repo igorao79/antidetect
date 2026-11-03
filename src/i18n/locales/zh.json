@@ -317,6 +317,36 @@
       "concurrency": "同时启动的配置文件数",
       "concurrencyDescription": "可以同时启动的配置文件数量。数量越少，电脑负载越低。",
       "seconds": "{{value}} 秒"
+    },
+    "disableAutoUpdates": "禁用应用自动更新",
+    "disableAutoUpdatesDescription": "Owl 不会自行下载或安装更新，但仍会在有新版本时提示。浏览器更新不受影响。",
+    "themeColors": {
+      "background": "背景",
+      "foreground": "前景",
+      "card": "卡片",
+      "card-foreground": "卡片文字",
+      "popover": "弹出层",
+      "popover-foreground": "弹出层文字",
+      "primary": "主色",
+      "primary-foreground": "主色文字",
+      "secondary": "次要",
+      "secondary-foreground": "次要文字",
+      "muted": "柔和",
+      "muted-foreground": "柔和文字",
+      "accent": "强调",
+      "accent-foreground": "强调文字",
+      "destructive": "危险",
+      "destructive-foreground": "危险文字",
+      "success": "成功",
+      "success-foreground": "成功文字",
+      "warning": "警告",
+      "warning-foreground": "警告文字",
+      "border": "边框",
+      "chart-1": "图表 1",
+      "chart-2": "图表 2",
+      "chart-3": "图表 3",
+      "chart-4": "图表 4",
+      "chart-5": "图表 5"
     }
   },
   "header": {
@@ -476,7 +506,7 @@
       "follower": "跟随者",
       "startSession": "开始同步会话",
       "noFollowers": "请至少选择一个跟随者配置文件",
-      "flakyBadge": "FLAKY",
+      "flakyBadge": "不稳定",
       "flakyTooltip": "此配置文件的屏幕分辨率与领导者不同。页面布局可能不同，导致点击和交互可能命中错误的元素。",
       "pauseMirroring": "暂停同步",
       "resumeMirroring": "继续同步",
@@ -630,9 +660,9 @@
       "warning": "请稍等片刻。一小时内创建过多配置文件会导致 24 小时或更长时间的临时封锁，期间无法生成新的身份。如需更高的每小时上限，欢迎通过付费套餐支持 Owl。"
     },
     "engine": {
-      "label": "Browser engine",
-      "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
-      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
+      "label": "浏览器内核",
+      "camoufoxHint": "Camoufox：反指纹检测的 Firefox。免费；指纹在本地生成。",
+      "wayfernHint": "Wayfern：反指纹检测的 Chromium。需要 Wayfern 订阅。"
     },
     "group": {
       "notFound": "未找到分组。"
@@ -796,7 +826,7 @@
       "fileProcessError": "处理文件失败",
       "noValidProxies": "在文件中未找到有效代理",
       "namePrefix": "名称前缀",
-      "namePrefixDefault": "Imported",
+      "namePrefixDefault": "已导入",
       "namePrefixHint": "代理将被命名为「{{prefix}} Proxy 1」、「{{prefix}} Proxy 2」等。",
       "proxiesToImport": "要导入的代理 ({{count}})",
       "invalidCount": "({{count}} 个无效)",
@@ -1265,7 +1295,7 @@
     }
   },
   "cookies": {
-    "title": "Cookies",
+    "title": "Cookie",
     "copy": {
       "title": "复制 Cookies",
       "description": "选择要复制到其他配置文件的 cookies。",
@@ -1307,7 +1337,7 @@
       "importDescription": "粘贴从其他浏览器或工具复制的 Cookie，或选择一个文件。",
       "fileReadError": "读取文件失败",
       "loadFailed": "加载 Cookie 失败: {{error}}",
-      "cookiesLabel": "Cookies",
+      "cookiesLabel": "Cookie",
       "selectionStatus": "(已选择 {{selected}} / {{total}})",
       "selectAll": "全选",
       "deselectAll": "取消全选",
@@ -1966,7 +1996,7 @@
     "membersSelected": "已选 {{selected}}/{{total}}"
   },
   "pro": {
-    "badge": "PRO",
+    "badge": "专业版",
     "fingerprintLocked": "指纹编辑是 Pro 功能",
     "cookieCopyLocked": "Cookie 复制是 Pro 功能",
     "cookieImportLocked": "Cookie 导入是 Pro 功能",
@@ -1978,8 +2008,8 @@
     "none": "无",
     "light": "轻量",
     "normal": "标准",
-    "pro": "Pro",
-    "proPlus": "Pro++",
+    "pro": "专业版",
+    "proPlus": "专业版++",
     "ultimate": "终极",
     "settingsDescription": "DNS 拦截列表在代理级别拦截广告、跟踪器和恶意软件域名。列表每 12 小时自动刷新一次。",
     "refreshAll": "刷新所有列表",
@@ -3020,7 +3050,53 @@
     "vpnUnreachable": "VPN 服务器没有响应。",
     "entityInUse": "有 {{count}} 个配置文件正在使用。请先将它们改用其他代理或 VPN。",
     "syncPasswordBlocksRemoteRun": "同步加密密码加密了此配置文件已同步的设置，远程主机无法解密。要远程运行，请在同步加密设置中删除密码。",
-    "templateEngineUnsupported": "模板指定的引擎在此应用中不可用。"
+    "templateEngineUnsupported": "模板指定的引擎在此应用中不可用。",
+    "appUpdateCheckFailed": "无法检查更新：{{detail}}",
+    "appUpdateInstallFailed": "无法下载更新：{{detail}}",
+    "appRestartFailed": "无法重启 Owl：{{detail}}",
+    "browserUpdateCheckFailed": "无法检查浏览器更新：{{detail}}",
+    "browserUpdateFailed": "无法完成浏览器更新：{{detail}}",
+    "browserVersionsUnavailable": "无法获取浏览器版本：{{detail}}",
+    "browserVersionsRefreshFailed": "无法刷新浏览器版本：{{detail}}",
+    "browserDownloadFailed": "无法下载浏览器：{{detail}}",
+    "browserLaunchFailed": "无法启动浏览器：{{detail}}",
+    "browserOpenUrlFailed": "无法在浏览器中打开链接：{{detail}}",
+    "browserStopFailed": "无法停止浏览器：{{detail}}",
+    "downloadNotActive": "此下载已不再进行。",
+    "extensionSaveFailed": "无法保存扩展：{{detail}}",
+    "extensionDeleteFailed": "无法删除扩展：{{detail}}",
+    "extensionsLoadFailed": "无法加载扩展：{{detail}}",
+    "extensionGroupSaveFailed": "无法保存扩展组：{{detail}}",
+    "extensionGroupDeleteFailed": "无法删除扩展组：{{detail}}",
+    "extensionGroupsLoadFailed": "无法加载扩展组：{{detail}}",
+    "extensionGroupChangeFailed": "无法更改扩展组：{{detail}}",
+    "profilesLoadFailed": "无法加载配置文件：{{detail}}",
+    "profilesDeleteFailed": "无法删除配置文件：{{detail}}",
+    "profileStatusSaveFailed": "无法设置配置文件状态：{{detail}}",
+    "groupsLoadFailed": "无法加载分组：{{detail}}",
+    "groupSaveFailed": "无法保存分组：{{detail}}",
+    "groupDeleteFailed": "无法删除分组：{{detail}}",
+    "groupAssignFailed": "无法将配置文件移至分组：{{detail}}",
+    "geoipDownloadFailed": "无法下载位置数据库：{{detail}}",
+    "proxySaveFailed": "无法保存代理：{{detail}}",
+    "proxyDeleteFailed": "无法删除代理：{{detail}}",
+    "proxyImportFailed": "无法导入代理：{{detail}}",
+    "vpnConnectFailed": "无法连接 VPN：{{detail}}",
+    "vpnDisconnectFailed": "无法断开 VPN：{{detail}}",
+    "vpnSaveFailed": "无法保存 VPN：{{detail}}",
+    "vpnDeleteFailed": "无法删除 VPN：{{detail}}",
+    "vpnLoadFailed": "无法加载 VPN：{{detail}}",
+    "trafficClearFailed": "无法清除流量统计：{{detail}}",
+    "fingerprintGenerateFailed": "无法生成指纹：{{detail}}",
+    "cookiesReadFailed": "无法读取配置文件的 Cookie：{{detail}}",
+    "settingsLoadFailed": "无法加载设置：{{detail}}",
+    "settingsSaveFailed": "无法保存设置：{{detail}}",
+    "apiTokenFailed": "无法更新 API 令牌：{{detail}}",
+    "syncSettingsFailed": "无法更新同步设置：{{detail}}",
+    "syncEntitiesLoadFailed": "无法读取可同步的内容：{{detail}}",
+    "logFolderFailed": "无法打开日志文件夹：{{detail}}",
+    "tagsLoadFailed": "无法加载标签：{{detail}}",
+    "synchronizerFailed": "同步器无法完成此操作：{{detail}}"
   },
   "rail": {
     "profiles": "配置文件",
@@ -3046,7 +3122,7 @@
     "network": "网络",
     "integrations": "集成",
     "account": "账号",
-    "cookieBot": "Cookie Bot",
+    "cookieBot": "Cookie 机器人",
     "cookieBotRunning": "Cookie Bot — 正在运行",
     "agent": "智能体",
     "agentWaiting": "智能体，等待处理的请求：{{count}}",
@@ -3063,7 +3139,7 @@
     "account": "账户",
     "import": "导入配置文件",
     "shortcuts": "键盘快捷键",
-    "cookieBot": "Cookie Bot",
+    "cookieBot": "Cookie 机器人",
     "trash": "回收站",
     "agent": "智能体",
     "workspace": "Owl 服务器"
@@ -3247,7 +3323,7 @@
     "goIntegrations": "转到集成",
     "goAccount": "转到账户",
     "goSettings": "转到设置",
-    "goCookieBot": "Cookie Bot",
+    "goCookieBot": "Cookie 机器人",
     "goTrash": "前往回收站",
     "goAgent": "前往智能体",
     "openTips": "打开小贴士",
@@ -3365,6 +3441,7 @@
     "noOtherTargets": "未选择其他 Wayfern 配置文件"
   },
   "about": {
+    "licenseNotice": "开源反检测浏览器。",
     "basedOn": "基于 Donut Browser（AGPL-3.0）。",
     "licenses": "许可证",
     "searchLicenses": "搜索许可证…",
@@ -3372,7 +3449,7 @@
     "openSource": "查看 {{name}} 源代码",
     "channel": {
       "stable": "稳定版",
-      "nightly": "Nightly",
+      "nightly": "每夜版",
       "development": "开发版"
     },
     "portable": "便携版",
@@ -3437,7 +3514,7 @@
     "unverifiedLanguageDetail": "出口国家/地区为 {{country}},但此配置文件的指纹语言无法与其比较。"
   },
   "cookieBot": {
-    "title": "Cookie Bot",
+    "title": "Cookie 机器人",
     "description": "按你的计划在远程机器上养号。",
     "tabs": {
       "overview": "概览",
@@ -3446,7 +3523,7 @@
       "team": "团队"
     },
     "locked": {
-      "title": "Cookie Bot",
+      "title": "Cookie 机器人",
       "hint": "Cookie Bot 会在你选择的时间于远程机器上养号，无需开着你的电脑也能保住 Cookie 和历史记录。"
     },
     "empty": {
@@ -3713,7 +3790,7 @@
       "pooled_one": "{{total}} 小时中已用 {{used}} 小时，{{count}} 个席位",
       "pooled_other": "{{total}} 小时中已用 {{used}} 小时，由 {{count}} 个席位共享",
       "hours": "{{hours}} 小时",
-      "legendBot": "Cookie Bot",
+      "legendBot": "Cookie 机器人",
       "legendInteractive": "手动使用",
       "columnMember": "成员",
       "columnRuns": "运行次数",
@@ -4403,7 +4480,7 @@
         "action": "打开账户"
       },
       "cookieBot": {
-        "label": "Cookie Bot",
+        "label": "Cookie 机器人",
         "title": "按计划养号",
         "body": "Cookie Bot 会从远程主机按计划浏览真实网站，让新配置文件在您使用之前积累自然的历史记录。",
         "action": "打开 Cookie Bot"
@@ -4584,7 +4661,7 @@
     "titleConfigure": "配置指纹设置 - {{name}} ({{browser}})"
   },
   "cookieRobot": {
-    "title": "Cookie Robot",
+    "title": "Cookie 机器人",
     "description": "打开所选配置文件，在每个配置文件中访问下面的网站后再关闭，让每个配置文件在使用前积累 Cookie 和浏览记录。",
     "actionBar": "预热 Cookie",
     "profilesSelected": "已选配置文件：{{count}}",

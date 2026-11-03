@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { translateBackendError } from "@/lib/backend-errors";
 import { showErrorToast } from "@/lib/toast-utils";
 import type { BrowserProfile } from "@/types";
 import { LoadingButton } from "./loading-button";
@@ -63,7 +64,7 @@ export function CloneProfileDialog({
       onClose();
       onCloneComplete?.();
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
+      const errorMessage = translateBackendError(t, err);
       showErrorToast(t("errors.cloneProfileFailed", { error: errorMessage }));
     } finally {
       setIsLoading(false);

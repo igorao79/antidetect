@@ -318,6 +318,36 @@
       "concurrency": "Perfiles que se inician a la vez",
       "concurrencyDescription": "Cuántos perfiles pueden iniciarse al mismo tiempo. Un número menor carga menos tu ordenador.",
       "seconds": "{{value}} s"
+    },
+    "disableAutoUpdates": "Desactivar actualizaciones automáticas de la app",
+    "disableAutoUpdatesDescription": "Owl no descarga ni instala sus actualizaciones por sí solo. Sigue avisando cuando hay una versión nueva. Las actualizaciones de navegadores no se ven afectadas.",
+    "themeColors": {
+      "background": "Fondo",
+      "foreground": "Primer plano",
+      "card": "Tarjeta",
+      "card-foreground": "Texto de tarjeta",
+      "popover": "Emergente",
+      "popover-foreground": "Texto emergente",
+      "primary": "Principal",
+      "primary-foreground": "Texto principal",
+      "secondary": "Secundario",
+      "secondary-foreground": "Texto secundario",
+      "muted": "Atenuado",
+      "muted-foreground": "Texto atenuado",
+      "accent": "Acento",
+      "accent-foreground": "Texto de acento",
+      "destructive": "Destructivo",
+      "destructive-foreground": "Texto destructivo",
+      "success": "Éxito",
+      "success-foreground": "Texto de éxito",
+      "warning": "Advertencia",
+      "warning-foreground": "Texto de advertencia",
+      "border": "Borde",
+      "chart-1": "Gráfico 1",
+      "chart-2": "Gráfico 2",
+      "chart-3": "Gráfico 3",
+      "chart-4": "Gráfico 4",
+      "chart-5": "Gráfico 5"
     }
   },
   "header": {
@@ -477,7 +507,7 @@
       "follower": "Seguidor",
       "startSession": "Iniciar sesión de sincronización",
       "noFollowers": "Selecciona al menos un perfil seguidor",
-      "flakyBadge": "FLAKY",
+      "flakyBadge": "INESTABLE",
       "flakyTooltip": "Este perfil tiene una resolución de pantalla diferente a la del líder. El diseño de las páginas puede variar, lo que puede causar que los clics e interacciones fallen.",
       "pauseMirroring": "Pausar la duplicación",
       "resumeMirroring": "Reanudar la duplicación",
@@ -631,9 +661,9 @@
       "warning": "Espera un poco. Crear demasiados perfiles en una hora provoca un bloqueo temporal de 24 horas o más, durante el cual no podrás generar nuevas identidades. Si necesitas un límite por hora más alto, considera apoyar a Owl con un plan de pago."
     },
     "engine": {
-      "label": "Browser engine",
-      "camoufoxHint": "Camoufox: anti-detect Firefox. Free; fingerprints are generated locally.",
-      "wayfernHint": "Wayfern: anti-detect Chromium. Requires a Wayfern subscription."
+      "label": "Motor del navegador",
+      "camoufoxHint": "Camoufox: Firefox antidetección. Gratis; las huellas digitales se generan localmente.",
+      "wayfernHint": "Wayfern: Chromium antidetección. Requiere una suscripción a Wayfern."
     },
     "group": {
       "notFound": "No se encontraron grupos."
@@ -743,7 +773,7 @@
       "ssh": "SSH"
     },
     "tabs": {
-      "regular": "Regular",
+      "regular": "Normales",
       "dynamic": "Dinámico"
     },
     "dynamic": {
@@ -798,7 +828,7 @@
       "fileProcessError": "Error al procesar el archivo",
       "noValidProxies": "No se encontraron proxies válidos en el archivo",
       "namePrefix": "Prefijo de nombre",
-      "namePrefixDefault": "Imported",
+      "namePrefixDefault": "Importado",
       "namePrefixHint": "Los proxies se nombrarán \"{{prefix}} Proxy 1\", \"{{prefix}} Proxy 2\", etc.",
       "proxiesToImport": "Proxies a importar ({{count}})",
       "invalidCount": "({{count}} inválidos)",
@@ -1372,7 +1402,7 @@
       "colName": "Nombre",
       "colPath": "Ruta",
       "colExpires": "Caduca",
-      "colSecure": "Secure",
+      "colSecure": "Seguro",
       "colHttpOnly": "HttpOnly",
       "colSameSite": "SameSite",
       "session": "Sesión",
@@ -1621,7 +1651,7 @@
     "webgl2Parameters": "Parámetros de WebGL2",
     "webglShaderPrecisionFormats": "Formatos de precisión de shader WebGL",
     "webgl2ShaderPrecisionFormats": "Formatos de precisión de shader WebGL2",
-    "canvasFingerprint": "Canvas Fingerprint",
+    "canvasFingerprint": "Huella de canvas",
     "canvasNoiseSeed": "Semilla de ruido de Canvas",
     "canvasNoiseSeedDescription": "Esta semilla se usa para generar una huella digital de Canvas consistente pero única. Cada perfil debe tener una semilla diferente.",
     "fonts": "Fuentes",
@@ -1691,7 +1721,7 @@
   "profileInfo": {
     "title": "Detalles del perfil",
     "tabs": {
-      "info": "Info",
+      "info": "Información",
       "settings": "Configuración"
     },
     "fields": {
@@ -1824,7 +1854,7 @@
       "hint": "Crea un perfil normal si necesitas que esto se conserve."
     },
     "localStorage": {
-      "title": "Local Storage",
+      "title": "Almacenamiento local",
       "stats": "Sitios: {{origins}} · Elementos: {{items}}",
       "hint": "Un archivo storageState de Playwright con las cookies y el Local Storage. Para importar, el navegador debe estar cerrado.",
       "exported": "Estado de almacenamiento exportado",
@@ -2170,7 +2200,7 @@
       "fileReadError": "Error al leer el archivo",
       "wrongFileType": "Suelta un archivo .conf de WireGuard",
       "configurationLabel": "Configuración {{type}}",
-      "endpointLabel": "Endpoint: {{endpoint}}",
+      "endpointLabel": "Punto de conexión: {{endpoint}}",
       "vpnNameLabel": "Nombre de la VPN",
       "vpnNamePlaceholder": "Mi VPN",
       "configPreview": "Vista Previa de la Configuración",
@@ -3040,7 +3070,53 @@
     "vpnUnreachable": "El servidor VPN no responde.",
     "entityInUse": "Lo usan {{count}} perfiles. Asígnales primero otro proxy o VPN.",
     "syncPasswordBlocksRemoteRun": "La contraseña del cifrado de sincronización cifra los ajustes sincronizados de este perfil, y un host remoto no puede descifrarlos. Para ejecutarlo en remoto, elimina la contraseña en los ajustes de Cifrado de sincronización.",
-    "templateEngineUnsupported": "La plantilla indica un motor que esta aplicación no tiene."
+    "templateEngineUnsupported": "La plantilla indica un motor que esta aplicación no tiene.",
+    "appUpdateCheckFailed": "No se pudieron buscar actualizaciones: {{detail}}",
+    "appUpdateInstallFailed": "No se pudo descargar la actualización: {{detail}}",
+    "appRestartFailed": "No se pudo reiniciar Owl: {{detail}}",
+    "browserUpdateCheckFailed": "No se pudieron buscar actualizaciones del navegador: {{detail}}",
+    "browserUpdateFailed": "No se pudo terminar la actualización del navegador: {{detail}}",
+    "browserVersionsUnavailable": "No se pudieron obtener las versiones del navegador: {{detail}}",
+    "browserVersionsRefreshFailed": "No se pudieron actualizar las versiones del navegador: {{detail}}",
+    "browserDownloadFailed": "No se pudo descargar el navegador: {{detail}}",
+    "browserLaunchFailed": "No se pudo iniciar el navegador: {{detail}}",
+    "browserOpenUrlFailed": "No se pudo abrir el enlace en el navegador: {{detail}}",
+    "browserStopFailed": "No se pudo detener el navegador: {{detail}}",
+    "downloadNotActive": "Esta descarga ya no está en curso.",
+    "extensionSaveFailed": "No se pudo guardar la extensión: {{detail}}",
+    "extensionDeleteFailed": "No se pudo eliminar la extensión: {{detail}}",
+    "extensionsLoadFailed": "No se pudieron cargar las extensiones: {{detail}}",
+    "extensionGroupSaveFailed": "No se pudo guardar el grupo de extensiones: {{detail}}",
+    "extensionGroupDeleteFailed": "No se pudo eliminar el grupo de extensiones: {{detail}}",
+    "extensionGroupsLoadFailed": "No se pudieron cargar los grupos de extensiones: {{detail}}",
+    "extensionGroupChangeFailed": "No se pudo cambiar el grupo de extensiones: {{detail}}",
+    "profilesLoadFailed": "No se pudieron cargar los perfiles: {{detail}}",
+    "profilesDeleteFailed": "No se pudieron eliminar los perfiles: {{detail}}",
+    "profileStatusSaveFailed": "No se pudo asignar el estado del perfil: {{detail}}",
+    "groupsLoadFailed": "No se pudieron cargar los grupos: {{detail}}",
+    "groupSaveFailed": "No se pudo guardar el grupo: {{detail}}",
+    "groupDeleteFailed": "No se pudo eliminar el grupo: {{detail}}",
+    "groupAssignFailed": "No se pudieron mover los perfiles al grupo: {{detail}}",
+    "geoipDownloadFailed": "No se pudo descargar la base de datos de ubicación: {{detail}}",
+    "proxySaveFailed": "No se pudo guardar el proxy: {{detail}}",
+    "proxyDeleteFailed": "No se pudo eliminar el proxy: {{detail}}",
+    "proxyImportFailed": "No se pudieron importar los proxies: {{detail}}",
+    "vpnConnectFailed": "No se pudo conectar la VPN: {{detail}}",
+    "vpnDisconnectFailed": "No se pudo desconectar la VPN: {{detail}}",
+    "vpnSaveFailed": "No se pudo guardar la VPN: {{detail}}",
+    "vpnDeleteFailed": "No se pudo eliminar la VPN: {{detail}}",
+    "vpnLoadFailed": "No se pudieron cargar las VPN: {{detail}}",
+    "trafficClearFailed": "No se pudieron borrar las estadísticas de tráfico: {{detail}}",
+    "fingerprintGenerateFailed": "No se pudo generar la huella digital: {{detail}}",
+    "cookiesReadFailed": "No se pudieron leer las cookies del perfil: {{detail}}",
+    "settingsLoadFailed": "No se pudo cargar la configuración: {{detail}}",
+    "settingsSaveFailed": "No se pudo guardar la configuración: {{detail}}",
+    "apiTokenFailed": "No se pudo actualizar el token de la API: {{detail}}",
+    "syncSettingsFailed": "No se pudo actualizar la configuración de sincronización: {{detail}}",
+    "syncEntitiesLoadFailed": "No se pudo leer qué hay que sincronizar: {{detail}}",
+    "logFolderFailed": "No se pudo abrir la carpeta de registros: {{detail}}",
+    "tagsLoadFailed": "No se pudieron cargar las etiquetas: {{detail}}",
+    "synchronizerFailed": "El sincronizador no pudo hacer esto: {{detail}}"
   },
   "rail": {
     "profiles": "Perfiles",
@@ -3149,7 +3225,7 @@
     "automationActiveHere": "La automatización del navegador está activa en este dispositivo.",
     "viewTeamUsage": "Ver el uso del equipo",
     "ownServer": {
-      "donutCloud": "Donut cloud",
+      "donutCloud": "Nube de Donut",
       "accountsOn": "Este servidor acepta cuentas de Donut.",
       "cloudOnly": "Las sesiones remotas y Cookie Bot necesitan la sincronización con Donut cloud.",
       "teamNote": "Todos los miembros de tu equipo deben usar el mismo servidor.",
@@ -3385,6 +3461,7 @@
     "noOtherTargets": "No hay otros perfiles Wayfern seleccionados"
   },
   "about": {
+    "licenseNotice": "Navegador anti-detección de código abierto.",
     "basedOn": "Basado en Donut Browser (AGPL-3.0).",
     "licenses": "Licencias",
     "searchLicenses": "Buscar licencias…",

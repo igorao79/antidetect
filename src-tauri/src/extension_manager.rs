@@ -2257,7 +2257,7 @@ pub async fn list_extensions() -> Result<Vec<Extension>, String> {
   let mgr = EXTENSION_MANAGER.lock().unwrap();
   mgr
     .list_extensions()
-    .map_err(|e| format!("Failed to list extensions: {e}"))
+    .map_err(|e| crate::coded_failure("EXTENSIONS_LOAD_FAILED", e))
 }
 
 #[tauri::command]
@@ -2275,7 +2275,7 @@ pub async fn add_extension(
   let mgr = EXTENSION_MANAGER.lock().unwrap();
   mgr
     .add_extension(name, file_name, file_data)
-    .map_err(|e| crate::wrap_backend_error(e, "Failed to add extension"))
+    .map_err(|e| crate::coded_failure("EXTENSION_SAVE_FAILED", e))
 }
 
 /// Import a folder holding a top-level `manifest.json`. `link` loads it in
@@ -2289,7 +2289,7 @@ pub async fn add_unpacked_extension(
   let mgr = EXTENSION_MANAGER.lock().unwrap();
   mgr
     .add_unpacked_extension(name, Path::new(&path), link.unwrap_or(false))
-    .map_err(|e| crate::wrap_backend_error(e, "Failed to add unpacked extension"))
+    .map_err(|e| crate::coded_failure("EXTENSION_SAVE_FAILED", e))
 }
 
 #[tauri::command]
@@ -2302,7 +2302,7 @@ pub async fn update_extension(
   let mgr = EXTENSION_MANAGER.lock().unwrap();
   mgr
     .update_extension(&extension_id, name, file_name, file_data)
-    .map_err(|e| crate::wrap_backend_error(e, "Failed to update extension"))
+    .map_err(|e| crate::coded_failure("EXTENSION_SAVE_FAILED", e))
 }
 
 /// Replace an extension's payload from a local archive or folder.
@@ -2316,7 +2316,7 @@ pub async fn update_extension_from_path(
   let mgr = EXTENSION_MANAGER.lock().unwrap();
   mgr
     .update_extension_from_path(&extension_id, name, Path::new(&path), link.unwrap_or(false))
-    .map_err(|e| crate::wrap_backend_error(e, "Failed to update extension"))
+    .map_err(|e| crate::coded_failure("EXTENSION_SAVE_FAILED", e))
 }
 
 #[tauri::command]
@@ -2327,7 +2327,7 @@ pub async fn delete_extension(
   let mgr = EXTENSION_MANAGER.lock().unwrap();
   mgr
     .delete_extension(&app_handle, &extension_id)
-    .map_err(|e| format!("Failed to delete extension: {e}"))
+    .map_err(|e| crate::coded_failure("EXTENSION_DELETE_FAILED", e))
 }
 
 #[tauri::command]
@@ -2335,7 +2335,7 @@ pub async fn list_extension_groups() -> Result<Vec<ExtensionGroup>, String> {
   let mgr = EXTENSION_MANAGER.lock().unwrap();
   mgr
     .list_groups()
-    .map_err(|e| format!("Failed to list extension groups: {e}"))
+    .map_err(|e| crate::coded_failure("EXTENSION_GROUPS_LOAD_FAILED", e))
 }
 
 #[tauri::command]
@@ -2343,7 +2343,7 @@ pub async fn create_extension_group(name: String) -> Result<ExtensionGroup, Stri
   let mgr = EXTENSION_MANAGER.lock().unwrap();
   mgr
     .create_group(name)
-    .map_err(|e| crate::wrap_backend_error(e, "Failed to create extension group"))
+    .map_err(|e| crate::coded_failure("EXTENSION_GROUP_SAVE_FAILED", e))
 }
 
 #[tauri::command]
@@ -2355,7 +2355,7 @@ pub async fn update_extension_group(
   let mgr = EXTENSION_MANAGER.lock().unwrap();
   mgr
     .update_group(&group_id, name, extension_ids)
-    .map_err(|e| crate::wrap_backend_error(e, "Failed to update extension group"))
+    .map_err(|e| crate::coded_failure("EXTENSION_GROUP_SAVE_FAILED", e))
 }
 
 #[tauri::command]
@@ -2366,7 +2366,7 @@ pub async fn delete_extension_group(
   let mgr = EXTENSION_MANAGER.lock().unwrap();
   mgr
     .delete_group(&app_handle, &group_id)
-    .map_err(|e| format!("Failed to delete extension group: {e}"))
+    .map_err(|e| crate::coded_failure("EXTENSION_GROUP_DELETE_FAILED", e))
 }
 
 #[tauri::command]
@@ -2377,7 +2377,7 @@ pub async fn add_extension_to_group(
   let mgr = EXTENSION_MANAGER.lock().unwrap();
   mgr
     .add_extension_to_group(&group_id, &extension_id)
-    .map_err(|e| format!("Failed to add extension to group: {e}"))
+    .map_err(|e| crate::coded_failure("EXTENSION_GROUP_CHANGE_FAILED", e))
 }
 
 #[tauri::command]
@@ -2388,7 +2388,7 @@ pub async fn remove_extension_from_group(
   let mgr = EXTENSION_MANAGER.lock().unwrap();
   mgr
     .remove_extension_from_group(&group_id, &extension_id)
-    .map_err(|e| format!("Failed to remove extension from group: {e}"))
+    .map_err(|e| crate::coded_failure("EXTENSION_GROUP_CHANGE_FAILED", e))
 }
 
 #[tauri::command]
@@ -2401,22 +2401,22 @@ pub async fn assign_extension_group_to_profile(
     let profile_manager = crate::profile::ProfileManager::instance();
     let profiles = profile_manager
       .list_profiles()
-      .map_err(|e| format!("Failed to list profiles: {e}"))?;
+      .map_err(|e| crate::coded_failure("PROFILES_LOAD_FAILED", e))?;
     let profile = profiles
       .iter()
       .find(|p| p.id.to_string() == profile_id)
-      .ok_or_else(|| format!("Profile '{profile_id}' not found"))?;
+      .ok_or_else(|| crate::backend_error("PROFILE_NOT_FOUND"))?;
 
     let mgr = EXTENSION_MANAGER.lock().unwrap();
     mgr
       .validate_group_compatibility(group_id, &profile.browser)
-      .map_err(|e| format!("{e}"))?;
+      .map_err(|e| crate::coded_failure("EXTENSION_GROUP_CHANGE_FAILED", e))?;
   }
 
   let profile_manager = crate::profile::ProfileManager::instance();
   profile_manager
     .update_profile_extension_group(&profile_id, extension_group_id)
-    .map_err(|e| format!("Failed to assign extension group: {e}"))
+    .map_err(|e| crate::coded_failure("EXTENSION_GROUP_CHANGE_FAILED", e))
 }
 
 #[tauri::command]
@@ -2426,11 +2426,11 @@ pub async fn get_extension_group_for_profile(
   let profile_manager = crate::profile::ProfileManager::instance();
   let profiles = profile_manager
     .list_profiles()
-    .map_err(|e| format!("Failed to list profiles: {e}"))?;
+    .map_err(|e| crate::coded_failure("PROFILES_LOAD_FAILED", e))?;
   let profile = profiles
     .iter()
     .find(|p| p.id.to_string() == profile_id)
-    .ok_or_else(|| format!("Profile '{profile_id}' not found"))?;
+    .ok_or_else(|| crate::backend_error("PROFILE_NOT_FOUND"))?;
 
   match &profile.extension_group_id {
     Some(group_id) => {

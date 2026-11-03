@@ -2513,6 +2513,7 @@ pub async fn start_sync_session(
   SynchronizerManager::instance()
     .start_session(app_handle, leader_profile_id, follower_profile_ids)
     .await
+    .map_err(|e| crate::coded_failure("SYNCHRONIZER_FAILED", e))
 }
 
 #[tauri::command]
@@ -2523,6 +2524,7 @@ pub async fn stop_sync_session(
   SynchronizerManager::instance()
     .stop_session(app_handle, &session_id)
     .await
+    .map_err(|e| crate::coded_failure("SYNCHRONIZER_FAILED", e))
 }
 
 #[tauri::command]
@@ -2534,6 +2536,7 @@ pub async fn remove_sync_follower(
   SynchronizerManager::instance()
     .remove_follower(app_handle, &session_id, &follower_profile_id)
     .await
+    .map_err(|e| crate::coded_failure("SYNCHRONIZER_FAILED", e))
 }
 
 #[tauri::command]
@@ -2550,6 +2553,7 @@ pub async fn set_sync_session_paused(
   SynchronizerManager::instance()
     .set_paused(app_handle, &session_id, paused)
     .await
+    .map_err(|e| crate::coded_failure("SYNCHRONIZER_FAILED", e))
 }
 
 #[tauri::command]
@@ -2562,6 +2566,7 @@ pub async fn set_sync_follower_held(
   SynchronizerManager::instance()
     .set_follower_held(app_handle, &session_id, &follower_profile_id, held)
     .await
+    .map_err(|e| crate::coded_failure("SYNCHRONIZER_FAILED", e))
 }
 
 #[tauri::command]
@@ -2573,6 +2578,7 @@ pub async fn arrange_sync_windows(
   SynchronizerManager::instance()
     .arrange_windows(app_handle, &session_id, layout)
     .await
+    .map_err(|e| crate::coded_failure("SYNCHRONIZER_FAILED", e))
 }
 
 #[cfg(test)]

@@ -479,7 +479,7 @@ pub fn check_missing_geoip_database() -> Result<bool, String> {
   let geoip_downloader = GeoIPDownloader::instance();
   geoip_downloader
     .check_missing_geoip_database()
-    .map_err(|e| format!("Failed to check missing GeoIP database: {e}"))
+    .map_err(|e| crate::coded_failure("GEOIP_DOWNLOAD_FAILED", e))
 }
 
 // Global singleton instance

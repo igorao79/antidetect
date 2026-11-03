@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RippleButton } from "@/components/ui/ripple";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { translateBackendError } from "@/lib/backend-errors";
 import type { VpnConfig } from "@/types";
 
 interface VpnFormDialogProps {
@@ -119,8 +120,7 @@ export function VpnFormDialog({
         toast.success(t("vpns.form.updated"));
         onClose();
       } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
+        const errorMessage = translateBackendError(t, error);
         toast.error(t("vpns.form.updateFailed", { error: errorMessage }));
       } finally {
         setIsSubmitting(false);
@@ -164,8 +164,7 @@ export function VpnFormDialog({
       toast.success(t("vpns.form.created"));
       onClose();
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = translateBackendError(t, error);
       toast.error(t("vpns.form.createFailed", { error: errorMessage }));
     } finally {
       setIsSubmitting(false);

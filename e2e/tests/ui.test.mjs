@@ -761,6 +761,98 @@ test("a found update waits while automatic updates are off; on, it downloads by 
   });
 });
 
+test("the rail's button updates after the toast was put off, and the tray's check says how it went", async () => {
+  await withApp("ui-app-update-rail", async (app) => {
+    const version = "v99.0.0";
+    const update = {
+      current_version: "v0.35.1",
+      new_version: version,
+      release_notes: "",
+      download_url: `https://github.com/donutbrowser/donutbrowser/releases/download/${version}/Donut_aarch64.dmg`,
+      is_nightly: false,
+      published_at: "2026-10-24T10:00:00Z",
+      manual_update_required: false,
+      release_page_url: `https://github.com/donutbrowser/donutbrowser/releases/tag/${version}`,
+      repo_update: false,
+      checksums_url: `https://github.com/donutbrowser/donutbrowser/releases/download/${version}/SHA256SUMS.txt`,
+      asset_digest: null,
+      auto_install: false,
+    };
+    const calls = (command) =>
+      app.execute(
+        `return (window.__donutStubbedCalls ?? []).filter((call) => call.command === arguments[0]);`,
+        [command],
+      );
+    const railButton = '[data-slot="rail-update"]';
+    const rail = () =>
+      app.execute(
+        `const button = document.querySelector(arguments[0]);
+         return button && { label: button.getAttribute("aria-label"), disabled: button.disabled };`,
+        [railButton],
+      );
+    try {
+      await stubCommand(app, "check_for_app_updates_manual", null);
+      await stubCommand(app, "download_and_prepare_app_update", null);
+      await stubCommand(app, "restart_application", null);
+      assert.equal(await rail(), null, "no update, no button");
+
+      await app.invoke("plugin:event|emit", {
+        event: "tray-action",
+        payload: { action: "check-updates" },
+      });
+      await app.waitForText(en.about.update.current);
+      assert.equal((await calls("check_for_app_updates_manual")).length, 1);
+
+      const available = en.about.update.available.replace(
+        "{{version}}",
+        version,
+      );
+      await app.invoke("plugin:event|emit", {
+        event: "app-update-available",
+        payload: update,
+      });
+      await app.waitForText(en.appUpdate.toast.later);
+      await app.clickText(en.appUpdate.toast.later, { roles: ["button"] });
+      await app.waitFor(
+        () =>
+          app.execute(
+            `return ![...document.querySelectorAll("[data-sonner-toast] button")].some((button) => button.textContent.includes(arguments[0]));`,
+            [en.appUpdate.toast.later],
+          ),
+        { description: "Later closes the toast" },
+      );
+      assert.equal((await rail()).label, available, "the button stays");
+      await app.capture("app-update-rail-button");
+
+      await app.clickSelector(railButton);
+      await app.waitFor(
+        async () =>
+          (await calls("download_and_prepare_app_update")).length === 1,
+        { description: "the button starts the update" },
+      );
+      assert.equal((await rail()).disabled, true, "one download at a time");
+
+      await app.invoke("plugin:event|emit", {
+        event: "app-update-ready",
+        payload: version,
+      });
+      await app.waitFor(
+        async () =>
+          (await rail()).label ===
+          en.about.update.ready.replace("{{version}}", version),
+        { description: "the button turns into the restart" },
+      );
+      await app.clickSelector(railButton);
+      await app.waitFor(
+        async () => (await calls("restart_application")).length === 1,
+        { description: "the button restarts the app" },
+      );
+    } finally {
+      await restoreStubs(app);
+    }
+  });
+});
+
 test("the open-link dialog names the link, lists the profiles, and opens the chosen one", async () => {
   await withApp("ui-open-link", async (app) => {
     const beta = await createUiProfile(app, "Link Beta");

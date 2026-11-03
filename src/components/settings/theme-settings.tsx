@@ -232,9 +232,11 @@ export function ThemeColorEditor({
     presetId: string | null;
   }) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-1.5">
-      {THEME_VARIABLES.map(({ key, label }) => {
+      {THEME_VARIABLES.map(({ key }) => {
+        const label = t(`settings.themeColors.${String(key).slice(2)}`);
         const value = colors[key] ?? "#000000";
         return (
           <Popover key={key}>

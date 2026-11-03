@@ -17,6 +17,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useCloudAuth } from "@/hooks/use-cloud-auth";
+import { translateBackendError } from "@/lib/backend-errors";
 import { effectivePlanOf, getEntitlements } from "@/lib/entitlements";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
 import type { BrowserProfile, SyncMode, SyncSettings } from "@/types";
@@ -124,7 +125,7 @@ export function ProfileSyncDialog({
         );
       } catch (error) {
         console.error("Failed to set sync mode:", error);
-        showErrorToast(String(error));
+        showErrorToast(translateBackendError(t, error));
       } finally {
         setIsSaving(false);
       }
@@ -156,7 +157,7 @@ export function ProfileSyncDialog({
       showSuccessToast(t("sync.mode.syncQueued"));
     } catch (error) {
       console.error("Failed to queue sync:", error);
-      showErrorToast(String(error));
+      showErrorToast(translateBackendError(t, error));
     } finally {
       setIsSyncing(false);
     }

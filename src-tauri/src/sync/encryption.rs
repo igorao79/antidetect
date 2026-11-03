@@ -257,7 +257,7 @@ pub fn remote_seal(
 #[tauri::command]
 pub async fn set_e2e_password(password: String) -> Result<(), String> {
   if password.len() < 8 {
-    return Err("Password must be at least 8 characters".to_string());
+    return Err(crate::backend_error("PASSWORD_TOO_SHORT"));
   }
   enforce_team_owner_for_encryption_change().await?;
   store_e2e_password(&password)?;

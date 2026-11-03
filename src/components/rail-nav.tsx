@@ -289,18 +289,20 @@ interface RailNavProps {
   cookieBotRunning?: boolean;
   /** Open agent questions and help requests waiting for the person. */
   agentRequests?: number;
+  /** Sits above More; see `RailUpdateButton` (fork). */
+  updateButton?: React.ReactNode;
 }
 
 const BADGE_SPRING = { type: "spring" as const, stiffness: 600, damping: 26 };
 
 /** One destination: a square icon in the rail, an icon and its name in the
  *  sidebar (fork). */
-const RAIL_BUTTON = cn(
+export const RAIL_BUTTON = cn(
   "relative grid size-7 shrink-0 cursor-pointer place-items-center rounded-md transition-colors duration-100 lg:flex lg:h-8 lg:w-full lg:items-center lg:justify-start lg:gap-2.5 lg:px-2.5",
   FOCUS_RING,
 );
 
-const RAIL_LABEL_CLASS =
+export const RAIL_LABEL_CLASS =
   "relative hidden min-w-0 truncate text-[13px] lg:block";
 
 /**
@@ -475,6 +477,7 @@ export function RailNav({
   onOpenFeedback,
   cookieBotRunning = false,
   agentRequests = 0,
+  updateButton,
 }: RailNavProps) {
   const { t } = useTranslation();
   const {
@@ -638,6 +641,8 @@ export function RailNav({
       </div>
 
       <div className="flex-1" />
+
+      {updateButton}
 
       <DropdownMenu>
         <Tooltip delayDuration={300}>

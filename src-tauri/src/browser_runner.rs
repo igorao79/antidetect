@@ -1643,7 +1643,9 @@ pub async fn launch_browser_profile(
     },
     ..Default::default()
   };
-  launch_browser_profile_impl(app_handle, profile, url, options).await
+  launch_browser_profile_impl(app_handle, profile, url, options)
+    .await
+    .map_err(|e| crate::coded_failure("BROWSER_LAUNCH_FAILED", e))
 }
 
 /// How one launch should behave.
@@ -2094,7 +2096,7 @@ pub async fn kill_browser_profile(
         log::warn!("Event emit failed event=profile-running-changed err=\"{e}\"");
       }
 
-      Err(format!("Failed to kill browser: {e}"))
+      Err(crate::coded_failure("BROWSER_STOP_FAILED", e))
     }
   }
 }
@@ -2114,6 +2116,7 @@ pub async fn open_url_with_profile(
   browser_runner
     .open_url_with_profile(app_handle, profile_id, url, gate)
     .await
+    .map_err(|e| crate::coded_failure("BROWSER_OPEN_URL_FAILED", e))
 }
 
 /// Where the browser of a profile running here takes DevTools connections.

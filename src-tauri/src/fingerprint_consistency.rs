@@ -485,7 +485,7 @@ pub async fn match_profile_fingerprint_to_exit(
   let manager = crate::profile::ProfileManager::instance();
   let mut profile = manager
     .list_profiles()
-    .map_err(|e| e.to_string())?
+    .map_err(|e| crate::coded_failure("PROFILES_LOAD_FAILED", e))?
     .into_iter()
     .find(|p| p.id.to_string() == profile_id)
     .ok_or_else(|| serde_json::json!({ "code": "PROFILE_NOT_FOUND" }).to_string())?;

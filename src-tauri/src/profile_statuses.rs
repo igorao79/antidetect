@@ -183,7 +183,7 @@ pub fn set_profiles_status(
   }
   crate::profile::ProfileManager::instance()
     .set_profiles_status(&profile_ids, status_id)
-    .map_err(|e| crate::wrap_backend_error(e, "Failed to set the profile status"))
+    .map_err(|e| crate::coded_failure("PROFILE_STATUS_SAVE_FAILED", e))
 }
 
 #[cfg(test)]

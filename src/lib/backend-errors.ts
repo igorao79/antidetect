@@ -5,6 +5,52 @@ import type { TFunction } from "i18next";
  * Keep this list in sync with the codes used in `src-tauri/src/profile/password.rs`.
  */
 export type BackendErrorCode =
+  | "APP_UPDATE_CHECK_FAILED"
+  | "APP_UPDATE_INSTALL_FAILED"
+  | "APP_RESTART_FAILED"
+  | "BROWSER_UPDATE_CHECK_FAILED"
+  | "BROWSER_UPDATE_FAILED"
+  | "BROWSER_VERSIONS_UNAVAILABLE"
+  | "BROWSER_VERSIONS_REFRESH_FAILED"
+  | "BROWSER_DOWNLOAD_FAILED"
+  | "BROWSER_LAUNCH_FAILED"
+  | "BROWSER_OPEN_URL_FAILED"
+  | "BROWSER_STOP_FAILED"
+  | "DOWNLOAD_NOT_ACTIVE"
+  | "EXTENSION_SAVE_FAILED"
+  | "EXTENSION_DELETE_FAILED"
+  | "EXTENSIONS_LOAD_FAILED"
+  | "EXTENSION_GROUP_SAVE_FAILED"
+  | "EXTENSION_GROUP_DELETE_FAILED"
+  | "EXTENSION_GROUPS_LOAD_FAILED"
+  | "EXTENSION_GROUP_CHANGE_FAILED"
+  | "PROFILES_LOAD_FAILED"
+  | "PROFILES_DELETE_FAILED"
+  | "PROFILE_STATUS_SAVE_FAILED"
+  | "GROUPS_LOAD_FAILED"
+  | "GROUP_SAVE_FAILED"
+  | "GROUP_DELETE_FAILED"
+  | "GROUP_ASSIGN_FAILED"
+  | "GEOIP_DOWNLOAD_FAILED"
+  | "PROXY_SAVE_FAILED"
+  | "PROXY_DELETE_FAILED"
+  | "PROXY_IMPORT_FAILED"
+  | "VPN_CONNECT_FAILED"
+  | "VPN_DISCONNECT_FAILED"
+  | "VPN_SAVE_FAILED"
+  | "VPN_DELETE_FAILED"
+  | "VPN_LOAD_FAILED"
+  | "TRAFFIC_CLEAR_FAILED"
+  | "FINGERPRINT_GENERATE_FAILED"
+  | "COOKIES_READ_FAILED"
+  | "SETTINGS_LOAD_FAILED"
+  | "SETTINGS_SAVE_FAILED"
+  | "API_TOKEN_FAILED"
+  | "SYNC_SETTINGS_FAILED"
+  | "SYNC_ENTITIES_LOAD_FAILED"
+  | "LOG_FOLDER_FAILED"
+  | "TAGS_LOAD_FAILED"
+  | "SYNCHRONIZER_FAILED"
   | "TABLE_PREFERENCES_INVALID"
   | "TABLE_PREFERENCES_LOAD_FAILED"
   | "TABLE_PREFERENCES_SAVE_FAILED"
@@ -1354,6 +1400,188 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       return t("backendErrors.proxyAuthFailed");
     case "VPN_UNREACHABLE":
       return t("backendErrors.vpnUnreachable");
+    case "APP_UPDATE_CHECK_FAILED":
+      return t("backendErrors.appUpdateCheckFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "APP_UPDATE_INSTALL_FAILED":
+      return t("backendErrors.appUpdateInstallFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "APP_RESTART_FAILED":
+      return t("backendErrors.appRestartFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "BROWSER_UPDATE_CHECK_FAILED":
+      return t("backendErrors.browserUpdateCheckFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "BROWSER_UPDATE_FAILED":
+      return t("backendErrors.browserUpdateFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "BROWSER_VERSIONS_UNAVAILABLE":
+      return t("backendErrors.browserVersionsUnavailable", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "BROWSER_VERSIONS_REFRESH_FAILED":
+      return t("backendErrors.browserVersionsRefreshFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "BROWSER_DOWNLOAD_FAILED":
+      return t("backendErrors.browserDownloadFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "BROWSER_LAUNCH_FAILED":
+      return t("backendErrors.browserLaunchFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "BROWSER_OPEN_URL_FAILED":
+      return t("backendErrors.browserOpenUrlFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "BROWSER_STOP_FAILED":
+      return t("backendErrors.browserStopFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "DOWNLOAD_NOT_ACTIVE":
+      return t("backendErrors.downloadNotActive");
+    case "EXTENSION_SAVE_FAILED":
+      return t("backendErrors.extensionSaveFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "EXTENSION_DELETE_FAILED":
+      return t("backendErrors.extensionDeleteFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "EXTENSIONS_LOAD_FAILED":
+      return t("backendErrors.extensionsLoadFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "EXTENSION_GROUP_SAVE_FAILED":
+      return t("backendErrors.extensionGroupSaveFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "EXTENSION_GROUP_DELETE_FAILED":
+      return t("backendErrors.extensionGroupDeleteFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "EXTENSION_GROUPS_LOAD_FAILED":
+      return t("backendErrors.extensionGroupsLoadFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "EXTENSION_GROUP_CHANGE_FAILED":
+      return t("backendErrors.extensionGroupChangeFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "PROFILES_LOAD_FAILED":
+      return t("backendErrors.profilesLoadFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "PROFILES_DELETE_FAILED":
+      return t("backendErrors.profilesDeleteFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "PROFILE_STATUS_SAVE_FAILED":
+      return t("backendErrors.profileStatusSaveFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "GROUPS_LOAD_FAILED":
+      return t("backendErrors.groupsLoadFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "GROUP_SAVE_FAILED":
+      return t("backendErrors.groupSaveFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "GROUP_DELETE_FAILED":
+      return t("backendErrors.groupDeleteFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "GROUP_ASSIGN_FAILED":
+      return t("backendErrors.groupAssignFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "GEOIP_DOWNLOAD_FAILED":
+      return t("backendErrors.geoipDownloadFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "PROXY_SAVE_FAILED":
+      return t("backendErrors.proxySaveFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "PROXY_DELETE_FAILED":
+      return t("backendErrors.proxyDeleteFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "PROXY_IMPORT_FAILED":
+      return t("backendErrors.proxyImportFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "VPN_CONNECT_FAILED":
+      return t("backendErrors.vpnConnectFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "VPN_DISCONNECT_FAILED":
+      return t("backendErrors.vpnDisconnectFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "VPN_SAVE_FAILED":
+      return t("backendErrors.vpnSaveFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "VPN_DELETE_FAILED":
+      return t("backendErrors.vpnDeleteFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "VPN_LOAD_FAILED":
+      return t("backendErrors.vpnLoadFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "TRAFFIC_CLEAR_FAILED":
+      return t("backendErrors.trafficClearFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "FINGERPRINT_GENERATE_FAILED":
+      return t("backendErrors.fingerprintGenerateFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "COOKIES_READ_FAILED":
+      return t("backendErrors.cookiesReadFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "SETTINGS_LOAD_FAILED":
+      return t("backendErrors.settingsLoadFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "SETTINGS_SAVE_FAILED":
+      return t("backendErrors.settingsSaveFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "API_TOKEN_FAILED":
+      return t("backendErrors.apiTokenFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "SYNC_SETTINGS_FAILED":
+      return t("backendErrors.syncSettingsFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "SYNC_ENTITIES_LOAD_FAILED":
+      return t("backendErrors.syncEntitiesLoadFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "LOG_FOLDER_FAILED":
+      return t("backendErrors.logFolderFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "TAGS_LOAD_FAILED":
+      return t("backendErrors.tagsLoadFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "SYNCHRONIZER_FAILED":
+      return t("backendErrors.synchronizerFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
     case "INTERNAL_ERROR":
       return t("backendErrors.internal", {
         detail: parsed.params?.detail ?? "",

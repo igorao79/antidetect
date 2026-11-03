@@ -1,5 +1,5 @@
 //! The tray icon and its menu: the running profiles, the recent ones, stop
-//! all, show and quit.
+//! all, check for updates, show and quit.
 //!
 //! The menu acts through the frontend: an item emits `tray-action`, and the
 //! page runs its own launch, stop and open code. The menu is built again when a
@@ -36,6 +36,7 @@ pub(crate) struct Labels {
   pub stop_all: &'static str,
   pub stop: &'static str,
   pub open_details: &'static str,
+  pub check_updates: &'static str,
 }
 
 /// The menu's words in one of the app's languages; English for any other.
@@ -45,107 +46,119 @@ pub(crate) fn labels_for(language: &str) -> Labels {
     .next()
     .unwrap_or("en")
     .to_ascii_lowercase();
-  let (show, quit, running, recent, stop_all, stop, open_details) = match code.as_str() {
-    "de" => (
-      "Owl anzeigen",
-      "Beenden",
-      "Laufend",
-      "Zuletzt verwendet",
-      "Alle laufenden stoppen",
-      "Stoppen",
-      "Details öffnen",
-    ),
-    "es" => (
-      "Mostrar Owl",
-      "Salir",
-      "En ejecución",
-      "Recientes",
-      "Detener todos",
-      "Detener",
-      "Abrir detalles",
-    ),
-    "fr" => (
-      "Afficher Owl",
-      "Quitter",
-      "En cours",
-      "Récents",
-      "Tout arrêter",
-      "Arrêter",
-      "Ouvrir les détails",
-    ),
-    "ja" => (
-      "Owl を表示",
-      "終了",
-      "実行中",
-      "最近使用",
-      "実行中をすべて停止",
-      "停止",
-      "詳細を開く",
-    ),
-    "ko" => (
-      "Owl 표시",
-      "종료",
-      "실행 중",
-      "최근 항목",
-      "실행 중인 항목 모두 중지",
-      "중지",
-      "세부 정보 열기",
-    ),
-    "pt" => (
-      "Mostrar Owl",
-      "Sair",
-      "Em execução",
-      "Recentes",
-      "Parar todos",
-      "Parar",
-      "Abrir detalhes",
-    ),
-    "ru" => (
-      "Показать Owl",
-      "Выход",
-      "Запущенные",
-      "Недавние",
-      "Остановить все",
-      "Остановить",
-      "Открыть сведения",
-    ),
-    "tr" => (
-      "Owl'u Göster",
-      "Çık",
-      "Çalışanlar",
-      "Son kullanılanlar",
-      "Tümünü durdur",
-      "Durdur",
-      "Ayrıntıları aç",
-    ),
-    "vi" => (
-      "Hiển thị Owl",
-      "Thoát",
-      "Đang chạy",
-      "Gần đây",
-      "Dừng tất cả",
-      "Dừng",
-      "Mở chi tiết",
-    ),
-    "zh" => (
-      "显示 Owl",
-      "退出",
-      "运行中",
-      "最近使用",
-      "全部停止",
-      "停止",
-      "打开详情",
-    ),
-    _ => (
-      "Show Owl",
-      "Quit",
-      "Running",
-      "Recent",
-      "Stop all running",
-      "Stop",
-      "Open details",
-    ),
-  };
+  let (show, quit, running, recent, stop_all, stop, open_details, check_updates) =
+    match code.as_str() {
+      "de" => (
+        "Owl anzeigen",
+        "Beenden",
+        "Laufend",
+        "Zuletzt verwendet",
+        "Alle laufenden stoppen",
+        "Stoppen",
+        "Details öffnen",
+        "Nach Updates suchen",
+      ),
+      "es" => (
+        "Mostrar Owl",
+        "Salir",
+        "En ejecución",
+        "Recientes",
+        "Detener todos",
+        "Detener",
+        "Abrir detalles",
+        "Buscar actualizaciones",
+      ),
+      "fr" => (
+        "Afficher Owl",
+        "Quitter",
+        "En cours",
+        "Récents",
+        "Tout arrêter",
+        "Arrêter",
+        "Ouvrir les détails",
+        "Rechercher des mises à jour",
+      ),
+      "ja" => (
+        "Owl を表示",
+        "終了",
+        "実行中",
+        "最近使用",
+        "実行中をすべて停止",
+        "停止",
+        "詳細を開く",
+        "アップデートを確認",
+      ),
+      "ko" => (
+        "Owl 표시",
+        "종료",
+        "실행 중",
+        "최근 항목",
+        "실행 중인 항목 모두 중지",
+        "중지",
+        "세부 정보 열기",
+        "업데이트 확인",
+      ),
+      "pt" => (
+        "Mostrar Owl",
+        "Sair",
+        "Em execução",
+        "Recentes",
+        "Parar todos",
+        "Parar",
+        "Abrir detalhes",
+        "Verificar atualizações",
+      ),
+      "ru" => (
+        "Показать Owl",
+        "Выход",
+        "Запущенные",
+        "Недавние",
+        "Остановить все",
+        "Остановить",
+        "Открыть сведения",
+        "Проверить обновления",
+      ),
+      "tr" => (
+        "Owl'u Göster",
+        "Çık",
+        "Çalışanlar",
+        "Son kullanılanlar",
+        "Tümünü durdur",
+        "Durdur",
+        "Ayrıntıları aç",
+        "Güncellemeleri denetle",
+      ),
+      "vi" => (
+        "Hiển thị Owl",
+        "Thoát",
+        "Đang chạy",
+        "Gần đây",
+        "Dừng tất cả",
+        "Dừng",
+        "Mở chi tiết",
+        "Kiểm tra cập nhật",
+      ),
+      "zh" => (
+        "显示 Owl",
+        "退出",
+        "运行中",
+        "最近使用",
+        "全部停止",
+        "停止",
+        "打开详情",
+        "检查更新",
+      ),
+      _ => (
+        "Show Owl",
+        "Quit",
+        "Running",
+        "Recent",
+        "Stop all running",
+        "Stop",
+        "Open details",
+        "Check for updates",
+      ),
+    };
   Labels {
     show,
     quit,
@@ -154,6 +167,7 @@ pub(crate) fn labels_for(language: &str) -> Labels {
     stop_all,
     stop,
     open_details,
+    check_updates,
   }
 }
 
@@ -271,11 +285,14 @@ fn build_menu(app: &AppHandle, state: &MenuState) -> tauri::Result<Menu<Wry>> {
   let stop_all = MenuItemBuilder::with_id("tray_stop_all", labels.stop_all)
     .enabled(!state.running.is_empty())
     .build(app)?;
+  let check_updates =
+    MenuItemBuilder::with_id("tray_check_updates", labels.check_updates).build(app)?;
   let show = MenuItemBuilder::with_id("tray_show", show_label).build(app)?;
   let quit = MenuItemBuilder::with_id("tray_quit", quit_label).build(app)?;
   menu
     .item(&stop_all)
     .separator()
+    .item(&check_updates)
     .item(&show)
     .separator()
     .item(&quit)
@@ -344,6 +361,10 @@ pub(crate) fn action_for(id: &str) -> Option<TrayAction> {
       action: "stop-all",
       profile_id: None,
     }),
+    "tray_check_updates" => Some(TrayAction {
+      action: "check-updates",
+      profile_id: None,
+    }),
     _ => {
       if let Some(profile_id) = id.strip_prefix("tray_stop:") {
         with_profile("stop-profile", profile_id)
@@ -359,11 +380,11 @@ pub(crate) fn action_for(id: &str) -> Option<TrayAction> {
 }
 
 /// Whether the person has to see the window for this action: a launch that
-/// first asks for the profile's password does.
+/// first asks for the profile's password does, and a check says how it went there.
 #[cfg(not(feature = "e2e"))]
 fn needs_window(action: &TrayAction) -> bool {
   match action.action {
-    "show" | "open-profile" => true,
+    "show" | "open-profile" | "check-updates" => true,
     "launch-profile" => action.profile_id.as_deref().is_some_and(|id| {
       crate::profile::ProfileManager::instance()
         .list_profiles()
@@ -495,6 +516,11 @@ mod tests {
     let english = labels_for("en");
     for code in ["de", "es", "fr", "ja", "ko", "pt", "ru", "tr", "vi", "zh"] {
       assert_ne!(labels_for(code).running, english.running, "{code}");
+      assert_ne!(
+        labels_for(code).check_updates,
+        english.check_updates,
+        "{code}"
+      );
     }
     assert_eq!(labels_for("pt-BR"), labels_for("pt"));
     assert_eq!(labels_for("xx"), english);
@@ -531,6 +557,7 @@ mod tests {
     let action = |item: &str| action_for(item).map(|a| (a.action, a.profile_id));
     assert_eq!(action("tray_show"), Some(("show", None)));
     assert_eq!(action("tray_stop_all"), Some(("stop-all", None)));
+    assert_eq!(action("tray_check_updates"), Some(("check-updates", None)));
     assert_eq!(
       action(&format!("tray_stop:{id}")),
       Some(("stop-profile", Some(id.clone())))
