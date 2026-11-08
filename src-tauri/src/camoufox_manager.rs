@@ -201,6 +201,17 @@ const SESSION_RESTORE_PREFS: [(&str, &str); 7] = [
   ("browser.sessionstore.restore_on_demand", "true"),
 ];
 
+/// Firefox's own scrolling values. The remote agent Owl starts every browser
+/// with (`--remote-debugging-port`) sets its test suite's values where a pref
+/// has no user value, and `apz.content_response_timeout` 60000 made a wheel
+/// over a page with a wheel listener wait up to a minute for a busy page, as
+/// one just brought back from the background is, instead of 400 ms.
+const SCROLL_PREFS: [(&str, &str); 3] = [
+  ("apz.content_response_timeout", "400"),
+  ("apz.axis_lock.mode", "2"),
+  ("mousewheel.allow_scrolling_more_than_one_page", "false"),
+];
+
 impl CamoufoxManager {
   fn new() -> Self {
     Self {
@@ -903,6 +914,7 @@ impl CamoufoxManager {
         "browser.sessionhistory.max_total_viewers",
         "layers.gpu-process.enabled",
       ];
+      managed_keys.extend(SCROLL_PREFS.iter().map(|(key, _)| *key));
       let restores_session = override_profile_path.is_none();
       if restores_session {
         managed_keys.extend(SESSION_RESTORE_PREFS.iter().map(|(key, _)| *key));
@@ -924,6 +936,9 @@ impl CamoufoxManager {
         "user_pref(\"browser.sessionhistory.max_entries\", 50);\n\
          user_pref(\"browser.sessionhistory.max_total_viewers\", -1);\n",
       );
+      for (key, value) in SCROLL_PREFS {
+        prefs.push_str(&format!("user_pref(\"{key}\", {value});\n"));
+      }
 
       // A profile reopens the tabs it had, with their session storage and
       // session cookies, as a regular browser that restores its session does.

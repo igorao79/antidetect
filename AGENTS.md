@@ -91,6 +91,13 @@ Fork-specific rules:
   proxy got 429s from the provider, and a page with no answer to a failed request (the bare
   `web.telegram.org/`) stayed blank. `restore_tabs_lazily` stays off, or BiDi sees only the
   loaded tabs.
+- Firefox's remote agent, which every Camoufox launch starts (`--remote-debugging-port`),
+  applies its test suite's prefs (`RecommendedPreferences` in the build's `omni.ja`) wherever a
+  pref has no user value. `apz.content_response_timeout` 60000 made the wheel wait up to a
+  minute for a busy page (one just back from the background), so scrolling sometimes did
+  nothing after returning to the browser; `SCROLL_PREFS` in `camoufox_manager.rs` writes
+  Firefox's own scrolling values to `user.js` at every launch. The other recommended prefs
+  stay, since the automation may rely on them.
 - Own Owl server (`donut-sync/`, `workspace.rs`, `workspace-page.tsx`,
   `workspace-share-dialog.tsx`, the Integrations page's Server tab). Anyone runs one with
   `docker compose up` in `donut-sync/` (one container, objects on its own disk in the
