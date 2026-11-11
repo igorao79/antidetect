@@ -25,7 +25,7 @@ use crate::profile::BrowserProfile;
 
 /// Bumped when the bundle layout or the icon renderer changes, so existing
 /// clones are rebuilt on the next launch.
-const FORMAT_VERSION: u32 = 1;
+const FORMAT_VERSION: u32 = 2;
 const CACHE_DIR: &str = "camoufox-profile-apps";
 const APP_NAME: &str = "Owl.app";
 const STAMP_FILE: &str = ".owl-profile-app.json";
@@ -426,6 +426,7 @@ fn sign_bundle(app: &Path) -> Result<(), String> {
   let signed = Command::new("/usr/bin/codesign")
     .args([
       "--force",
+      "--deep",
       "--sign",
       "-",
       "--preserve-metadata=entitlements,flags",
@@ -440,7 +441,7 @@ fn sign_bundle(app: &Path) -> Result<(), String> {
     return Ok(());
   }
   let retried = Command::new("/usr/bin/codesign")
-    .args(["--force", "--sign", "-"])
+    .args(["--force", "--deep", "--sign", "-"])
     .arg(app)
     .stdout(Stdio::null())
     .stderr(Stdio::null())
@@ -547,6 +548,12 @@ mod tests {
     )
     .unwrap();
     assert_ne!(icon, firefox, "the generated icon fell back to Firefox's");
+    let verify = Command::new("/usr/bin/codesign")
+      .args(["--verify", "--deep", "--strict"])
+      .arg(app)
+      .status()
+      .unwrap();
+    assert!(verify.success(), "the clone's signature does not verify");
     let output = Command::new(&executable).arg("--version").output().unwrap();
     assert!(output.status.success(), "{:?}", output);
   }

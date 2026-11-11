@@ -93,8 +93,9 @@ Fork-specific rules:
   loaded tabs.
 - A macOS Camoufox launch runs from a per-profile clone of `Camoufox.app`, not the shared
   build (`camoufox/profile_app.rs`): macOS gives one Dock tile per bundle, so the clone gets
-  the profile name, a generated `.icns` and a unique `CFBundleIdentifier`, and is ad-hoc
-  signed. The clone is an APFS clonefile in the app cache (a full copy only when the
+  the profile name, a generated `.icns` and a unique `CFBundleIdentifier`; the build hooks
+  are applied to the source before cloning and the clone is deep-signed after every resource
+  change. The clone is an APFS clonefile in the app cache (a full copy only when the
   filesystem cannot clone), rebuilt when the source build or the profile name/colour changes,
   and removed with the profile. On other platforms the executable stays the shared build; this
   bundle-name/icon layer and the existing title/badge/colour layer are macOS-only.

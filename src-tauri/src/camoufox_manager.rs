@@ -868,11 +868,23 @@ impl CamoufoxManager {
     let _ = self.cleanup_dead_instances().await;
 
     // macOS gets a separate app bundle per profile so its Dock tile and menu
-    // name are the profile's, not a shared "Camoufox". The clone is prepared
-    // before the build's own files are patched; both then live in the clone.
+    // name are the profile's, not a shared "Camoufox". Patch the shared build
+    // before cloning it: every resource then belongs to the copy the module
+    // signs, and no hook can invalidate the clone's resource seal after that.
     let source_executable = BrowserRunner::instance()
       .get_browser_executable_path(&profile)
       .map_err(|e| format!("Failed to get Camoufox executable path: {e}"))?;
+    crate::camoufox::search::ensure_search_engines(&source_executable);
+    crate::camoufox::last_window::ensure_quit_with_last_window(&source_executable);
+    crate::camoufox::profile_identity::ensure_profile_identity_hook(&source_executable);
+    {
+      let executable = source_executable.clone();
+      let _ = tokio::task::spawn_blocking(move || {
+        crate::camoufox::bundled_fonts::shadow_installed_fonts(&executable)
+      })
+      .await;
+    }
+
     let profile_for_app = profile.clone();
     let source_for_app = source_executable.clone();
     let executable_path = match tokio::task::spawn_blocking(move || {
@@ -890,17 +902,6 @@ impl CamoufoxManager {
         source_executable
       }
     };
-
-    crate::camoufox::search::ensure_search_engines(&executable_path);
-    crate::camoufox::last_window::ensure_quit_with_last_window(&executable_path);
-    crate::camoufox::profile_identity::ensure_profile_identity_hook(&executable_path);
-    {
-      let executable = executable_path.clone();
-      let _ = tokio::task::spawn_blocking(move || {
-        crate::camoufox::bundled_fonts::shadow_installed_fonts(&executable)
-      })
-      .await;
-    }
 
     // For ephemeral profiles, write Firefox prefs to minimize disk writes
     if override_profile_path.is_some() {
