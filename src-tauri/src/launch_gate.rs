@@ -206,23 +206,27 @@ pub(crate) fn route_required() -> bool {
     .unwrap_or(false)
 }
 
-/// The live half of the kill switch: with "Block launches without a proxy or
-/// VPN" on, a route that does not answer *now* blocks the launch, not only one
-/// that is missing. It is called from `prepare_launch_network`, so every
-/// Camoufox launch — the UI, REST, MCP and automation alike — passes it.
+/// Check the route a profile actually declares before the browser exists. A
+/// configured proxy or VPN is always probed: a dead route must fail the launch
+/// even when the kill switch is off. The kill switch additionally makes a
+/// profile with *no* route block.
 ///
 /// A route no probe can judge (cloud-derived, dynamic, a non-reqwest type,
 /// Hysteria2, an unreadable VPN config) passes, because refusing what cannot
 /// be measured would block working profiles. The advisory pre-launch check
 /// still warns about those.
 pub async fn enforce_route_reachable(profile: &BrowserProfile) -> Result<(), String> {
-  if !route_required() {
+  if !live_route_check_needed(profile, route_required()) {
     return Ok(());
   }
   let unreachable =
     crate::proxy_manager::check_route_now(profile.proxy_id.as_deref(), profile.vpn_id.as_deref())
       .await;
   route_reachable_verdict(profile, unreachable)
+}
+
+fn live_route_check_needed(profile: &BrowserProfile, required: bool) -> bool {
+  required || profile.proxy_id.is_some() || profile.vpn_id.is_some()
 }
 
 /// Apply a live check's answer. Separate from the probe so the coded refusal
@@ -647,6 +651,15 @@ mod tests {
     // The probe's own code is for the log; the person gets the translated
     // route code, never the raw probe reason.
     assert!(!error.contains("PROXY_UPSTREAM_UNREACHABLE"), "{error}");
+  }
+
+  #[test]
+  fn a_configured_route_is_checked_without_the_kill_switch() {
+    let mut profile = profile_with(r#"{"timezone":"Europe/Berlin"}"#);
+    assert!(!live_route_check_needed(&profile, false));
+    profile.proxy_id = Some("p-1".to_string());
+    assert!(live_route_check_needed(&profile, false));
+    assert!(live_route_check_needed(&profile, true));
   }
 
   #[test]

@@ -220,7 +220,7 @@
       "vpnExtensionWarningDescription": "Vor dem Start warnen, wenn ein Profil eine Erweiterung enthält, die den Datenverkehr des Browsers umleiten kann.",
       "title": "Datenschutz",
       "requireRoute": "Starts ohne Proxy oder VPN blockieren",
-      "requireRouteDescription": "Ein Profil startet nie über Ihre eigene IP-Adresse: weder ohne Proxy oder VPN noch wenn sein Proxy oder VPN fehlt oder nicht antwortet.",
+      "requireRouteDescription": "Wenn dies aktiviert ist, startet ein Profil nie mit Ihrer eigenen IP-Adresse – weder ohne Proxy oder VPN noch wenn Proxy oder VPN fehlt oder nicht antwortet. Ein konfigurierter Proxy oder VPN wird bei jedem Start geprüft.",
       "recordSites": "Besuchte Websites aufzeichnen",
       "recordSitesDescription": "Die Traffic-Statistik listet die Websites, die jedes Profil erreicht hat. Wenn deaktiviert, werden nur Datenmengen gespeichert. Passwortgeschützte und flüchtige Profile zeichnen nie Websites auf."
     },

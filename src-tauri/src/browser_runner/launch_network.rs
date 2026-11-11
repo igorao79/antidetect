@@ -197,9 +197,10 @@ impl BrowserRunner {
 
     crate::launch_gate::enforce_route_required(profile, upstream_proxy.is_some())
       .map_err(|e| -> BoxError { e.into() })?;
-    // The configured-route check above only proves a route is *declared*. With
-    // the kill switch on, ask the route itself before any browser exists: a
-    // dead proxy must fail the launch, not open a browser with no traffic.
+    // The configured-route check above only proves a route is *declared*. Ask
+    // the route itself before any browser exists: a dead proxy must fail the
+    // launch, not open a browser with no traffic. The kill switch additionally
+    // blocks a profile that declares no route at all.
     crate::launch_gate::enforce_route_reachable(profile)
       .await
       .map_err(|e| -> BoxError { e.into() })?;

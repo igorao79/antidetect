@@ -93,14 +93,23 @@ Fork-specific rules:
   loaded tabs.
 - A macOS Camoufox launch runs from a per-profile clone of `Camoufox.app`, not the shared
   build (`camoufox/profile_app.rs`): macOS gives one Dock tile per bundle, so the clone gets
-  the profile name, a generated `.icns` and a unique `CFBundleIdentifier`; the build hooks
-  are applied to the source before cloning and the clone is deep-signed after every resource
-  change. The clone is an APFS clonefile in the app cache (a full copy only when the
-  filesystem cannot clone), rebuilt when the source build, the hooked resources it copied
-  (`camoufox.cfg`, `policies.json`, `owl.js`, the fonts marker) or the profile name/colour change,
-  and removed with the profile; a startup sweep removes clones of deleted profiles and of builds
-  that are gone, since an APFS clone keeps the old build's blocks. On other platforms the executable stays the shared build; this
-  bundle-name/icon layer and the existing title/badge/colour layer are macOS-only.
+  the profile name, a generated `.icns` and a per-profile `CFBundleIdentifier` that stays
+  stable across renames and recolours, so macOS TCC grants (camera, microphone) survive an
+  edit; LaunchServices is told to re-read the rebuilt bundle so the Dock icon/name still
+  changes. The build hooks are applied to the source before cloning and the clone is
+  deep-signed after every resource change. The clone is an APFS clonefile in the app cache
+  (a full copy only when the filesystem cannot clone), rebuilt when the source build, the
+  hooked resources it copied (`camoufox.cfg`, `policies.json`, `owl.js`, the fonts marker) or
+  the profile name/colour change, and removed with the profile; a startup sweep removes clones
+  of deleted profiles and of builds that are gone, since an APFS clone keeps the old build's
+  blocks. On other platforms the executable stays the shared build; this bundle-name/icon
+  layer and the existing title/badge/colour layer are macOS-only.
+- A configured proxy or VPN is probed live before every launch, even with "Block launches
+  without a proxy or VPN" off; the switch additionally blocks a profile that declares no route
+  at all. A route no probe can judge passes.
+- An AMO-signed `.xpi` without `browser_specific_settings.gecko.id` in its manifest still gets
+  its id from the signing certificate's subject CN (`META-INF/mozilla.rsa`), so Camoufox can
+  sideload it instead of refusing the package.
 - Firefox's remote agent, which every Camoufox launch starts (`--remote-debugging-port`),
   applies its test suite's prefs (`RecommendedPreferences` in the build's `omni.ja`) wherever a
   pref has no user value. `apz.content_response_timeout` 60000 made the wheel wait up to a

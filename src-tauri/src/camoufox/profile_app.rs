@@ -29,7 +29,7 @@ use crate::profile::BrowserProfile;
 
 /// Bumped when the bundle layout or the icon renderer changes, so existing
 /// clones are rebuilt on the next launch.
-const FORMAT_VERSION: u32 = 2;
+const FORMAT_VERSION: u32 = 3;
 const CACHE_DIR: &str = "camoufox-profile-apps";
 const APP_NAME: &str = "Owl.app";
 const STAMP_FILE: &str = ".owl-profile-app.json";
@@ -119,7 +119,7 @@ fn prepare_locked(profile: &BrowserProfile, source_executable: &Path) -> Result<
 
   let name = display_name(&profile.name);
   let color = crate::camoufox::profile_identity::profile_color(profile);
-  let bundle_id = bundle_identifier(profile, &name, &color);
+  let bundle_id = bundle_identifier(profile);
   let wanted = BundleStamp {
     format: FORMAT_VERSION,
     source: source_bundle.to_string_lossy().to_string(),
@@ -159,6 +159,7 @@ fn prepare_locked(profile: &BrowserProfile, source_executable: &Path) -> Result<
     }
     remove_quarantine(&app);
     sign_bundle(&app)?;
+    register_bundle(&app);
     write_stamp(&dir, &wanted)?;
     Ok(())
   })();
@@ -376,22 +377,13 @@ fn write_stamp(dir: &Path, stamp: &BundleStamp) -> Result<(), String> {
   std::fs::write(dir.join(STAMP_FILE), data).map_err(|e| e.to_string())
 }
 
-fn bundle_identifier(profile: &BrowserProfile, name: &str, color: &str) -> String {
-  // A content hash makes a rename or recolour a new bundle identity, so macOS
-  // does not keep serving the old cached Dock icon to the same identifier.
-  let mut hash: u32 = 2166136261;
-  hash ^= FORMAT_VERSION;
-  hash = hash.wrapping_mul(16777619);
-  for byte in name
-    .bytes()
-    .chain(color.bytes())
-    .chain(profile.id.as_bytes().iter().copied())
-  {
-    hash ^= u32::from(byte);
-    hash = hash.wrapping_mul(16777619);
-  }
+fn bundle_identifier(profile: &BrowserProfile) -> String {
+  // Stable across renames and recolours: macOS keys TCC grants (camera,
+  // microphone) by bundle identity, and asking for them again on every edit
+  // is worse than a cached Dock icon. `register_bundle` refreshes the icon
+  // cache after the bundle is rebuilt with a new name or icon.
   let id = profile.id.to_string().replace('-', "");
-  format!("com.owl.camoufox.{id}.{hash:08x}")
+  format!("com.owl.camoufox.{id}")
 }
 
 fn clone_bundle(source: &Path, destination: &Path) -> Result<(), String> {
@@ -450,6 +442,19 @@ fn run_best_effort(mut command: Command, what: &str) {
     ),
     Err(e) => log::debug!("{what} not run err=\"{e}\""),
   }
+}
+
+/// Tell LaunchServices the rebuilt bundle's Info.plist and icon changed, so a
+/// rename/recolour does not keep the old Dock icon cached. Best effort: the
+/// app launches either way.
+fn register_bundle(app: &Path) {
+  let lsregister = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister";
+  if !Path::new(lsregister).is_file() {
+    return;
+  }
+  let mut command = Command::new(lsregister);
+  command.arg("-f").arg(app);
+  run_best_effort(command, "Registering profile app");
 }
 
 fn set_bundle_identity(app: &Path, name: &str, bundle_id: &str) -> Result<(), String> {
@@ -726,13 +731,10 @@ mod tests {
   }
 
   #[test]
-  fn a_renamed_or_recoloured_profile_gets_a_new_bundle_identity() {
+  fn a_renamed_or_recoloured_profile_keeps_its_bundle_identity() {
     let p = profile();
-    let first = bundle_identifier(&p, "Client EU", "#a1b2c3");
-    let renamed = bundle_identifier(&p, "Client UK", "#a1b2c3");
-    let recoloured = bundle_identifier(&p, "Client EU", "#112233");
-    assert_ne!(first, renamed);
-    assert_ne!(first, recoloured);
+    let first = bundle_identifier(&p);
+    assert_eq!(first, bundle_identifier(&p));
     assert!(first.starts_with("com.owl.camoufox."));
   }
 

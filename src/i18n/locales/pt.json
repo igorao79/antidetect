@@ -220,7 +220,7 @@
       "vpnExtensionWarningDescription": "Avisar antes de iniciar quando um perfil contiver uma extensão capaz de redirecionar o tráfego do navegador.",
       "title": "Privacidade",
       "requireRoute": "Bloquear inicializações sem proxy ou VPN",
-      "requireRouteDescription": "Um perfil nunca inicia a partir do seu próprio endereço IP: nem quando não tem proxy ou VPN, nem quando o proxy ou a VPN sumiu ou não responde.",
+      "requireRouteDescription": "Com esta opção ativada, um perfil nunca inicia a partir do seu próprio IP: nem quando não tem proxy ou VPN, nem quando o proxy ou VPN desapareceu ou não responde. Um proxy ou VPN configurado é verificado em cada inicialização de qualquer forma.",
       "recordSites": "Registrar sites visitados",
       "recordSitesDescription": "As estatísticas de tráfego listam os sites que cada perfil acessou. Desativado, só os totais de dados são mantidos. Perfis protegidos por senha e efêmeros nunca registram sites."
     },

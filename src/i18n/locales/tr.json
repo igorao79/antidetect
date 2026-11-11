@@ -220,7 +220,7 @@
       "vpnExtensionWarningDescription": "Bir profil, tarayıcı trafiğini yeniden yönlendirebilecek bir uzantı içerdiğinde başlatmadan önce uyarır.",
       "title": "Gizlilik",
       "requireRoute": "Proxy veya VPN olmadan başlatmayı engelle",
-      "requireRouteDescription": "Bir profil asla kendi IP adresinizden başlamaz: proxy veya VPN yoksa da, proxy veya VPN kaldırıldıysa ya da yanıt vermiyorsa da.",
+      "requireRouteDescription": "Bu açıkken bir profil asla kendi IP adresinizden başlamaz: ne proxy veya VPN yokken ne de proxy veya VPN kaybolduğunda ya da yanıt vermediğinde. Yapılandırılmış bir proxy veya VPN her durumda her başlatmada kontrol edilir.",
       "recordSites": "Ziyaret edilen siteleri kaydet",
       "recordSitesDescription": "Trafik istatistikleri her profilin ulaştığı siteleri listeler. Kapalıyken yalnızca veri toplamları tutulur. Parola korumalı ve geçici profiller hiçbir zaman site kaydetmez."
     },

@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::process::Command;
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use utoipa::ToSchema;
@@ -203,7 +205,10 @@ fn read_capped_text(reader: impl std::io::Read, cap: u64) -> Option<String> {
 }
 
 /// Read `browser_specific_settings.gecko.id` (or the legacy
-/// `applications.gecko.id`) from the extension's manifest.json.
+/// `applications.gecko.id`) from the extension's manifest.json. AMO-signed
+/// packages may omit it from the manifest: Mozilla puts the add-on id in the
+/// subject CN of the signing certificate, so fall back to the signed
+/// `META-INF/mozilla.rsa` before calling the package unusable.
 fn extract_gecko_id(file_data: &[u8], file_type: &str) -> Option<String> {
   let manifest = read_manifest_from_archive(file_data, file_type)?;
   manifest
@@ -211,6 +216,132 @@ fn extract_gecko_id(file_data: &[u8], file_type: &str) -> Option<String> {
     .or_else(|| manifest.pointer("/applications/gecko/id"))
     .and_then(|v| v.as_str())
     .map(|s| s.to_string())
+    .or_else(|| extract_gecko_id_from_signature(file_data, file_type))
+}
+
+/// AMO signs an XPI with a certificate whose subject CN is the add-on id. Read
+/// the `mozilla.rsa` PKCS#7 block and ask the system openssl for the subject;
+/// the raw-string scan is the fallback for systems without openssl. The
+/// certificate is public data, so the temporary file carries no secret.
+fn extract_gecko_id_from_signature(file_data: &[u8], file_type: &str) -> Option<String> {
+  let signature = read_archive_entry(
+    file_data,
+    file_type,
+    "META-INF/mozilla.rsa",
+    MAX_SIGNATURE_BYTES,
+  )?;
+  if let Some(id) = gecko_id_from_certificate(&signature) {
+    return Some(id);
+  }
+  scan_signature_for_gecko_id(&signature)
+}
+
+const MAX_SIGNATURE_BYTES: u64 = 1024 * 1024;
+
+fn read_archive_entry(file_data: &[u8], file_type: &str, name: &str, cap: u64) -> Option<Vec<u8>> {
+  let zip_start = if file_type == "crx" {
+    find_zip_start(file_data)
+  } else {
+    0
+  };
+  let cursor = std::io::Cursor::new(file_data.get(zip_start..)?);
+  let mut archive = zip::ZipArchive::new(cursor).ok()?;
+  let file = archive.by_name(name).ok()?;
+  let mut bytes = Vec::new();
+  file.take(cap + 1).read_to_end(&mut bytes).ok()?;
+  (bytes.len() as u64 <= cap).then_some(bytes)
+}
+
+fn gecko_id_from_certificate(signature: &[u8]) -> Option<String> {
+  let path = std::env::temp_dir().join(format!("owl-xpi-signature-{}.der", uuid::Uuid::new_v4()));
+  if fs::write(&path, signature).is_err() {
+    return None;
+  }
+  let output = ["/usr/bin/openssl", "openssl"].iter().find_map(|binary| {
+    Command::new(binary)
+      .args(["pkcs7", "-inform", "der", "-print_certs", "-in"])
+      .arg(&path)
+      .output()
+      .ok()
+      .filter(|out| out.status.success())
+  });
+  let _ = fs::remove_file(&path);
+  let output = output?;
+  gecko_id_from_subject_output(&String::from_utf8_lossy(&output.stdout))
+}
+
+/// Pick the CN out of `openssl pkcs7 -print_certs`'s `subject=` lines. The
+/// signer certificate comes first; issuer lines and the CA certificate follow.
+fn gecko_id_from_subject_output(output: &str) -> Option<String> {
+  output
+    .lines()
+    .filter_map(|line| line.strip_prefix("subject="))
+    .filter_map(subject_cn)
+    .find(|candidate| is_signature_gecko_id(candidate))
+    .map(str::to_string)
+}
+
+/// LibreSSL prints subjects as `/C=.../CN=id`; OpenSSL prints `C=..., CN = id`.
+fn subject_cn(subject: &str) -> Option<&str> {
+  if subject.contains("/CN=") {
+    return subject
+      .split('/')
+      .find_map(|part| part.strip_prefix("CN=").map(str::trim));
+  }
+  subject.split(',').find_map(|part| {
+    let part = part.trim();
+    part
+      .strip_prefix("CN")
+      .map(|rest| rest.trim_start_matches([' ', '=']).trim())
+  })
+}
+
+/// The CN may be a GUID or an AMO-style address. Reject issuer/CA names so a
+/// package with no add-on id is not mistaken for one whose CA is installed.
+fn is_signature_gecko_id(value: &str) -> bool {
+  if !is_plain_path_part(value) || value.len() > 255 {
+    return false;
+  }
+  if value.starts_with('{') && value.ends_with('}') && value.len() == 38 {
+    return value[1..37]
+      .chars()
+      .all(|c| c.is_ascii_hexdigit() || c == '-');
+  }
+  let Some((local, domain)) = value.split_once('@') else {
+    return false;
+  };
+  !local.is_empty()
+    && domain.contains('.')
+    && !domain.ends_with("mozilla.org")
+    && !domain.ends_with("mozilla.com")
+    && !value.contains(char::is_whitespace)
+}
+
+/// Fallback for a missing openssl: certificate strings are printable ASCII in
+/// the DER. Prefer a GUID; otherwise take the first add-on-shaped address.
+fn scan_signature_for_gecko_id(signature: &[u8]) -> Option<String> {
+  let text = String::from_utf8_lossy(signature);
+  let mut token = String::new();
+  let mut tokens = Vec::new();
+  for ch in text.chars() {
+    if ch.is_ascii_graphic() {
+      token.push(ch);
+    } else if !token.is_empty() {
+      tokens.push(std::mem::take(&mut token));
+    }
+  }
+  if !token.is_empty() {
+    tokens.push(token);
+  }
+  tokens
+    .iter()
+    .find(|token| token.starts_with('{') && is_signature_gecko_id(token))
+    .or_else(|| {
+      tokens
+        .iter()
+        .find(|token| token.contains('@') && is_signature_gecko_id(token))
+    })
+    .cloned()
 }
 
 fn find_zip_start(data: &[u8]) -> usize {
@@ -2971,6 +3102,56 @@ mod tests {
     assert_eq!(
       extract_gecko_id(&extension_xpi("small@example.com"), "xpi").as_deref(),
       Some("small@example.com")
+    );
+  }
+
+  #[test]
+  fn the_signing_certificate_subject_carries_the_gecko_id() {
+    let output = "subject=/C=US/O=Addons/CN=uBlock0@raymondhill.net\nissuer=/C=US/CN=signingca1.addons.mozilla.org/emailAddress=foxsec@mozilla.com\n";
+    assert_eq!(
+      gecko_id_from_subject_output(output).as_deref(),
+      Some("uBlock0@raymondhill.net")
+    );
+    let openssl3 = "subject=C = US, O = Addons, CN = addon@example.org\n";
+    assert_eq!(
+      gecko_id_from_subject_output(openssl3).as_deref(),
+      Some("addon@example.org")
+    );
+  }
+
+  #[test]
+  fn a_ca_certificate_is_not_mistaken_for_an_add_on() {
+    let output =
+      "subject=/C=US/O=Mozilla/CN=signingca1.addons.mozilla.org/emailAddress=foxsec@mozilla.com\n";
+    assert_eq!(gecko_id_from_subject_output(output), None);
+    assert!(!is_signature_gecko_id("foxsec@mozilla.com"));
+  }
+
+  #[test]
+  fn the_raw_signature_scan_finds_a_guid_and_an_address() {
+    let guid = b"junk {0b6f9c1e-3a52-4c1d-9f7e-2d8a4b6c1e90} junk";
+    assert_eq!(
+      scan_signature_for_gecko_id(guid).as_deref(),
+      Some("{0b6f9c1e-3a52-4c1d-9f7e-2d8a4b6c1e90}")
+    );
+    let address = b"junk addon@example.org junk";
+    assert_eq!(
+      scan_signature_for_gecko_id(address).as_deref(),
+      Some("addon@example.org")
+    );
+  }
+
+  /// Opt-in with a real AMO package whose manifest has no gecko id:
+  ///   OWL_TEST_AMO_XPI=/path/addon.xpi cargo test --lib extension_manager::tests::a_real_amo_package_without_a_manifest_id
+  #[test]
+  fn a_real_amo_package_without_a_manifest_id_reads_the_signed_id() {
+    let Some(path) = std::env::var_os("OWL_TEST_AMO_XPI") else {
+      return;
+    };
+    let data = fs::read(path).unwrap();
+    assert_eq!(
+      extract_gecko_id(&data, "xpi").as_deref(),
+      Some("uBlock0@raymondhill.net")
     );
   }
 

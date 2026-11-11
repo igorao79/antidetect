@@ -220,7 +220,7 @@
       "vpnExtensionWarningDescription": "当配置文件中存在可改变浏览器流量路径的扩展时，在启动前发出警告。",
       "title": "隐私",
       "requireRoute": "阻止未使用代理或 VPN 的启动",
-      "requireRouteDescription": "配置文件绝不会使用您自己的 IP 地址启动：无论是没有代理或 VPN，还是其代理或 VPN 已被删除或无响应。",
+      "requireRouteDescription": "开启后，配置文件绝不会从您自己的 IP 地址启动：无论没有代理或 VPN，还是代理或 VPN 消失或无响应。已配置的代理或 VPN 每次启动时都会检查。",
       "recordSites": "记录访问过的网站",
       "recordSitesDescription": "流量统计会列出每个配置文件访问过的网站。关闭后仅保留数据总量。受密码保护的配置文件和临时配置文件从不记录网站。"
     },

@@ -220,7 +220,7 @@
       "vpnExtensionWarningDescription": "Cảnh báo trước khi khởi chạy khi hồ sơ có tiện ích có thể định tuyến lại lưu lượng của trình duyệt.",
       "title": "Quyền riêng tư",
       "requireRoute": "Chặn khởi chạy khi không có proxy hoặc VPN",
-      "requireRouteDescription": "Hồ sơ không bao giờ khởi chạy từ địa chỉ IP của bạn: kể cả khi không có proxy hoặc VPN, hoặc khi proxy hay VPN của nó đã mất hoặc không phản hồi.",
+      "requireRouteDescription": "Khi bật tùy chọn này, hồ sơ không bao giờ khởi chạy từ địa chỉ IP của bạn: cả khi không có proxy hoặc VPN, lẫn khi proxy hoặc VPN biến mất hoặc không phản hồi. Proxy hoặc VPN đã cấu hình luôn được kiểm tra mỗi lần khởi chạy.",
       "recordSites": "Ghi lại trang đã truy cập",
       "recordSitesDescription": "Thống kê lưu lượng liệt kê các trang mà mỗi hồ sơ đã truy cập. Khi tắt, chỉ lưu tổng dung lượng dữ liệu. Hồ sơ có mật khẩu và hồ sơ tạm thời không bao giờ ghi lại trang."
     },

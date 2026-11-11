@@ -220,7 +220,7 @@
       "vpnExtensionWarningDescription": "Avertir avant le lancement lorsqu'un profil contient une extension capable de rerouter le trafic du navigateur.",
       "title": "Confidentialité",
       "requireRoute": "Bloquer les lancements sans proxy ni VPN",
-      "requireRouteDescription": "Un profil ne démarre jamais depuis votre propre adresse IP : ni sans proxy ou VPN, ni lorsque son proxy ou VPN a disparu ou ne répond pas.",
+      "requireRouteDescription": "Avec cette option, un profil ne démarre jamais depuis votre propre adresse IP : ni sans proxy ni VPN, ni lorsque son proxy ou VPN a disparu ou ne répond pas. Un proxy ou VPN configuré est vérifié à chaque lancement dans tous les cas.",
       "recordSites": "Enregistrer les sites visités",
       "recordSitesDescription": "Les statistiques de trafic listent les sites atteints par chaque profil. Désactivé, seuls les volumes de données sont conservés. Les profils protégés par mot de passe et éphémères n'enregistrent jamais de sites."
     },
