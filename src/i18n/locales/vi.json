@@ -1369,6 +1369,8 @@
       "placeholder": "Dán cookie vào đây. JSON (một mảng hoặc một đối tượng {cookies: [...]}), cookies.txt kiểu Netscape, hoặc name=value; name2=value2",
       "chooseFile": "hoặc chọn một tệp",
       "dropHint": "Thả tệp vào đây để tải cookie",
+      "dropZone": "Kéo tệp cookie vào đây hoặc dán bên dưới",
+      "attachFile": "Đính kèm tệp",
       "analyzing": "Đang kiểm tra…",
       "formatJson": "JSON",
       "formatNetscape": "Netscape",

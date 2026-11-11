@@ -1380,6 +1380,8 @@
       "placeholder": "Collez les cookies ici. JSON (un tableau ou un objet {cookies: [...]}), un cookies.txt Netscape, ou nom=valeur; nom2=valeur2",
       "chooseFile": "ou choisissez un fichier",
       "dropHint": "Déposez le fichier ici pour charger les cookies",
+      "dropZone": "Glissez un fichier de cookies ici ou collez-le ci-dessous",
+      "attachFile": "Joindre un fichier",
       "analyzing": "Vérification…",
       "formatJson": "JSON",
       "formatNetscape": "Netscape",

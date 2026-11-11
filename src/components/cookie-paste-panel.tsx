@@ -3,9 +3,10 @@
 import type { TFunction } from "i18next";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LuTriangleAlert } from "react-icons/lu";
+import { LuPaperclip, LuTriangleAlert, LuUpload } from "react-icons/lu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -231,28 +232,44 @@ export function CookiePastePanel({
       )}
       <div className="space-y-2">
         <Label htmlFor="cookie-paste-input">{t("cookies.paste.label")}</Label>
-        <Textarea
-          id="cookie-paste-input"
-          rows={10}
-          spellCheck={false}
-          disabled={disabled}
-          value={content}
-          placeholder={t("cookies.paste.placeholder")}
-          className="resize-y font-mono text-xs"
-          onChange={(event) => {
-            setFileError(null);
-            onContentChange(event.target.value);
-          }}
-        />
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <button
-            type="button"
+        <div
+          className={cn(
+            "rounded-xl border border-dashed border-foreground/20 bg-foreground/[0.02] p-3 transition-colors",
+            isDraggingFile && "border-primary/60 bg-primary/5",
+          )}
+        >
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+            <span className="flex items-center gap-2 text-xs text-muted-foreground">
+              <LuUpload aria-hidden="true" className="size-4 shrink-0" />
+              {t("cookies.paste.dropZone")}
+            </span>
+            <Button
+              type="button"
+              variant="soft"
+              size="sm"
+              className="h-7 gap-1.5"
+              disabled={disabled}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <LuPaperclip aria-hidden="true" className="size-3.5" />
+              {t("cookies.paste.attachFile")}
+            </Button>
+          </div>
+          <Textarea
+            id="cookie-paste-input"
+            rows={9}
+            spellCheck={false}
             disabled={disabled}
-            className="text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            {t("cookies.paste.chooseFile")}
-          </button>
+            value={content}
+            placeholder={t("cookies.paste.placeholder")}
+            className="resize-y border-0 bg-transparent font-mono text-xs shadow-none focus-visible:ring-0"
+            onChange={(event) => {
+              setFileError(null);
+              onContentChange(event.target.value);
+            }}
+          />
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-2">
           {isAnalyzing ? (
             <span className="text-xs text-muted-foreground">
               {t("cookies.paste.analyzing")}

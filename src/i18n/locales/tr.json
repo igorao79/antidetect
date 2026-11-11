@@ -1369,6 +1369,8 @@
       "placeholder": "Çerezleri buraya yapıştırın. JSON (bir dizi veya {cookies: [...]} nesnesi), Netscape cookies.txt ya da ad=değer; ad2=değer2",
       "chooseFile": "veya bir dosya seçin",
       "dropHint": "Çerezleri yüklemek için dosyayı buraya bırakın",
+      "dropZone": "Çerez dosyasını buraya sürükleyin veya aşağıya yapıştırın",
+      "attachFile": "Dosya ekle",
       "analyzing": "Denetleniyor…",
       "formatJson": "JSON",
       "formatNetscape": "Netscape",

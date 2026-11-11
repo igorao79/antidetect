@@ -1369,6 +1369,8 @@
       "placeholder": "ここに Cookie を貼り付けてください。JSON（配列または {cookies: [...]} オブジェクト）、Netscape 形式の cookies.txt、または name=value; name2=value2",
       "chooseFile": "またはファイルを選択",
       "dropHint": "ここにファイルをドロップして Cookie を読み込みます",
+      "dropZone": "Cookie ファイルをここにドラッグするか、下に貼り付けてください",
+      "attachFile": "ファイルを添付",
       "analyzing": "確認中…",
       "formatJson": "JSON",
       "formatNetscape": "Netscape",
