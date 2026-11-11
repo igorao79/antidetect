@@ -1367,6 +1367,7 @@
       "label": "Cookie",
       "placeholder": "在此粘贴 Cookie。JSON（数组或 {cookies: [...]} 对象）、Netscape cookies.txt，或 name=value; name2=value2",
       "chooseFile": "或选择文件",
+      "dropHint": "将文件拖放到此处以加载 Cookie",
       "analyzing": "检查中…",
       "formatJson": "JSON",
       "formatNetscape": "Netscape",

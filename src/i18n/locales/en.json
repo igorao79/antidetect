@@ -1367,6 +1367,7 @@
       "label": "Cookies",
       "placeholder": "Paste cookies here. JSON (an array or a {cookies: [...]} object), a Netscape cookies.txt, or name=value; name2=value2",
       "chooseFile": "or choose a file",
+      "dropHint": "Drop the file here to load its cookies",
       "analyzing": "Checking…",
       "formatJson": "JSON",
       "formatNetscape": "Netscape",

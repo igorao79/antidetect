@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { playUiSound } from "@/lib/ui-sounds";
+import { cn } from "@/lib/utils";
 import type {
   CookieAnalysis,
   CookieIssue,
@@ -117,6 +118,8 @@ export function CookiePastePanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAllIssues, setShowAllIssues] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [isDraggingFile, setIsDraggingFile] = useState(false);
+  const dragDepth = useRef(0);
 
   const relativeFormatter = useMemo(
     () => new Intl.RelativeTimeFormat(i18n.language, { numeric: "auto" }),
@@ -138,16 +141,39 @@ export function CookiePastePanel({
     [onContentChange, t],
   );
 
-  const handleDrop = useCallback(
-    (event: React.DragEvent<HTMLTextAreaElement>) => {
-      const file = event.dataTransfer.files[0];
-      if (!file) return;
-      event.preventDefault();
-      playUiSound("drop");
-      readFile(file);
-    },
-    [readFile],
-  );
+  const hasFiles = (event: React.DragEvent) =>
+    Array.from(event.dataTransfer.types).includes("Files");
+
+  const handleDragEnter = (event: React.DragEvent<HTMLDivElement>) => {
+    if (disabled || !hasFiles(event)) return;
+    event.preventDefault();
+    dragDepth.current += 1;
+    setIsDraggingFile(true);
+  };
+
+  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
+    if (disabled || !hasFiles(event)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = "copy";
+  };
+
+  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
+    if (!isDraggingFile) return;
+    event.preventDefault();
+    dragDepth.current = Math.max(0, dragDepth.current - 1);
+    if (dragDepth.current === 0) setIsDraggingFile(false);
+  };
+
+  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
+    if (!hasFiles(event)) return;
+    event.preventDefault();
+    dragDepth.current = 0;
+    setIsDraggingFile(false);
+    const file = event.dataTransfer.files[0];
+    if (!file) return;
+    playUiSound("drop");
+    readFile(file);
+  };
 
   // A JSON or Netscape entry with no domain of its own needs the site as much
   // as a bare pair does: without the field, "carries no domain and no site was
@@ -185,7 +211,24 @@ export function CookiePastePanel({
   );
 
   return (
-    <div className="space-y-4">
+    <div
+      role="region"
+      aria-label={t("cookies.paste.label")}
+      className={cn(
+        "relative space-y-4 rounded-xl transition-shadow",
+        isDraggingFile &&
+          "bg-primary/5 ring-2 ring-primary/50 ring-offset-2 ring-offset-background",
+      )}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {isDraggingFile && (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center rounded-xl bg-background/80">
+          <p className="text-sm font-medium">{t("cookies.paste.dropHint")}</p>
+        </div>
+      )}
       <div className="space-y-2">
         <Label htmlFor="cookie-paste-input">{t("cookies.paste.label")}</Label>
         <Textarea
@@ -199,12 +242,6 @@ export function CookiePastePanel({
           onChange={(event) => {
             setFileError(null);
             onContentChange(event.target.value);
-          }}
-          onDrop={handleDrop}
-          onDragOver={(event) => {
-            if (event.dataTransfer.types.includes("Files")) {
-              event.preventDefault();
-            }
           }}
         />
         <div className="flex flex-wrap items-center justify-between gap-2">

@@ -1389,6 +1389,7 @@
       "label": "Cookie",
       "placeholder": "Вставьте cookie сюда. JSON (массив или объект {cookies: [...]}), cookies.txt в формате Netscape или name=value; name2=value2",
       "chooseFile": "или выберите файл",
+      "dropHint": "Отпустите файл здесь, чтобы загрузить cookies",
       "analyzing": "Проверка…",
       "formatJson": "JSON",
       "formatNetscape": "Netscape",

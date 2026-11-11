@@ -1158,7 +1158,7 @@ const TagsCell = React.memo<{
           type="button"
           ref={containerRef as unknown as React.RefObject<HTMLButtonElement>}
           className={cn(
-            "group/cell flex h-6 w-full cursor-pointer items-center gap-1 overflow-hidden rounded-md border-none bg-transparent px-2 py-1 transition-colors duration-100",
+            "group/cell flex h-6 w-full cursor-pointer select-none items-center gap-1 overflow-hidden rounded-md border-none bg-transparent px-2 py-1 transition-colors duration-100",
             FOCUS_RING,
             isDisabled
               ? "cursor-not-allowed opacity-60"
@@ -1172,7 +1172,12 @@ const TagsCell = React.memo<{
             text={translate("profileTable.aria.tags", { name: profile.name })}
           />
           {effectiveTags.slice(0, visibleCount).map((t) => (
-            <Badge key={t} variant="soft" className="px-2 py-0 text-xs">
+            <Badge
+              key={t}
+              variant="soft"
+              title={t}
+              className="max-w-40 select-none truncate bg-foreground/12 px-2 py-0 text-xs font-medium"
+            >
               {t}
             </Badge>
           ))}
@@ -1187,7 +1192,7 @@ const TagsCell = React.memo<{
           {hiddenCount > 0 && (
             <Badge
               variant="soft"
-              className="px-1.5 py-0 text-xs text-muted-foreground"
+              className="select-none bg-foreground/12 px-1.5 py-0 text-xs font-medium text-muted-foreground"
             >
               +{hiddenCount}
             </Badge>
@@ -1203,7 +1208,11 @@ const TagsCell = React.memo<{
               <TooltipContent className="max-w-[320px]">
                 <div className="flex flex-wrap gap-1">
                   {effectiveTags.map((t) => (
-                    <Badge key={t} variant="soft" className="px-2 py-0 text-xs">
+                    <Badge
+                      key={t}
+                      variant="soft"
+                      className="select-none bg-foreground/12 px-2 py-0 text-xs font-medium"
+                    >
                       {t}
                     </Badge>
                   ))}

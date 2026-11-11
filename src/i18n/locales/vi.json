@@ -1367,6 +1367,7 @@
       "label": "Cookie",
       "placeholder": "Dán cookie vào đây. JSON (một mảng hoặc một đối tượng {cookies: [...]}), cookies.txt kiểu Netscape, hoặc name=value; name2=value2",
       "chooseFile": "hoặc chọn một tệp",
+      "dropHint": "Thả tệp vào đây để tải cookie",
       "analyzing": "Đang kiểm tra…",
       "formatJson": "JSON",
       "formatNetscape": "Netscape",

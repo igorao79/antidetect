@@ -1367,6 +1367,7 @@
       "label": "Cookie",
       "placeholder": "ここに Cookie を貼り付けてください。JSON（配列または {cookies: [...]} オブジェクト）、Netscape 形式の cookies.txt、または name=value; name2=value2",
       "chooseFile": "またはファイルを選択",
+      "dropHint": "ここにファイルをドロップして Cookie を読み込みます",
       "analyzing": "確認中…",
       "formatJson": "JSON",
       "formatNetscape": "Netscape",

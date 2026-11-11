@@ -1367,6 +1367,7 @@
       "label": "쿠키",
       "placeholder": "여기에 쿠키를 붙여넣으세요. JSON(배열 또는 {cookies: [...]} 객체), Netscape cookies.txt, 또는 name=value; name2=value2",
       "chooseFile": "또는 파일 선택",
+      "dropHint": "여기에 파일을 놓아 쿠키를 불러오세요",
       "analyzing": "확인 중…",
       "formatJson": "JSON",
       "formatNetscape": "Netscape",
