@@ -3162,6 +3162,18 @@ pub fn run_with_builder(
         });
       }
 
+      // Per-profile Camoufox apps of deleted profiles or removed builds pin
+      // the old build's disk blocks; the sweep needs the running profiles,
+      // so it waits for the startup scan like the temporary-profile sweep.
+      tauri::async_runtime::spawn(async move {
+        STARTUP_SCAN_DONE.wait().await;
+        if let Err(e) =
+          tauri::async_runtime::spawn_blocking(camoufox::profile_app::sweep_profile_apps).await
+        {
+          log::warn!("Per-profile app sweep task failed err=\"{e}\"");
+        }
+      });
+
       if !e2e_automation_enabled() {
         // Start periodic cleanup task for unused binaries.
         tauri::async_runtime::spawn(async move {

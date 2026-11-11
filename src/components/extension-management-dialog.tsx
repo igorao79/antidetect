@@ -10,7 +10,7 @@ import {
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open } from "@tauri-apps/plugin-dialog";
-import { AnimatePresence, motion } from "motion/react";
+import { motion } from "motion/react";
 import {
   type ReactNode,
   useCallback,
@@ -116,8 +116,10 @@ function pathBaseName(path: string): string {
 }
 
 /**
- * A form that opens above the list; it slides in and out with its content.
- * It is readable from the first frame: it enters half visible, never hidden.
+ * A form that opens above the list; it slides in with its content and leaves
+ * at once. It is readable from the first frame: it enters half visible.
+ * No exit animation: an exiting copy keeps its last render, so a form closed
+ * on success stayed on screen with its busy labels whenever the exit stalled.
  */
 function StagePanel({ slot, children }: { slot: string; children: ReactNode }) {
   const animate = useMotionAllowed();
@@ -128,11 +130,6 @@ function StagePanel({ slot, children }: { slot: string; children: ReactNode }) {
         animate ? { opacity: 0.5, transform: "translateY(-4px)" } : false
       }
       animate={{ opacity: 1, transform: "translateY(0px)" }}
-      exit={{
-        opacity: 0,
-        transform: animate ? "translateY(-4px)" : "translateY(0px)",
-        transition: { duration: animate ? MOTION_DURATION.fast : 0 },
-      }}
       transition={{ duration: MOTION_DURATION.base, ease: MOTION_EASE_OUT }}
       className="shrink-0 space-y-3 rounded-xl bg-foreground/3 p-3"
     >
@@ -1488,175 +1485,172 @@ export function ExtensionManagementDialog({
                 className="mt-4 min-h-0 flex-1 flex-col data-[state=active]:flex"
               >
                 <div className="flex min-h-0 flex-1 flex-col gap-4">
-                  <AnimatePresence initial={false}>
-                    {showUrlForm && (
-                      <StagePanel key="link" slot="extension-link-form">
-                        <div className="flex flex-wrap gap-2">
-                          <div className="relative min-w-48 flex-1">
-                            <LuGlobe
-                              aria-hidden="true"
-                              className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground"
-                            />
-                            <Input
-                              id="ext-url-input"
-                              variant="soft"
-                              autoFocus
-                              value={urlInput}
-                              onChange={(e) => {
-                                setUrlInput(e.target.value);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter")
-                                  void handleFetchFromUrl();
-                                if (e.key === "Escape") {
-                                  e.stopPropagation();
-                                  setShowUrlForm(false);
-                                  setUrlInput("");
-                                }
-                              }}
-                              placeholder={t("extensions.urlPlaceholder")}
-                              aria-describedby="ext-url-hint"
-                              className="pl-8"
-                              disabled={isFetchingUrl}
-                            />
-                          </div>
-                          <RippleButton
-                            size="sm"
-                            onClick={() => void handleFetchFromUrl()}
-                            disabled={
-                              isFetchingUrl || urlInput.trim().length === 0
-                            }
-                          >
-                            {isFetchingUrl
-                              ? t("extensions.fetching")
-                              : t("extensions.fetchExtension")}
-                          </RippleButton>
-                          <Button
-                            size="sm"
-                            variant="subtle"
-                            onClick={() => {
-                              setShowUrlForm(false);
-                              setUrlInput("");
-                            }}
-                          >
-                            {t("common.buttons.cancel")}
-                          </Button>
-                        </div>
-                        <p
-                          id="ext-url-hint"
-                          className="text-xs text-muted-foreground"
-                        >
-                          {t("extensions.urlHint")}
-                        </p>
-                      </StagePanel>
-                    )}
-
-                    {pendingSource && (
-                      <StagePanel key="staged" slot="extension-staged">
-                        <div className="flex items-start gap-3">
-                          <span
+                  {showUrlForm && (
+                    <StagePanel key="link" slot="extension-link-form">
+                      <div className="flex flex-wrap gap-2">
+                        <div className="relative min-w-48 flex-1">
+                          <LuGlobe
                             aria-hidden="true"
-                            className="grid size-9 shrink-0 place-items-center rounded-lg bg-foreground/6 text-muted-foreground [&_svg]:size-4"
-                          >
-                            {pendingSource.kind === "folder" ? (
-                              <LuFolder />
-                            ) : (
-                              <LuArchive />
-                            )}
-                          </span>
-                          <div className="min-w-0 flex-1 space-y-0.5">
-                            <p className="text-xs text-muted-foreground">
-                              {pendingSource.kind === "folder"
-                                ? t("extensions.selectedFolder")
-                                : t("extensions.selectedFile")}
-                            </p>
-                            <p className="text-sm font-medium break-all">
-                              {pendingSource.kind === "folder"
-                                ? pendingSource.path
-                                : pendingSource.fileName}
-                            </p>
-                          </div>
-                        </div>
-                        {fetchedIdentity && (
-                          <div className="space-y-0.5">
-                            <div
-                              data-slot="extension-fetched-identity"
-                              className="text-sm font-medium break-all text-foreground"
-                            >
-                              {fetchedIdentity.version
-                                ? t("extensions.fetchedIdentity", {
-                                    name: fetchedIdentity.name,
-                                    version: fetchedIdentity.version,
-                                  })
-                                : fetchedIdentity.name}
-                            </div>
-                            <p className="text-xs break-all text-muted-foreground">
-                              {t("extensions.fetchedFrom", {
-                                source: fetchedIdentity.source,
-                              })}
-                            </p>
-                          </div>
-                        )}
-                        {pendingSource.kind === "folder" && (
-                          <div className="flex items-start gap-2">
-                            <Checkbox
-                              id="ext-link-folder"
-                              checked={linkFolder}
-                              onCheckedChange={(value) => {
-                                setLinkFolder(value === true);
-                              }}
-                              className="mt-0.5"
-                            />
-                            <div className="space-y-0.5">
-                              <Label
-                                htmlFor="ext-link-folder"
-                                className="text-sm font-normal"
-                              >
-                                {t("extensions.linkFolder")}
-                              </Label>
-                              <p className="text-xs text-muted-foreground">
-                                {linkFolder
-                                  ? t("extensions.linkFolderOn")
-                                  : t("extensions.linkFolderOff")}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                        <div className="flex flex-wrap gap-2">
+                            className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground"
+                          />
                           <Input
+                            id="ext-url-input"
                             variant="soft"
-                            value={extensionName}
+                            autoFocus
+                            value={urlInput}
                             onChange={(e) => {
-                              setExtensionName(e.target.value);
+                              setUrlInput(e.target.value);
                             }}
                             onKeyDown={(e) => {
-                              if (e.key === "Enter") void handleUpload();
+                              if (e.key === "Enter") void handleFetchFromUrl();
+                              if (e.key === "Escape") {
+                                e.stopPropagation();
+                                setShowUrlForm(false);
+                                setUrlInput("");
+                              }
                             }}
-                            placeholder={t("extensions.namePlaceholder")}
-                            aria-label={t("common.labels.name")}
-                            className="min-w-48 flex-1"
-                            disabled={isUploading}
+                            placeholder={t("extensions.urlPlaceholder")}
+                            aria-describedby="ext-url-hint"
+                            className="pl-8"
+                            disabled={isFetchingUrl}
                           />
-                          <RippleButton
-                            size="sm"
-                            onClick={() => void handleUpload()}
-                            disabled={isUploading || !extensionName.trim()}
-                          >
-                            {isUploading
-                              ? t("common.buttons.loading")
-                              : t("common.buttons.add")}
-                          </RippleButton>
-                          <Button
-                            size="sm"
-                            variant="subtle"
-                            onClick={resetImportForm}
-                          >
-                            {t("common.buttons.cancel")}
-                          </Button>
                         </div>
-                      </StagePanel>
-                    )}
-                  </AnimatePresence>
+                        <RippleButton
+                          size="sm"
+                          onClick={() => void handleFetchFromUrl()}
+                          disabled={
+                            isFetchingUrl || urlInput.trim().length === 0
+                          }
+                        >
+                          {isFetchingUrl
+                            ? t("extensions.fetching")
+                            : t("extensions.fetchExtension")}
+                        </RippleButton>
+                        <Button
+                          size="sm"
+                          variant="subtle"
+                          onClick={() => {
+                            setShowUrlForm(false);
+                            setUrlInput("");
+                          }}
+                        >
+                          {t("common.buttons.cancel")}
+                        </Button>
+                      </div>
+                      <p
+                        id="ext-url-hint"
+                        className="text-xs text-muted-foreground"
+                      >
+                        {t("extensions.urlHint")}
+                      </p>
+                    </StagePanel>
+                  )}
+
+                  {pendingSource && (
+                    <StagePanel key="staged" slot="extension-staged">
+                      <div className="flex items-start gap-3">
+                        <span
+                          aria-hidden="true"
+                          className="grid size-9 shrink-0 place-items-center rounded-lg bg-foreground/6 text-muted-foreground [&_svg]:size-4"
+                        >
+                          {pendingSource.kind === "folder" ? (
+                            <LuFolder />
+                          ) : (
+                            <LuArchive />
+                          )}
+                        </span>
+                        <div className="min-w-0 flex-1 space-y-0.5">
+                          <p className="text-xs text-muted-foreground">
+                            {pendingSource.kind === "folder"
+                              ? t("extensions.selectedFolder")
+                              : t("extensions.selectedFile")}
+                          </p>
+                          <p className="text-sm font-medium break-all">
+                            {pendingSource.kind === "folder"
+                              ? pendingSource.path
+                              : pendingSource.fileName}
+                          </p>
+                        </div>
+                      </div>
+                      {fetchedIdentity && (
+                        <div className="space-y-0.5">
+                          <div
+                            data-slot="extension-fetched-identity"
+                            className="text-sm font-medium break-all text-foreground"
+                          >
+                            {fetchedIdentity.version
+                              ? t("extensions.fetchedIdentity", {
+                                  name: fetchedIdentity.name,
+                                  version: fetchedIdentity.version,
+                                })
+                              : fetchedIdentity.name}
+                          </div>
+                          <p className="text-xs break-all text-muted-foreground">
+                            {t("extensions.fetchedFrom", {
+                              source: fetchedIdentity.source,
+                            })}
+                          </p>
+                        </div>
+                      )}
+                      {pendingSource.kind === "folder" && (
+                        <div className="flex items-start gap-2">
+                          <Checkbox
+                            id="ext-link-folder"
+                            checked={linkFolder}
+                            onCheckedChange={(value) => {
+                              setLinkFolder(value === true);
+                            }}
+                            className="mt-0.5"
+                          />
+                          <div className="space-y-0.5">
+                            <Label
+                              htmlFor="ext-link-folder"
+                              className="text-sm font-normal"
+                            >
+                              {t("extensions.linkFolder")}
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                              {linkFolder
+                                ? t("extensions.linkFolderOn")
+                                : t("extensions.linkFolderOff")}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        <Input
+                          variant="soft"
+                          value={extensionName}
+                          onChange={(e) => {
+                            setExtensionName(e.target.value);
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") void handleUpload();
+                          }}
+                          placeholder={t("extensions.namePlaceholder")}
+                          aria-label={t("common.labels.name")}
+                          className="min-w-48 flex-1"
+                          disabled={isUploading}
+                        />
+                        <RippleButton
+                          size="sm"
+                          onClick={() => void handleUpload()}
+                          disabled={isUploading || !extensionName.trim()}
+                        >
+                          {isUploading
+                            ? t("common.buttons.loading")
+                            : t("common.buttons.add")}
+                        </RippleButton>
+                        <Button
+                          size="sm"
+                          variant="subtle"
+                          onClick={resetImportForm}
+                        >
+                          {t("common.buttons.cancel")}
+                        </Button>
+                      </div>
+                    </StagePanel>
+                  )}
 
                   <ManagedDataTable
                     table={extTable}
@@ -1705,51 +1699,49 @@ export function ExtensionManagementDialog({
                 className="mt-4 min-h-0 flex-1 flex-col data-[state=active]:flex"
               >
                 <div className="flex min-h-0 flex-1 flex-col gap-4">
-                  <AnimatePresence initial={false}>
-                    {showCreateGroup && (
-                      <StagePanel key="create" slot="extension-group-create">
-                        <div className="flex flex-wrap gap-2">
-                          <Input
-                            variant="soft"
-                            autoFocus
-                            value={newGroupName}
-                            onChange={(e) => {
-                              setNewGroupName(e.target.value);
-                            }}
-                            placeholder={t("extensions.groupNamePlaceholder")}
-                            aria-label={t("common.labels.name")}
-                            className="min-w-48 flex-1"
-                            disabled={isCreatingGroup}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") void handleCreateGroup();
-                              if (e.key === "Escape") {
-                                e.stopPropagation();
-                                setShowCreateGroup(false);
-                                setNewGroupName("");
-                              }
-                            }}
-                          />
-                          <RippleButton
-                            size="sm"
-                            onClick={() => void handleCreateGroup()}
-                            disabled={isCreatingGroup || !newGroupName.trim()}
-                          >
-                            {t("common.buttons.create")}
-                          </RippleButton>
-                          <Button
-                            size="sm"
-                            variant="subtle"
-                            onClick={() => {
+                  {showCreateGroup && (
+                    <StagePanel key="create" slot="extension-group-create">
+                      <div className="flex flex-wrap gap-2">
+                        <Input
+                          variant="soft"
+                          autoFocus
+                          value={newGroupName}
+                          onChange={(e) => {
+                            setNewGroupName(e.target.value);
+                          }}
+                          placeholder={t("extensions.groupNamePlaceholder")}
+                          aria-label={t("common.labels.name")}
+                          className="min-w-48 flex-1"
+                          disabled={isCreatingGroup}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") void handleCreateGroup();
+                            if (e.key === "Escape") {
+                              e.stopPropagation();
                               setShowCreateGroup(false);
                               setNewGroupName("");
-                            }}
-                          >
-                            {t("common.buttons.cancel")}
-                          </Button>
-                        </div>
-                      </StagePanel>
-                    )}
-                  </AnimatePresence>
+                            }
+                          }}
+                        />
+                        <RippleButton
+                          size="sm"
+                          onClick={() => void handleCreateGroup()}
+                          disabled={isCreatingGroup || !newGroupName.trim()}
+                        >
+                          {t("common.buttons.create")}
+                        </RippleButton>
+                        <Button
+                          size="sm"
+                          variant="subtle"
+                          onClick={() => {
+                            setShowCreateGroup(false);
+                            setNewGroupName("");
+                          }}
+                        >
+                          {t("common.buttons.cancel")}
+                        </Button>
+                      </div>
+                    </StagePanel>
+                  )}
 
                   <ManagedDataTable
                     table={groupTable}

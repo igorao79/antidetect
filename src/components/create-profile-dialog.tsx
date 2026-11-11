@@ -5,7 +5,14 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { motion } from "motion/react";
 import type * as React from "react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
 import { FaChrome, FaFirefox } from "react-icons/fa";
 import {
@@ -91,6 +98,7 @@ import { useVpnEvents } from "@/hooks/use-vpn-events";
 import { translateBackendError } from "@/lib/backend-errors";
 import { getOSDisplayName, getOSIcon } from "@/lib/browser-utils";
 import { DNS_BLOCKLIST_LEVELS } from "@/lib/dns-blocklist-levels";
+import { extensionGroupFitsEngine } from "@/lib/extension-compat";
 import { MOTION_DURATION, MOTION_EASE_OUT, MOTION_SPRING } from "@/lib/motion";
 import { startPagesFromText } from "@/lib/start-pages";
 import { notifySystem } from "@/lib/system-notify";
@@ -101,6 +109,8 @@ import type {
   BulkCreateResult,
   CamoufoxConfig,
   CamoufoxOS,
+  Extension,
+  ExtensionGroup,
   ProfileTemplate,
   StoredProxy,
   TemplateSettings,
@@ -323,9 +333,25 @@ export function CreateProfileDialog({
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [selectedExtensionGroupId, setSelectedExtensionGroupId] =
     useState<string>();
-  const [extensionGroups, setExtensionGroups] = useState<
-    { id: string; name: string; extension_ids: string[] }[]
-  >([]);
+  const [extensionGroups, setExtensionGroups] = useState<ExtensionGroup[]>([]);
+  const [extensions, setExtensions] = useState<Extension[]>([]);
+
+  // A group with an extension the engine cannot load stays listed but cannot
+  // be picked, and a picked one is dropped when the engine changes (fork).
+  const extensionGroupFits = useMemo(() => {
+    const byId = new Map(extensions.map((ext) => [ext.id, ext]));
+    return new Map(
+      extensionGroups.map((group) => [
+        group.id,
+        extensionGroupFitsEngine(group, byId, engine),
+      ]),
+    );
+  }, [extensions, extensionGroups, engine]);
+  const effectiveExtensionGroupId =
+    selectedExtensionGroupId && extensionGroupFits.get(selectedExtensionGroupId)
+      ? selectedExtensionGroupId
+      : undefined;
+
   const [releaseTypes, setReleaseTypes] = useState<BrowserReleaseTypes>({});
   const [isLoadingReleaseTypes, setIsLoadingReleaseTypes] = useState(false);
   const [releaseTypesError, setReleaseTypesError] = useState(false);
@@ -383,11 +409,12 @@ export function CreateProfileDialog({
   useEffect(() => {
     if (!isOpen) return;
     void loadReleaseTypes();
-    void invoke<{ id: string; name: string; extension_ids: string[] }[]>(
-      "list_extension_groups",
-    )
+    void invoke<ExtensionGroup[]>("list_extension_groups")
       .then(setExtensionGroups)
       .catch(() => setExtensionGroups([]));
+    void invoke<Extension[]>("list_extensions")
+      .then(setExtensions)
+      .catch(() => setExtensions([]));
     void invoke<boolean>("is_geoip_database_available")
       .then(async (available) => {
         if (!available) await invoke("download_geoip_database");
@@ -512,7 +539,7 @@ export function CreateProfileDialog({
       // doing so while its first proxy is still the one chosen.
       proxy_ids: proxyId && spread[0] === proxyId ? spread : [],
       group_id: groupIdForCreate,
-      extension_group_id: selectedExtensionGroupId ?? null,
+      extension_group_id: effectiveExtensionGroupId ?? null,
       dns_blocklist: dnsBlocklist || null,
       dns_server: dnsServer.trim() || null,
       start_urls: startPagesFromText(startPages),
@@ -704,7 +731,7 @@ export function CreateProfileDialog({
         camoufoxConfig: engine === "camoufox" ? camoufoxConfig : undefined,
         wayfernConfig: engine === "wayfern" ? wayfernConfig : undefined,
         groupId: groupIdForCreate,
-        extensionGroupId: selectedExtensionGroupId,
+        extensionGroupId: effectiveExtensionGroupId,
         ephemeral,
         dnsBlocklist: dnsBlocklist || undefined,
         dnsServer: dnsServer.trim() || undefined,
@@ -1549,7 +1576,7 @@ export function CreateProfileDialog({
                           {t("extensions.extensionGroup")}
                         </Label>
                         <Select
-                          value={selectedExtensionGroupId ?? "none"}
+                          value={effectiveExtensionGroupId ?? "none"}
                           onValueChange={(value) =>
                             setSelectedExtensionGroupId(
                               value === "none" ? undefined : value,
@@ -1568,11 +1595,26 @@ export function CreateProfileDialog({
                             <SelectItem value="none">
                               {t("profileInfo.values.none")}
                             </SelectItem>
-                            {extensionGroups.map((group) => (
-                              <SelectItem key={group.id} value={group.id}>
-                                {group.name} ({group.extension_ids.length})
-                              </SelectItem>
-                            ))}
+                            {extensionGroups.map((group) => {
+                              const fits = extensionGroupFits.get(group.id);
+                              return (
+                                <SelectItem
+                                  key={group.id}
+                                  value={group.id}
+                                  disabled={!fits}
+                                >
+                                  {group.name} ({group.extension_ids.length})
+                                  {!fits && (
+                                    <span className="ml-2 text-muted-foreground">
+                                      {t(
+                                        "createProfile.extensionGroupWrongEngine",
+                                        { engine: ENGINE_LABELS[engine] },
+                                      )}
+                                    </span>
+                                  )}
+                                </SelectItem>
+                              );
+                            })}
                           </SelectContent>
                         </Select>
                       </div>

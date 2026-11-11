@@ -666,7 +666,8 @@
     },
     "group": {
       "notFound": "그룹을 찾을 수 없습니다."
-    }
+    },
+    "extensionGroupWrongEngine": "{{engine}}용 아님"
   },
   "deleteDialog": {
     "title": "프로필 삭제",
@@ -2548,7 +2549,8 @@
     "emptyGroupMove": "프로필을 여기로 이동",
     "health": {
       "degraded": "연결이 느리거나 불안정합니다",
-      "down": "연결이 끊겼습니다"
+      "down": "연결이 끊겼습니다",
+      "downToast": "{{name}}의 프록시가 응답하지 않습니다. 프로필 트래픽이 멈췄습니다"
     },
     "route": "프록시 / VPN: {{name}}",
     "routeNone": "프록시 또는 VPN 없음",
@@ -4974,7 +4976,7 @@
       },
       "extensions": {
         "title": "아직 확장 프로그램이 없습니다",
-        "body": "파일, 폴더 또는 웹 스토어 링크로 확장 프로그램을 추가하세요. 프로필에서 쓰려면 확장 프로그램 그룹에 넣으세요."
+        "body": "파일, 폴더 또는 Chrome 웹 스토어나 Firefox Add-ons 링크로 확장 프로그램을 추가하세요. 프로필에서 쓰려면 확장 프로그램 그룹에 넣으세요."
       },
       "extensionGroups": {
         "title": "아직 확장 프로그램 그룹이 없습니다",

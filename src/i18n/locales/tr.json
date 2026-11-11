@@ -666,7 +666,8 @@
     },
     "group": {
       "notFound": "Grup bulunamadı."
-    }
+    },
+    "extensionGroupWrongEngine": "{{engine}} için değil"
   },
   "deleteDialog": {
     "title": "Profili Sil",
@@ -2548,7 +2549,8 @@
     "emptyGroupMove": "Profilleri buraya taşı",
     "health": {
       "degraded": "Bağlantı yavaş veya kararsız",
-      "down": "Bağlantı kesik"
+      "down": "Bağlantı kesik",
+      "downToast": "{{name}} profilinin proxy'si yanıt vermiyor: profilin trafiği durdu"
     },
     "route": "Proxy / VPN: {{name}}",
     "routeNone": "Proxy veya VPN yok",
@@ -4974,7 +4976,7 @@
       },
       "extensions": {
         "title": "Henüz uzantı yok",
-        "body": "Bir dosyadan, klasörden veya Web Store bağlantısından uzantı ekleyin. Profillerde kullanmak için bir uzantı grubuna koyun."
+        "body": "Bir dosyadan, klasörden ya da Chrome Web Store veya Firefox Add-ons bağlantısından uzantı ekleyin. Profillerde kullanmak için bir uzantı grubuna koyun."
       },
       "extensionGroups": {
         "title": "Henüz uzantı grubu yok",

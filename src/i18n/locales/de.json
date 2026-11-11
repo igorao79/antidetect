@@ -666,7 +666,8 @@
     },
     "group": {
       "notFound": "Keine Gruppen gefunden."
-    }
+    },
+    "extensionGroupWrongEngine": "nicht für {{engine}}"
   },
   "deleteDialog": {
     "title": "Profil löschen",
@@ -2548,7 +2549,8 @@
     "emptyGroupMove": "Profile hierher verschieben",
     "health": {
       "degraded": "Verbindung ist langsam oder instabil",
-      "down": "Verbindung ist unterbrochen"
+      "down": "Verbindung ist unterbrochen",
+      "downToast": "Der Proxy von {{name}} antwortet nicht: Der Datenverkehr des Profils steht"
     },
     "route": "Proxy / VPN: {{name}}",
     "routeNone": "Kein Proxy und kein VPN",
@@ -4974,7 +4976,7 @@
       },
       "extensions": {
         "title": "Noch keine Erweiterungen",
-        "body": "Fügen Sie eine Erweiterung aus einer Datei, einem Ordner oder einem Web-Store-Link hinzu. Legen Sie sie in eine Erweiterungsgruppe, um sie in Profilen zu nutzen."
+        "body": "Fügen Sie eine Erweiterung aus einer Datei, einem Ordner oder über einen Link aus dem Chrome Web Store oder von Firefox Add-ons hinzu. Legen Sie sie in eine Erweiterungsgruppe, um sie in Profilen zu nutzen."
       },
       "extensionGroups": {
         "title": "Noch keine Erweiterungsgruppen",

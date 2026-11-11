@@ -666,7 +666,8 @@
     },
     "group": {
       "notFound": "未找到分组。"
-    }
+    },
+    "extensionGroupWrongEngine": "不适用于 {{engine}}"
   },
   "deleteDialog": {
     "title": "删除配置文件",
@@ -2548,7 +2549,8 @@
     "emptyGroupMove": "将配置文件移到这里",
     "health": {
       "degraded": "连接缓慢或不稳定",
-      "down": "连接已中断"
+      "down": "连接已中断",
+      "downToast": "{{name}} 的代理没有响应：该配置文件的流量已停止"
     },
     "route": "代理 / VPN：{{name}}",
     "routeNone": "无代理或 VPN",
@@ -4974,7 +4976,7 @@
       },
       "extensions": {
         "title": "还没有扩展",
-        "body": "从文件、文件夹或 Web Store 链接添加扩展。将其放入扩展分组即可在配置文件中使用。"
+        "body": "从文件、文件夹或 Chrome 应用商店、Firefox Add-ons 链接添加扩展。将其放入扩展分组即可在配置文件中使用。"
       },
       "extensionGroups": {
         "title": "还没有扩展分组",

@@ -869,36 +869,37 @@ impl CamoufoxManager {
 
     // macOS gets a separate app bundle per profile so its Dock tile and menu
     // name are the profile's, not a shared "Camoufox". Patch the shared build
-    // before cloning it: every resource then belongs to the copy the module
-    // signs, and no hook can invalidate the clone's resource seal after that.
+    // before cloning it, under the lock that prepares clones: every resource
+    // then belongs to the copy the module signs, no hook can invalidate the
+    // clone's resource seal after that, and no clone copies a half-patched build.
     let source_executable = BrowserRunner::instance()
       .get_browser_executable_path(&profile)
       .map_err(|e| format!("Failed to get Camoufox executable path: {e}"))?;
-    crate::camoufox::search::ensure_search_engines(&source_executable);
-    crate::camoufox::last_window::ensure_quit_with_last_window(&source_executable);
-    crate::camoufox::profile_identity::ensure_profile_identity_hook(&source_executable);
-    {
-      let executable = source_executable.clone();
-      let _ = tokio::task::spawn_blocking(move || {
-        crate::camoufox::bundled_fonts::shadow_installed_fonts(&executable)
-      })
-      .await;
-    }
-
     let profile_for_app = profile.clone();
     let source_for_app = source_executable.clone();
     let executable_path = match tokio::task::spawn_blocking(move || {
-      crate::camoufox::profile_app::prepare_profile_app(&profile_for_app, &source_for_app)
+      crate::camoufox::profile_app::prepare_profile_app(&profile_for_app, &source_for_app, || {
+        crate::camoufox::search::ensure_search_engines(&source_for_app);
+        crate::camoufox::last_window::ensure_quit_with_last_window(&source_for_app);
+        crate::camoufox::profile_identity::ensure_profile_identity_hook(&source_for_app);
+        crate::camoufox::bundled_fonts::shadow_installed_fonts(&source_for_app);
+      })
     })
     .await
     {
       Ok(Ok(path)) => path,
       Ok(Err(e)) => {
-        log::warn!("Per-profile app unavailable, using Camoufox.app err=\"{e}\"");
+        log::warn!(
+          "Per-profile app unavailable, using Camoufox.app profile={} err=\"{e}\"",
+          profile.id
+        );
         source_executable
       }
       Err(e) => {
-        log::warn!("Per-profile app task failed, using Camoufox.app err=\"{e}\"");
+        log::warn!(
+          "Per-profile app task failed, using Camoufox.app profile={} err=\"{e}\"",
+          profile.id
+        );
         source_executable
       }
     };

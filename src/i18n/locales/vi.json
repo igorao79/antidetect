@@ -666,7 +666,8 @@
     },
     "group": {
       "notFound": "Không tìm thấy nhóm."
-    }
+    },
+    "extensionGroupWrongEngine": "không dùng cho {{engine}}"
   },
   "deleteDialog": {
     "title": "Xóa hồ sơ",
@@ -2548,7 +2549,8 @@
     "emptyGroupMove": "Chuyển hồ sơ vào đây",
     "health": {
       "degraded": "Kết nối chậm hoặc không ổn định",
-      "down": "Kết nối bị gián đoạn"
+      "down": "Kết nối bị gián đoạn",
+      "downToast": "Proxy của {{name}} không phản hồi: lưu lượng của hồ sơ đã dừng"
     },
     "route": "Proxy / VPN: {{name}}",
     "routeNone": "Không có proxy hoặc VPN",
@@ -4974,7 +4976,7 @@
       },
       "extensions": {
         "title": "Chưa có tiện ích",
-        "body": "Thêm tiện ích từ tệp, thư mục hoặc liên kết Web Store. Đặt tiện ích vào một nhóm tiện ích để dùng trong hồ sơ."
+        "body": "Thêm tiện ích từ tệp, thư mục hoặc liên kết Chrome Web Store hay Firefox Add-ons. Đặt tiện ích vào một nhóm tiện ích để dùng trong hồ sơ."
       },
       "extensionGroups": {
         "title": "Chưa có nhóm tiện ích",

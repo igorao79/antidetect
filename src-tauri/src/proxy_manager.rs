@@ -446,6 +446,31 @@ pub(crate) fn persist_browser_identity(proxy_id: &str, browser_pid: u32) -> bool
   }
 }
 
+/// Why a worker is stopped, as its stop line names it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum WorkerStopReason {
+  /// The profile stopped, or its proxy changed.
+  ProfileStop,
+  /// The route health monitor cut a session whose route went Down, with the
+  /// kill switch on. The route did not recover: its health streak is left
+  /// open instead of being logged as a recovery.
+  RouteDown,
+}
+
+impl WorkerStopReason {
+  fn as_str(self) -> &'static str {
+    match self {
+      Self::ProfileStop => "profile_stop",
+      Self::RouteDown => "route_down",
+    }
+  }
+
+  /// Whether clearing the route health on this stop closes its streak.
+  fn ends_route_streak(self) -> bool {
+    self != Self::RouteDown
+  }
+}
+
 /// A worker as it was just before the sidecar stopped it: the sidecar's own
 /// output never reaches this log, so the stop line is written from here.
 struct WorkerSnapshot {
@@ -467,7 +492,7 @@ impl WorkerSnapshot {
     }
   }
 
-  fn log_stopped(&self, proxy_id: &str) {
+  fn log_stopped(&self, proxy_id: &str, reason: WorkerStopReason) {
     let how = match self.pid {
       None => "unknown",
       Some(_) if !self.was_running => "already_gone",
@@ -475,10 +500,17 @@ impl WorkerSnapshot {
       Some(_) => "terminated",
     };
     log::info!(
-      "Proxy worker stopped id={proxy_id} pid={} profile={} browser_pid={} reason=profile_stop how={how}",
-      self.pid.map(|pid| pid.to_string()).unwrap_or_else(|| "unknown".to_string()),
+      "Proxy worker stopped id={proxy_id} pid={} profile={} browser_pid={} reason={} how={how}",
+      self
+        .pid
+        .map(|pid| pid.to_string())
+        .unwrap_or_else(|| "unknown".to_string()),
       self.profile_id.as_deref().unwrap_or("none"),
-      self.browser_pid.map(|pid| pid.to_string()).unwrap_or_else(|| "none".to_string()),
+      self
+        .browser_pid
+        .map(|pid| pid.to_string())
+        .unwrap_or_else(|| "none".to_string()),
+      reason.as_str(),
     );
   }
 }
@@ -2475,13 +2507,16 @@ impl ProxyManager {
     browser_pid: u32,
   ) -> Result<(), String> {
     let _lifecycle = self.worker_lifecycle.lock().await;
-    self.stop_proxy_inner(app_handle, browser_pid).await
+    self
+      .stop_proxy_inner(app_handle, browser_pid, WorkerStopReason::ProfileStop)
+      .await
   }
 
   async fn stop_proxy_inner(
     &self,
     app_handle: tauri::AppHandle,
     browser_pid: u32,
+    reason: WorkerStopReason,
   ) -> Result<(), String> {
     let (proxy_id, profile_id): (String, Option<String>) = {
       let mut proxies = self.active_proxies.lock().unwrap();
@@ -2515,9 +2550,9 @@ impl ProxyManager {
       Ok(_) => {}
       Err(e) => log::warn!("Proxy worker stop command did not run id={proxy_id} err=\"{e}\""),
     }
-    worker.log_stopped(&proxy_id);
+    worker.log_stopped(&proxy_id, reason);
     if let Some(id) = profile_id.as_deref() {
-      clear_route_health(id);
+      clear_route_health(id, reason);
     }
 
     // Clear profile-to-proxy mapping if it references this proxy
@@ -2544,6 +2579,17 @@ impl ProxyManager {
     app_handle: tauri::AppHandle,
     profile_id: &str,
   ) -> Result<(), String> {
+    self
+      .stop_profile_worker(app_handle, profile_id, WorkerStopReason::ProfileStop)
+      .await
+  }
+
+  async fn stop_profile_worker(
+    &self,
+    app_handle: tauri::AppHandle,
+    profile_id: &str,
+    reason: WorkerStopReason,
+  ) -> Result<(), String> {
     let _lifecycle = self.worker_lifecycle.lock().await;
     let proxy_id = self.resolve_proxy_id_for_profile(profile_id);
 
@@ -2562,7 +2608,7 @@ impl ProxyManager {
 
       if let Some(pid) = pid {
         // Use the existing stop_proxy method
-        self.stop_proxy_inner(app_handle, pid).await
+        self.stop_proxy_inner(app_handle, pid, reason).await
       } else {
         // Proxy not found in active_proxies, try to stop it directly by ID
         let worker = WorkerSnapshot::take(&proxy_id);
@@ -2586,7 +2632,7 @@ impl ProxyManager {
           Ok(_) => {}
           Err(e) => log::warn!("Proxy worker stop command did not run id={proxy_id} err=\"{e}\""),
         }
-        worker.log_stopped(&proxy_id);
+        worker.log_stopped(&proxy_id, reason);
 
         // Clear profile-to-proxy mapping
         let mut map = self.profile_active_proxy_ids.lock().unwrap();
@@ -3012,8 +3058,13 @@ pub static PROXY_MANAGER: std::sync::LazyLock<ProxyManager> =
 
 /// A check result this recent stands in for a live check before a launch.
 pub const ROUTE_CHECK_FRESH_SECS: u64 = 120;
-/// The live pre-launch check never holds a launch longer than this.
+/// One attempt of the live pre-launch check never takes longer than this. A
+/// proxy that fails to answer is asked once more after
+/// `ROUTE_PROBE_RETRY_PAUSE`, so a launch waits at most about twice as long.
 pub const ROUTE_CHECK_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(4);
+/// The pause before a proxy probe that timed out or could not connect is
+/// tried again: one slow answer does not refuse a launch.
+const ROUTE_PROBE_RETRY_PAUSE: std::time::Duration = std::time::Duration::from_millis(750);
 
 /// A profile route the pre-launch check could not get through.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -3161,24 +3212,62 @@ async fn check_route(
   })
 }
 
-/// A dial error as the code the app shows.
-fn route_failure_code(error: &str) -> &'static str {
-  let error = error.to_ascii_lowercase();
-  if error.contains("402") {
-    "PROXY_PAYMENT_REQUIRED"
-  } else if error.contains("407") || error.contains("auth") {
-    "PROXY_AUTH_FAILED"
-  } else if error.contains("timed out") || error.contains("timeout") {
-    "PROXY_UPSTREAM_TIMEOUT"
+const PROXY_AUTH_FAILED: &str = "PROXY_AUTH_FAILED";
+const PROXY_UPSTREAM_TIMEOUT: &str = "PROXY_UPSTREAM_TIMEOUT";
+const PROXY_UPSTREAM_UNREACHABLE: &str = "PROXY_UPSTREAM_UNREACHABLE";
+
+/// What the proxy refused with, from the fixed messages of the layers below
+/// the request: hyper-util's tunnel error for a CONNECT answered with 407,
+/// its SOCKS5 errors for refused credentials. Its error types are private, so
+/// their messages are what can be read; the top-level reqwest error, which
+/// names the URL, is never passed here, so a host or path can never decide it.
+fn route_failure_code(timed_out: bool, causes: &[String]) -> &'static str {
+  const AUTH_REFUSALS: [&str; 3] = [
+    "proxy authorization required",
+    "credentials not accepted",
+    "server does not support user/pass authentication",
+  ];
+  let refused_auth = causes.iter().any(|cause| {
+    let cause = cause.to_ascii_lowercase();
+    AUTH_REFUSALS.iter().any(|refusal| cause.contains(refusal))
+  });
+  if refused_auth {
+    PROXY_AUTH_FAILED
+  } else if timed_out {
+    PROXY_UPSTREAM_TIMEOUT
   } else {
-    "PROXY_UPSTREAM_UNREACHABLE"
+    PROXY_UPSTREAM_UNREACHABLE
   }
+}
+
+/// The messages of an error's sources, without the error's own.
+fn error_causes(error: &(dyn std::error::Error + 'static)) -> Vec<String> {
+  std::iter::successors(error.source(), |cause| cause.source())
+    .map(ToString::to_string)
+    .collect()
+}
+
+/// A probe that timed out or could not connect is worth one more try; a
+/// proxy that refused the credentials will refuse them again.
+fn probe_is_worth_retrying(code: &str) -> bool {
+  code == PROXY_UPSTREAM_TIMEOUT || code == PROXY_UPSTREAM_UNREACHABLE
+}
+
+/// One request through the proxy, as the browser would send it, tried once
+/// more after a short pause when it timed out or could not connect.
+async fn probe_proxy_route(proxy_id: &str) -> Option<String> {
+  let code = probe_proxy_route_once(proxy_id).await?;
+  if !probe_is_worth_retrying(&code) {
+    return Some(code);
+  }
+  tokio::time::sleep(ROUTE_PROBE_RETRY_PAUSE).await;
+  probe_proxy_route_once(proxy_id).await
 }
 
 /// One request through the proxy, as the browser would send it. Share-link
 /// proxies over TCP get a connection to their server; QUIC ones cannot be
 /// judged without starting their worker, so they pass.
-async fn probe_proxy_route(proxy_id: &str) -> Option<String> {
+async fn probe_proxy_route_once(proxy_id: &str) -> Option<String> {
   let settings = PROXY_MANAGER.get_proxy_settings_by_id(proxy_id)?;
   // A dynamic proxy learns its address at launch.
   let dynamic = PROXY_MANAGER
@@ -3200,8 +3289,10 @@ async fn probe_proxy_route(proxy_id: &str) -> Option<String> {
     let dial = tokio::net::TcpStream::connect((config.address.as_str(), config.port));
     return match tokio::time::timeout(ROUTE_CHECK_TIMEOUT, dial).await {
       Ok(Ok(_)) => None,
-      Ok(Err(e)) => Some(route_failure_code(&e.to_string()).to_string()),
-      Err(_) => Some("PROXY_UPSTREAM_TIMEOUT".to_string()),
+      Ok(Err(e)) => Some(
+        route_failure_code(e.kind() == std::io::ErrorKind::TimedOut, &[e.to_string()]).to_string(),
+      ),
+      Err(_) => Some(PROXY_UPSTREAM_TIMEOUT.to_string()),
     };
   }
   if settings.host.is_empty() || settings.port == 0 {
@@ -3226,11 +3317,7 @@ async fn probe_proxy_route(proxy_id: &str) -> Option<String> {
     .await
   {
     Ok(_) => None,
-    Err(e) if e.is_timeout() => Some("PROXY_UPSTREAM_TIMEOUT".to_string()),
-    Err(e) => {
-      let detail = format!("{e:?}");
-      Some(route_failure_code(&detail).to_string())
-    }
+    Err(e) => Some(route_failure_code(e.is_timeout(), &error_causes(&e)).to_string()),
   }
 }
 
@@ -3371,6 +3458,26 @@ fn forget_route_down_stop(profile_id: &str) {
   }
 }
 
+/// What a health verdict does to a running session's worker.
+#[derive(Debug, PartialEq, Eq)]
+enum RouteDownAction {
+  StopWorker,
+  KeepWorker,
+  Recovered,
+}
+
+/// Only the kill switch ("Block launches without a proxy or VPN") cuts a live
+/// session whose route went Down. Without it a flaky or rotating proxy keeps
+/// its worker, the browser keeps working once the route answers again, and the
+/// `proxy-health-changed` event alone tells the person.
+fn route_down_action(down: bool, kill_switch: bool) -> RouteDownAction {
+  match (down, kill_switch) {
+    (false, _) => RouteDownAction::Recovered,
+    (true, true) => RouteDownAction::StopWorker,
+    (true, false) => RouteDownAction::KeepWorker,
+  }
+}
+
 /// Remember that a Down verdict already asked for this profile's worker stop.
 /// `false` when one was already asked, so one outage stops a worker once.
 fn remember_route_down_stop(profile_id: &str) -> bool {
@@ -3395,14 +3502,18 @@ fn route_health_payload(
 }
 
 /// Forget a stopped profile's route health and tell the app, when it had any.
-fn clear_route_health(profile_id: &str) {
+/// A stop for a Down route leaves the health streak open: the route did not
+/// recover, and the stop line already says why the worker went.
+fn clear_route_health(profile_id: &str, reason: WorkerStopReason) {
   forget_route_down_stop(profile_id);
   let had_verdict = ROUTE_HEALTH
     .lock()
     .ok()
     .and_then(|mut windows| windows.remove(profile_id))
     .is_some_and(|window| window.current().is_some());
-  ROUTE_HEALTH_STREAK.succeeded(&format!("profile={profile_id}"));
+  if reason.ends_route_streak() {
+    ROUTE_HEALTH_STREAK.succeeded(&format!("profile={profile_id}"));
+  }
   if had_verdict {
     let payload = serde_json::json!({ "profile_id": profile_id, "cleared": true });
     if let Err(e) = events::emit("proxy-health-changed", payload) {
@@ -3437,7 +3548,8 @@ impl ProxyManager {
     })
   }
 
-  /// Stop the local worker of a profile whose route went Down. Spawned, never
+  /// Stop the local worker of a profile whose route went Down, with the kill
+  /// switch on (`route_down_action` decides). Spawned, never
   /// awaited: a stop takes the worker lifecycle lock and runs the sidecar, and
   /// this runs in the poll loop. The browser itself is deliberately left
   /// running — cutting its tunnels is the point.
@@ -3471,10 +3583,10 @@ impl ProxyManager {
         return;
       }
       match PROXY_MANAGER
-        .stop_proxy_by_profile_id(app_handle, &profile_id)
+        .stop_profile_worker(app_handle, &profile_id, WorkerStopReason::RouteDown)
         .await
       {
-        Ok(()) => log::warn!("Proxy worker stopped, route down profile={profile_id} code={code}"),
+        Ok(()) => log::warn!("Route down, session cut profile={profile_id} code={code}"),
         Err(e) => log::warn!(
           "Proxy worker stop failed, route down profile={profile_id} code={code} err=\"{e}\""
         ),
@@ -3495,7 +3607,7 @@ impl ProxyManager {
       })
       .unwrap_or_default();
     for profile_id in gone {
-      clear_route_health(&profile_id);
+      clear_route_health(&profile_id, WorkerStopReason::ProfileStop);
     }
 
     let now = now_secs();
@@ -3533,10 +3645,13 @@ impl ProxyManager {
       ) {
         log::warn!("Event emit failed event=proxy-health-changed err=\"{e}\"");
       }
-      if down {
-        self.stop_worker_for_down_route(&profile_id, verdict.1.unwrap_or("none"));
-      } else {
-        forget_route_down_stop(&profile_id);
+      let kill_switch = down && crate::launch_gate::route_required();
+      match route_down_action(down, kill_switch) {
+        RouteDownAction::StopWorker => {
+          self.stop_worker_for_down_route(&profile_id, verdict.1.unwrap_or("none"))
+        }
+        RouteDownAction::KeepWorker => {}
+        RouteDownAction::Recovered => forget_route_down_stop(&profile_id),
       }
     }
   }
@@ -3579,24 +3694,109 @@ mod route_check_tests {
     assert_eq!(verdict_from_cached_check(&check(1_000, false), 5_000), None);
   }
 
+  fn causes(messages: &[&str]) -> Vec<String> {
+    messages.iter().map(ToString::to_string).collect()
+  }
+
   #[test]
   fn dial_errors_become_codes() {
     assert_eq!(
-      route_failure_code("Connection refused (os error 61)"),
-      "PROXY_UPSTREAM_UNREACHABLE"
+      route_failure_code(false, &causes(&["Connection refused (os error 61)"])),
+      PROXY_UPSTREAM_UNREACHABLE
     );
     assert_eq!(
-      route_failure_code("operation timed out"),
-      "PROXY_UPSTREAM_TIMEOUT"
+      route_failure_code(true, &causes(&["operation timed out"])),
+      PROXY_UPSTREAM_TIMEOUT
     );
     assert_eq!(
-      route_failure_code("unsuccessful tunnel: 407 Proxy Authentication Required"),
-      "PROXY_AUTH_FAILED"
+      route_failure_code(
+        false,
+        &causes(&[
+          "client error (Connect)",
+          "tunnel error: proxy authorization required"
+        ])
+      ),
+      PROXY_AUTH_FAILED
     );
     assert_eq!(
-      route_failure_code("unsuccessful tunnel: 402 Payment Required"),
-      "PROXY_PAYMENT_REQUIRED"
+      route_failure_code(
+        false,
+        &causes(&["client error (Connect)", "credentials not accepted"])
+      ),
+      PROXY_AUTH_FAILED
     );
+    assert_eq!(
+      route_failure_code(false, &causes(&["tunnel error: unsuccessful"])),
+      PROXY_UPSTREAM_UNREACHABLE
+    );
+  }
+
+  #[test]
+  fn a_host_or_path_naming_auth_is_not_an_auth_refusal() {
+    assert_eq!(
+      route_failure_code(
+        false,
+        &causes(&[
+          "error sending request for url (https://auth.example.com/oauth/authorize)",
+          "dns error: failed to lookup address information",
+        ])
+      ),
+      PROXY_UPSTREAM_UNREACHABLE
+    );
+    assert_eq!(
+      route_failure_code(
+        true,
+        &causes(&["authproxy.example.com: operation timed out"])
+      ),
+      PROXY_UPSTREAM_TIMEOUT
+    );
+  }
+
+  #[test]
+  fn the_causes_of_an_error_leave_out_its_own_message() {
+    #[derive(Debug)]
+    struct Layer(&'static str, Option<Box<Layer>>);
+    impl std::fmt::Display for Layer {
+      fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.0)
+      }
+    }
+    impl std::error::Error for Layer {
+      fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.1.as_deref().map(|e| e as _)
+      }
+    }
+    let error = Layer(
+      "error sending request for url (https://auth.example.com/)",
+      Some(Box::new(Layer(
+        "client error (Connect)",
+        Some(Box::new(Layer("tunnel error: unsuccessful", None))),
+      ))),
+    );
+    assert_eq!(
+      error_causes(&error),
+      causes(&["client error (Connect)", "tunnel error: unsuccessful"])
+    );
+    assert_eq!(
+      route_failure_code(false, &error_causes(&error)),
+      PROXY_UPSTREAM_UNREACHABLE
+    );
+  }
+
+  #[test]
+  fn only_a_slow_or_unreachable_proxy_is_probed_again() {
+    assert!(probe_is_worth_retrying(PROXY_UPSTREAM_TIMEOUT));
+    assert!(probe_is_worth_retrying(PROXY_UPSTREAM_UNREACHABLE));
+    assert!(!probe_is_worth_retrying(PROXY_AUTH_FAILED));
+    assert!(!probe_is_worth_retrying("PROXY_PAYMENT_REQUIRED"));
+  }
+
+  #[test]
+  fn a_route_down_stop_names_itself_and_leaves_the_streak_open() {
+    assert_eq!(WorkerStopReason::RouteDown.as_str(), "route_down");
+    assert_eq!(WorkerStopReason::ProfileStop.as_str(), "profile_stop");
+    assert!(!WorkerStopReason::RouteDown.ends_route_streak());
+    assert!(WorkerStopReason::ProfileStop.ends_route_streak());
   }
 
   #[test]
@@ -3725,6 +3925,18 @@ mod route_check_tests {
     let live = check_route_now(Some(&id), None).await;
     PROXY_MANAGER.stored_proxies.lock().unwrap().remove(&id);
     assert_eq!(live, None);
+  }
+
+  #[test]
+  fn a_down_route_stops_the_worker_only_with_the_kill_switch() {
+    assert_eq!(route_down_action(true, true), RouteDownAction::StopWorker);
+    assert_eq!(
+      route_down_action(true, false),
+      RouteDownAction::KeepWorker,
+      "without the kill switch a flaky route must keep its session"
+    );
+    assert_eq!(route_down_action(false, true), RouteDownAction::Recovered);
+    assert_eq!(route_down_action(false, false), RouteDownAction::Recovered);
   }
 
   #[test]

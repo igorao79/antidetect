@@ -199,7 +199,7 @@ fn route_verdict(declares_route: bool, has_upstream: bool, required: bool) -> Re
   }))
 }
 
-fn route_required() -> bool {
+pub(crate) fn route_required() -> bool {
   crate::settings_manager::SettingsManager::instance()
     .load_settings()
     .map(|s| s.require_route_for_launch)

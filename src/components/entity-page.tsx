@@ -43,16 +43,16 @@ export function RowNameProvider({
 const TICK = {
   enter: (direction: number) => ({
     opacity: 0.5,
-    transform: `translateY(${direction * 70}%)`,
+    transform: `translateY(${direction * 40}%)`,
   }),
   center: { opacity: 1, transform: "translateY(0%)" },
-  exit: (direction: number) => ({
-    opacity: 0,
-    transform: `translateY(${direction * -70}%)`,
-  }),
 };
 
-/** A count that rolls to its new value: up when it grows, down when it shrinks. */
+/**
+ * A count that rolls to its new value: up when it grows, down when it shrinks.
+ * The old value leaves at once: an exiting copy kept its number, so a stalled
+ * exit left the tab counters showing the count from before an add.
+ */
 export function TickingCount({
   value,
   className,
@@ -64,6 +64,7 @@ export function TickingCount({
 }) {
   const animate = useEntityMotion();
   const previous = useRef(value);
+  const changed = value !== previous.current;
   const direction = value >= previous.current ? 1 : -1;
   useEffect(() => {
     previous.current = value;
@@ -76,22 +77,19 @@ export function TickingCount({
         className,
       )}
     >
-      <AnimatePresence initial={false} mode="popLayout" custom={direction}>
-        <motion.span
-          key={value}
-          custom={direction}
-          variants={TICK}
-          initial={animate ? "enter" : false}
-          animate="center"
-          exit="exit"
-          transition={{
-            duration: animate ? MOTION_DURATION.base : 0,
-            ease: MOTION_EASE_OUT,
-          }}
-        >
-          {value}
-        </motion.span>
-      </AnimatePresence>
+      <motion.span
+        key={value}
+        custom={direction}
+        variants={TICK}
+        initial={animate && changed ? "enter" : false}
+        animate="center"
+        transition={{
+          duration: animate ? MOTION_DURATION.base : 0,
+          ease: MOTION_EASE_OUT,
+        }}
+      >
+        {value}
+      </motion.span>
     </span>
   );
 }

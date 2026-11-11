@@ -1176,7 +1176,7 @@ const TagsCell = React.memo<{
               key={t}
               variant="soft"
               title={t}
-              className="max-w-40 select-none truncate bg-foreground/12 px-2 py-0 text-xs font-medium"
+              className="max-w-40 select-none truncate bg-foreground/10 px-2 py-0 text-xs font-medium"
             >
               {t}
             </Badge>
@@ -1192,7 +1192,7 @@ const TagsCell = React.memo<{
           {hiddenCount > 0 && (
             <Badge
               variant="soft"
-              className="select-none bg-foreground/12 px-1.5 py-0 text-xs font-medium text-muted-foreground"
+              className="select-none bg-foreground/10 px-1.5 py-0 text-xs font-medium text-muted-foreground"
             >
               +{hiddenCount}
             </Badge>
@@ -1211,7 +1211,7 @@ const TagsCell = React.memo<{
                     <Badge
                       key={t}
                       variant="soft"
-                      className="select-none bg-foreground/12 px-2 py-0 text-xs font-medium"
+                      className="select-none bg-foreground/10 px-2 py-0 text-xs font-medium"
                     >
                       {t}
                     </Badge>

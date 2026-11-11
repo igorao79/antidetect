@@ -87,6 +87,7 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useProfileEvents } from "@/hooks/use-profile-events";
 import { useProfileStatuses } from "@/hooks/use-profile-statuses";
 import { useProfileTableFilters } from "@/hooks/use-profile-table-filters";
+import { useProxyDownNotice } from "@/hooks/use-proxy-down-notice";
 import { useProxyEvents } from "@/hooks/use-proxy-events";
 import { useSyncSessions } from "@/hooks/use-sync-session";
 import { useTips } from "@/hooks/use-tips";
@@ -194,6 +195,7 @@ export default function Home() {
     loadProfiles,
   } = useProfileEvents();
   useLaunchNotices(profiles);
+  useProxyDownNotice(profiles);
 
   // First-run product tour: coach marks on the real controls.
   const [tour, setTour] = useState<{ open: boolean; step: TourStep }>({

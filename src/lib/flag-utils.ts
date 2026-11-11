@@ -1,3 +1,5 @@
+import i18n from "@/i18n";
+
 /**
  * Get flag icon CSS class for a country code (ISO 3166-1 alpha-2)
  */
@@ -8,27 +10,28 @@ export function getFlagIconClass(countryCode: string): string {
   return `fi fi-${countryCode.toLowerCase()}`;
 }
 
+const RELATIVE_UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+  ["day", 86_400],
+  ["hour", 3600],
+  ["minute", 60],
+];
+
 /**
- * Format relative time (e.g., "2 minutes ago", "1 hour ago")
+ * Format a unix-seconds timestamp relative to now in the interface language
+ * ("2 minutes ago", "16 дней назад").
  */
-export function formatRelativeTime(timestamp: number): string {
-  const now = Math.floor(Date.now() / 1000);
-  const secondsAgo = now - timestamp;
-
-  if (secondsAgo < 60) {
-    return "just now";
+export function formatRelativeTime(
+  timestamp: number,
+  language: string = i18n.language,
+): string {
+  const formatter = new Intl.RelativeTimeFormat(language || "en", {
+    numeric: "auto",
+  });
+  const secondsAgo = Math.floor(Date.now() / 1000) - timestamp;
+  for (const [unit, size] of RELATIVE_UNITS) {
+    if (secondsAgo >= size) {
+      return formatter.format(-Math.floor(secondsAgo / size), unit);
+    }
   }
-
-  const minutesAgo = Math.floor(secondsAgo / 60);
-  if (minutesAgo < 60) {
-    return `${minutesAgo} minute${minutesAgo !== 1 ? "s" : ""} ago`;
-  }
-
-  const hoursAgo = Math.floor(minutesAgo / 60);
-  if (hoursAgo < 24) {
-    return `${hoursAgo} hour${hoursAgo !== 1 ? "s" : ""} ago`;
-  }
-
-  const daysAgo = Math.floor(hoursAgo / 24);
-  return `${daysAgo} day${daysAgo !== 1 ? "s" : ""} ago`;
+  return formatter.format(0, "second");
 }

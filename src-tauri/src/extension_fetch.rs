@@ -314,11 +314,55 @@ pub fn archive_payload(data: &[u8]) -> Result<&[u8], String> {
   crx3_zip_payload(data)
 }
 
-fn redirect_policy() -> reqwest::redirect::Policy {
-  reqwest::redirect::Policy::custom(|attempt| {
-    if !scheme_is_allowed(attempt.url()) {
+/// Where a request's redirects may lead.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum RedirectScope {
+  /// Any host, over the allowed schemes: a direct link or the Web Store,
+  /// whose update service hands off to Google's download hosts.
+  AnyHost,
+  /// Mozilla's own hosts only: an AMO lookup and an AMO package, so a
+  /// redirect cannot turn a Firefox Add-ons link into a download from
+  /// elsewhere.
+  Mozilla,
+}
+
+impl RedirectScope {
+  fn for_source(source: &ExtensionSource) -> Self {
+    match source {
+      ExtensionSource::FirefoxAddon(_) => Self::Mozilla,
+      ExtensionSource::Direct(url) if url.host_str().is_some_and(is_firefox_addon_host) => {
+        Self::Mozilla
+      }
+      _ => Self::AnyHost,
+    }
+  }
+}
+
+/// `addons.mozilla.org` and the hosts under `mozilla.org` and `mozilla.net`
+/// (AMO's file CDN has lived on both).
+fn is_mozilla_host(host: &str) -> bool {
+  let host = host.trim_end_matches('.').to_ascii_lowercase();
+  ["mozilla.org", "mozilla.net"]
+    .iter()
+    .any(|domain| host == *domain || host.ends_with(&format!(".{domain}")))
+}
+
+/// Whether a request in `scope` may go to `url`, on the first request's
+/// rule for schemes.
+fn url_in_scope(url: &Url, scope: RedirectScope) -> bool {
+  scheme_is_allowed(url)
+    && match scope {
+      RedirectScope::AnyHost => true,
+      RedirectScope::Mozilla => url.host_str().is_some_and(is_mozilla_host),
+    }
+}
+
+fn redirect_policy(scope: RedirectScope) -> reqwest::redirect::Policy {
+  reqwest::redirect::Policy::custom(move |attempt| {
+    if !url_in_scope(attempt.url(), scope) {
       // A store redirect that leaves TLS would download the package in the
-      // clear, and the package is executable code. Stopping here surfaces the
+      // clear, and the package is executable code; an AMO one that leaves
+      // Mozilla would download someone else's. Stopping here surfaces the
       // final response instead of following it.
       return attempt.stop();
     }
@@ -329,11 +373,11 @@ fn redirect_policy() -> reqwest::redirect::Policy {
   })
 }
 
-fn http_client() -> Result<reqwest::Client, String> {
+fn http_client(scope: RedirectScope) -> Result<reqwest::Client, String> {
   reqwest::Client::builder()
     .timeout(std::time::Duration::from_secs(120))
     .connect_timeout(std::time::Duration::from_secs(15))
-    .redirect(redirect_policy())
+    .redirect(redirect_policy(scope))
     .build()
     .map_err(|_| err("EXTENSION_DOWNLOAD_FAILED"))
 }
@@ -344,7 +388,7 @@ fn http_client() -> Result<reqwest::Client, String> {
 /// Add-ons host is accepted so the lookup cannot be turned into a downloader
 /// for arbitrary addresses.
 async fn resolve_firefox_addon(slug: &str) -> Result<Url, String> {
-  let client = http_client()?;
+  let client = http_client(RedirectScope::Mozilla)?;
   let response = client
     .get(firefox_addon_api_url(slug))
     .header("User-Agent", USER_AGENT)
@@ -399,10 +443,10 @@ fn firefox_addon_file_url_from_json(body: &str) -> Result<Url, String> {
   Ok(url)
 }
 
-async fn download_archive(url: &str) -> Result<Vec<u8>, String> {
+async fn download_archive(url: &str, scope: RedirectScope) -> Result<Vec<u8>, String> {
   use futures_util::StreamExt;
 
-  let client = http_client()?;
+  let client = http_client(scope)?;
 
   let response = client
     .get(url)
@@ -424,7 +468,7 @@ async fn download_archive(url: &str) -> Result<Vec<u8>, String> {
   // A redirect the policy stopped surfaces here as a 3xx, which
   // `is_success` already rejects; the final URL is checked again so a
   // same-status hop can never slip through.
-  if !scheme_is_allowed(response.url()) {
+  if !url_in_scope(response.url(), scope) {
     return Err(err("EXTENSION_DOWNLOAD_FAILED"));
   }
   if response
@@ -504,7 +548,7 @@ pub async fn fetch_extension(input: &str) -> Result<FetchedExtension, String> {
     ExtensionSource::Direct(url) => (url.to_string(), direct_file_name(url), false),
   };
 
-  let raw = download_archive(&download_url).await?;
+  let raw = download_archive(&download_url, RedirectScope::for_source(&source)).await?;
   let payload = archive_payload(&raw)?;
   // A ZIP that carries no manifest is not an extension, whatever it was
   // served as. Refusing here keeps a 404 page or an installer out of the
@@ -819,6 +863,63 @@ mod tests {
     // Location. The package is executable code, so the chain stops there.
     assert!(!policy_allows("http://mirror.example.com/EXT.crx"));
     assert!(!policy_allows("ftp://mirror.example.com/EXT.crx"));
+  }
+
+  #[test]
+  fn an_amo_download_may_only_be_redirected_within_mozilla() {
+    let in_scope = |url: &str, scope| url_in_scope(&Url::parse(url).unwrap(), scope);
+    // Where AMO's `latest.xpi` actually redirects to.
+    assert!(in_scope(
+      "https://addons.mozilla.org/firefox/downloads/file/5225273/ublock_origin-1.76.0.xpi",
+      RedirectScope::Mozilla
+    ));
+    assert!(in_scope(
+      "https://addons.cdn.mozilla.net/user-media/addons/607454/ublock_origin.xpi",
+      RedirectScope::Mozilla
+    ));
+    assert!(in_scope(
+      "https://mozilla.org/x.xpi",
+      RedirectScope::Mozilla
+    ));
+    for outside in [
+      "https://evil.example.com/ublock.xpi",
+      "https://mozilla.org.evil.example.com/ublock.xpi",
+      "https://evilmozilla.org/ublock.xpi",
+      "https://mozilla.net.example.com/ublock.xpi",
+      "http://addons.mozilla.org/firefox/downloads/file/1/x.xpi",
+    ] {
+      assert!(!in_scope(outside, RedirectScope::Mozilla), "{outside}");
+    }
+    // Other sources keep the scheme rule alone.
+    assert!(in_scope(
+      "https://clients2.googleusercontent.com/crx/blobs/abc/EXT.crx",
+      RedirectScope::AnyHost
+    ));
+    assert!(!in_scope(
+      "http://mirror.example.com/EXT.crx",
+      RedirectScope::AnyHost
+    ));
+  }
+
+  #[test]
+  fn amo_sources_get_the_mozilla_scope_and_others_do_not() {
+    let scope = |input: &str| RedirectScope::for_source(&parse_extension_source(input).unwrap());
+    assert_eq!(
+      scope("https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/"),
+      RedirectScope::Mozilla
+    );
+    assert_eq!(
+      scope("https://addons.mozilla.org/firefox/downloads/file/5225273/ublock_origin-1.76.0.xpi"),
+      RedirectScope::Mozilla
+    );
+    assert_eq!(
+      scope("https://files.example.com/ublock.xpi"),
+      RedirectScope::AnyHost
+    );
+    assert_eq!(
+      scope("cjpalhdlnbpafiamejdnhcphjbkeiagm"),
+      RedirectScope::AnyHost
+    );
   }
 
   #[test]

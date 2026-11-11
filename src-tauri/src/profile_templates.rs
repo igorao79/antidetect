@@ -939,11 +939,26 @@ mod tests {
     mgr
       .add_extension_to_group(&chromium_group.id, &chromium.id)
       .unwrap();
+    // A .zip runs in both engines only when its manifest names a gecko id.
+    let mut universal_zip = std::io::Cursor::new(Vec::new());
+    {
+      let mut writer = zip::ZipWriter::new(&mut universal_zip);
+      let options: zip::write::SimpleFileOptions = zip::write::FileOptions::default();
+      let manifest = serde_json::json!({
+        "manifest_version": 2,
+        "name": "Universal",
+        "version": "1.0",
+        "browser_specific_settings": { "gecko": { "id": "universal@test" } }
+      });
+      writer.start_file("manifest.json", options).unwrap();
+      std::io::Write::write_all(&mut writer, manifest.to_string().as_bytes()).unwrap();
+      writer.finish().unwrap();
+    }
     let universal = mgr
       .add_extension(
         "Universal".to_string(),
         "test.zip".to_string(),
-        vec![0, 1, 2, 3],
+        universal_zip.into_inner(),
       )
       .unwrap();
     let universal_group = mgr.create_group("Universal Group".to_string()).unwrap();

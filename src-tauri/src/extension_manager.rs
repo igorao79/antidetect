@@ -170,6 +170,19 @@ fn determine_browser_compatibility(file_type: &str) -> Vec<String> {
   }
 }
 
+/// The engines an archive runs in. Camoufox sideloads an add-on as
+/// `<gecko id>.xpi`, so a package without a usable gecko id is not offered to
+/// it: a `.zip` without one is Chromium-only, an `.xpi` without one runs in
+/// neither engine, and a group holding it is refused for Camoufox instead of
+/// the add-on being dropped at launch.
+fn archive_compatibility(file_type: &str, gecko_id: Option<&str>) -> Vec<String> {
+  let firefox_ready = gecko_id.is_some_and(is_plain_path_part);
+  determine_browser_compatibility(file_type)
+    .into_iter()
+    .filter(|engine| engine != "firefox" || firefox_ready)
+    .collect()
+}
+
 fn get_file_type(file_name: &str) -> Option<String> {
   let ext = file_name.rsplit('.').next()?.to_lowercase();
   match ext.as_str() {
@@ -178,23 +191,21 @@ fn get_file_type(file_name: &str) -> Option<String> {
   }
 }
 
+/// A manifest.json larger than this is refused rather than read: real ones
+/// are a few kilobytes, and an archive entry can inflate to any size.
+const MAX_MANIFEST_BYTES: u64 = 1024 * 1024;
+
+/// Read an archive entry as text, refusing one larger than `cap` bytes.
+fn read_capped_text(reader: impl std::io::Read, cap: u64) -> Option<String> {
+  let mut contents = String::new();
+  std::io::Read::read_to_string(&mut reader.take(cap + 1), &mut contents).ok()?;
+  (contents.len() as u64 <= cap).then_some(contents)
+}
+
 /// Read `browser_specific_settings.gecko.id` (or the legacy
 /// `applications.gecko.id`) from the extension's manifest.json.
 fn extract_gecko_id(file_data: &[u8], file_type: &str) -> Option<String> {
-  let zip_start = if file_type == "crx" {
-    find_zip_start(file_data)
-  } else {
-    0
-  };
-  let cursor = std::io::Cursor::new(&file_data[zip_start..]);
-  let mut archive = zip::ZipArchive::new(cursor).ok()?;
-  let mut manifest_content = String::new();
-  std::io::Read::read_to_string(
-    &mut archive.by_name("manifest.json").ok()?,
-    &mut manifest_content,
-  )
-  .ok()?;
-  let manifest: serde_json::Value = serde_json::from_str(&manifest_content).ok()?;
+  let manifest = read_manifest_from_archive(file_data, file_type)?;
   manifest
     .pointer("/browser_specific_settings/gecko/id")
     .or_else(|| manifest.pointer("/applications/gecko/id"))
@@ -228,11 +239,7 @@ pub(crate) fn read_manifest_from_archive(
   let cursor = std::io::Cursor::new(file_data.get(zip_start..)?);
   let mut archive = zip::ZipArchive::new(cursor).ok()?;
 
-  let mut contents = String::new();
-  {
-    let mut file = archive.by_name("manifest.json").ok()?;
-    std::io::Read::read_to_string(&mut file, &mut contents).ok()?;
-  }
+  let contents = read_capped_text(archive.by_name("manifest.json").ok()?, MAX_MANIFEST_BYTES)?;
   serde_json::from_str(&contents).ok()
 }
 
@@ -891,8 +898,7 @@ impl ExtensionManager {
     file_type: String,
     source_kind: String,
   ) -> Result<Extension, Box<dyn std::error::Error>> {
-    let browser_compatibility = determine_browser_compatibility(&file_type);
-    if browser_compatibility.is_empty() || !is_plain_path_part(&file_name) {
+    if determine_browser_compatibility(&file_type).is_empty() || !is_plain_path_part(&file_name) {
       return Err(err_code("EXTENSION_UNSUPPORTED_FILE_TYPE"));
     }
     let now = now_secs();
@@ -901,6 +907,7 @@ impl ExtensionManager {
       extract_manifest_metadata(&file_data, &file_type);
 
     let gecko_id = extract_gecko_id(&file_data, &file_type);
+    let browser_compatibility = archive_compatibility(&file_type, gecko_id.as_deref());
     let ext = Extension {
       id: uuid::Uuid::new_v4().to_string(),
       name: Self::resolve_name(name, manifest_name.clone())?,
@@ -1177,8 +1184,7 @@ impl ExtensionManager {
     source_kind: String,
     explicit_name_provided: bool,
   ) -> Result<(), Box<dyn std::error::Error>> {
-    let browser_compatibility = determine_browser_compatibility(&file_type);
-    if browser_compatibility.is_empty() || !is_plain_path_part(&file_name) {
+    if determine_browser_compatibility(&file_type).is_empty() || !is_plain_path_part(&file_name) {
       return Err(err_code("EXTENSION_UNSUPPORTED_FILE_TYPE"));
     }
 
@@ -1189,13 +1195,13 @@ impl ExtensionManager {
     fs::create_dir_all(&file_dir)?;
     fs::write(file_dir.join(&file_name), data)?;
 
+    ext.gecko_id = extract_gecko_id(data, &file_type);
+    ext.browser_compatibility = archive_compatibility(&file_type, ext.gecko_id.as_deref());
     ext.file_name = file_name;
     ext.file_type = file_type;
-    ext.browser_compatibility = browser_compatibility;
     ext.source_kind = source_kind;
     // Replacing the payload with stored bytes ends any link.
     ext.linked_path = None;
-    ext.gecko_id = extract_gecko_id(data, &ext.file_type);
 
     let (manifest_name, version, description, author, homepage_url) =
       extract_manifest_metadata(data, &ext.file_type);
@@ -1840,11 +1846,7 @@ impl ExtensionManager {
 
     for ext_id in &group.extension_ids {
       let ext = self.get_extension(ext_id)?;
-      if !ext
-        .browser_compatibility
-        .iter()
-        .any(|compatible| compatible == browser_type)
-      {
+      if !self.runs_in(&ext, browser_type) {
         return Err(
           format!(
             "Extension '{}' ({}) is not compatible with {} browsers",
@@ -1856,6 +1858,29 @@ impl ExtensionManager {
     }
 
     Ok(())
+  }
+
+  /// The gecko id Camoufox installs an extension under: the recorded one, or
+  /// for an extension stored before the field existed, the one its archive
+  /// carries. `None` when it has no usable one.
+  fn firefox_gecko_id(&self, ext: &Extension) -> Option<String> {
+    let recorded = ext.gecko_id.clone().or_else(|| {
+      if ext.is_linked() {
+        return None;
+      }
+      fs::read(self.get_file_dir(&ext.id).join(&ext.file_name))
+        .ok()
+        .and_then(|data| extract_gecko_id(&data, &ext.file_type))
+    });
+    recorded.filter(|id| is_plain_path_part(id))
+  }
+
+  /// Whether `ext` runs in the engine (`chromium` or `firefox`). Firefox also
+  /// needs a gecko id, which entries stored before compatibility took it into
+  /// account may lack.
+  fn runs_in(&self, ext: &Extension, engine: &str) -> bool {
+    ext.browser_compatibility.iter().any(|b| b == engine)
+      && (engine != "firefox" || (!ext.is_linked() && self.firefox_gecko_id(ext).is_some()))
   }
 
   // Launch-time installation
@@ -1914,16 +1939,12 @@ impl ExtensionManager {
       if !src_file.exists() {
         continue;
       }
-      // Extensions stored before the field existed: read the manifest now.
-      let gecko_id = ext.gecko_id.clone().or_else(|| {
-        fs::read(&src_file)
-          .ok()
-          .and_then(|data| extract_gecko_id(&data, &ext.file_type))
-      });
-      let Some(gecko_id) = gecko_id.filter(|id| is_plain_path_part(id)) else {
+      // A group checked before this extension joined it, or one synced from
+      // an older app, can still hold a package without a gecko id.
+      let Some(gecko_id) = self.firefox_gecko_id(&ext) else {
         log::warn!(
-          "Skipping Firefox extension '{}': no usable gecko id in manifest.json",
-          ext.name
+          "Firefox extension skipped: no usable gecko id in manifest.json extension={}",
+          ext.id
         );
         continue;
       };
@@ -2009,7 +2030,7 @@ impl ExtensionManager {
           let linked_path = PathBuf::from(linked);
           if !linked_path.join("manifest.json").exists() {
             log::warn!(
-              "Linked extension skipped: folder has no manifest.json extension={} path=\"{linked}\"",
+              "Linked extension skipped: folder has no manifest.json extension={}",
               ext.id
             );
             continue;
@@ -2671,10 +2692,8 @@ mod tests {
       .unwrap();
     assert_eq!(ext.name, "Test Ext");
     assert_eq!(ext.file_type, "zip");
-    assert_eq!(
-      ext.browser_compatibility,
-      vec!["chromium".to_string(), "firefox".to_string()]
-    );
+    // No manifest, so no gecko id: Camoufox could not install it.
+    assert_eq!(ext.browser_compatibility, vec!["chromium".to_string()]);
 
     // Get
     let fetched = mgr.get_extension(&ext.id).unwrap();
@@ -2789,12 +2808,29 @@ mod tests {
       .add_extension(
         "Both Engines".to_string(),
         "test.zip".to_string(),
-        localized_extension_zip(),
+        extension_xpi("owl-zip@example.com"),
       )
       .unwrap();
     let zip_group = mgr.create_group("Both Engines Group".to_string()).unwrap();
     mgr
       .add_extension_to_group(&zip_group.id, &zip_ext.id)
+      .unwrap();
+
+    // A zip without a gecko id is a Chromium package to Camoufox.
+    let chromium_zip = mgr
+      .add_extension(
+        "Chromium Zip".to_string(),
+        "chromium.zip".to_string(),
+        localized_extension_zip(),
+      )
+      .unwrap();
+    assert_eq!(
+      chromium_zip.browser_compatibility,
+      vec!["chromium".to_string()]
+    );
+    let chromium_zip_group = mgr.create_group("Chromium Zip Group".to_string()).unwrap();
+    mgr
+      .add_extension_to_group(&chromium_zip_group.id, &chromium_zip.id)
       .unwrap();
 
     // Wayfern takes Chromium extensions only.
@@ -2818,6 +2854,14 @@ mod tests {
     assert!(mgr
       .validate_group_compatibility(&zip_group.id, "camoufox")
       .is_ok());
+    assert!(mgr
+      .validate_group_compatibility(&chromium_zip_group.id, "wayfern")
+      .is_ok());
+    assert!(mgr
+      .validate_group_compatibility(&chromium_zip_group.id, "camoufox")
+      .unwrap_err()
+      .to_string()
+      .contains("not compatible"));
 
     let rejected = mgr
       .validate_group_compatibility(&chrome_group.id, "camoufox")
@@ -2829,6 +2873,111 @@ mod tests {
       .validate_group_compatibility(&zip_group.id, "cloakbrowser")
       .unwrap_err();
     assert!(unsupported.to_string().contains("not supported"));
+  }
+
+  #[test]
+  fn a_package_without_a_gecko_id_is_not_offered_to_camoufox() {
+    let both = vec!["chromium".to_string(), "firefox".to_string()];
+    assert_eq!(archive_compatibility("zip", Some("owl@example.com")), both);
+    assert_eq!(
+      archive_compatibility("zip", None),
+      vec!["chromium".to_string()]
+    );
+    assert_eq!(
+      archive_compatibility("zip", Some("../escape")),
+      vec!["chromium".to_string()],
+      "an id that is not a plain file name cannot name the sideloaded xpi"
+    );
+    assert_eq!(
+      archive_compatibility("xpi", Some("owl@example.com")),
+      vec!["firefox".to_string()]
+    );
+    assert!(archive_compatibility("xpi", None).is_empty());
+    assert_eq!(
+      archive_compatibility("crx", None),
+      vec!["chromium".to_string()]
+    );
+  }
+
+  #[test]
+  fn an_extension_stored_as_both_engines_without_a_gecko_id_is_refused_for_camoufox() {
+    let tmp = tempfile::tempdir().unwrap();
+    let _guard = crate::app_dirs::set_test_data_dir(tmp.path().to_path_buf());
+    let mgr = ExtensionManager::new();
+
+    // As an older app stored it: both engines, no gecko id recorded.
+    let mut legacy = mgr
+      .add_extension(
+        "Legacy".to_string(),
+        "legacy.zip".to_string(),
+        localized_extension_zip(),
+      )
+      .unwrap();
+    legacy.browser_compatibility = vec!["chromium".to_string(), "firefox".to_string()];
+    fs::write(
+      mgr.get_metadata_path(&legacy.id),
+      serde_json::to_string_pretty(&legacy).unwrap(),
+    )
+    .unwrap();
+    let group = mgr.create_group("Legacy Group".to_string()).unwrap();
+    mgr.add_extension_to_group(&group.id, &legacy.id).unwrap();
+    assert!(mgr
+      .validate_group_compatibility(&group.id, "camoufox")
+      .is_err());
+
+    // Recorded before the field existed, but the archive carries one.
+    let mut older = mgr
+      .add_extension(
+        "Older".to_string(),
+        "older.zip".to_string(),
+        extension_xpi("older@example.com"),
+      )
+      .unwrap();
+    older.gecko_id = None;
+    fs::write(
+      mgr.get_metadata_path(&older.id),
+      serde_json::to_string_pretty(&older).unwrap(),
+    )
+    .unwrap();
+    let older_group = mgr.create_group("Older Group".to_string()).unwrap();
+    mgr
+      .add_extension_to_group(&older_group.id, &older.id)
+      .unwrap();
+    assert!(mgr
+      .validate_group_compatibility(&older_group.id, "camoufox")
+      .is_ok());
+  }
+
+  #[test]
+  fn an_oversized_manifest_is_not_read() {
+    let mut buffer = std::io::Cursor::new(Vec::new());
+    {
+      let mut writer = zip::ZipWriter::new(&mut buffer);
+      let options: zip::write::SimpleFileOptions = zip::write::FileOptions::default();
+      let manifest = serde_json::json!({
+        "manifest_version": 2,
+        "name": "big",
+        "version": "1.0",
+        "description": "x".repeat(MAX_MANIFEST_BYTES as usize),
+        "browser_specific_settings": { "gecko": { "id": "big@example.com" } }
+      });
+      writer.start_file("manifest.json", options).unwrap();
+      std::io::Write::write_all(&mut writer, manifest.to_string().as_bytes()).unwrap();
+      writer.finish().unwrap();
+    }
+    let big = buffer.into_inner();
+    assert_eq!(extract_gecko_id(&big, "zip"), None);
+    assert!(read_manifest_from_archive(&big, "zip").is_none());
+    assert_eq!(
+      extract_gecko_id(&extension_xpi("small@example.com"), "xpi").as_deref(),
+      Some("small@example.com")
+    );
+  }
+
+  #[test]
+  fn capped_text_takes_up_to_the_cap_and_refuses_more() {
+    assert_eq!(read_capped_text(&b"abcd"[..], 4).as_deref(), Some("abcd"));
+    assert_eq!(read_capped_text(&b"abcde"[..], 4), None);
   }
 
   #[test]

@@ -57,10 +57,21 @@ pub(crate) fn write_atomically(path: &std::path::Path, contents: &str) -> std::i
   if let Some(dir) = path.parent() {
     std::fs::create_dir_all(dir)?;
   }
-  let mut staged = path.as_os_str().to_owned();
-  staged.push(format!(".owl-{}", std::process::id()));
+  let staged = staging_path(path);
   std::fs::write(&staged, contents)?;
-  std::fs::rename(&staged, path)
+  std::fs::rename(&staged, path).inspect_err(|_| {
+    let _ = std::fs::remove_file(&staged);
+  })
+}
+
+/// A staging name of its own for every write, so two launches patching the
+/// same build file never write through one staged file.
+fn staging_path(path: &std::path::Path) -> std::ffi::OsString {
+  static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+  let n = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+  let mut staged = path.as_os_str().to_owned();
+  staged.push(format!(".owl-{}-{n}", std::process::id()));
+  staged
 }
 
 /// Write `contents` only when the file does not already hold exactly that, so
@@ -144,6 +155,12 @@ mod tests {
     let fonts = fonts::get_fonts_for_os("win");
     assert!(!fonts.is_empty());
     assert!(fonts.contains(&"Arial".to_string()));
+  }
+
+  #[test]
+  fn every_atomic_write_stages_through_its_own_file() {
+    let path = std::path::Path::new("/build/camoufox.cfg");
+    assert_ne!(staging_path(path), staging_path(path));
   }
 
   #[test]

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import i18n from "@/i18n";
 import { translateBackendError } from "@/lib/backend-errors";
 import { getBrowserDisplayName } from "@/lib/browser-utils";
+import { formatRelativeTime } from "@/lib/flag-utils";
 import {
   showAutoUpdateToast,
   showErrorToast,
@@ -416,23 +417,8 @@ export function useVersionUpdater() {
   }, []);
 
   const formatLastUpdateTime = useCallback(
-    (timestamp: number | null): string => {
-      if (!timestamp) return "Never";
-
-      const date = new Date(timestamp * 1000);
-      const now = new Date();
-      const diffMs = now.getTime() - date.getTime();
-      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-      const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-      if (diffHours > 0) {
-        return `${diffHours}h ${diffMinutes}m ago`;
-      }
-      if (diffMinutes > 0) {
-        return `${diffMinutes}m ago`;
-      }
-      return "Just now";
-    },
+    (timestamp: number | null): string =>
+      timestamp ? formatRelativeTime(timestamp) : i18n.t("common.labels.never"),
     [],
   );
 

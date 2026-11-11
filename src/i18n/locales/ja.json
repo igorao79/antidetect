@@ -666,7 +666,8 @@
     },
     "group": {
       "notFound": "グループが見つかりません。"
-    }
+    },
+    "extensionGroupWrongEngine": "{{engine}} 非対応"
   },
   "deleteDialog": {
     "title": "プロファイルを削除",
@@ -2548,7 +2549,8 @@
     "emptyGroupMove": "プロファイルをここに移動",
     "health": {
       "degraded": "接続が遅いか不安定です",
-      "down": "接続が切断されています"
+      "down": "接続が切断されています",
+      "downToast": "{{name}} のプロキシが応答しません。プロファイルの通信は止まっています"
     },
     "route": "プロキシ / VPN: {{name}}",
     "routeNone": "プロキシも VPN もありません",
@@ -4974,7 +4976,7 @@
       },
       "extensions": {
         "title": "拡張機能はまだありません",
-        "body": "ファイル、フォルダー、Web Store のリンクから拡張機能を追加します。プロファイルで使うには拡張機能グループに入れます。"
+        "body": "ファイル、フォルダー、Chrome ウェブストアまたは Firefox Add-ons のリンクから拡張機能を追加します。プロファイルで使うには拡張機能グループに入れます。"
       },
       "extensionGroups": {
         "title": "拡張機能グループはまだありません",
