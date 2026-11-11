@@ -20,7 +20,7 @@ pub fn apply_exit_ip(
   ip: &str,
   block_webrtc: bool,
 ) -> Option<Geolocation> {
-  let geo = match get_profile_geolocation(ip) {
+  let geo = match get_geolocation(ip) {
     Ok(geo) => geo,
     Err(e) => {
       log::warn!("Failed to get geolocation for IP {ip}: {e}");

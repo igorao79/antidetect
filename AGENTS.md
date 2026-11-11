@@ -403,9 +403,11 @@ running dev app):
   announced "nothing verified" at every Camoufox launch through a proxy. A profile with
   automatic location off still gets that notice.
 - A profile speaks the main language of its exit country: the most spoken of its official
-  languages (`geolocation::get_profile_geolocation`). Upstream's draw across CLDR speaker
-  shares counts second languages and dialects (a German exit came out `de` 37% of the time,
-  `en` 26%, `bar` 7%) and is kept only for Wayfern.
+  languages (`LocaleSelector::main_locale`, through `geolocation::get_geolocation`), the same
+  for every profile and engine. Upstream's earlier draw across CLDR speaker shares counted
+  second languages and dialects (a German exit came out `de` 37% of the time, `en` 26%, `bar`
+  7%); upstream adopted the main-language rule itself, so the fork carries no code of its own
+  for it.
 - A launch whose location follows the exit waits for the GeoIP database (a fresh install is
   still downloading it) and fails with `LOCATION_DATABASE_UNAVAILABLE` after 150 s. Without the
   database the browser came up with this machine's own timezone and a default language.
