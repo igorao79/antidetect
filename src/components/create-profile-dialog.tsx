@@ -102,6 +102,7 @@ import type {
   CamoufoxConfig,
   CamoufoxOS,
   ProfileTemplate,
+  StoredProxy,
   TemplateSettings,
   WayfernConfig,
   WayfernOS,
@@ -193,6 +194,10 @@ export function CreateProfileDialog({
   const [profileName, setProfileName] = useState("");
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [selectedProxyId, setSelectedProxyId] = useState<string>();
+  // What the proxy form created while this dialog was open. The shared proxy
+  // list reloads on its change event a moment later; until then this is how
+  // the pill and the route list can already show the new proxy.
+  const [createdProxy, setCreatedProxy] = useState<StoredProxy>();
   const [proxyPopoverOpen, setProxyPopoverOpen] = useState(false);
   const [morePopoverOpen, setMorePopoverOpen] = useState(false);
   // Where the new profiles go: the group the list shows, until changed.
@@ -423,9 +428,21 @@ export function CreateProfileDialog({
   const selectedProxy = storedProxies.find(
     (proxy) => proxy.id === selectedProxyId,
   );
+  // The list refreshes on the backend's change event; a proxy this dialog just
+  // created stands in until it does, so the pill never reads "No proxy".
+  const justCreatedProxy =
+    createdProxy?.id === selectedProxyId ? createdProxy : undefined;
   const proxyLabel = selectedVpn
     ? `WG — ${selectedVpn.name}`
-    : (selectedProxy?.name ?? t("createProfile.proxy.noProxy"));
+    : (selectedProxy?.name ??
+      justCreatedProxy?.name ??
+      t("createProfile.proxy.noProxy"));
+  // The route list is the shared list, plus a just-created proxy until that
+  // list catches up, so the checked item and the pill agree.
+  const proxyChoices =
+    createdProxy && !storedProxies.some((proxy) => proxy.id === createdProxy.id)
+      ? [createdProxy, ...storedProxies]
+      : storedProxies;
   const destinationGroup = groups.find(
     (group) => group.id === destinationGroupId,
   );
@@ -456,6 +473,7 @@ export function CreateProfileDialog({
     setProfileName("");
     setAdvancedOpen(false);
     setSelectedProxyId(undefined);
+    setCreatedProxy(undefined);
     setProxyPopoverOpen(false);
     setMorePopoverOpen(false);
     setOsPopoverOpen(false);
@@ -1046,7 +1064,7 @@ export function CreateProfileDialog({
                         />
                         {t("common.labels.none")}
                       </CommandItem>
-                      {storedProxies.map((proxy) => (
+                      {proxyChoices.map((proxy) => (
                         <CommandItem
                           key={proxy.id}
                           value={proxy.id}
@@ -1767,6 +1785,10 @@ export function CreateProfileDialog({
       <ProxyFormDialog
         isOpen={showProxyForm}
         onClose={() => setShowProxyForm(false)}
+        onCreated={(proxy) => {
+          setCreatedProxy(proxy);
+          setSelectedProxyId(proxy.id);
+        }}
       />
     </Dialog>
   );

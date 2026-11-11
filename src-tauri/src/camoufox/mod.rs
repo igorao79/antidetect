@@ -16,8 +16,11 @@ pub mod env_vars;
 pub mod fingerprint;
 pub mod fonts;
 pub mod geolocation;
+pub mod hook;
 pub mod last_window;
 pub mod presets;
+pub mod profile_app;
+pub mod profile_identity;
 pub mod search;
 pub mod webgl;
 
@@ -58,6 +61,16 @@ pub(crate) fn write_atomically(path: &std::path::Path, contents: &str) -> std::i
   staged.push(format!(".owl-{}", std::process::id()));
   std::fs::write(&staged, contents)?;
   std::fs::rename(&staged, path)
+}
+
+/// Write `contents` only when the file does not already hold exactly that, so
+/// re-running a launch hook does not touch the disk. True when it wrote.
+pub(crate) fn write_if_changed(path: &std::path::Path, contents: &str) -> std::io::Result<bool> {
+  if std::fs::read_to_string(path).is_ok_and(|current| current == contents) {
+    return Ok(false);
+  }
+  write_atomically(path, contents)?;
+  Ok(true)
 }
 
 /// Unified error type for all Camoufox operations.

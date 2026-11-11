@@ -1321,7 +1321,7 @@
       "sourcePlaceholder": "Sélectionnez un profil pour copier les cookies",
       "running": "(en cours)",
       "targetProfiles": "Profils cibles ({{count}})",
-      "noOtherTargets": "Aucun autre profil Wayfern sélectionné",
+      "noOtherTargets": "Aucun autre profil compatible sélectionné",
       "selectSourceFirst": "Sélectionnez d'abord un profil source",
       "selectionStatus": "({{selected}} sur {{total}} sélectionnés)",
       "searchPlaceholder": "Rechercher des domaines ou cookies...",
@@ -1543,7 +1543,7 @@
     "renameProfileFailed": "Échec du renommage du profil : {{error}}",
     "killBrowserFailed": "Échec de l’arrêt du navigateur : {{error}}",
     "deleteSelectedProfilesFailed": "Échec de la suppression des profils sélectionnés : {{error}}",
-    "cookieCopyUnsupportedBrowser": "La copie de cookies ne fonctionne qu'avec les profils Wayfern",
+    "cookieCopyUnsupportedBrowser": "La copie des cookies ne fonctionne qu’avec les profils Camoufox et Wayfern.",
     "updateSyncSettingsFailed": "Échec de la mise à jour des paramètres de synchronisation",
     "cloneProfileFailed": "Échec du clonage du profil : {{error}}",
     "loadSupportedBrowsersFailed": "Échec du chargement des navigateurs pris en charge",
@@ -1912,7 +1912,7 @@
     "delete": "Supprimer",
     "extensionsTab": "Extensions",
     "groupsTab": "Groupes",
-    "managedNotice": "Les extensions gérées ici remplaceront toutes les extensions installées manuellement dans les profils lors du lancement.",
+    "managedNotice": "Les extensions gérées ici sont installées au lancement. Les modules complémentaires installés dans le navigateur sont conservés.",
     "proRequired": "La gestion des extensions est une fonctionnalité Pro",
     "empty": "Aucune extension téléchargée pour l'instant.",
     "createGroup": "Créer un Groupe",
@@ -1937,7 +1937,7 @@
     "deleteConfirmDescription": "Êtes-vous sûr de vouloir supprimer \"{{name}}\" ? Cette action est irréversible.",
     "deleteGroupConfirmTitle": "Supprimer le Groupe d'Extensions",
     "deleteGroupConfirmDescription": "Êtes-vous sûr de vouloir supprimer le groupe \"{{name}}\" ? Cette action est irréversible.",
-    "invalidFileType": "Type de fichier non valide. Choisissez un fichier .crx ou .zip.",
+    "invalidFileType": "Type de fichier non valide. Choisissez un fichier .crx, .zip ou .xpi.",
     "readError": "Impossible de lire le fichier d'extension.",
     "assignTitle": "Assigner un Groupe d'Extensions",
     "assignDescription": "Assigner {{count}} profil(s) sélectionné(s) à un groupe d'extensions.",
@@ -1994,8 +1994,8 @@
       "linkedTooltip": "Chargée directement depuis {{path}}"
     },
     "fromUrl": "Depuis un lien",
-    "fromUrlTooltip": "Ajouter une extension depuis un lien du Chrome Web Store, un identifiant d'extension ou un lien .crx ou .zip direct",
-    "urlPlaceholder": "Lien Web Store, identifiant d'extension ou lien .crx",
+    "fromUrlTooltip": "Ajoutez une extension depuis un lien Chrome Web Store ou Firefox Add-ons, un ID d’extension ou un lien direct .crx, .zip ou .xpi.",
+    "urlPlaceholder": "Lien Web Store / Firefox Add-ons, ID ou lien .crx/.xpi",
     "urlHint": "Owl télécharge le paquet en HTTPS et lit son nom et sa version avant tout enregistrement.",
     "fetchExtension": "Télécharger",
     "fetching": "Téléchargement…",
@@ -2892,7 +2892,7 @@
     "agentTextTooLong": "Ce texte est trop long. La limite est de {{max}} caractères.",
     "agentSessionNotFound": "Cet agent n'est plus connecté.",
     "profilePairedTwice": "Ce profil apparaît plusieurs fois dans la même distribution",
-    "extensionUrlInvalid": "Ce n'est ni un lien du Chrome Web Store, ni un identifiant d'extension, ni un lien .crx ou .zip direct.",
+    "extensionUrlInvalid": "Ce n’est pas un lien Chrome Web Store ou Firefox Add-ons, un ID d’extension ni un lien direct .crx, .zip ou .xpi.",
     "extensionDownloadFailed": "L'extension n'a pas pu être téléchargée. Vérifiez le lien et votre connexion.",
     "extensionNotAnExtension": "Ce téléchargement n'est pas une extension de navigateur.",
     "extensionTooLarge": "Cette extension est trop volumineuse pour être importée.",
@@ -3458,7 +3458,7 @@
     "saveFailed": "Échec de la sauvegarde de la configuration"
   },
   "cookieCopy": {
-    "noOtherTargets": "Aucun autre profil Wayfern sélectionné"
+    "noOtherTargets": "Aucun autre profil compatible sélectionné"
   },
   "about": {
     "licenseNotice": "Navigateur anti-détection open source.",

@@ -1311,7 +1311,7 @@
       "sourcePlaceholder": "Cookie をコピーするプロファイルを選択",
       "running": "(実行中)",
       "targetProfiles": "対象プロファイル ({{count}})",
-      "noOtherTargets": "他に Wayfern プロファイルが選択されていません",
+      "noOtherTargets": "互換性のある他のプロファイルが選択されていません",
       "selectSourceFirst": "最初にソースプロファイルを選択してください",
       "selectionStatus": "({{selected}} / {{total}} 選択中)",
       "searchPlaceholder": "ドメインまたは Cookie を検索...",
@@ -1532,7 +1532,7 @@
     "renameProfileFailed": "プロファイルの名前変更に失敗しました: {{error}}",
     "killBrowserFailed": "ブラウザの停止に失敗しました: {{error}}",
     "deleteSelectedProfilesFailed": "選択したプロファイルの削除に失敗しました: {{error}}",
-    "cookieCopyUnsupportedBrowser": "Cookieのコピーは Wayfern プロファイルでのみ機能します",
+    "cookieCopyUnsupportedBrowser": "Cookie のコピーは Camoufox と Wayfern のプロファイルでのみ動作します。",
     "updateSyncSettingsFailed": "同期設定の更新に失敗しました",
     "cloneProfileFailed": "プロファイルの複製に失敗しました: {{error}}",
     "loadSupportedBrowsersFailed": "サポートされているブラウザの読み込みに失敗しました",
@@ -1901,7 +1901,7 @@
     "delete": "削除",
     "extensionsTab": "拡張機能",
     "groupsTab": "グループ",
-    "managedNotice": "ここで管理される拡張機能は、起動時にプロファイルに手動でインストールされた拡張機能を置き換えます。",
+    "managedNotice": "ここで管理する拡張機能は起動時にインストールされます。ブラウザーにインストールしたアドオンは保持されます。",
     "proRequired": "拡張機能管理はプロ機能です",
     "empty": "まだ拡張機能がアップロードされていません。",
     "createGroup": "グループを作成",
@@ -1926,7 +1926,7 @@
     "deleteConfirmDescription": "「{{name}}」を削除してもよろしいですか？この操作は元に戻せません。",
     "deleteGroupConfirmTitle": "拡張機能グループを削除",
     "deleteGroupConfirmDescription": "グループ「{{name}}」を削除してもよろしいですか？この操作は元に戻せません。",
-    "invalidFileType": "ファイル形式が正しくありません。.crx または .zip ファイルを選択してください。",
+    "invalidFileType": "無効なファイル形式です。.crx、.zip、.xpi のいずれかを選択してください。",
     "readError": "拡張機能ファイルの読み取りに失敗しました。",
     "assignTitle": "拡張機能グループの割り当て",
     "assignDescription": "選択した{{count}}件のプロファイルを拡張機能グループに割り当てます。",
@@ -1983,8 +1983,8 @@
       "linkedTooltip": "{{path}} から直接読み込みます"
     },
     "fromUrl": "リンクから",
-    "fromUrlTooltip": "Chrome ウェブストアのリンク、拡張機能 ID、または .crx / .zip の直接リンクから拡張機能を追加します",
-    "urlPlaceholder": "ウェブストアのリンク、拡張機能 ID、または .crx リンク",
+    "fromUrlTooltip": "Chrome ウェブストアまたは Firefox Add-ons のリンク、拡張機能 ID、または .crx、.zip、.xpi の直接リンクから拡張機能を追加します。",
+    "urlPlaceholder": "ウェブストア / Firefox Add-ons のリンク、ID、または .crx/.xpi リンク",
     "urlHint": "Owl は HTTPS でパッケージをダウンロードし、保存する前に名前とバージョンを読み取ります。",
     "fetchExtension": "取得",
     "fetching": "取得中…",
@@ -2873,7 +2873,7 @@
     "agentTextTooLong": "テキストが長すぎます。上限は {{max}} 文字です。",
     "agentSessionNotFound": "そのエージェントはもう接続されていません。",
     "profilePairedTwice": "このプロファイルは同じ割り当てに複数回含まれています",
-    "extensionUrlInvalid": "Chrome ウェブストアのリンク、拡張機能 ID、.crx または .zip の直接リンクではありません。",
+    "extensionUrlInvalid": "Chrome ウェブストアまたは Firefox Add-ons のリンク、拡張機能 ID、.crx、.zip、.xpi の直接リンクではありません。",
     "extensionDownloadFailed": "拡張機能をダウンロードできませんでした。リンクと接続を確認してください。",
     "extensionNotAnExtension": "ダウンロードしたものはブラウザー拡張機能ではありません。",
     "extensionTooLarge": "この拡張機能は大きすぎてインポートできません。",
@@ -3438,7 +3438,7 @@
     "saveFailed": "設定の保存に失敗しました"
   },
   "cookieCopy": {
-    "noOtherTargets": "他に Wayfern プロファイルが選択されていません"
+    "noOtherTargets": "互換性のある他のプロファイルが選択されていません"
   },
   "about": {
     "licenseNotice": "オープンソースのアンチディテクトブラウザです。",

@@ -50,6 +50,12 @@ interface ProxyFormDialogProps {
   isOpen: boolean;
   onClose: () => void;
   editingProxy?: StoredProxy | null;
+  /**
+   * The stored proxy of a create, once its rotation URL is set too. It is
+   * called just before the dialog closes, so a form that opened this one can
+   * select what it made; edits never call it.
+   */
+  onCreated?: (proxy: StoredProxy) => void;
 }
 
 const DEFAULT_FORM: ProxyFormData = {
@@ -136,6 +142,7 @@ export function ProxyFormDialog({
   isOpen,
   onClose,
   editingProxy,
+  onCreated,
 }: ProxyFormDialogProps) {
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -256,13 +263,16 @@ export function ProxyFormDialog({
           "create_stored_proxy",
           payload,
         );
-        if (rotationUrl) {
-          await invoke("set_proxy_rotation_url", {
-            proxyId: created.id,
-            rotationUrl,
-          });
-        }
+        // The rotation link is stored after the proxy itself, and its answer
+        // is the settled object: hand that one on when there is a link.
+        const stored = rotationUrl
+          ? await invoke<StoredProxy>("set_proxy_rotation_url", {
+              proxyId: created.id,
+              rotationUrl,
+            })
+          : created;
         toast.success(t("toasts.success.proxyCreated"));
+        onCreated?.(stored);
       }
 
       onClose();
@@ -276,7 +286,7 @@ export function ProxyFormDialog({
     } finally {
       setIsSubmitting(false);
     }
-  }, [editingProxy, form, onClose, t, linkError, linkSummary]);
+  }, [editingProxy, form, onClose, onCreated, t, linkError, linkSummary]);
 
   const handleClose = useCallback(() => {
     if (!isSubmitting) {

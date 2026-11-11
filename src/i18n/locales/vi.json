@@ -1311,7 +1311,7 @@
       "sourcePlaceholder": "Chọn profile để sao chép cookie từ",
       "running": "(đang chạy)",
       "targetProfiles": "Profile đích ({{count}})",
-      "noOtherTargets": "Chưa chọn profile Wayfern nào khác",
+      "noOtherTargets": "Chưa chọn hồ sơ tương thích khác",
       "selectSourceFirst": "Hãy chọn profile nguồn trước",
       "selectionStatus": "(đã chọn {{selected}}/{{total}})",
       "searchPlaceholder": "Tìm kiếm tên miền hoặc cookie...",
@@ -1532,7 +1532,7 @@
     "renameProfileFailed": "Đổi tên profile thất bại: {{error}}",
     "killBrowserFailed": "Dừng trình duyệt thất bại: {{error}}",
     "deleteSelectedProfilesFailed": "Xóa các profile đã chọn thất bại: {{error}}",
-    "cookieCopyUnsupportedBrowser": "Sao chép cookie chỉ hoạt động với profile Wayfern",
+    "cookieCopyUnsupportedBrowser": "Sao chép cookie chỉ hoạt động với hồ sơ Camoufox và Wayfern.",
     "updateSyncSettingsFailed": "Cập nhật cài đặt đồng bộ thất bại",
     "cloneProfileFailed": "Nhân bản profile thất bại: {{error}}",
     "loadSupportedBrowsersFailed": "Tải danh sách trình duyệt hỗ trợ thất bại",
@@ -1901,7 +1901,7 @@
     "delete": "Xóa",
     "extensionsTab": "Tiện ích",
     "groupsTab": "Nhóm",
-    "managedNotice": "Tiện ích được quản lý tại đây sẽ thay thế bất kỳ tiện ích nào được cài đặt thủ công trong profile khi khởi chạy.",
+    "managedNotice": "Tiện ích được quản lý tại đây sẽ được cài khi khởi chạy. Các tiện ích bạn đã cài trong trình duyệt vẫn được giữ lại.",
     "proRequired": "Quản lý tiện ích là tính năng Pro",
     "empty": "Chưa tải lên tiện ích nào.",
     "createGroup": "Tạo nhóm",
@@ -1926,7 +1926,7 @@
     "deleteConfirmDescription": "Bạn có chắc muốn xóa \"{{name}}\"? Hành động này không thể hoàn tác.",
     "deleteGroupConfirmTitle": "Xóa nhóm tiện ích",
     "deleteGroupConfirmDescription": "Bạn có chắc muốn xóa nhóm \"{{name}}\"? Hành động này không thể hoàn tác.",
-    "invalidFileType": "Loại tệp không hợp lệ. Vui lòng chọn tệp .crx hoặc .zip.",
+    "invalidFileType": "Loại tệp không hợp lệ. Hãy chọn tệp .crx, .zip hoặc .xpi.",
     "readError": "Đọc tệp tiện ích thất bại.",
     "assignTitle": "Gán nhóm tiện ích",
     "assignDescription": "Gán {{count}} profile đã chọn vào nhóm tiện ích.",
@@ -1983,8 +1983,8 @@
       "linkedTooltip": "Tải trực tiếp từ {{path}}"
     },
     "fromUrl": "Từ liên kết",
-    "fromUrlTooltip": "Thêm tiện ích từ liên kết Chrome Web Store, ID tiện ích hoặc liên kết .crx hay .zip trực tiếp",
-    "urlPlaceholder": "Liên kết Web Store, ID tiện ích hoặc liên kết .crx",
+    "fromUrlTooltip": "Thêm tiện ích từ liên kết Chrome Web Store hoặc Firefox Add-ons, ID tiện ích hoặc liên kết trực tiếp .crx, .zip hoặc .xpi.",
+    "urlPlaceholder": "Liên kết Web Store / Firefox Add-ons, ID hoặc liên kết .crx/.xpi",
     "urlHint": "Owl tải gói qua HTTPS và đọc tên cùng phiên bản trước khi lưu bất cứ thứ gì.",
     "fetchExtension": "Tải về",
     "fetching": "Đang tải…",
@@ -2873,7 +2873,7 @@
     "agentTextTooLong": "Văn bản quá dài. Giới hạn là {{max}} ký tự.",
     "agentSessionNotFound": "Tác nhân đó không còn kết nối.",
     "profilePairedTwice": "Hồ sơ này xuất hiện nhiều lần trong cùng một lần phân bổ",
-    "extensionUrlInvalid": "Đây không phải liên kết Chrome Web Store, ID tiện ích hay liên kết .crx hoặc .zip trực tiếp.",
+    "extensionUrlInvalid": "Đây không phải liên kết Chrome Web Store hoặc Firefox Add-ons, ID tiện ích hay liên kết trực tiếp .crx, .zip hoặc .xpi.",
     "extensionDownloadFailed": "Không tải được tiện ích. Hãy kiểm tra liên kết và kết nối của bạn.",
     "extensionNotAnExtension": "Tệp tải về không phải là tiện ích trình duyệt.",
     "extensionTooLarge": "Tiện ích này quá lớn để nhập.",
@@ -3438,7 +3438,7 @@
     "saveFailed": "Lưu cấu hình thất bại"
   },
   "cookieCopy": {
-    "noOtherTargets": "Chưa chọn profile Wayfern nào khác"
+    "noOtherTargets": "Chưa chọn hồ sơ tương thích khác"
   },
   "about": {
     "licenseNotice": "Trình duyệt chống phát hiện mã nguồn mở.",

@@ -1418,7 +1418,10 @@ export default function Home() {
               extensionGroupId: profileData.extensionGroupId,
             });
           } catch (err) {
-            console.error("Failed to assign extension group:", err);
+            // The profile exists already; say that the extensions did not
+            // come with it instead of leaving the person to discover that at
+            // the next launch.
+            showErrorToast(translateBackendError(t, err));
           }
         }
 

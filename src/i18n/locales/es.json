@@ -1321,7 +1321,7 @@
       "sourcePlaceholder": "Selecciona un perfil del que copiar cookies",
       "running": "(en ejecución)",
       "targetProfiles": "Perfiles de destino ({{count}})",
-      "noOtherTargets": "No hay otros perfiles Wayfern seleccionados",
+      "noOtherTargets": "No hay otros perfiles compatibles seleccionados",
       "selectSourceFirst": "Selecciona primero un perfil de origen",
       "selectionStatus": "({{selected}} de {{total}} seleccionadas)",
       "searchPlaceholder": "Buscar dominios o cookies...",
@@ -1543,7 +1543,7 @@
     "renameProfileFailed": "Error al renombrar el perfil: {{error}}",
     "killBrowserFailed": "Error al detener el navegador: {{error}}",
     "deleteSelectedProfilesFailed": "Error al eliminar los perfiles seleccionados: {{error}}",
-    "cookieCopyUnsupportedBrowser": "La copia de cookies solo funciona con perfiles Wayfern",
+    "cookieCopyUnsupportedBrowser": "Copiar cookies solo funciona con perfiles Camoufox y Wayfern.",
     "updateSyncSettingsFailed": "Error al actualizar los ajustes de sincronización",
     "cloneProfileFailed": "Error al clonar el perfil: {{error}}",
     "loadSupportedBrowsersFailed": "Error al cargar los navegadores compatibles",
@@ -1912,7 +1912,7 @@
     "delete": "Eliminar",
     "extensionsTab": "Extensiones",
     "groupsTab": "Grupos",
-    "managedNotice": "Las extensiones administradas aquí reemplazarán cualquier extensión instalada manualmente en los perfiles al iniciarlos.",
+    "managedNotice": "Las extensiones gestionadas aquí se instalan al iniciar. Los complementos que instalaste en el navegador se conservan.",
     "proRequired": "La gestión de extensiones es una función Pro",
     "empty": "No se han subido extensiones aún.",
     "createGroup": "Crear Grupo",
@@ -1937,7 +1937,7 @@
     "deleteConfirmDescription": "¿Estás seguro de que deseas eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
     "deleteGroupConfirmTitle": "Eliminar Grupo de Extensiones",
     "deleteGroupConfirmDescription": "¿Estás seguro de que deseas eliminar el grupo \"{{name}}\"? Esta acción no se puede deshacer.",
-    "invalidFileType": "Tipo de archivo no válido. Elige un archivo .crx o .zip.",
+    "invalidFileType": "Tipo de archivo no válido. Elige un archivo .crx, .zip o .xpi.",
     "readError": "No se pudo leer el archivo de extensión.",
     "assignTitle": "Asignar Grupo de Extensiones",
     "assignDescription": "Asignar {{count}} perfil(es) seleccionado(s) a un grupo de extensiones.",
@@ -1994,8 +1994,8 @@
       "linkedTooltip": "Se carga directamente desde {{path}}"
     },
     "fromUrl": "Desde un enlace",
-    "fromUrlTooltip": "Añade una extensión desde un enlace de Chrome Web Store, un ID de extensión o un enlace directo .crx o .zip",
-    "urlPlaceholder": "Enlace de Web Store, ID de extensión o enlace .crx",
+    "fromUrlTooltip": "Añade una extensión desde un enlace de Chrome Web Store o Firefox Add-ons, un ID de extensión o un enlace directo .crx, .zip o .xpi.",
+    "urlPlaceholder": "Enlace de Web Store / Firefox Add-ons, ID o enlace .crx/.xpi",
     "urlHint": "Owl descarga el paquete por HTTPS y lee su nombre y versión antes de guardar nada.",
     "fetchExtension": "Descargar",
     "fetching": "Descargando…",
@@ -2892,7 +2892,7 @@
     "agentTextTooLong": "Este texto es demasiado largo. El límite es de {{max}} caracteres.",
     "agentSessionNotFound": "Ese agente ya no está conectado.",
     "profilePairedTwice": "Este perfil aparece más de una vez en la misma distribución",
-    "extensionUrlInvalid": "Eso no es un enlace de Chrome Web Store, un ID de extensión ni un enlace directo .crx o .zip.",
+    "extensionUrlInvalid": "No es un enlace de Chrome Web Store o Firefox Add-ons, un ID de extensión ni un enlace directo .crx, .zip o .xpi.",
     "extensionDownloadFailed": "No se pudo descargar la extensión. Comprueba el enlace y tu conexión.",
     "extensionNotAnExtension": "Esa descarga no es una extensión de navegador.",
     "extensionTooLarge": "Esa extensión es demasiado grande para importarla.",
@@ -3458,7 +3458,7 @@
     "saveFailed": "Error al guardar la configuración"
   },
   "cookieCopy": {
-    "noOtherTargets": "No hay otros perfiles Wayfern seleccionados"
+    "noOtherTargets": "No hay otros perfiles compatibles seleccionados"
   },
   "about": {
     "licenseNotice": "Navegador anti-detección de código abierto.",

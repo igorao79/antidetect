@@ -91,6 +91,13 @@ Fork-specific rules:
   proxy got 429s from the provider, and a page with no answer to a failed request (the bare
   `web.telegram.org/`) stayed blank. `restore_tabs_lazily` stays off, or BiDi sees only the
   loaded tabs.
+- A macOS Camoufox launch runs from a per-profile clone of `Camoufox.app`, not the shared
+  build (`camoufox/profile_app.rs`): macOS gives one Dock tile per bundle, so the clone gets
+  the profile name, a generated `.icns` and a unique `CFBundleIdentifier`, and is ad-hoc
+  signed. The clone is an APFS clonefile in the app cache (a full copy only when the
+  filesystem cannot clone), rebuilt when the source build or the profile name/colour changes,
+  and removed with the profile. On other platforms the executable stays the shared build; this
+  bundle-name/icon layer and the existing title/badge/colour layer are macOS-only.
 - Firefox's remote agent, which every Camoufox launch starts (`--remote-debugging-port`),
   applies its test suite's prefs (`RecommendedPreferences` in the build's `omni.ja`) wherever a
   pref has no user value. `apz.content_response_timeout` 60000 made the wheel wait up to a

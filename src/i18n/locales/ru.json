@@ -1331,7 +1331,7 @@
       "sourcePlaceholder": "Выберите профиль для копирования cookies",
       "running": "(запущен)",
       "targetProfiles": "Целевые профили ({{count}})",
-      "noOtherTargets": "Других выбранных Wayfern профилей нет",
+      "noOtherTargets": "Другие совместимые профили не выбраны",
       "selectSourceFirst": "Сначала выберите исходный профиль",
       "selectionStatus": "(выбрано {{selected}} из {{total}})",
       "searchPlaceholder": "Поиск доменов или cookies...",
@@ -1554,7 +1554,7 @@
     "renameProfileFailed": "Не удалось переименовать профиль: {{error}}",
     "killBrowserFailed": "Не удалось остановить браузер: {{error}}",
     "deleteSelectedProfilesFailed": "Не удалось удалить выбранные профили: {{error}}",
-    "cookieCopyUnsupportedBrowser": "Копирование cookies работает только с профилями Wayfern",
+    "cookieCopyUnsupportedBrowser": "Копирование куки работает только для профилей Camoufox и Wayfern",
     "updateSyncSettingsFailed": "Не удалось обновить параметры синхронизации",
     "cloneProfileFailed": "Не удалось клонировать профиль: {{error}}",
     "loadSupportedBrowsersFailed": "Не удалось загрузить поддерживаемые браузеры",
@@ -1923,7 +1923,7 @@
     "delete": "Удалить",
     "extensionsTab": "Расширения",
     "groupsTab": "Группы",
-    "managedNotice": "Расширения, управляемые здесь, заменят все вручную установленные расширения в профилях при запуске.",
+    "managedNotice": "Расширения, управляемые здесь, устанавливаются при запуске. Установленные вами в браузере дополнения сохраняются.",
     "proRequired": "Управление расширениями — функция Pro",
     "empty": "Расширения ещё не загружены.",
     "createGroup": "Создать группу",
@@ -1948,7 +1948,7 @@
     "deleteConfirmDescription": "Вы уверены, что хотите удалить «{{name}}»? Это действие нельзя отменить.",
     "deleteGroupConfirmTitle": "Удалить группу расширений",
     "deleteGroupConfirmDescription": "Вы уверены, что хотите удалить группу «{{name}}»? Это действие нельзя отменить.",
-    "invalidFileType": "Неподдерживаемый тип файла. Выберите файл .crx или .zip.",
+    "invalidFileType": "Неподдерживаемый тип файла. Выберите файл .crx, .zip или .xpi.",
     "readError": "Не удалось прочитать файл расширения.",
     "assignTitle": "Назначить группу расширений",
     "assignDescription": "Назначить {{count}} выбранных профилей в группу расширений.",
@@ -2005,8 +2005,8 @@
       "linkedTooltip": "Загружается прямо из {{path}}"
     },
     "fromUrl": "По ссылке",
-    "fromUrlTooltip": "Добавить расширение по ссылке Chrome Web Store, по идентификатору расширения или по прямой ссылке .crx либо .zip",
-    "urlPlaceholder": "Ссылка Web Store, идентификатор расширения или ссылка .crx",
+    "fromUrlTooltip": "Добавьте расширение по ссылке из Chrome Web Store или Firefox Add-ons, по ID расширения или по прямой ссылке .crx, .zip или .xpi.",
+    "urlPlaceholder": "Ссылка на Chrome Web Store / Firefox Add-ons, ID или ссылка .crx/.xpi",
     "urlHint": "Owl загружает пакет по HTTPS и читает его имя и версию до сохранения.",
     "fetchExtension": "Загрузить",
     "fetching": "Загрузка…",
@@ -2911,7 +2911,7 @@
     "agentTextTooLong": "Текст слишком длинный. Максимум {{max}} символов.",
     "agentSessionNotFound": "Этот агент больше не подключён.",
     "profilePairedTwice": "Этот профиль указан в одном распределении несколько раз",
-    "extensionUrlInvalid": "Это не ссылка Chrome Web Store, не идентификатор расширения и не прямая ссылка .crx или .zip.",
+    "extensionUrlInvalid": "Это не ссылка Chrome Web Store или Firefox Add-ons, не ID расширения и не прямая ссылка .crx, .zip или .xpi.",
     "extensionDownloadFailed": "Не удалось загрузить расширение. Проверьте ссылку и соединение.",
     "extensionNotAnExtension": "Загруженный файл не является расширением браузера.",
     "extensionTooLarge": "Это расширение слишком велико для импорта.",
@@ -3478,7 +3478,7 @@
     "saveFailed": "Не удалось сохранить конфигурацию"
   },
   "cookieCopy": {
-    "noOtherTargets": "Других выбранных Wayfern профилей нет"
+    "noOtherTargets": "Другие совместимые профили не выбраны"
   },
   "about": {
     "licenseNotice": "Антидетект-браузер с открытым исходным кодом.",

@@ -748,6 +748,43 @@ fn unpacked_archive_name(dir: &Path) -> String {
   }
 }
 
+/// In a profile's `extensions/` directory: the `.xpi` files Owl copied there on
+/// the previous launch, by file name. Everything else in that directory belongs
+/// to the person.
+const MANAGED_EXTENSIONS_FILE: &str = ".owl-managed.json";
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct ManagedExtensions {
+  #[serde(default)]
+  files: Vec<String>,
+}
+
+fn read_managed_extensions(extensions_dir: &Path) -> Vec<String> {
+  let Ok(data) = fs::read(extensions_dir.join(MANAGED_EXTENSIONS_FILE)) else {
+    return Vec::new();
+  };
+  match serde_json::from_slice::<ManagedExtensions>(&data) {
+    Ok(managed) => managed.files,
+    Err(e) => {
+      // Without a readable manifest nothing is known to be Owl's, so nothing is
+      // removed and the directory stays as the person has it.
+      log::warn!("Managed Firefox extensions manifest unreadable err=\"{e}\"");
+      Vec::new()
+    }
+  }
+}
+
+fn write_managed_extensions(
+  extensions_dir: &Path,
+  files: &[String],
+) -> Result<(), Box<dyn std::error::Error>> {
+  let data = serde_json::to_vec_pretty(&ManagedExtensions {
+    files: files.to_vec(),
+  })?;
+  fs::write(extensions_dir.join(MANAGED_EXTENSIONS_FILE), data)?;
+  Ok(())
+}
+
 pub struct ExtensionManager;
 
 impl ExtensionManager {
@@ -1785,6 +1822,10 @@ impl ExtensionManager {
 
   // Compatibility validation
 
+  /// Whether every extension in the group runs in `browser`: Camoufox loads
+  /// Firefox WebExtensions (`.xpi`/`.zip`), Wayfern Chromium ones
+  /// (`.crx`/`.zip`). An engine Owl installs no extensions for is refused
+  /// instead of being called incompatible.
   pub fn validate_group_compatibility(
     &self,
     group_id: &str,
@@ -1792,6 +1833,7 @@ impl ExtensionManager {
   ) -> Result<(), Box<dyn std::error::Error>> {
     let group = self.get_group(group_id)?;
     let browser_type = match browser {
+      "camoufox" => "firefox",
       "wayfern" => "chromium",
       _ => return Err(format!("Extensions are not supported for browser '{browser}'").into()),
     };
@@ -1800,7 +1842,8 @@ impl ExtensionManager {
       let ext = self.get_extension(ext_id)?;
       if !ext
         .browser_compatibility
-        .contains(&browser_type.to_string())
+        .iter()
+        .any(|compatible| compatible == browser_type)
       {
         return Err(
           format!(
@@ -1819,19 +1862,48 @@ impl ExtensionManager {
 
   /// Camoufox sideloads add-ons from `<profile>/extensions/<gecko_id>.xpi`
   /// (user.js turns off signature checks and rescans that scope each launch).
+  ///
+  /// That directory is shared with the person, who may install add-ons into it
+  /// themselves, so a launch never clears it: it removes the xpis the previous
+  /// launch recorded in `.owl-managed.json` and copies the current group's over
+  /// them.
   fn install_firefox_extensions(
     &self,
-    group: &ExtensionGroup,
+    extension_ids: &[String],
     profile_data_path: &std::path::Path,
   ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let extensions_dir = profile_data_path.join("extensions");
-    if extensions_dir.exists() {
-      fs::remove_dir_all(&extensions_dir)?;
+    // No group and no previous Owl-managed file: leave a person's own
+    // extensions directory exactly as it is, including never creating one.
+    if extension_ids.is_empty() && !extensions_dir.join(MANAGED_EXTENSIONS_FILE).exists() {
+      return Ok(Vec::new());
     }
     fs::create_dir_all(&extensions_dir)?;
 
+    let mut managed = Vec::new();
+    for name in read_managed_extensions(&extensions_dir) {
+      // The manifest is a file on disk too; keep it to a file name under this
+      // directory even if it was edited by hand.
+      if !is_plain_path_part(&name) || !name.to_ascii_lowercase().ends_with(".xpi") {
+        continue;
+      }
+      let path = extensions_dir.join(&name);
+      if !path.is_file() {
+        continue;
+      }
+      match fs::remove_file(&path) {
+        Ok(()) => log::debug!("Removed stale Firefox extension file=\"{name}\""),
+        Err(e) => {
+          // Keep tracking it so the next launch tries again; dropping it here
+          // would leave the add-on loaded forever.
+          log::warn!("Stale Firefox extension not removed file=\"{name}\" err=\"{e}\"");
+          managed.push(name);
+        }
+      }
+    }
+
     let mut extension_paths = Vec::new();
-    for ext_id in &group.extension_ids {
+    for ext_id in extension_ids {
       let Ok(ext) = self.get_extension(ext_id) else {
         continue;
       };
@@ -1855,9 +1927,25 @@ impl ExtensionManager {
         );
         continue;
       };
-      let dest = extensions_dir.join(format!("{gecko_id}.xpi"));
-      fs::copy(&src_file, &dest)?;
-      extension_paths.push(dest.to_string_lossy().to_string());
+      let file_name = format!("{gecko_id}.xpi");
+      let dest = extensions_dir.join(&file_name);
+      match fs::copy(&src_file, &dest) {
+        Ok(_) => {
+          extension_paths.push(dest.to_string_lossy().to_string());
+          if !managed.contains(&file_name) {
+            managed.push(file_name);
+          }
+        }
+        // A failed copy leaves every other file, the person's included, alone.
+        Err(e) => log::warn!(
+          "Firefox extension not installed extension={} err=\"{e}\"",
+          ext.id
+        ),
+      }
+    }
+
+    if let Err(e) = write_managed_extensions(&extensions_dir, &managed) {
+      log::warn!("Managed Firefox extensions manifest not written err=\"{e}\"");
     }
     Ok(extension_paths)
   }
@@ -1867,18 +1955,30 @@ impl ExtensionManager {
     profile: &crate::profile::BrowserProfile,
     profile_data_path: &std::path::Path,
   ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let group_id = match &profile.extension_group_id {
-      Some(id) => id,
+    let group = match &profile.extension_group_id {
+      Some(id) => self.get_group(id)?,
+      // A Camoufox launch still runs the installer with no group: it has to
+      // drop the xpis an earlier group left behind, and only its own.
+      None if profile.browser.as_str() == "camoufox" => ExtensionGroup {
+        id: String::new(),
+        name: String::new(),
+        extension_ids: Vec::new(),
+        created_at: 0,
+        updated_at: 0,
+        sync_enabled: false,
+        last_sync: None,
+      },
       None => return Ok(Vec::new()),
     };
 
-    let group = self.get_group(group_id)?;
-    if group.extension_ids.is_empty() {
-      return Ok(Vec::new());
+    // Camoufox also runs for an empty group: a launch has to drop the xpis an
+    // earlier group left behind, and only its own (see install_firefox_extensions).
+    if profile.browser.as_str() == "camoufox" {
+      return self.install_firefox_extensions(&group.extension_ids, profile_data_path);
     }
 
-    if profile.browser.as_str() == "camoufox" {
-      return self.install_firefox_extensions(&group, profile_data_path);
+    if group.extension_ids.is_empty() {
+      return Ok(Vec::new());
     }
 
     if profile.browser.as_str() != "wayfern" {
@@ -2634,6 +2734,26 @@ mod tests {
     assert!(err.is_err());
   }
 
+  /// A WebExtension `.xpi` whose manifest carries the gecko id Firefox names
+  /// the sideloaded file after.
+  fn extension_xpi(gecko_id: &str) -> Vec<u8> {
+    let mut buffer = std::io::Cursor::new(Vec::new());
+    {
+      let mut writer = zip::ZipWriter::new(&mut buffer);
+      let options: zip::write::SimpleFileOptions = zip::write::FileOptions::default();
+      let manifest = serde_json::json!({
+        "manifest_version": 2,
+        "name": gecko_id,
+        "version": "1.0",
+        "browser_specific_settings": { "gecko": { "id": gecko_id } }
+      });
+      writer.start_file("manifest.json", options).unwrap();
+      std::io::Write::write_all(&mut writer, manifest.to_string().as_bytes()).unwrap();
+      writer.finish().unwrap();
+    }
+    buffer.into_inner()
+  }
+
   #[test]
   fn test_validate_group_compatibility() {
     let tmp = tempfile::tempdir().unwrap();
@@ -2653,9 +2773,62 @@ mod tests {
       .add_extension_to_group(&chrome_group.id, &chrome_ext.id)
       .unwrap();
 
+    let firefox_ext = mgr
+      .add_extension(
+        "Firefox Ext".to_string(),
+        "test.xpi".to_string(),
+        extension_xpi("owl-test@example.com"),
+      )
+      .unwrap();
+    let firefox_group = mgr.create_group("Firefox Group".to_string()).unwrap();
+    mgr
+      .add_extension_to_group(&firefox_group.id, &firefox_ext.id)
+      .unwrap();
+
+    let zip_ext = mgr
+      .add_extension(
+        "Both Engines".to_string(),
+        "test.zip".to_string(),
+        localized_extension_zip(),
+      )
+      .unwrap();
+    let zip_group = mgr.create_group("Both Engines Group".to_string()).unwrap();
+    mgr
+      .add_extension_to_group(&zip_group.id, &zip_ext.id)
+      .unwrap();
+
+    // Wayfern takes Chromium extensions only.
     assert!(mgr
       .validate_group_compatibility(&chrome_group.id, "wayfern")
       .is_ok());
+    assert!(mgr
+      .validate_group_compatibility(&firefox_group.id, "wayfern")
+      .is_err());
+    assert!(mgr
+      .validate_group_compatibility(&zip_group.id, "wayfern")
+      .is_ok());
+
+    // Camoufox takes Firefox extensions only.
+    assert!(mgr
+      .validate_group_compatibility(&firefox_group.id, "camoufox")
+      .is_ok());
+    assert!(mgr
+      .validate_group_compatibility(&chrome_group.id, "camoufox")
+      .is_err());
+    assert!(mgr
+      .validate_group_compatibility(&zip_group.id, "camoufox")
+      .is_ok());
+
+    let rejected = mgr
+      .validate_group_compatibility(&chrome_group.id, "camoufox")
+      .unwrap_err();
+    assert!(rejected.to_string().contains("not compatible"));
+
+    // An engine Owl installs no extensions for keeps its own error.
+    let unsupported = mgr
+      .validate_group_compatibility(&zip_group.id, "cloakbrowser")
+      .unwrap_err();
+    assert!(unsupported.to_string().contains("not supported"));
   }
 
   #[test]
@@ -2747,6 +2920,116 @@ mod tests {
     ExtensionManager::cleanup_unpacked_for_profile(&second.id.to_string());
     assert!(!Path::new(&second_paths[0]).exists());
     assert!(Path::new(&first_paths[0]).join("manifest.json").exists());
+  }
+
+  fn camoufox_profile_with_group(name: &str, group_id: &str) -> crate::profile::BrowserProfile {
+    crate::profile::BrowserProfile {
+      browser: "camoufox".to_string(),
+      ..profile_with_group(name, group_id)
+    }
+  }
+
+  /// Firefox scans every xpi in the profile's `extensions/` directory, and the
+  /// person may install add-ons there too. A launch replaces only the xpis its
+  /// own manifest says it copied on the previous launch.
+  #[test]
+  fn a_camoufox_launch_replaces_only_the_extensions_it_copied() {
+    let tmp = tempfile::tempdir().unwrap();
+    let _guard = crate::app_dirs::set_test_data_dir(tmp.path().to_path_buf());
+
+    let mgr = ExtensionManager::new();
+    let first_ext = mgr
+      .add_extension(
+        "First".to_string(),
+        "first.xpi".to_string(),
+        extension_xpi("owl-first@example.com"),
+      )
+      .unwrap();
+    let second_ext = mgr
+      .add_extension(
+        "Second".to_string(),
+        "second.xpi".to_string(),
+        extension_xpi("owl-second@example.com"),
+      )
+      .unwrap();
+    let first_group = mgr.create_group("First Group".to_string()).unwrap();
+    mgr
+      .add_extension_to_group(&first_group.id, &first_ext.id)
+      .unwrap();
+    let second_group = mgr.create_group("Second Group".to_string()).unwrap();
+    mgr
+      .add_extension_to_group(&second_group.id, &second_ext.id)
+      .unwrap();
+
+    let profile_dir = tmp.path().join("profile-data");
+    let extensions_dir = profile_dir.join("extensions");
+    fs::create_dir_all(&extensions_dir).unwrap();
+    let user_file = extensions_dir.join("owl-user@example.com.xpi");
+    fs::write(&user_file, b"the person's own add-on").unwrap();
+
+    let mut profile = camoufox_profile_with_group("Camoufox", &first_group.id);
+    let paths = mgr
+      .install_extensions_for_profile(&profile, &profile_dir)
+      .unwrap();
+    let first_file = extensions_dir.join("owl-first@example.com.xpi");
+    assert_eq!(paths, vec![first_file.to_string_lossy().to_string()]);
+    assert!(first_file.is_file());
+    assert_eq!(
+      read_managed_extensions(&extensions_dir),
+      ["owl-first@example.com.xpi"]
+    );
+
+    // Changing the group drops the xpi Owl copied before, keeps the person's
+    // add-on, and tracks the current group's file.
+    profile.extension_group_id = Some(second_group.id.clone());
+    let paths = mgr
+      .install_extensions_for_profile(&profile, &profile_dir)
+      .unwrap();
+    let second_file = extensions_dir.join("owl-second@example.com.xpi");
+    assert_eq!(paths, vec![second_file.to_string_lossy().to_string()]);
+    assert!(second_file.is_file());
+    assert!(!first_file.exists());
+    assert_eq!(
+      fs::read(&user_file).unwrap(),
+      b"the person's own add-on".to_vec()
+    );
+    assert_eq!(
+      read_managed_extensions(&extensions_dir),
+      ["owl-second@example.com.xpi"]
+    );
+
+    // Clearing the group drops the xpi Owl copied, and nothing else.
+    let empty_group = mgr.create_group("Empty Group".to_string()).unwrap();
+    profile.extension_group_id = Some(empty_group.id.clone());
+    assert!(mgr
+      .install_extensions_for_profile(&profile, &profile_dir)
+      .unwrap()
+      .is_empty());
+    assert!(!second_file.exists());
+    assert_eq!(
+      fs::read(&user_file).unwrap(),
+      b"the person's own add-on".to_vec()
+    );
+    assert!(read_managed_extensions(&extensions_dir).is_empty());
+
+    // Unassigning the group entirely is the same cleanup: the launch no longer
+    // calls the installer only when a group exists.
+    profile.extension_group_id = Some(first_group.id.clone());
+    mgr
+      .install_extensions_for_profile(&profile, &profile_dir)
+      .unwrap();
+    let first_again = extensions_dir.join("owl-first@example.com.xpi");
+    assert!(first_again.is_file());
+    profile.extension_group_id = None;
+    assert!(mgr
+      .install_extensions_for_profile(&profile, &profile_dir)
+      .unwrap()
+      .is_empty());
+    assert!(!first_again.exists());
+    assert_eq!(
+      fs::read(&user_file).unwrap(),
+      b"the person's own add-on".to_vec()
+    );
   }
 
   #[test]

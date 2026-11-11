@@ -2197,7 +2197,7 @@ impl ProxyManager {
     local_protocol: &str,
   ) -> Result<ProxySettings, String> {
     let _lifecycle = self.worker_lifecycle.lock().await;
-    ensure_route_health_monitor();
+    ensure_route_health_monitor(&app_handle);
     let started = std::time::Instant::now();
     if let Some(name) = profile_id {
       // Check if we have an active proxy recorded for this profile
@@ -3060,6 +3060,33 @@ pub async fn check_route_before_launch(
   proxy_id: Option<&str>,
   vpn_id: Option<&str>,
 ) -> Option<RouteUnreachable> {
+  check_route(proxy_id, vpn_id, false).await
+}
+
+/// The same check with both caches ignored: the route is asked now, within
+/// `ROUTE_CHECK_TIMEOUT`, even when a recent verdict or a stored proxy check
+/// says otherwise. The fresh answer is still written to the verdict cache, so
+/// the advisory check the UI runs afterwards agrees with it.
+///
+/// A route that cannot be judged from here (cloud-derived, dynamic, a
+/// non-reqwest proxy type, Hysteria2, an unreadable VPN config) answers
+/// `None`, exactly as the cached check does: a launch is never blocked on
+/// something no probe can decide.
+pub async fn check_route_now(
+  proxy_id: Option<&str>,
+  vpn_id: Option<&str>,
+) -> Option<RouteUnreachable> {
+  check_route(proxy_id, vpn_id, true).await
+}
+
+/// The route check behind both public variants. `force` skips the caches; the
+/// per-route check lock is held either way, so two launches through one route
+/// never probe it twice at once.
+async fn check_route(
+  proxy_id: Option<&str>,
+  vpn_id: Option<&str>,
+  force: bool,
+) -> Option<RouteUnreachable> {
   let (kind, id) = match (
     vpn_id.filter(|id| !id.is_empty()),
     proxy_id.filter(|id| !id.is_empty()),
@@ -3079,19 +3106,27 @@ pub async fn check_route_before_launch(
   let _checking = lock.lock().await;
 
   let now = now_secs();
-  let remembered = ROUTE_VERDICTS
-    .lock()
-    .ok()
-    .and_then(|verdicts| verdicts.get(&key).cloned())
-    .filter(|verdict| is_fresh(verdict.checked_at, now))
-    .map(|verdict| verdict.failure);
-  let cached = || {
-    (kind == "proxy")
-      .then(|| PROXY_MANAGER.get_cached_proxy_check(id))
-      .flatten()
-      .and_then(|result| verdict_from_cached_check(&result, now))
+  // Both caches are advisory: a forced check asks the route instead.
+  let shortcut = if force {
+    None
+  } else {
+    let remembered = || {
+      ROUTE_VERDICTS
+        .lock()
+        .ok()
+        .and_then(|verdicts| verdicts.get(&key).cloned())
+        .filter(|verdict| is_fresh(verdict.checked_at, now))
+        .map(|verdict| verdict.failure)
+    };
+    let cached = || {
+      (kind == "proxy")
+        .then(|| PROXY_MANAGER.get_cached_proxy_check(id))
+        .flatten()
+        .and_then(|result| verdict_from_cached_check(&result, now))
+    };
+    remembered().or_else(cached)
   };
-  let failure = match remembered.or_else(cached) {
+  let failure = match shortcut {
     Some(failure) => failure,
     None => {
       let started = std::time::Instant::now();
@@ -3101,7 +3136,7 @@ pub async fn check_route_before_launch(
         probe_proxy_route(id).await
       };
       log::info!(
-        "Route checked before launch {kind}={id} ok={} code={} elapsed_ms={}",
+        "Route checked before launch {kind}={id} ok={} code={} force={force} elapsed_ms={}",
         failure.is_none(),
         failure.as_deref().unwrap_or("none"),
         started.elapsed().as_millis()
@@ -3301,8 +3336,20 @@ static ROUTE_HEALTH: std::sync::LazyLock<
 static ROUTE_HEALTH_MONITOR: std::sync::atomic::AtomicBool =
   std::sync::atomic::AtomicBool::new(false);
 
+/// The app handle the health monitor stops a worker with. Set at the first
+/// worker start; the monitor needs it to run the stop command.
+static ROUTE_HEALTH_APP: std::sync::OnceLock<tauri::AppHandle> = std::sync::OnceLock::new();
+
+/// Profiles whose route just went Down and whose worker stop was already
+/// requested, so one outage stops a worker once.
+static ROUTE_DOWN_STOPS: std::sync::LazyLock<Mutex<std::collections::HashSet<String>>> =
+  std::sync::LazyLock::new(Default::default);
+
 /// Start the route health loop once, at the first worker start.
-fn ensure_route_health_monitor() {
+fn ensure_route_health_monitor(app_handle: &tauri::AppHandle) {
+  // Always before the monitor flag: the loop may run before a later caller
+  // sets the handle, and a `OnceLock` keeps the first (process-wide) handle.
+  let _ = ROUTE_HEALTH_APP.set(app_handle.clone());
   if ROUTE_HEALTH_MONITOR.swap(true, std::sync::atomic::Ordering::SeqCst) {
     return;
   }
@@ -3314,6 +3361,23 @@ fn ensure_route_health_monitor() {
       PROXY_MANAGER.poll_route_health();
     }
   });
+}
+
+/// Forget a down-route stop once its stop ran, the route answered, or the
+/// profile stopped running, so a later outage can stop its worker again.
+fn forget_route_down_stop(profile_id: &str) {
+  if let Ok(mut stops) = ROUTE_DOWN_STOPS.lock() {
+    stops.remove(profile_id);
+  }
+}
+
+/// Remember that a Down verdict already asked for this profile's worker stop.
+/// `false` when one was already asked, so one outage stops a worker once.
+fn remember_route_down_stop(profile_id: &str) -> bool {
+  ROUTE_DOWN_STOPS
+    .lock()
+    .map(|mut stops| stops.insert(profile_id.to_string()))
+    .unwrap_or(false)
 }
 
 /// The `proxy-health-changed` payload for a verdict.
@@ -3332,6 +3396,7 @@ fn route_health_payload(
 
 /// Forget a stopped profile's route health and tell the app, when it had any.
 fn clear_route_health(profile_id: &str) {
+  forget_route_down_stop(profile_id);
   let had_verdict = ROUTE_HEALTH
     .lock()
     .ok()
@@ -3358,6 +3423,63 @@ impl ProxyManager {
     ids.sort();
     ids.dedup();
     ids
+  }
+
+  /// Whether a live browser process still owns the profile's worker. Launch
+  /// placeholders are not browser PIDs, so they never count as one.
+  fn profile_browser_is_running(&self, profile_id: &str) -> bool {
+    let proxies = self.active_proxies.lock().unwrap();
+    proxies.iter().any(|(&pid, info)| {
+      info.profile_id.as_deref() == Some(profile_id)
+        && pid != 0
+        && !is_launch_placeholder_pid(pid)
+        && crate::proxy_storage::is_process_running(pid)
+    })
+  }
+
+  /// Stop the local worker of a profile whose route went Down. Spawned, never
+  /// awaited: a stop takes the worker lifecycle lock and runs the sidecar, and
+  /// this runs in the poll loop. The browser itself is deliberately left
+  /// running — cutting its tunnels is the point.
+  ///
+  /// The worker is re-resolved and the browser re-checked inside the task, so a
+  /// verdict that lands just as the profile stops, or is relaunched, cannot
+  /// kill a worker that belongs to a newer session.
+  fn stop_worker_for_down_route(&self, profile_id: &str, code: &str) {
+    let Some(app_handle) = ROUTE_HEALTH_APP.get().cloned() else {
+      return;
+    };
+    let Some(proxy_id) = self.resolve_proxy_id_for_profile(profile_id) else {
+      return;
+    };
+    if !remember_route_down_stop(profile_id) {
+      return;
+    }
+    let profile_id = profile_id.to_string();
+    let code = code.to_string();
+    tauri::async_runtime::spawn(async move {
+      if !PROXY_MANAGER.profile_browser_is_running(&profile_id) {
+        forget_route_down_stop(&profile_id);
+        return;
+      }
+      if PROXY_MANAGER
+        .resolve_proxy_id_for_profile(&profile_id)
+        .as_deref()
+        != Some(proxy_id.as_str())
+      {
+        forget_route_down_stop(&profile_id);
+        return;
+      }
+      match PROXY_MANAGER
+        .stop_proxy_by_profile_id(app_handle, &profile_id)
+        .await
+      {
+        Ok(()) => log::warn!("Proxy worker stopped, route down profile={profile_id} code={code}"),
+        Err(e) => log::warn!(
+          "Proxy worker stop failed, route down profile={profile_id} code={code} err=\"{e}\""
+        ),
+      }
+    });
   }
 
   fn poll_route_health(&self) {
@@ -3390,6 +3512,7 @@ impl ProxyManager {
         continue;
       };
       let key = format!("profile={profile_id}");
+      let down = matches!(verdict, (crate::traffic_stats::RouteHealthStatus::Down, _));
       match verdict {
         (crate::traffic_stats::RouteHealthStatus::Ok, _) => ROUTE_HEALTH_STREAK.succeeded(&key),
         (status, code) => ROUTE_HEALTH_STREAK.failed(
@@ -3409,6 +3532,11 @@ impl ProxyManager {
         route_health_payload(&profile_id, verdict, now),
       ) {
         log::warn!("Event emit failed event=proxy-health-changed err=\"{e}\"");
+      }
+      if down {
+        self.stop_worker_for_down_route(&profile_id, verdict.1.unwrap_or("none"));
+      } else {
+        forget_route_down_stop(&profile_id);
       }
     }
   }
@@ -3505,6 +3633,114 @@ mod route_check_tests {
   async fn a_profile_with_no_route_is_never_checked() {
     assert_eq!(check_route_before_launch(None, None).await, None);
     assert_eq!(check_route_before_launch(Some(""), Some("")).await, None);
+  }
+
+  fn stored_proxy(id: &str, proxy_type: &str, host: &str, port: u16) -> StoredProxy {
+    StoredProxy {
+      id: id.to_string(),
+      name: "route check test".to_string(),
+      proxy_settings: ProxySettings {
+        proxy_type: proxy_type.to_string(),
+        host: host.to_string(),
+        port,
+        username: None,
+        password: None,
+        vless_uri: None,
+      },
+      sync_enabled: false,
+      last_sync: None,
+      updated_at: None,
+      is_cloud_managed: false,
+      is_cloud_derived: false,
+      geo_country: None,
+      geo_state: None,
+      geo_region: None,
+      geo_city: None,
+      geo_isp: None,
+      dynamic_proxy_url: None,
+      dynamic_proxy_format: None,
+      rotation_url: None,
+    }
+  }
+
+  /// A loopback port with nothing listening on it, without leaving this machine.
+  fn closed_loopback_port() -> u16 {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.local_addr().unwrap().port()
+  }
+
+  #[tokio::test]
+  async fn the_live_check_reports_a_stored_proxy_at_a_closed_loopback_port() {
+    let port = closed_loopback_port();
+    let id = format!("route-check-{}", uuid::Uuid::new_v4());
+    PROXY_MANAGER
+      .stored_proxies
+      .lock()
+      .unwrap()
+      .insert(id.clone(), stored_proxy(&id, "http", "127.0.0.1", port));
+    // A fresh "passed" verdict is what the advisory launch check trusts. The
+    // live check must ignore it rather than repeat a stale answer.
+    let key = format!("proxy:{id}");
+    ROUTE_VERDICTS.lock().unwrap().insert(
+      key.clone(),
+      RouteVerdict {
+        checked_at: now_secs(),
+        failure: None,
+      },
+    );
+
+    let advisory = check_route_before_launch(Some(&id), None).await;
+    let live = check_route_now(Some(&id), None).await;
+
+    let remembered = ROUTE_VERDICTS
+      .lock()
+      .unwrap()
+      .get(&key)
+      .map(|verdict| verdict.failure.clone());
+    PROXY_MANAGER.stored_proxies.lock().unwrap().remove(&id);
+    ROUTE_VERDICTS.lock().unwrap().remove(&key);
+
+    assert_eq!(advisory, None, "the cached pass is the advisory answer");
+    let live = live.expect("a closed loopback port must be reported");
+    assert_eq!(live.kind, "proxy");
+    assert_eq!(live.id, id);
+    assert_eq!(live.code, "PROXY_UPSTREAM_UNREACHABLE");
+    assert_eq!(
+      remembered,
+      Some(Some("PROXY_UPSTREAM_UNREACHABLE".to_string())),
+      "the live answer replaces the stale verdict"
+    );
+  }
+
+  #[tokio::test]
+  async fn an_unprobeable_proxy_is_never_reported() {
+    // reqwest has no SSH transport, so the check cannot judge this route and
+    // must answer None rather than block a launch it did not measure.
+    let id = format!("route-check-ssh-{}", uuid::Uuid::new_v4());
+    PROXY_MANAGER
+      .stored_proxies
+      .lock()
+      .unwrap()
+      .insert(id.clone(), stored_proxy(&id, "ssh", "proxy.example", 22));
+    let live = check_route_now(Some(&id), None).await;
+    PROXY_MANAGER.stored_proxies.lock().unwrap().remove(&id);
+    assert_eq!(live, None);
+  }
+
+  #[test]
+  fn a_down_verdict_asks_for_one_worker_stop_per_outage() {
+    let id = format!("route-stop-test-{}", uuid::Uuid::new_v4());
+    assert!(remember_route_down_stop(&id));
+    assert!(
+      !remember_route_down_stop(&id),
+      "the same outage must not stop twice"
+    );
+    forget_route_down_stop(&id);
+    assert!(
+      remember_route_down_stop(&id),
+      "a later outage may stop the worker again"
+    );
+    forget_route_down_stop(&id);
   }
 }
 

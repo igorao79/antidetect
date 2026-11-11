@@ -531,6 +531,24 @@ fn latest_version(browser: &str) -> Option<String> {
   versions.into_iter().next()
 }
 
+/// A template's extension group has to run in the engine the template names.
+/// Template creation only checks that the group exists (`ProfilePatch`), so
+/// without this a Camoufox template could take a Chromium group and only find
+/// out when a profile from it fails to launch.
+fn check_extension_group_compatibility(
+  browser: &str,
+  extension_group_id: Option<&str>,
+) -> Result<(), String> {
+  let Some(group_id) = extension_group_id.filter(|id| !id.is_empty()) else {
+    return Ok(());
+  };
+  crate::extension_manager::EXTENSION_MANAGER
+    .lock()
+    .map_err(|_| code("INTERNAL_ERROR"))?
+    .validate_group_compatibility(group_id, browser)
+    .map_err(|e| crate::coded_failure("EXTENSION_GROUP_CHANGE_FAILED", e))
+}
+
 /// Make `count` profiles with these settings. Everything is checked first,
 /// each proxy once; then the profiles are made one by one until the count is
 /// reached, an error stops the run, or the person cancels it. What was made
@@ -563,6 +581,7 @@ pub async fn create_profiles(
   let settings = settings.checked().await?;
   let after = settings.after_creation().validated()?;
   let browser = settings.engine().to_string();
+  check_extension_group_compatibility(&browser, settings.extension_group_id.as_deref())?;
   let camoufox = browser == "camoufox";
   let version = latest_version(&browser).ok_or_else(|| {
     let name = if camoufox { "Camoufox" } else { "Wayfern" };
@@ -901,5 +920,55 @@ mod tests {
       .await
       .unwrap_err()
       .contains("PROXY_AND_VPN_MUTUALLY_EXCLUSIVE"));
+  }
+
+  #[test]
+  fn a_template_group_must_run_in_the_engine_it_names() {
+    let tmp = tempfile::tempdir().unwrap();
+    let _guard = crate::app_dirs::set_test_data_dir(tmp.path().to_path_buf());
+
+    let mgr = crate::extension_manager::ExtensionManager::new();
+    let chromium = mgr
+      .add_extension(
+        "Chromium".to_string(),
+        "test.crx".to_string(),
+        vec![0, 1, 2, 3],
+      )
+      .unwrap();
+    let chromium_group = mgr.create_group("Chromium Group".to_string()).unwrap();
+    mgr
+      .add_extension_to_group(&chromium_group.id, &chromium.id)
+      .unwrap();
+    let universal = mgr
+      .add_extension(
+        "Universal".to_string(),
+        "test.zip".to_string(),
+        vec![0, 1, 2, 3],
+      )
+      .unwrap();
+    let universal_group = mgr.create_group("Universal Group".to_string()).unwrap();
+    mgr
+      .add_extension_to_group(&universal_group.id, &universal.id)
+      .unwrap();
+
+    // No group is always fine, and a group both engines run passes either.
+    assert!(check_extension_group_compatibility("camoufox", None).is_ok());
+    assert!(check_extension_group_compatibility("camoufox", Some("")).is_ok());
+    assert!(
+      check_extension_group_compatibility("camoufox", Some(universal_group.id.as_str())).is_ok()
+    );
+    assert!(
+      check_extension_group_compatibility("wayfern", Some(universal_group.id.as_str())).is_ok()
+    );
+
+    // Wayfern runs a Chromium group; Camoufox refuses it before any profile is
+    // created, in a form the dialog can translate.
+    assert!(
+      check_extension_group_compatibility("wayfern", Some(chromium_group.id.as_str())).is_ok()
+    );
+    let rejected =
+      check_extension_group_compatibility("camoufox", Some(chromium_group.id.as_str()))
+        .unwrap_err();
+    assert!(rejected.contains("EXTENSION_GROUP_CHANGE_FAILED"));
   }
 }

@@ -138,11 +138,15 @@ impl BrowserRunner {
     };
 
     emit_launch_stage(profile, "extensions", None);
-    if updated_profile.extension_group_id.is_some() {
-      let profiles_dir = self.profile_manager.get_profiles_dir();
-      let ext_profile_path = override_profile_path
-        .clone()
-        .unwrap_or_else(|| updated_profile.get_profile_data_path(&profiles_dir));
+    // Run even with no group: the installer must remove the xpis a group that
+    // was unassigned left behind, while keeping the person's own add-ons.
+    let profiles_dir = self.profile_manager.get_profiles_dir();
+    let ext_profile_path = override_profile_path
+      .clone()
+      .unwrap_or_else(|| updated_profile.get_profile_data_path(&profiles_dir));
+    {
+      // Scoped so the manager lock is gone before the launch `.await`; holding
+      // a std::sync guard across it makes the whole Tauri command non-Send.
       let mgr = crate::extension_manager::EXTENSION_MANAGER.lock().unwrap();
       match mgr.install_extensions_for_profile(&updated_profile, &ext_profile_path) {
         Ok(paths) if !paths.is_empty() => log::info!(

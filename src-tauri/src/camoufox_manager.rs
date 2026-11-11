@@ -343,6 +343,7 @@ impl CamoufoxManager {
     _app_handle: &AppHandle,
     profile: &crate::profile::BrowserProfile,
     profile_path: &str,
+    executable_path: &std::path::Path,
     config: &CamoufoxConfig,
     url: Option<&str>,
     remote_debugging_port: Option<u16>,
@@ -354,20 +355,6 @@ impl CamoufoxManager {
     } else {
       return Err("No fingerprint provided".into());
     };
-
-    // Get executable path
-    let executable_path = BrowserRunner::instance()
-      .get_browser_executable_path(profile)
-      .map_err(|e| format!("Failed to get Camoufox executable path: {e}"))?;
-    crate::camoufox::search::ensure_search_engines(&executable_path);
-    crate::camoufox::last_window::ensure_quit_with_last_window(&executable_path);
-    {
-      let executable = executable_path.clone();
-      let _ = tokio::task::spawn_blocking(move || {
-        crate::camoufox::bundled_fonts::shadow_installed_fonts(&executable)
-      })
-      .await;
-    }
 
     // Parse the fingerprint config JSON
     let mut fingerprint_config: HashMap<String, serde_json::Value> =
@@ -388,6 +375,15 @@ impl CamoufoxManager {
       &fingerprint_config,
       config.interface_language.as_deref(),
     ));
+
+    // The identity the browser shows for this profile (window title and Dock
+    // badge) and the chrome color live in the profile it is about to open. For
+    // an ephemeral or password-protected profile that is the temporary or
+    // decrypted directory passed in, never the stored one.
+    crate::camoufox::profile_identity::write_profile_identity(
+      profile,
+      std::path::Path::new(profile_path),
+    );
 
     // Build command arguments
     // Note: We intentionally do NOT use -no-remote to allow opening URLs in existing instances
@@ -433,7 +429,7 @@ impl CamoufoxManager {
     // sees only an opaque "Secure Connection Failed" page — capture stderr
     // to a per-launch file so diagnostics survive without a TTY.
     let stderr_log_path = std::env::temp_dir().join(format!("camoufox-stderr-{}.log", profile.id));
-    let mut command = TokioCommand::new(&executable_path);
+    let mut command = TokioCommand::new(executable_path);
     command
       .args(&args)
       .stdin(Stdio::null())
@@ -465,7 +461,7 @@ impl CamoufoxManager {
     if cfg!(target_os = "linux") {
       let target_os = config.os.as_deref().unwrap_or("linux");
       if let Some(fontconfig_path) =
-        crate::camoufox::env_vars::get_fontconfig_env(target_os, &executable_path)
+        crate::camoufox::env_vars::get_fontconfig_env(target_os, executable_path)
       {
         command.env("FONTCONFIG_PATH", fontconfig_path);
       }
@@ -871,6 +867,41 @@ impl CamoufoxManager {
     // Clean up any dead instances before launching
     let _ = self.cleanup_dead_instances().await;
 
+    // macOS gets a separate app bundle per profile so its Dock tile and menu
+    // name are the profile's, not a shared "Camoufox". The clone is prepared
+    // before the build's own files are patched; both then live in the clone.
+    let source_executable = BrowserRunner::instance()
+      .get_browser_executable_path(&profile)
+      .map_err(|e| format!("Failed to get Camoufox executable path: {e}"))?;
+    let profile_for_app = profile.clone();
+    let source_for_app = source_executable.clone();
+    let executable_path = match tokio::task::spawn_blocking(move || {
+      crate::camoufox::profile_app::prepare_profile_app(&profile_for_app, &source_for_app)
+    })
+    .await
+    {
+      Ok(Ok(path)) => path,
+      Ok(Err(e)) => {
+        log::warn!("Per-profile app unavailable, using Camoufox.app err=\"{e}\"");
+        source_executable
+      }
+      Err(e) => {
+        log::warn!("Per-profile app task failed, using Camoufox.app err=\"{e}\"");
+        source_executable
+      }
+    };
+
+    crate::camoufox::search::ensure_search_engines(&executable_path);
+    crate::camoufox::last_window::ensure_quit_with_last_window(&executable_path);
+    crate::camoufox::profile_identity::ensure_profile_identity_hook(&executable_path);
+    {
+      let executable = executable_path.clone();
+      let _ = tokio::task::spawn_blocking(move || {
+        crate::camoufox::bundled_fonts::shadow_installed_fonts(&executable)
+      })
+      .await;
+    }
+
     // For ephemeral profiles, write Firefox prefs to minimize disk writes
     if override_profile_path.is_some() {
       let user_js_path = profile_path.join("user.js");
@@ -913,6 +944,7 @@ impl CamoufoxManager {
         "browser.sessionhistory.max_entries",
         "browser.sessionhistory.max_total_viewers",
         "layers.gpu-process.enabled",
+        "toolkit.legacyUserProfileCustomizations.stylesheets",
       ];
       managed_keys.extend(SCROLL_PREFS.iter().map(|(key, _)| *key));
       let restores_session = override_profile_path.is_none();
@@ -963,6 +995,11 @@ impl CamoufoxManager {
         "user_pref(\"xpinstall.signatures.required\", false);\n\
          user_pref(\"extensions.startupScanScopes\", 1);\n",
       );
+
+      // Firefox only applies the profile's chrome/userChrome.css when this is
+      // on. The file carries the profile color block; `write_profile_identity`
+      // writes it before every launch.
+      prefs.push_str("user_pref(\"toolkit.legacyUserProfileCustomizations.stylesheets\", true);\n");
 
       // On macOS WebRender draws in a GPU process, where the fonts Camoufox
       // carries (activated in the parent and content processes only) are
@@ -1026,6 +1063,7 @@ impl CamoufoxManager {
         &app_handle,
         &profile,
         &profile_path_str,
+        &executable_path,
         &config,
         url.as_deref(),
         remote_debugging_port,

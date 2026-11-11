@@ -1020,6 +1020,7 @@ impl ProfileManager {
     let started = std::time::Instant::now();
     let removed = self.find_profile(profile_id).ok();
     let outcome = self.remove_profile_unlogged(app_handle, profile_id, permanent, emit_events)?;
+    crate::camoufox::profile_app::remove_profile_app(profile_id);
     if let Some(profile) = &removed {
       report_team_edit(profile, "profile.delete", &[]);
     }
@@ -1275,6 +1276,7 @@ impl ProfileManager {
       crate::fs_secure::secure_remove_dir_all(&profile_dir, true)?;
       log::info!("Profile erased: deleted on another device profile={profile_id}");
     }
+    crate::camoufox::profile_app::remove_profile_app(profile_id);
 
     if let Err(e) = crate::downloaded_browsers_registry::DownloadedBrowsersRegistry::instance()
       .cleanup_unused_binaries()

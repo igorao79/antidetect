@@ -72,6 +72,9 @@ pub const DEFAULT_EXCLUDE_PATTERNS: &[&str] = &[
   "**/wayfern-identity.json",
   "**/wayfern-identity-result.json",
   "**/wayfern-persona.json",
+  // Per-machine UI identity (profile name, color, short Dock badge); every
+  // launch rewrites it, and another machine's copy must not travel.
+  "**/owl-identity.json",
   "**/SingletonSocket",
   "**/SingletonCookie",
   "**/GraphiteDawnCache/**",

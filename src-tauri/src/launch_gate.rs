@@ -21,7 +21,10 @@
 //! `get_profile_pre_launch_checks` is the cheap half the UI calls first, so a
 //! profile whose exit is already known blocks without starting a single
 //! worker. Its one network use is a route check of at most four seconds,
-//! skipped when a recent result exists.
+//! skipped when a recent result exists. With the route kill switch on, the
+//! enforcing half also asks the route to answer just now (`check_route_now`),
+//! so a proxy that is configured but dead stops the launch instead of opening
+//! a browser with no traffic.
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -201,6 +204,48 @@ fn route_required() -> bool {
     .load_settings()
     .map(|s| s.require_route_for_launch)
     .unwrap_or(false)
+}
+
+/// The live half of the kill switch: with "Block launches without a proxy or
+/// VPN" on, a route that does not answer *now* blocks the launch, not only one
+/// that is missing. It is called from `prepare_launch_network`, so every
+/// Camoufox launch — the UI, REST, MCP and automation alike — passes it.
+///
+/// A route no probe can judge (cloud-derived, dynamic, a non-reqwest type,
+/// Hysteria2, an unreadable VPN config) passes, because refusing what cannot
+/// be measured would block working profiles. The advisory pre-launch check
+/// still warns about those.
+pub async fn enforce_route_reachable(profile: &BrowserProfile) -> Result<(), String> {
+  if !route_required() {
+    return Ok(());
+  }
+  let unreachable =
+    crate::proxy_manager::check_route_now(profile.proxy_id.as_deref(), profile.vpn_id.as_deref())
+      .await;
+  route_reachable_verdict(profile, unreachable)
+}
+
+/// Apply a live check's answer. Separate from the probe so the coded refusal
+/// is testable without network.
+fn route_reachable_verdict(
+  profile: &BrowserProfile,
+  unreachable: Option<crate::proxy_manager::RouteUnreachable>,
+) -> Result<(), String> {
+  let Some(unreachable) = unreachable else {
+    return Ok(());
+  };
+  // Ids only. The probe code says why the route failed, and neither the
+  // route's credentials nor the profile's name may reach the log.
+  log::warn!(
+    "Launch blocked, route does not answer profile={} proxy={} vpn={} kind={} route={} code={}",
+    profile.id,
+    profile.proxy_id.as_deref().unwrap_or("none"),
+    profile.vpn_id.as_deref().unwrap_or("none"),
+    unreachable.kind,
+    unreachable.id,
+    unreachable.code
+  );
+  Err(crate::backend_error("PROFILE_ROUTE_UNAVAILABLE"))
 }
 
 fn extension_warning_disabled() -> bool {
@@ -580,6 +625,36 @@ mod tests {
   #[test]
   fn the_kill_switch_lets_a_routed_launch_through() {
     assert!(route_verdict(true, true, true).is_ok());
+  }
+
+  fn unreachable(kind: &str, id: &str, code: &str) -> crate::proxy_manager::RouteUnreachable {
+    crate::proxy_manager::RouteUnreachable {
+      kind: kind.into(),
+      id: id.into(),
+      code: code.into(),
+    }
+  }
+
+  #[test]
+  fn a_live_unreachable_route_blocks_with_the_route_code() {
+    let profile = profile_with(r#"{"timezone":"Europe/Berlin"}"#);
+    let error = route_reachable_verdict(
+      &profile,
+      Some(unreachable("proxy", "p-1", "PROXY_UPSTREAM_UNREACHABLE")),
+    )
+    .unwrap_err();
+    assert!(error.contains("PROFILE_ROUTE_UNAVAILABLE"), "{error}");
+    // The probe's own code is for the log; the person gets the translated
+    // route code, never the raw probe reason.
+    assert!(!error.contains("PROXY_UPSTREAM_UNREACHABLE"), "{error}");
+  }
+
+  #[test]
+  fn a_route_no_probe_could_judge_never_blocks() {
+    // `check_route_now` answers None for a route it cannot judge; the gate
+    // must treat that as "no finding", not as a failure.
+    let profile = profile_with(r#"{"timezone":"Europe/Berlin"}"#);
+    assert!(route_reachable_verdict(&profile, None).is_ok());
   }
 
   fn profile_with(fingerprint: &str) -> BrowserProfile {

@@ -739,6 +739,10 @@ function ProfileInfoContents({
 
   const ProfileIcon = getProfileIcon(profile);
   const isWayfern = profile.browser === "wayfern";
+  // cookie_manager.rs reads both engines; a removed engine (legacy
+  // cloakbrowser) has no cookie database and must keep the actions hidden.
+  const supportsCookies =
+    profile.browser === "wayfern" || profile.browser === "camoufox";
   const isDeleteDisabled = isRunning;
 
   const proxyName = profile.proxy_id
@@ -873,7 +877,9 @@ function ProfileInfoContents({
       disabled: isDisabled,
       runningBadge: isRunning,
       hidden:
-        !isWayfern || profile.ephemeral === true || !onCopyCookiesToProfile,
+        !supportsCookies ||
+        profile.ephemeral === true ||
+        !onCopyCookiesToProfile,
     },
     {
       id: "cookiesManage",
@@ -885,7 +891,9 @@ function ProfileInfoContents({
       disabled: isDisabled,
       runningBadge: isRunning,
       hidden:
-        !isWayfern || profile.ephemeral === true || !onOpenCookieManagement,
+        !supportsCookies ||
+        profile.ephemeral === true ||
+        !onOpenCookieManagement,
     },
     {
       icon: <LuSettings className="size-4" />,
@@ -1139,6 +1147,9 @@ function ProfileInfoLayout({
   // being broken or the plan lacking the feature. Keep them listed and explain.
   const isEphemeral = profile.ephemeral === true;
   const isWayfernProfile = profile.browser === "wayfern";
+  // Both engines keep cookies in a database the backend reads.
+  const supportsCookies =
+    profile.browser === "wayfern" || profile.browser === "camoufox";
 
   const deleteAction = findAction("delete");
   const fingerprintAction = findAction("fingerprint");
@@ -1225,7 +1236,7 @@ function ProfileInfoLayout({
         cookieCount !== null && cookieCount > 0
           ? cookieCount.toLocaleString()
           : undefined,
-      hidden: !cookiesAction && !(isEphemeral && isWayfernProfile),
+      hidden: !cookiesAction && !(isEphemeral && supportsCookies),
     },
     {
       id: "extensions",
@@ -2660,13 +2671,17 @@ function CookiesSectionInline({
                   : "—"}
             </p>
           </div>
-          {profile.ephemeral !== true && !profile.password_protected && (
-            <StorageStateBlock
-              profile={profile}
-              isDisabled={isDisabled}
-              t={t}
-            />
-          )}
+          {/* storageState reads Chromium's Local Storage LevelDB; Firefox
+              has no such store, so the block stays Wayfern-only. */}
+          {profile.browser === "wayfern" &&
+            profile.ephemeral !== true &&
+            !profile.password_protected && (
+              <StorageStateBlock
+                profile={profile}
+                isDisabled={isDisabled}
+                t={t}
+              />
+            )}
           {domains.length > 0 && (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg bg-foreground/4">
               <p className="shrink-0 border-b border-foreground/6 px-3 py-2 text-xs font-medium text-muted-foreground">

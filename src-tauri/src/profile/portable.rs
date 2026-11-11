@@ -154,11 +154,12 @@ pub fn is_excluded(relative: &str) -> bool {
     "DawnGraphiteCache",
     "GraphiteDawnCache",
   ];
-  const LAUNCH_FILES: [&str; 4] = [
+  const LAUNCH_FILES: [&str; 5] = [
     "wayfern-identity.json",
     "wayfern-identity-result.json",
     "wayfern-persona.json",
     "window-icon.png",
+    "owl-identity.json",
   ];
   const SINGLETONS: [&str; 3] = ["SingletonLock", "SingletonSocket", "SingletonCookie"];
 
@@ -634,6 +635,7 @@ mod tests {
     fs::create_dir_all(dir.join("Default/Cache")).unwrap();
     fs::write(dir.join("Default/Cache/data_0"), vec![0u8; 4096]).unwrap();
     fs::write(dir.join("wayfern-identity.json"), b"{}").unwrap();
+    fs::write(dir.join("owl-identity.json"), b"{}").unwrap();
     fs::write(dir.join("SingletonLock"), b"lock").unwrap();
   }
 
@@ -675,6 +677,10 @@ mod tests {
     assert!(
       !names.iter().any(|n| n.contains("wayfern-identity.json")),
       "the launcher rewrites its own documents every launch: {names:?}"
+    );
+    assert!(
+      !names.iter().any(|n| n.contains("owl-identity.json")),
+      "the per-machine identity document must not travel: {names:?}"
     );
     assert!(!names.iter().any(|n| n.contains("SingletonLock")));
 

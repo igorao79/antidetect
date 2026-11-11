@@ -15,27 +15,10 @@ use std::path::Path;
 const HOOK: &str = include_str!("last_window.js");
 const BEGIN: &str = "// Owl: closing the last window quits the browser (begin)";
 const END: &str = "// Owl: closing the last window quits the browser (end)";
-const AUTOCONFIG_PREFS: &str =
-  "// Owl: lets camoufox.cfg run the browser's own code (camoufox/last_window.rs).\n\
-pref(\"general.config.sandbox_enabled\", false);\n";
 
 /// camoufox.cfg with the hook in place of any earlier copy of it.
-fn with_hook(cfg: &str) -> String {
-  let mut kept = cfg.to_string();
-  if let (Some(start), Some(end)) = (kept.find(BEGIN), kept.find(END)) {
-    if start < end {
-      kept.replace_range(start..end + END.len(), "");
-    }
-  }
-  format!("{}\n\n{BEGIN}\n{HOOK}{END}\n", kept.trim_end())
-}
-
-fn update(path: &Path, wanted: &str) -> std::io::Result<bool> {
-  if std::fs::read_to_string(path).is_ok_and(|current| current == wanted) {
-    return Ok(false);
-  }
-  super::write_atomically(path, wanted)?;
-  Ok(true)
+pub(crate) fn with_hook(cfg: &str) -> String {
+  super::hook::upsert_block(cfg, BEGIN, END, HOOK)
 }
 
 /// Make closing the last window of the build at `executable` quit it.
@@ -50,11 +33,8 @@ pub fn ensure_quit_with_last_window(executable: &Path) {
   let Ok(cfg) = std::fs::read_to_string(&cfg_path) else {
     return;
   };
-  let written = update(
-    &resources.join("defaults").join("pref").join("owl.js"),
-    AUTOCONFIG_PREFS,
-  )
-  .and_then(|prefs| Ok(update(&cfg_path, &with_hook(&cfg))? || prefs));
+  let written = super::hook::ensure_autoconfig_pref(&resources)
+    .and_then(|prefs| Ok(super::write_if_changed(&cfg_path, &with_hook(&cfg))? || prefs));
   match written {
     Ok(true) => log::info!(
       "Camoufox in {} now quits with its last window",

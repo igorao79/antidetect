@@ -523,6 +523,11 @@ impl BrowserRunner {
       // every spawn needs, including a profile with no route to check.
       crate::launch_gate::enforce_route_required(profile, upstream_proxy.is_some())
         .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { e.into() })?;
+      // Same live kill-switch probe as the Camoufox path: a configured but
+      // dead route must stop a Wayfern launch too, before any browser exists.
+      crate::launch_gate::enforce_route_reachable(profile)
+        .await
+        .map_err(|e| -> Box<dyn std::error::Error + Send + Sync> { e.into() })?;
       crate::group_bookmarks::sync_for_launch(profile);
 
       // Run concurrently with the blocklist compile so the added wall clock is

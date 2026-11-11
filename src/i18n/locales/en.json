@@ -1311,7 +1311,7 @@
       "sourcePlaceholder": "Select a profile to copy cookies from",
       "running": "(running)",
       "targetProfiles": "Target Profiles ({{count}})",
-      "noOtherTargets": "No other Wayfern profiles selected",
+      "noOtherTargets": "No other compatible profiles selected",
       "selectSourceFirst": "Select a source profile first",
       "selectionStatus": "({{selected}} of {{total}} selected)",
       "searchPlaceholder": "Search domains or cookies...",
@@ -1532,7 +1532,7 @@
     "renameProfileFailed": "Failed to rename profile: {{error}}",
     "killBrowserFailed": "Failed to kill browser: {{error}}",
     "deleteSelectedProfilesFailed": "Failed to delete selected profiles: {{error}}",
-    "cookieCopyUnsupportedBrowser": "Cookie copy only works with Wayfern profiles",
+    "cookieCopyUnsupportedBrowser": "Cookie copy works only with Camoufox and Wayfern profiles",
     "updateSyncSettingsFailed": "Failed to update sync settings",
     "cloneProfileFailed": "Failed to clone profile: {{error}}",
     "loadSupportedBrowsersFailed": "Failed to load supported browsers",
@@ -1901,7 +1901,7 @@
     "delete": "Delete",
     "extensionsTab": "Extensions",
     "groupsTab": "Groups",
-    "managedNotice": "Extensions managed here will replace any manually installed extensions in profiles when launched.",
+    "managedNotice": "Extensions managed here are installed on launch. Add-ons you installed in the browser are kept.",
     "proRequired": "Extension management is a Pro feature",
     "empty": "No extensions uploaded yet.",
     "createGroup": "Create Group",
@@ -1926,7 +1926,7 @@
     "deleteConfirmDescription": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
     "deleteGroupConfirmTitle": "Delete extension group",
     "deleteGroupConfirmDescription": "Are you sure you want to delete the group \"{{name}}\"? This action cannot be undone.",
-    "invalidFileType": "Invalid file type. Please choose a .crx or .zip file.",
+    "invalidFileType": "Invalid file type. Choose a .crx, .zip or .xpi file.",
     "readError": "Failed to read the extension file.",
     "assignTitle": "Assign Extension Group",
     "assignDescription": "Assign {{count}} selected profile(s) to an extension group.",
@@ -1983,8 +1983,8 @@
       "linkedTooltip": "Loaded in place from {{path}}"
     },
     "fromUrl": "From link",
-    "fromUrlTooltip": "Add an extension from a Chrome Web Store link, an extension ID, or a direct .crx or .zip link",
-    "urlPlaceholder": "Web Store link, extension ID, or .crx link",
+    "fromUrlTooltip": "Add an extension from a Chrome Web Store or Firefox Add-ons link, an extension ID, or a direct .crx, .zip or .xpi link",
+    "urlPlaceholder": "Web Store / Firefox Add-ons link, ID, or .crx/.xpi link",
     "urlHint": "Owl downloads the package over HTTPS and reads its name and version before anything is saved.",
     "fetchExtension": "Fetch",
     "fetching": "Fetching…",
@@ -2873,7 +2873,7 @@
     "agentTextTooLong": "This text is too long. The limit is {{max}} characters.",
     "agentSessionNotFound": "That agent is no longer connected.",
     "profilePairedTwice": "This profile was listed more than once in the same distribution",
-    "extensionUrlInvalid": "That is not a Chrome Web Store link, an extension ID, or a direct .crx or .zip link.",
+    "extensionUrlInvalid": "That is not a Chrome Web Store or Firefox Add-ons link, an extension ID, or a direct .crx, .zip or .xpi link.",
     "extensionDownloadFailed": "The extension could not be downloaded. Check the link and your connection.",
     "extensionNotAnExtension": "That download is not a browser extension.",
     "extensionTooLarge": "That extension is too large to import.",
@@ -3438,7 +3438,7 @@
     "saveFailed": "Failed to save configuration"
   },
   "cookieCopy": {
-    "noOtherTargets": "No other Wayfern profiles selected"
+    "noOtherTargets": "No other compatible profiles selected"
   },
   "about": {
     "licenseNotice": "Open-source anti-detect browser.",

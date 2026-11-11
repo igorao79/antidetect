@@ -105,7 +105,7 @@ type PendingSource =
   | { kind: "archive"; fileName: string; data: number[] }
   | { kind: "folder"; path: string };
 
-const ARCHIVE_EXTENSIONS = [".crx", ".zip"];
+const ARCHIVE_EXTENSIONS = [".crx", ".zip", ".xpi"];
 
 /** Above this many extensions, the group editor offers a search field. */
 const MEMBER_SEARCH_THRESHOLD = 8;
@@ -501,7 +501,7 @@ export function ExtensionManagementDialog({
       void readArchiveFile(file).then((source) => {
         if (!source) return;
         setExtensionName(
-          file.name.replace(/\.(crx|zip)$/i, "").replace(/[-_]/g, " "),
+          file.name.replace(/\.(crx|zip|xpi)$/i, "").replace(/[-_]/g, " "),
         );
         setLinkFolder(false);
         setFetchedIdentity(null);
@@ -564,7 +564,9 @@ export function ExtensionManagementDialog({
         fileName: fetched.file_name,
         data: fetched.file_data,
       });
-      setExtensionName(identity || fetched.file_name.replace(/\.zip$/i, ""));
+      setExtensionName(
+        identity || fetched.file_name.replace(/\.(zip|xpi)$/i, ""),
+      );
       setLinkFolder(false);
       setFetchedIdentity({
         name: identity || fetched.file_name,
@@ -1475,7 +1477,7 @@ export function ExtensionManagementDialog({
               <Input
                 id="ext-file-input"
                 type="file"
-                accept=".crx,.zip"
+                accept=".crx,.zip,.xpi"
                 className="hidden"
                 onChange={handleFileSelect}
                 disabled={limitedMode}
@@ -2124,7 +2126,7 @@ export function ExtensionManagementDialog({
                     <input
                       id="ext-edit-file-input"
                       type="file"
-                      accept=".crx,.zip"
+                      accept=".crx,.zip,.xpi"
                       className="hidden"
                       onChange={handleEditFileSelect}
                     />

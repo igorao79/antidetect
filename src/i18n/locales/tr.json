@@ -1311,7 +1311,7 @@
       "sourcePlaceholder": "Çerezlerin kopyalanacağı profili seçin",
       "running": "(çalışıyor)",
       "targetProfiles": "Hedef Profiller ({{count}})",
-      "noOtherTargets": "Başka Wayfern profili seçilmedi",
+      "noOtherTargets": "Başka uyumlu profil seçilmedi",
       "selectSourceFirst": "Önce bir kaynak profil seçin",
       "selectionStatus": "({{total}} çerezden {{selected}} tanesi seçildi)",
       "searchPlaceholder": "Alan adı veya çerez ara...",
@@ -1532,7 +1532,7 @@
     "renameProfileFailed": "Profil yeniden adlandırılamadı: {{error}}",
     "killBrowserFailed": "Tarayıcı sonlandırılamadı: {{error}}",
     "deleteSelectedProfilesFailed": "Seçili profiller silinemedi: {{error}}",
-    "cookieCopyUnsupportedBrowser": "Çerez kopyalama yalnızca Wayfern profilleriyle çalışır",
+    "cookieCopyUnsupportedBrowser": "Çerez kopyalama yalnızca Camoufox ve Wayfern profillerinde çalışır.",
     "updateSyncSettingsFailed": "Eşitleme ayarları güncellenemedi",
     "cloneProfileFailed": "Profil klonlanamadı: {{error}}",
     "loadSupportedBrowsersFailed": "Desteklenen tarayıcılar yüklenemedi",
@@ -1901,7 +1901,7 @@
     "delete": "Sil",
     "extensionsTab": "Uzantılar",
     "groupsTab": "Gruplar",
-    "managedNotice": "Burada yönetilen uzantılar, profiller başlatıldığında elle yüklenmiş uzantıların yerini alır.",
+    "managedNotice": "Burada yönetilen uzantılar başlatmada kurulur. Tarayıcıda yüklediğiniz eklentiler korunur.",
     "proRequired": "Uzantı yönetimi bir Pro özelliğidir",
     "empty": "Henüz uzantı yüklenmedi.",
     "createGroup": "Grup Oluştur",
@@ -1926,7 +1926,7 @@
     "deleteConfirmDescription": "\"{{name}}\" uzantısını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
     "deleteGroupConfirmTitle": "Uzantı Grubunu Sil",
     "deleteGroupConfirmDescription": "\"{{name}}\" grubunu silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
-    "invalidFileType": "Geçersiz dosya türü. Lütfen bir .crx veya .zip dosyası seçin.",
+    "invalidFileType": "Geçersiz dosya türü. .crx, .zip veya .xpi dosyası seçin.",
     "readError": "Uzantı dosyası okunamadı.",
     "assignTitle": "Uzantı Grubu Ata",
     "assignDescription": "Seçili {{count}} profili bir uzantı grubuna atayın.",
@@ -1983,8 +1983,8 @@
       "linkedTooltip": "Doğrudan {{path}} konumundan yükleniyor"
     },
     "fromUrl": "Bağlantıdan",
-    "fromUrlTooltip": "Chrome Web Mağazası bağlantısından, uzantı kimliğinden veya doğrudan .crx ya da .zip bağlantısından uzantı ekleyin",
-    "urlPlaceholder": "Web Mağazası bağlantısı, uzantı kimliği veya .crx bağlantısı",
+    "fromUrlTooltip": "Chrome Web Store veya Firefox Add-ons bağlantısı, uzantı kimliği ya da doğrudan .crx, .zip veya .xpi bağlantısıyla uzantı ekleyin.",
+    "urlPlaceholder": "Web Store / Firefox Add-ons bağlantısı, kimlik veya .crx/.xpi bağlantısı",
     "urlHint": "Owl paketi HTTPS ile indirir ve hiçbir şey kaydedilmeden önce adını ve sürümünü okur.",
     "fetchExtension": "İndir",
     "fetching": "İndiriliyor…",
@@ -2873,7 +2873,7 @@
     "agentTextTooLong": "Bu metin çok uzun. Sınır {{max}} karakterdir.",
     "agentSessionNotFound": "Bu ajan artık bağlı değil.",
     "profilePairedTwice": "Bu profil aynı dağıtımda birden fazla kez yer alıyor",
-    "extensionUrlInvalid": "Bu bir Chrome Web Mağazası bağlantısı, uzantı kimliği ya da doğrudan .crx veya .zip bağlantısı değil.",
+    "extensionUrlInvalid": "Bu bir Chrome Web Store veya Firefox Add-ons bağlantısı, uzantı kimliği ya da doğrudan .crx, .zip veya .xpi bağlantısı değil.",
     "extensionDownloadFailed": "Uzantı indirilemedi. Bağlantıyı ve internet erişiminizi kontrol edin.",
     "extensionNotAnExtension": "İndirilen dosya bir tarayıcı uzantısı değil.",
     "extensionTooLarge": "Bu uzantı içe aktarılamayacak kadar büyük.",
@@ -3438,7 +3438,7 @@
     "saveFailed": "Yapılandırma kaydedilemedi"
   },
   "cookieCopy": {
-    "noOtherTargets": "Başka Wayfern profili seçilmedi"
+    "noOtherTargets": "Başka uyumlu profil seçilmedi"
   },
   "about": {
     "licenseNotice": "Açık kaynaklı anti-detect tarayıcı.",

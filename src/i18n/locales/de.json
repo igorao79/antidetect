@@ -1311,7 +1311,7 @@
       "sourcePlaceholder": "Profil auswählen, aus dem Cookies kopiert werden",
       "running": "(läuft)",
       "targetProfiles": "Zielprofile ({{count}})",
-      "noOtherTargets": "Keine anderen Wayfern-Profile ausgewählt",
+      "noOtherTargets": "Keine anderen kompatiblen Profile ausgewählt",
       "selectSourceFirst": "Wählen Sie zuerst ein Quellprofil aus",
       "selectionStatus": "({{selected}} von {{total}} ausgewählt)",
       "searchPlaceholder": "Domains oder Cookies suchen...",
@@ -1532,7 +1532,7 @@
     "renameProfileFailed": "Das Profil konnte nicht umbenannt werden: {{error}}",
     "killBrowserFailed": "Der Browser konnte nicht beendet werden: {{error}}",
     "deleteSelectedProfilesFailed": "Die ausgewählten Profile konnten nicht gelöscht werden: {{error}}",
-    "cookieCopyUnsupportedBrowser": "Das Kopieren von Cookies funktioniert nur mit Wayfern-Profilen",
+    "cookieCopyUnsupportedBrowser": "Das Kopieren von Cookies funktioniert nur mit Camoufox- und Wayfern-Profilen.",
     "updateSyncSettingsFailed": "Die Sync-Einstellungen konnten nicht aktualisiert werden",
     "cloneProfileFailed": "Das Profil konnte nicht geklont werden: {{error}}",
     "loadSupportedBrowsersFailed": "Die unterstützten Browser konnten nicht geladen werden",
@@ -1901,7 +1901,7 @@
     "delete": "Löschen",
     "extensionsTab": "Erweiterungen",
     "groupsTab": "Gruppen",
-    "managedNotice": "Hier verwaltete Erweiterungen ersetzen beim Start alle manuell in Profilen installierten Erweiterungen.",
+    "managedNotice": "Hier verwaltete Erweiterungen werden beim Start installiert. Im Browser installierte Add-ons bleiben erhalten.",
     "proRequired": "Die Erweiterungsverwaltung ist eine Pro-Funktion",
     "empty": "Noch keine Erweiterungen hochgeladen.",
     "createGroup": "Gruppe erstellen",
@@ -1926,7 +1926,7 @@
     "deleteConfirmDescription": "Möchten Sie „{{name}}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
     "deleteGroupConfirmTitle": "Erweiterungsgruppe löschen",
     "deleteGroupConfirmDescription": "Möchten Sie die Gruppe „{{name}}“ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.",
-    "invalidFileType": "Ungültiger Dateityp. Bitte wählen Sie eine .crx- oder .zip-Datei.",
+    "invalidFileType": "Ungültiger Dateityp. Wähle eine .crx-, .zip- oder .xpi-Datei.",
     "readError": "Die Erweiterungsdatei konnte nicht gelesen werden.",
     "assignTitle": "Erweiterungsgruppe zuweisen",
     "assignDescription": "{{count}} ausgewählte(s) Profil(e) einer Erweiterungsgruppe zuweisen.",
@@ -1983,8 +1983,8 @@
       "linkedTooltip": "Direkt geladen aus {{path}}"
     },
     "fromUrl": "Über Link",
-    "fromUrlTooltip": "Eine Erweiterung über einen Chrome Web Store-Link, eine Erweiterungs-ID oder einen direkten .crx- oder .zip-Link hinzufügen",
-    "urlPlaceholder": "Web Store-Link, Erweiterungs-ID oder .crx-Link",
+    "fromUrlTooltip": "Füge eine Erweiterung über einen Chrome Web Store- oder Firefox Add-ons-Link, eine Erweiterungs-ID oder einen direkten .crx-, .zip- oder .xpi-Link hinzu.",
+    "urlPlaceholder": "Web-Store-/Firefox-Add-ons-Link, ID oder .crx/.xpi-Link",
     "urlHint": "Owl lädt das Paket über HTTPS herunter und liest Name und Version, bevor etwas gespeichert wird.",
     "fetchExtension": "Abrufen",
     "fetching": "Wird abgerufen…",
@@ -2873,7 +2873,7 @@
     "agentTextTooLong": "Dieser Text ist zu lang. Erlaubt sind höchstens {{max}} Zeichen.",
     "agentSessionNotFound": "Dieser Agent ist nicht mehr verbunden.",
     "profilePairedTwice": "Dieses Profil wurde in derselben Verteilung mehr als einmal aufgeführt",
-    "extensionUrlInvalid": "Das ist weder ein Chrome Web Store-Link noch eine Erweiterungs-ID noch ein direkter .crx- oder .zip-Link.",
+    "extensionUrlInvalid": "Das ist kein Chrome Web Store- oder Firefox Add-ons-Link, keine Erweiterungs-ID und kein direkter .crx-, .zip- oder .xpi-Link.",
     "extensionDownloadFailed": "Die Erweiterung konnte nicht heruntergeladen werden. Prüfen Sie den Link und Ihre Verbindung.",
     "extensionNotAnExtension": "Dieser Download ist keine Browsererweiterung.",
     "extensionTooLarge": "Diese Erweiterung ist zu groß für den Import.",
@@ -3438,7 +3438,7 @@
     "saveFailed": "Die Konfiguration konnte nicht gespeichert werden"
   },
   "cookieCopy": {
-    "noOtherTargets": "Keine anderen Wayfern-Profile ausgewählt"
+    "noOtherTargets": "Keine anderen kompatiblen Profile ausgewählt"
   },
   "about": {
     "licenseNotice": "Open-Source-Anti-Detect-Browser.",

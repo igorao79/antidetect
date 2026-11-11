@@ -1,11 +1,13 @@
-//! Import a Chromium extension from a link instead of a file.
+//! Import a browser extension from a link instead of a file.
 //!
-//! Three inputs are accepted: a Chrome Web Store detail URL, the bare
-//! 32-character extension id from one, and a direct `.crx`/`.zip` URL. All
-//! three resolve to a single archive download, whose payload is normalised to
-//! the plain ZIP that `extension_manager` already stores, so nothing
-//! downstream (assignment, groups, per-profile staging, sync) has to know an
-//! extension arrived over the network.
+//! Four inputs are accepted: a Chrome Web Store detail URL, the bare
+//! 32-character extension id from one, a public Firefox Add-ons (AMO) add-on
+//! page URL, and a direct `.crx`/`.zip`/`.xpi` URL. All of them resolve to a
+//! single archive download, whose payload is normalised to the plain ZIP that
+//! `extension_manager` already stores, so nothing downstream (assignment,
+//! groups, per-profile staging, sync) has to know an extension arrived over
+//! the network. A Firefox `.xpi` is already a ZIP and keeps that extension in
+//! its stored name, which is how the manager knows the package is for Camoufox.
 
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -18,6 +20,17 @@ pub const MAX_EXTENSION_BYTES: u64 = 64 * 1024 * 1024;
 const CRX_MAGIC: &[u8; 4] = b"Cr24";
 const ZIP_MAGIC: &[u8; 4] = b"PK\x03\x04";
 const MAX_REDIRECTS: usize = 5;
+
+/// The Firefox Add-ons site and the v5 endpoint that exposes the current
+/// version's package URL.
+const AMO_HOST: &str = "addons.mozilla.org";
+const AMO_API_ROOT: &str = "https://addons.mozilla.org/api/v5/addons/addon";
+/// The lookup answers with one small JSON document. The cap keeps a wrong or
+/// compromised endpoint from turning the metadata request into a large
+/// download before the package ceiling applies.
+const MAX_METADATA_BYTES: u64 = 2 * 1024 * 1024;
+
+const USER_AGENT: &str = "Mozilla/5.0 (compatible; donutbrowser)";
 
 /// The last-resort `prodversion` for the Web Store endpoint, used only when no
 /// Wayfern build is downloaded and no version cache exists yet — a fresh
@@ -34,6 +47,8 @@ fn err(code: &str) -> String {
 pub enum ExtensionSource {
   /// A Chrome Web Store product id, downloaded through the update service.
   WebStore(String),
+  /// A public Firefox Add-ons (AMO) page slug, resolved through the AMO API.
+  FirefoxAddon(String),
   /// An archive served directly.
   Direct(Url),
 }
@@ -51,8 +66,8 @@ pub struct FetchedExtension {
   pub description: Option<String>,
   /// The URL the bytes actually came from, so the staged form can name it.
   pub source_url: String,
-  /// True when the id was resolved through the Chrome Web Store update
-  /// service rather than downloaded from a link the user typed in full.
+  /// True when the input named a store page (Chrome Web Store or Firefox
+  /// Add-ons) rather than a link the user typed in full.
   pub from_web_store: bool,
 }
 
@@ -88,9 +103,53 @@ fn is_web_store_host(host: &str) -> bool {
   )
 }
 
+fn is_firefox_addon_host(host: &str) -> bool {
+  let host = host.to_ascii_lowercase();
+  host == AMO_HOST || host.ends_with(".addons.mozilla.org")
+}
+
+/// A public Firefox Add-ons page is `/firefox/addon/<slug>/`, optionally under
+/// a locale (`/en-US/...`) and with a sub-page after the slug. Only the
+/// desktop Firefox section is accepted: `/android/addon/...` is a different
+/// product and its package is not what Camoufox loads.
+fn firefox_addon_slug_from_path(url: &Url) -> Option<String> {
+  let segments: Vec<&str> = url.path_segments()?.filter(|s| !s.is_empty()).collect();
+  let addon = segments.iter().position(|segment| *segment == "addon")?;
+  if !segments[..addon].contains(&"firefox") {
+    return None;
+  }
+  let slug = *segments.get(addon + 1)?;
+  if is_firefox_addon_slug(slug) {
+    Some(slug.to_string())
+  } else {
+    None
+  }
+}
+
+/// AMO slugs are path segments (letters, digits, `-`, `_`, `.`). Refusing
+/// anything else keeps a typed page URL from becoming an arbitrary API path
+/// once the slug is interpolated into the lookup.
+fn is_firefox_addon_slug(slug: &str) -> bool {
+  !slug.is_empty()
+    && slug.len() <= 100
+    && slug != "."
+    && slug != ".."
+    && slug
+      .bytes()
+      .all(|b| b.is_ascii_alphanumeric() || matches!(b, b'-' | b'_' | b'.'))
+}
+
+fn firefox_addon_page_url(slug: &str) -> String {
+  format!("https://{AMO_HOST}/firefox/addon/{slug}/")
+}
+
+fn firefox_addon_api_url(slug: &str) -> String {
+  format!("{AMO_API_ROOT}/{slug}/")
+}
+
 fn path_is_archive(url: &Url) -> bool {
   let path = url.path().to_ascii_lowercase();
-  path.ends_with(".crx") || path.ends_with(".zip")
+  path.ends_with(".crx") || path.ends_with(".zip") || path.ends_with(".xpi")
 }
 
 /// Loopback plain HTTP is accepted only in the `e2e` build, where the suite
@@ -112,8 +171,8 @@ fn host_is_loopback(url: &Url) -> bool {
   }
 }
 
-/// Classify what the user typed. Anything that is not one of the three
-/// accepted shapes is refused here, before a single byte is requested.
+/// Classify what the user typed. Anything that is not one of the accepted
+/// shapes is refused here, before a single byte is requested.
 pub fn parse_extension_source(input: &str) -> Result<ExtensionSource, String> {
   let trimmed = input.trim();
   if trimmed.is_empty() {
@@ -135,6 +194,16 @@ pub fn parse_extension_source(input: &str) -> Result<ExtensionSource, String> {
         .map(ExtensionSource::WebStore)
         .ok_or_else(|| err("EXTENSION_URL_INVALID"));
     }
+  }
+
+  // An AMO page is resolved through the API; an AMO download URL
+  // (`/firefox/downloads/file/…xpi`) falls through to the direct path.
+  let firefox_addon_slug = url
+    .host_str()
+    .filter(|host| is_firefox_addon_host(host))
+    .and_then(|_| firefox_addon_slug_from_path(&url));
+  if let Some(slug) = firefox_addon_slug {
+    return Ok(ExtensionSource::FirefoxAddon(slug));
   }
 
   if path_is_archive(&url) {
@@ -260,19 +329,84 @@ fn redirect_policy() -> reqwest::redirect::Policy {
   })
 }
 
-async fn download_archive(url: &str) -> Result<Vec<u8>, String> {
-  use futures_util::StreamExt;
-
-  let client = reqwest::Client::builder()
+fn http_client() -> Result<reqwest::Client, String> {
+  reqwest::Client::builder()
     .timeout(std::time::Duration::from_secs(120))
     .connect_timeout(std::time::Duration::from_secs(15))
     .redirect(redirect_policy())
     .build()
-    .map_err(|_| err("EXTENSION_DOWNLOAD_FAILED"))?;
+    .map_err(|_| err("EXTENSION_DOWNLOAD_FAILED"))
+}
+
+/// Resolve a public AMO add-on page to the `.xpi` its current version points
+/// at. The API's answer is one small JSON document; the package URL in it is
+/// still held to the same scheme policy as a direct link, and only a Mozilla
+/// Add-ons host is accepted so the lookup cannot be turned into a downloader
+/// for arbitrary addresses.
+async fn resolve_firefox_addon(slug: &str) -> Result<Url, String> {
+  let client = http_client()?;
+  let response = client
+    .get(firefox_addon_api_url(slug))
+    .header("User-Agent", USER_AGENT)
+    .header("Accept", "application/json")
+    .send()
+    .await
+    .map_err(|e| {
+      log::warn!("Firefox add-on lookup failed err=\"{}\"", e.without_url());
+      err("EXTENSION_DOWNLOAD_FAILED")
+    })?;
+
+  if !response.status().is_success() {
+    log::warn!(
+      "Firefox add-on lookup failed status={}",
+      response.status().as_u16()
+    );
+    return Err(err("EXTENSION_DOWNLOAD_FAILED"));
+  }
+  if response
+    .content_length()
+    .is_some_and(|len| len > MAX_METADATA_BYTES)
+  {
+    return Err(err("EXTENSION_DOWNLOAD_FAILED"));
+  }
+  let body = response.text().await.map_err(|e| {
+    log::warn!("Firefox add-on lookup failed err=\"{}\"", e.without_url());
+    err("EXTENSION_DOWNLOAD_FAILED")
+  })?;
+  if body.len() as u64 > MAX_METADATA_BYTES {
+    return Err(err("EXTENSION_DOWNLOAD_FAILED"));
+  }
+
+  firefox_addon_file_url_from_json(&body)
+}
+
+/// Read `current_version.file.url` from an AMO v5 add-on document
+/// ([`AMO_API_ROOT`]) and require it to be a packaged Firefox add-on. Keeping
+/// the parse separate from the request is what lets the accepted and refused
+/// shapes be tested without network.
+fn firefox_addon_file_url_from_json(body: &str) -> Result<Url, String> {
+  let addon: serde_json::Value =
+    serde_json::from_str(body).map_err(|_| err("EXTENSION_DOWNLOAD_FAILED"))?;
+  let raw = addon
+    .pointer("/current_version/file/url")
+    .and_then(|value| value.as_str())
+    .ok_or_else(|| err("EXTENSION_NOT_AN_EXTENSION"))?;
+  let url = Url::parse(raw).map_err(|_| err("EXTENSION_NOT_AN_EXTENSION"))?;
+  let is_xpi = url.path().to_ascii_lowercase().ends_with(".xpi");
+  if !scheme_is_allowed(&url) || !url.host_str().is_some_and(is_firefox_addon_host) || !is_xpi {
+    return Err(err("EXTENSION_NOT_AN_EXTENSION"));
+  }
+  Ok(url)
+}
+
+async fn download_archive(url: &str) -> Result<Vec<u8>, String> {
+  use futures_util::StreamExt;
+
+  let client = http_client()?;
 
   let response = client
     .get(url)
-    .header("User-Agent", "Mozilla/5.0 (compatible; donutbrowser)")
+    .header("User-Agent", USER_AGENT)
     .send()
     .await
     .map_err(|e| {
@@ -327,23 +461,30 @@ async fn download_archive(url: &str) -> Result<Vec<u8>, String> {
 /// What the archive is stored as. The payload written to the store is always
 /// the plain ZIP, so a `.crx` link keeps its name but not its extension —
 /// calling an unwrapped payload `.crx` would tell every later reader to skip a
-/// CRX header that is no longer there.
+/// CRX header that is no longer there. An `.xpi` is already a plain ZIP and
+/// keeps its extension, which is how `extension_manager` classifies it as a
+/// Firefox package.
 fn direct_file_name(url: &Url) -> String {
   let raw = url
     .path_segments()
     .and_then(|mut segments| segments.rfind(|s| !s.is_empty()))
     .unwrap_or_default();
-  let stem = raw
-    .strip_suffix(".crx")
-    .or_else(|| raw.strip_suffix(".CRX"))
-    .or_else(|| raw.strip_suffix(".zip"))
-    .or_else(|| raw.strip_suffix(".ZIP"))
-    .unwrap_or(raw)
-    .trim();
-  if stem.is_empty() {
+  let lowered = raw.to_ascii_lowercase();
+  for (suffix, stored_extension) in [(".crx", "zip"), (".zip", "zip"), (".xpi", "xpi")] {
+    if let Some(stem) = lowered.strip_suffix(suffix) {
+      let stem = raw[..stem.len()].trim();
+      return if stem.is_empty() {
+        format!("extension.{stored_extension}")
+      } else {
+        format!("{stem}.{stored_extension}")
+      };
+    }
+  }
+  let raw = raw.trim();
+  if raw.is_empty() {
     return "extension.zip".to_string();
   }
-  format!("{stem}.zip")
+  format!("{raw}.zip")
 }
 
 /// Fetch and validate an extension from a link, returning the plain ZIP plus
@@ -356,6 +497,10 @@ pub async fn fetch_extension(input: &str) -> Result<FetchedExtension, String> {
       format!("{id}.zip"),
       true,
     ),
+    ExtensionSource::FirefoxAddon(slug) => {
+      let url = resolve_firefox_addon(slug).await?;
+      (url.to_string(), direct_file_name(&url), true)
+    }
     ExtensionSource::Direct(url) => (url.to_string(), direct_file_name(url), false),
   };
 
@@ -375,24 +520,22 @@ pub async fn fetch_extension(input: &str) -> Result<FetchedExtension, String> {
       },
     );
 
+  // The update-service and AMO file URLs are machine-specific noise; the
+  // store page is what a person recognises and can open. A direct link is
+  // already the address they typed.
+  let source_url = match &source {
+    ExtensionSource::WebStore(id) => format!("https://chromewebstore.google.com/detail/{id}"),
+    ExtensionSource::FirefoxAddon(slug) => firefox_addon_page_url(slug),
+    ExtensionSource::Direct(url) => url.to_string(),
+  };
+
   Ok(FetchedExtension {
     file_name,
     file_data: payload.to_vec(),
     name,
     version,
     description,
-    source_url: if from_web_store {
-      // The update-service URL is machine-specific noise; the store page is
-      // what a user recognises and can open.
-      match &source {
-        ExtensionSource::WebStore(id) => {
-          format!("https://chromewebstore.google.com/detail/{id}")
-        }
-        ExtensionSource::Direct(url) => url.to_string(),
-      }
-    } else {
-      download_url
-    },
+    source_url,
     from_web_store,
   })
 }
@@ -498,6 +641,127 @@ mod tests {
       parse_extension_source("https://files.example.com/pack/ublock.zip?v=2").unwrap(),
       ExtensionSource::Direct(_)
     ));
+    let direct_xpi = "https://files.example.com/pack/ublock.xpi";
+    assert_eq!(
+      parse_extension_source(direct_xpi).unwrap(),
+      ExtensionSource::Direct(Url::parse(direct_xpi).unwrap())
+    );
+  }
+
+  #[test]
+  fn firefox_addon_pages_resolve_to_a_slug_and_download_urls_stay_direct() {
+    for input in [
+      "https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/",
+      "https://addons.mozilla.org/firefox/addon/ublock-origin",
+      "https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/reviews/",
+      "https://addons.mozilla.org/en-US/firefox/addon/ublock-origin/?src=search",
+    ] {
+      assert_eq!(
+        parse_extension_source(input).unwrap(),
+        ExtensionSource::FirefoxAddon("ublock-origin".to_string()),
+        "{input}"
+      );
+    }
+
+    // The xpi link the AMO page hides behind its download button is an
+    // archive link, not another page to look up.
+    let download =
+      "https://addons.mozilla.org/firefox/downloads/file/5225273/ublock_origin-1.76.0.xpi";
+    assert_eq!(
+      parse_extension_source(download).unwrap(),
+      ExtensionSource::Direct(Url::parse(download).unwrap())
+    );
+    assert_eq!(
+      direct_file_name(&Url::parse(download).unwrap()),
+      "ublock_origin-1.76.0.xpi"
+    );
+    assert_eq!(
+      firefox_addon_page_url("ublock-origin"),
+      "https://addons.mozilla.org/firefox/addon/ublock-origin/"
+    );
+    assert_eq!(
+      firefox_addon_api_url("ublock-origin"),
+      "https://addons.mozilla.org/api/v5/addons/addon/ublock-origin/"
+    );
+  }
+
+  #[test]
+  fn firefox_addon_urls_that_are_not_a_desktop_add_on_page_are_refused() {
+    for input in [
+      // No slug.
+      "https://addons.mozilla.org/en-US/firefox/addon/",
+      // Android add-ons are a different product.
+      "https://addons.mozilla.org/en-US/android/addon/ublock-origin/",
+      // The API endpoint itself is not a page a person pastes.
+      "https://addons.mozilla.org/api/v5/addons/addon/ublock-origin/",
+      // A slug is a path segment, never an encoded path.
+      "https://addons.mozilla.org/en-US/firefox/addon/evil%2F..%2F/",
+      "https://addons.mozilla.org/en-US/firefox/",
+      // The page lookup crosses TLS, like every other real import.
+      "http://addons.mozilla.org/en-US/firefox/addon/ublock-origin/",
+    ] {
+      assert_eq!(
+        parse_extension_source(input).unwrap_err(),
+        err("EXTENSION_URL_INVALID"),
+        "{input}"
+      );
+    }
+  }
+
+  #[test]
+  fn the_amo_document_yields_the_current_versions_xpi() {
+    let body = r#"{
+      "slug": "ublock-origin",
+      "current_version": {
+        "version": "1.76.0",
+        "file": {
+          "status": "public",
+          "url": "https://addons.mozilla.org/firefox/downloads/file/5225273/ublock_origin-1.76.0.xpi"
+        }
+      }
+    }"#;
+    assert_eq!(
+      firefox_addon_file_url_from_json(body).unwrap().as_str(),
+      "https://addons.mozilla.org/firefox/downloads/file/5225273/ublock_origin-1.76.0.xpi"
+    );
+  }
+
+  #[test]
+  fn an_amo_document_without_a_usable_xpi_is_refused() {
+    for (body, expected) in [
+      // Not JSON at all: the endpoint answered with something else.
+      (
+        "<!doctype html><html>maintenance</html>",
+        err("EXTENSION_DOWNLOAD_FAILED"),
+      ),
+      // No current version (an add-on with no public release).
+      ("{}", err("EXTENSION_NOT_AN_EXTENSION")),
+      (
+        r#"{"current_version":{"file":{}}}"#,
+        err("EXTENSION_NOT_AN_EXTENSION"),
+      ),
+      // The scheme guard still applies to the URL the API hands back.
+      (
+        r#"{"current_version":{"file":{"url":"http://addons.mozilla.org/firefox/downloads/file/1/x.xpi"}}}"#,
+        err("EXTENSION_NOT_AN_EXTENSION"),
+      ),
+      // A package that is not an .xpi.
+      (
+        r#"{"current_version":{"file":{"url":"https://addons.mozilla.org/firefox/downloads/file/1/x.html"}}}"#,
+        err("EXTENSION_NOT_AN_EXTENSION"),
+      ),
+      // Another host, even over HTTPS, is not a Mozilla package.
+      (
+        r#"{"current_version":{"file":{"url":"https://files.example.com/x.xpi"}}}"#,
+        err("EXTENSION_NOT_AN_EXTENSION"),
+      ),
+    ] {
+      assert_eq!(
+        firefox_addon_file_url_from_json(body).unwrap_err(),
+        expected,
+        "{body}"
+      );
+    }
   }
 
   #[test]
@@ -589,7 +853,7 @@ mod tests {
   }
 
   #[test]
-  fn a_direct_download_names_the_stored_file_a_zip() {
+  fn a_direct_download_names_the_stored_file_by_what_it_is() {
     assert_eq!(
       direct_file_name(&Url::parse("https://files.example.com/pack/ublock.crx").unwrap()),
       "ublock.zip"
@@ -598,9 +862,22 @@ mod tests {
       direct_file_name(&Url::parse("https://files.example.com/pack/ublock.zip").unwrap()),
       "ublock.zip"
     );
+    // A Firefox package keeps the extension the manager classifies on.
+    assert_eq!(
+      direct_file_name(&Url::parse("https://files.example.com/pack/ublock.xpi").unwrap()),
+      "ublock.xpi"
+    );
+    assert_eq!(
+      direct_file_name(&Url::parse("https://files.example.com/pack/ublock.XPI").unwrap()),
+      "ublock.xpi"
+    );
     assert_eq!(
       direct_file_name(&Url::parse("https://files.example.com/.crx").unwrap()),
       "extension.zip"
+    );
+    assert_eq!(
+      direct_file_name(&Url::parse("https://files.example.com/.xpi").unwrap()),
+      "extension.xpi"
     );
   }
 }
