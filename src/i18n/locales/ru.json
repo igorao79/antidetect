@@ -1317,6 +1317,7 @@
     "title": "Cookie",
     "copy": {
       "title": "Копировать Cookie",
+      "fromProfileDescription": "Скопируйте cookie профиля «{{name}}» в отмеченные профили.",
       "description": "Выберите cookie для копирования в другие профили.",
       "selectSource": "Выберите исходный профиль",
       "selectTarget": "Выберите целевые профили",

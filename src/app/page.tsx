@@ -522,6 +522,9 @@ export default function Home() {
   const [proxyAssignmentDialogOpen, setProxyAssignmentDialogOpen] =
     useState(false);
   const [cookieCopyDialogOpen, setCookieCopyDialogOpen] = useState(false);
+  const [cookieCopySourceId, setCookieCopySourceId] = useState<string | null>(
+    null,
+  );
   const [cookieRobotDialogOpen, setCookieRobotDialogOpen] = useState(false);
   const [cookieManagementDialogOpen, setCookieManagementDialogOpen] =
     useState(false);
@@ -2154,6 +2157,7 @@ export default function Home() {
       showErrorToast(t("errors.cookieCopyUnsupportedBrowser"));
       return;
     }
+    setCookieCopySourceId(null);
     setSelectedProfilesForCookies(eligibleProfiles.map((p) => p.id));
     setCookieCopyDialogOpen(true);
   }, [selectedProfiles, profiles, t]);
@@ -2386,9 +2390,19 @@ export default function Home() {
   }, [selectedProfiles, profiles, runningProfiles, executeBulkStop, t]);
 
   const handleCopyCookiesToProfile = useCallback((profile: BrowserProfile) => {
+    setCookieCopySourceId(null);
     setSelectedProfilesForCookies([profile.id]);
     setCookieCopyDialogOpen(true);
   }, []);
+
+  const handleCopyCookiesFromProfile = useCallback(
+    (profile: BrowserProfile) => {
+      setCookieCopySourceId(profile.id);
+      setSelectedProfilesForCookies([]);
+      setCookieCopyDialogOpen(true);
+    },
+    [],
+  );
 
   const handleOpenCookieManagement = useCallback((profile: BrowserProfile) => {
     setCurrentProfileForCookieManagement(profile);
@@ -3120,6 +3134,7 @@ export default function Home() {
                     onRenameProfile={handleRenameProfile}
                     onConfigureWayfern={handleConfigureWayfern}
                     onCopyCookiesToProfile={handleCopyCookiesToProfile}
+                    onCopyCookiesFromProfile={handleCopyCookiesFromProfile}
                     onOpenCookieManagement={handleOpenCookieManagement}
                     runningProfiles={runningProfiles}
                     extensionGroups={extensionGroups}
@@ -3643,6 +3658,7 @@ export default function Home() {
             setSelectedProfilesForCookies([]);
           }}
           selectedProfiles={selectedProfilesForCookies}
+          fixedSourceProfileId={cookieCopySourceId}
           profiles={profiles}
           runningProfiles={runningProfiles}
           onCopyComplete={() => {

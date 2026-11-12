@@ -352,6 +352,26 @@ impl CookieManager {
     }
   }
 
+  /// Every cookie of a Camoufox profile: the database's and the session
+  /// cookies Firefox keeps only in its session file. A profile that has never
+  /// run has neither, which is no cookies rather than a failure.
+  fn read_camoufox_cookies(
+    profile: &BrowserProfile,
+    profiles_dir: &Path,
+  ) -> Result<Vec<UnifiedCookie>, String> {
+    let profile_data_path = profile.get_profile_data_path(profiles_dir);
+    let db_path = profile_data_path.join("cookies.sqlite");
+    let stored = if db_path.exists() {
+      Self::read_firefox_cookies(&db_path)?
+    } else {
+      Vec::new()
+    };
+    Ok(crate::camoufox::session_cookies::merge(
+      stored,
+      crate::camoufox::session_cookies::read(&profile_data_path),
+    ))
+  }
+
   /// Get the cookie database path for a profile, creating an empty
   /// browser-compatible database if it doesn't exist yet. Use this for write
   /// paths (copy / import) so we can populate the cookie store of a profile
@@ -1006,6 +1026,24 @@ impl CookieManager {
     Ok(total)
   }
 
+  /// Cookies per host, most first, then by host: the order the stats query
+  /// gives for a database.
+  fn domain_counts(cookies: &[UnifiedCookie]) -> Vec<DomainCount> {
+    let mut counts: HashMap<&str, usize> = HashMap::new();
+    for cookie in cookies {
+      *counts.entry(cookie.domain.as_str()).or_default() += 1;
+    }
+    let mut domains: Vec<DomainCount> = counts
+      .into_iter()
+      .map(|(domain, count)| DomainCount {
+        domain: domain.to_string(),
+        count,
+      })
+      .collect();
+    domains.sort_by(|a, b| b.count.cmp(&a.count).then_with(|| a.domain.cmp(&b.domain)));
+    domains
+  }
+
   /// Public API: Read cookies from a profile
   pub fn read_cookies(profile_id: &str) -> Result<CookieReadResult, String> {
     let profile_manager = ProfileManager::instance();
@@ -1019,11 +1057,10 @@ impl CookieManager {
       .find(|p| p.id.to_string() == profile_id)
       .ok_or_else(|| format!("Profile not found: {profile_id}"))?;
 
-    let db_path = Self::get_cookie_db_path(profile, &profiles_dir)?;
-
     let cookies = match profile.browser.as_str() {
-      "camoufox" => Self::read_firefox_cookies(&db_path)?,
+      "camoufox" => Self::read_camoufox_cookies(profile, &profiles_dir)?,
       "wayfern" => {
+        let db_path = Self::get_cookie_db_path(profile, &profiles_dir)?;
         let key = Self::get_chrome_encryption_key(profile, &profiles_dir);
         Self::read_chrome_cookies(&db_path, key.as_ref())?
       }
@@ -1133,6 +1170,17 @@ impl CookieManager {
       });
     }
 
+    if profile.browser == "camoufox" {
+      let cookies = Self::read_camoufox_cookies(profile, &profiles_dir)
+        .map_err(|e| crate::backend_error_with_detail("COOKIE_DB_UNAVAILABLE", e))?;
+      return Ok(CookieStats {
+        profile_id: profile_id.to_string(),
+        browser_type: profile.browser.clone(),
+        total_count: cookies.len(),
+        domains: Self::domain_counts(&cookies),
+      });
+    }
+
     let db_path = Self::get_cookie_db_path(profile, &profiles_dir).map_err(|e| {
       serde_json::json!({
         "code": "COOKIE_DB_UNAVAILABLE",
@@ -1220,10 +1268,10 @@ impl CookieManager {
       .find(|p| p.id.to_string() == request.source_profile_id)
       .ok_or_else(|| format!("Source profile not found: {}", request.source_profile_id))?;
 
-    let source_db_path = Self::get_cookie_db_path(source, &profiles_dir)?;
     let all_cookies = match source.browser.as_str() {
-      "camoufox" => Self::read_firefox_cookies(&source_db_path)?,
+      "camoufox" => Self::read_camoufox_cookies(source, &profiles_dir)?,
       "wayfern" => {
+        let source_db_path = Self::get_cookie_db_path(source, &profiles_dir)?;
         let key = Self::get_chrome_encryption_key(source, &profiles_dir);
         Self::read_chrome_cookies(&source_db_path, key.as_ref())?
       }

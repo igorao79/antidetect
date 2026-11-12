@@ -1299,6 +1299,7 @@
     "title": "Cookie",
     "copy": {
       "title": "Sao chép cookie",
+      "fromProfileDescription": "Sao chép cookie của “{{name}}” vào các hồ sơ bạn chọn.",
       "description": "Chọn cookie để sao chép sang profile khác.",
       "selectSource": "Chọn profile nguồn",
       "selectTarget": "Chọn profile đích",

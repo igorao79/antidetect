@@ -1308,6 +1308,7 @@
     "title": "Cookies",
     "copy": {
       "title": "Copiar Cookies",
+      "fromProfileDescription": "Copie os cookies de “{{name}}” para os perfis marcados.",
       "description": "Selecione cookies para copiar para outros perfis.",
       "selectSource": "Selecionar Perfil de Origem",
       "selectTarget": "Selecionar Perfis de Destino",

@@ -1299,6 +1299,7 @@
     "title": "Cookie",
     "copy": {
       "title": "Cookieをコピー",
+      "fromProfileDescription": "「{{name}}」の Cookie をチェックしたプロファイルにコピーします。",
       "description": "他のプロファイルにコピーするCookieを選択します。",
       "selectSource": "ソースプロファイルを選択",
       "selectTarget": "ターゲットプロファイルを選択",

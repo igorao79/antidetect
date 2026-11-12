@@ -22,6 +22,7 @@ pub mod presets;
 pub mod profile_app;
 pub mod profile_identity;
 pub mod search;
+pub mod session_cookies;
 pub mod webgl;
 
 // Re-export main types for convenience

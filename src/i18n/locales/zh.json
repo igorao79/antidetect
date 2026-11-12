@@ -1299,6 +1299,7 @@
     "title": "Cookie",
     "copy": {
       "title": "复制 Cookies",
+      "fromProfileDescription": "将“{{name}}”的 Cookie 复制到勾选的配置文件。",
       "description": "选择要复制到其他配置文件的 cookies。",
       "selectSource": "选择源配置文件",
       "selectTarget": "选择目标配置文件",

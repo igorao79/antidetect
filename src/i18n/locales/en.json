@@ -1299,6 +1299,7 @@
     "title": "Cookies",
     "copy": {
       "title": "Copy Cookies",
+      "fromProfileDescription": "Copy cookies of “{{name}}” into the profiles you tick.",
       "description": "Select cookies to copy to other profiles.",
       "selectSource": "Select Source Profile",
       "selectTarget": "Select Target Profiles",

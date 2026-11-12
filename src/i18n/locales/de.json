@@ -1299,6 +1299,7 @@
     "title": "Cookies",
     "copy": {
       "title": "Cookies kopieren",
+      "fromProfileDescription": "Cookies von „{{name}}“ in die angehakten Profile kopieren.",
       "description": "Wählen Sie Cookies aus, die in andere Profile kopiert werden sollen.",
       "selectSource": "Quellprofil auswählen",
       "selectTarget": "Zielprofile auswählen",

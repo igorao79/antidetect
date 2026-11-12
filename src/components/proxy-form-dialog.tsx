@@ -562,7 +562,9 @@ export function ProxyFormDialog({
                   <Input
                     id="proxy-port"
                     type="number"
-                    value={form.port}
+                    // An emptied field is 0, shown as empty so the next
+                    // digit does not land after a leading zero.
+                    value={form.port || ""}
                     onChange={(e) => {
                       setForm({
                         ...form,

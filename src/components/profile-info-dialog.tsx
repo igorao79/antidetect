@@ -156,6 +156,8 @@ interface ProfileInfoDialogProps {
   onAssignProfilesToGroup?: (profileIds: string[]) => void;
   onConfigureWayfern?: (profile: BrowserProfile) => void;
   onCopyCookiesToProfile?: (profile: BrowserProfile) => void;
+  /** Copy this profile's cookies into others: the Cookie section's button. */
+  onCopyCookiesFromProfile?: (profile: BrowserProfile) => void;
   onOpenCookieManagement?: (profile: BrowserProfile) => void;
   onAssignExtensionGroup?: (profileIds: string[]) => void;
   onOpenBypassRules?: (profile: BrowserProfile) => void;
@@ -649,6 +651,7 @@ function ProfileInfoContents({
   onAssignProfilesToGroup,
   onConfigureWayfern,
   onCopyCookiesToProfile,
+  onCopyCookiesFromProfile,
   onOpenCookieManagement,
   onAssignExtensionGroup,
   onOpenBypassRules,
@@ -880,6 +883,20 @@ function ProfileInfoContents({
         !supportsCookies ||
         profile.ephemeral === true ||
         !onCopyCookiesToProfile,
+    },
+    {
+      // The Cookie section's own button: this profile is the source.
+      id: "cookiesCopyFrom",
+      icon: <LuCopy className="size-4" />,
+      label: t("cookies.copy.title"),
+      onClick: () => {
+        handleAction(() => onCopyCookiesFromProfile?.(profile));
+      },
+      disabled: isDisabled,
+      hidden:
+        !supportsCookies ||
+        profile.ephemeral === true ||
+        !onCopyCookiesFromProfile,
     },
     {
       id: "cookiesManage",
@@ -1155,6 +1172,7 @@ function ProfileInfoLayout({
   const fingerprintAction = findAction("fingerprint");
   const cookiesManageAction = findAction("cookiesManage");
   const cookiesCopyAction = findAction("cookiesCopy");
+  const cookiesCopyFromAction = findAction("cookiesCopyFrom");
   const cookiesAction = cookiesManageAction ?? cookiesCopyAction;
   const extensionAction = findAction("extension");
   const saveTemplateAction = findAction("saveTemplate");
@@ -1632,7 +1650,9 @@ function ProfileInfoLayout({
                   profile={profile}
                   isRunning={isRunning}
                   isDisabled={isDisabled}
-                  onCopyCookies={cookiesCopyAction?.onClick}
+                  onCopyCookies={
+                    (cookiesCopyFromAction ?? cookiesCopyAction)?.onClick
+                  }
                   onImportCookies={cookiesManageAction?.onClick}
                   t={t}
                 />

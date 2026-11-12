@@ -324,6 +324,7 @@ interface TableMeta {
   onConfigureWayfern?: (profile: BrowserProfile) => void;
   onCloneProfile?: (profile: BrowserProfile) => void;
   onCopyCookiesToProfile?: (profile: BrowserProfile) => void;
+  onCopyCookiesFromProfile?: (profile: BrowserProfile) => void;
   onOpenCookieManagement?: (profile: BrowserProfile) => void;
 
   // Live traffic of running rows. A store, not state: a poll re-renders
@@ -2096,6 +2097,7 @@ interface ProfilesDataTableProps {
   onRenameProfile: (profileId: string, newName: string) => Promise<void>;
   onConfigureWayfern: (profile: BrowserProfile) => void;
   onCopyCookiesToProfile?: (profile: BrowserProfile) => void;
+  onCopyCookiesFromProfile?: (profile: BrowserProfile) => void;
   onOpenCookieManagement?: (profile: BrowserProfile) => void;
   runningProfiles: Set<string>;
   /**
@@ -2182,6 +2184,7 @@ export function ProfilesDataTable({
   onRenameProfile,
   onConfigureWayfern,
   onCopyCookiesToProfile,
+  onCopyCookiesFromProfile,
   onOpenCookieManagement,
   runningProfiles,
   extensionGroups,
@@ -3052,6 +3055,7 @@ export function ProfilesDataTable({
         : undefined,
       onConfigureWayfern,
       onCopyCookiesToProfile,
+      onCopyCookiesFromProfile,
       onOpenCookieManagement,
 
       trafficStore,
@@ -3144,6 +3148,7 @@ export function ProfilesDataTable({
       onCloneProfile,
       onConfigureWayfern,
       onCopyCookiesToProfile,
+      onCopyCookiesFromProfile,
       onOpenCookieManagement,
       syncStatuses,
       onOpenProfileSyncDialog,
@@ -4725,6 +4730,7 @@ export function ProfilesDataTable({
                     onAssignProfilesToGroup={onAssignProfilesToGroup}
                     onConfigureWayfern={onConfigureWayfern}
                     onCopyCookiesToProfile={onCopyCookiesToProfile}
+                    onCopyCookiesFromProfile={onCopyCookiesFromProfile}
                     onOpenCookieManagement={onOpenCookieManagement}
                     onAssignExtensionGroup={onAssignExtensionGroup}
                     onOpenBypassRules={(profile) => {

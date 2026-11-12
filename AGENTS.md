@@ -125,6 +125,16 @@ Fork-specific rules:
   Firefox checks and adopts), and never alters a table Firefox made (a column added behind its
   migration makes it recreate the database). Pasted cookies without SameSite are stored as
   none (0). Checked by launching Camoufox and reading the cookie back over BiDi.
+- Session cookies (`camoufox/session_cookies.rs`). Firefox keeps cookies without an expiry, where
+  many logins live, only in the session file (`sessionstore.jsonlz4` after a clean quit,
+  `sessionstore-backups/recovery.jsonlz4` while running; mozlz4: `mozLz40\0`, u32 size, one LZ4
+  block), never in `cookies.sqlite`. Reading, export, copy and the Cookie section's count merge
+  them with the database's from the newer of the two files, so a transferred login keeps its
+  session cookie; imports write them with the 30-day lifetime session cookies already get. A
+  profile that never ran shows no cookies instead of an unavailable store. The Cookie section's
+  "Copy" makes that profile the source and offers the others as targets
+  (`fixedSourceProfileId` in `cookie-copy-dialog.tsx`); the row menu's "copy cookies to
+  profile" keeps it the target.
 - Firefox's remote agent, which every Camoufox launch starts (`--remote-debugging-port`),
   applies its test suite's prefs (`RecommendedPreferences` in the build's `omni.ja`) wherever a
   pref has no user value. `apz.content_response_timeout` 60000 made the wheel wait up to a

@@ -1299,6 +1299,7 @@
     "title": "Çerezler",
     "copy": {
       "title": "Çerezleri Kopyala",
+      "fromProfileDescription": "“{{name}}” profilinin çerezlerini işaretlediğiniz profillere kopyalayın.",
       "description": "Diğer profillere kopyalanacak çerezleri seçin.",
       "selectSource": "Kaynak Profili Seçin",
       "selectTarget": "Hedef Profilleri Seçin",

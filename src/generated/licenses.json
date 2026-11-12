@@ -1944,6 +1944,10 @@
     "license": "ISC"
   },
   {
+    "name": "lz4_flex",
+    "license": "MIT"
+  },
+  {
     "name": "lzma-rust2",
     "license": "Apache-2.0"
   },

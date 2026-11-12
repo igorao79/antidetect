@@ -50,6 +50,11 @@ interface CookieCopyDialogProps {
   profiles: BrowserProfile[];
   runningProfiles: Set<string>;
   onCopyComplete?: () => void;
+  /**
+   * Opened from a profile's Cookie section: that profile is the source and
+   * the person picks where its cookies go, instead of the other way round.
+   */
+  fixedSourceProfileId?: string | null;
 }
 
 type SelectionState = Record<
@@ -67,6 +72,7 @@ export function CookieCopyDialog({
   profiles,
   runningProfiles,
   onCopyComplete,
+  fixedSourceProfileId = null,
 }: CookieCopyDialogProps) {
   const { t } = useTranslation();
   const [sourceProfileId, setSourceProfileId] = useState<string | null>(null);
@@ -79,6 +85,9 @@ export function CookieCopyDialog({
     new Set(),
   );
   const [error, setError] = useState<string | null>(null);
+  const [chosenTargetIds, setChosenTargetIds] = useState<Set<string>>(
+    new Set(),
+  );
 
   // Never offer a selected profile as a source — you can't copy a profile's
   // cookies onto itself, and including it here would leave the user in a
@@ -91,14 +100,47 @@ export function CookieCopyDialog({
     );
   }, [profiles, selectedProfiles]);
 
+  // The profiles a fixed source may copy into.
+  const targetCandidates = useMemo(() => {
+    if (!fixedSourceProfileId) return [];
+    return profiles.filter(
+      (p) =>
+        p.id !== fixedSourceProfileId &&
+        p.ephemeral !== true &&
+        (p.browser === "wayfern" || p.browser === "camoufox"),
+    );
+  }, [profiles, fixedSourceProfileId]);
+
   const targetProfiles = useMemo(() => {
+    if (fixedSourceProfileId) {
+      return targetCandidates.filter((p) => chosenTargetIds.has(p.id));
+    }
     return profiles.filter(
       (p) =>
         selectedProfiles.includes(p.id) &&
         p.id !== sourceProfileId &&
         (p.browser === "wayfern" || p.browser === "camoufox"),
     );
-  }, [profiles, selectedProfiles, sourceProfileId]);
+  }, [
+    profiles,
+    selectedProfiles,
+    sourceProfileId,
+    fixedSourceProfileId,
+    targetCandidates,
+    chosenTargetIds,
+  ]);
+
+  const toggleTarget = useCallback((profileId: string) => {
+    setChosenTargetIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(profileId)) {
+        next.delete(profileId);
+      } else {
+        next.add(profileId);
+      }
+      return next;
+    });
+  }, []);
 
   const filteredDomains = useMemo(() => {
     if (!cookieData) return [];
@@ -319,14 +361,16 @@ export function CookieCopyDialog({
 
   useEffect(() => {
     if (isOpen) {
-      setSourceProfileId(null);
+      setSourceProfileId(fixedSourceProfileId);
       setCookieData(null);
       setSelection({});
       setSearchQuery("");
       setExpandedDomains(new Set());
+      setChosenTargetIds(new Set());
       setError(null);
+      if (fixedSourceProfileId) void loadCookies(fixedSourceProfileId);
     }
-  }, [isOpen]);
+  }, [isOpen, fixedSourceProfileId, loadCookies]);
 
   const canCopy =
     sourceProfileId &&
@@ -343,13 +387,19 @@ export function CookieCopyDialog({
             {t("cookies.copy.title")}
           </DialogTitle>
           <DialogDescription>
-            {selectedProfiles.length === 1
-              ? t("cookies.copy.dialogDescription_one", {
-                  count: selectedProfiles.length,
+            {fixedSourceProfileId
+              ? t("cookies.copy.fromProfileDescription", {
+                  name:
+                    profiles.find((p) => p.id === fixedSourceProfileId)?.name ??
+                    "",
                 })
-              : t("cookies.copy.dialogDescription_other", {
-                  count: selectedProfiles.length,
-                })}
+              : selectedProfiles.length === 1
+                ? t("cookies.copy.dialogDescription_one", {
+                    count: selectedProfiles.length,
+                  })
+                : t("cookies.copy.dialogDescription_other", {
+                    count: selectedProfiles.length,
+                  })}
           </DialogDescription>
         </DialogHeader>
 
@@ -359,6 +409,7 @@ export function CookieCopyDialog({
             <Select
               value={sourceProfileId ?? undefined}
               onValueChange={handleSourceChange}
+              disabled={Boolean(fixedSourceProfileId)}
             >
               <SelectTrigger>
                 <SelectValue
@@ -397,31 +448,67 @@ export function CookieCopyDialog({
                 count: targetProfiles.length,
               })}
             </Label>
-            <div className="max-h-20 overflow-y-auto rounded-md bg-muted p-2">
-              {targetProfiles.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  {sourceProfileId
-                    ? t("cookies.copy.noOtherTargets")
-                    : t("cookies.copy.selectSourceFirst")}
-                </p>
-              ) : (
-                <div className="flex flex-wrap gap-1">
-                  {targetProfiles.map((p) => (
-                    <span
-                      key={p.id}
-                      className="inline-flex items-center gap-1 rounded bg-background px-2 py-0.5 text-sm"
-                    >
-                      {p.name}
-                      {runningProfiles.has(p.id) && (
-                        <span className="text-xs text-destructive-text">
-                          {t("cookies.copy.running")}
-                        </span>
-                      )}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+            {fixedSourceProfileId ? (
+              <div className="max-h-40 space-y-1 overflow-y-auto rounded-md bg-foreground/5 p-2">
+                {targetCandidates.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {t("cookies.copy.noOtherTargets")}
+                  </p>
+                ) : (
+                  targetCandidates.map((p) => {
+                    const checkboxId = `cookie-copy-target-${p.id}`;
+                    return (
+                      <div key={p.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={checkboxId}
+                          checked={chosenTargetIds.has(p.id)}
+                          onCheckedChange={() => {
+                            toggleTarget(p.id);
+                          }}
+                        />
+                        <label
+                          htmlFor={checkboxId}
+                          className="flex cursor-pointer items-center gap-2 text-sm"
+                        >
+                          {p.name}
+                          {runningProfiles.has(p.id) && (
+                            <span className="text-xs text-destructive-text">
+                              {t("cookies.copy.running")}
+                            </span>
+                          )}
+                        </label>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            ) : (
+              <div className="max-h-20 overflow-y-auto rounded-md bg-muted p-2">
+                {targetProfiles.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    {sourceProfileId
+                      ? t("cookies.copy.noOtherTargets")
+                      : t("cookies.copy.selectSourceFirst")}
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-1">
+                    {targetProfiles.map((p) => (
+                      <span
+                        key={p.id}
+                        className="inline-flex items-center gap-1 rounded bg-background px-2 py-0.5 text-sm"
+                      >
+                        {p.name}
+                        {runningProfiles.has(p.id) && (
+                          <span className="text-xs text-destructive-text">
+                            {t("cookies.copy.running")}
+                          </span>
+                        )}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {sourceProfileId && (
