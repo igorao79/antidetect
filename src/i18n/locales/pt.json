@@ -869,6 +869,23 @@
       "requestedMany_other": "IP novo solicitado para {{count}} proxies",
       "failedFor": "{{name}}: {{error}}",
       "noneSelected": "Nenhum destes proxies tem link de troca de IP. Adicione um ao editar um proxy."
+    },
+    "expiry": {
+      "label": "Data de expiração",
+      "hint": "Opcional. Perfis com este proxy recebem uma marca três dias antes de expirar.",
+      "presetDays": "{{days}} d",
+      "presetAria": "Expira daqui a {{days}} dias",
+      "column": "Expira",
+      "endsToday": "Expira hoje",
+      "expiredOn": "Expirou em {{date}}",
+      "daysLeft_one": "Resta {{count}} dia",
+      "daysLeft_other": "Restam {{count}} dias",
+      "daysLeft_many": "Restam {{count}} dias",
+      "proxyEndsToday": "O proxy expira hoje",
+      "proxyExpiredOn": "O proxy expirou em {{date}}",
+      "proxyEndsIn_one": "O proxy expira em {{count}} dia",
+      "proxyEndsIn_other": "O proxy expira em {{count}} dias",
+      "proxyEndsIn_many": "O proxy expira em {{count}} dias"
     }
   },
   "groups": {
@@ -2571,8 +2588,7 @@
     "emptyGroupMove": "Mover perfis para cá",
     "health": {
       "degraded": "A conexão está lenta ou instável",
-      "down": "A conexão caiu",
-      "downToast": "O proxy de {{name}} não responde: o tráfego do perfil parou"
+      "down": "A conexão caiu"
     },
     "route": "Proxy / VPN: {{name}}",
     "routeNone": "Sem proxy nem VPN",
@@ -5136,5 +5152,18 @@
     "onDisk": "Neste computador, os perfis efêmeros gravam seus dados no disco. O Owl os apaga quando o navegador fecha. Instale o WinFsp para manter os dados na memória.",
     "winfspError": "O WinFsp não iniciou, então os perfis efêmeros gravam seus dados no disco. O Owl os apaga quando o navegador fecha.",
     "download": "Baixar o WinFsp"
+  },
+  "proxyOutage": {
+    "bannerTitle_one": "O proxy não responde em {{count}} perfil",
+    "bannerTitle_many": "O proxy não responde em {{count}} perfis",
+    "bannerTitle_other": "O proxy não responde em {{count}} perfis",
+    "notifyTitleOne": "Perfil “{{name}}”: o proxy não responde",
+    "notifyTitleMany_one": "O proxy não responde em {{count}} perfil: {{names}}",
+    "notifyTitleMany_many": "O proxy não responde em {{count}} perfis: {{names}}",
+    "notifyTitleMany_other": "O proxy não responde em {{count}} perfis: {{names}}",
+    "namesMore": "{{names}} e mais {{more}}",
+    "trafficStopped": "O tráfego parou.",
+    "waiting": "O tráfego volta quando o proxy responder.",
+    "cut": "A sessão foi cortada: pare o perfil e inicie-o novamente para reconectar."
   }
 }

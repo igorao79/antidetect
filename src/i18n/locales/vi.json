@@ -864,6 +864,21 @@
       "requestedMany_other": "Đã yêu cầu IP mới cho {{count}} proxy",
       "failedFor": "{{name}}: {{error}}",
       "noneSelected": "Không proxy nào trong số này có liên kết đổi IP. Hãy thêm khi chỉnh sửa proxy."
+    },
+    "expiry": {
+      "label": "Ngày hết hạn",
+      "hint": "Không bắt buộc. Hồ sơ dùng proxy này được đánh dấu ba ngày trước khi hết hạn.",
+      "presetDays": "{{days}} ngày",
+      "presetAria": "Hết hạn sau {{days}} ngày kể từ hôm nay",
+      "column": "Hết hạn",
+      "endsToday": "Hết hạn hôm nay",
+      "expiredOn": "Đã hết hạn ngày {{date}}",
+      "daysLeft_one": "Còn {{count}} ngày",
+      "daysLeft_other": "Còn {{count}} ngày",
+      "proxyEndsToday": "Proxy hết hạn hôm nay",
+      "proxyExpiredOn": "Proxy đã hết hạn ngày {{date}}",
+      "proxyEndsIn_one": "Proxy hết hạn sau {{count}} ngày",
+      "proxyEndsIn_other": "Proxy hết hạn sau {{count}} ngày"
     }
   },
   "groups": {
@@ -2552,8 +2567,7 @@
     "emptyGroupMove": "Chuyển hồ sơ vào đây",
     "health": {
       "degraded": "Kết nối chậm hoặc không ổn định",
-      "down": "Kết nối bị gián đoạn",
-      "downToast": "Proxy của {{name}} không phản hồi: lưu lượng của hồ sơ đã dừng"
+      "down": "Kết nối bị gián đoạn"
     },
     "route": "Proxy / VPN: {{name}}",
     "routeNone": "Không có proxy hoặc VPN",
@@ -5086,5 +5100,16 @@
     "onDisk": "Trên máy tính này, hồ sơ tạm thời ghi dữ liệu vào ổ đĩa. Owl xóa dữ liệu đó khi trình duyệt đóng. Hãy cài WinFsp để giữ dữ liệu trong bộ nhớ.",
     "winfspError": "WinFsp không khởi động được, nên hồ sơ tạm thời ghi dữ liệu vào ổ đĩa. Owl xóa dữ liệu đó khi trình duyệt đóng.",
     "download": "Tải WinFsp"
+  },
+  "proxyOutage": {
+    "bannerTitle_one": "Proxy không phản hồi ở {{count}} hồ sơ",
+    "bannerTitle_other": "Proxy không phản hồi ở {{count}} hồ sơ",
+    "notifyTitleOne": "Hồ sơ “{{name}}”: proxy không phản hồi",
+    "notifyTitleMany_one": "Proxy không phản hồi ở {{count}} hồ sơ: {{names}}",
+    "notifyTitleMany_other": "Proxy không phản hồi ở {{count}} hồ sơ: {{names}}",
+    "namesMore": "{{names}} và {{more}} hồ sơ khác",
+    "trafficStopped": "Lưu lượng đã dừng.",
+    "waiting": "Lưu lượng sẽ tiếp tục khi proxy phản hồi.",
+    "cut": "Phiên đã bị ngắt: hãy dừng hồ sơ và khởi chạy lại để kết nối lại."
   }
 }

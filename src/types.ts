@@ -356,6 +356,8 @@ export interface StoredProxy {
   geo_isp?: string;
   /** The provider's change-IP link; see `rotateProxyIps`. */
   rotation_url?: string | null;
+  /** Unix seconds when the proxy's plan ends; see `proxyExpiryStatus`. */
+  expires_at?: number | null;
 }
 
 export interface LocationItem {

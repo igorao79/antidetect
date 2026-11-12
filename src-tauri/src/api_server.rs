@@ -359,6 +359,8 @@ struct ApiProxyResponse {
   /// The provider's "change IP" link, or `null`. Call
   /// `POST /v1/proxies/{id}/rotate` to use it.
   rotation_url: Option<String>,
+  /// Unix seconds when the proxy's plan ends, or `null` when none is set.
+  expires_at: Option<u64>,
 }
 
 impl From<crate::proxy_manager::StoredProxy> for ApiProxyResponse {
@@ -368,6 +370,7 @@ impl From<crate::proxy_manager::StoredProxy> for ApiProxyResponse {
       name: proxy.name,
       proxy_settings: proxy.proxy_settings,
       rotation_url: proxy.rotation_url,
+      expires_at: proxy.expires_at,
     }
   }
 }
@@ -380,6 +383,9 @@ struct CreateProxyRequest {
   /// Optional http(s) "change IP" link from the proxy provider.
   #[serde(default)]
   rotation_url: Option<String>,
+  /// Optional unix seconds when the proxy's plan ends.
+  #[serde(default)]
+  expires_at: Option<u64>,
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -391,6 +397,10 @@ struct UpdateProxyRequest {
   /// clears it.
   #[serde(default)]
   rotation_url: Option<String>,
+  /// Unix seconds when the proxy's plan ends. Omitted or `null` leaves it
+  /// unchanged; `0` clears it.
+  #[serde(default)]
+  expires_at: Option<u64>,
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
@@ -2776,6 +2786,13 @@ async fn create_proxy(
     request.proxy_settings,
   );
 
+  let result = match request.expires_at {
+    Some(expires_at) => {
+      result.and_then(|proxy| PROXY_MANAGER.set_expires_at(&proxy.id, Some(expires_at)))
+    }
+    None => result,
+  };
+
   match result {
     Ok(proxy) if rotation_url.is_some() => PROXY_MANAGER
       .set_rotation_url(&proxy.id, rotation_url)
@@ -2885,6 +2902,12 @@ async fn update_proxy(
     .map_err(manager_error_response)?;
   let result =
     PROXY_MANAGER.update_stored_proxy(&state.app_handle, &id, request.name, request.proxy_settings);
+  let result = match request.expires_at {
+    Some(expires_at) => {
+      result.and_then(|_| PROXY_MANAGER.set_expires_at(&id, (expires_at > 0).then_some(expires_at)))
+    }
+    None => result,
+  };
 
   match result {
     Ok(_) if rotation_url.is_some() => PROXY_MANAGER
@@ -6769,6 +6792,23 @@ mod tests {
       !update_proxy.iter().any(|f| f == "proxy_settings"),
       "proxy_settings must be optional on update, required list: {update_proxy:?}"
     );
+
+    let create_proxy = schema_required(&spec, "CreateProxyRequest");
+    let proxy_response = schema_required(&spec, "ApiProxyResponse");
+    for (schema, required) in [
+      ("CreateProxyRequest", &create_proxy),
+      ("UpdateProxyRequest", &update_proxy),
+      ("ApiProxyResponse", &proxy_response),
+    ] {
+      assert!(
+        !required.iter().any(|f| f == "expires_at"),
+        "expires_at must be optional on {schema}, required list: {required:?}"
+      );
+      assert!(
+        spec["components"]["schemas"][schema]["properties"]["expires_at"].is_object(),
+        "expires_at must be documented on {schema}"
+      );
+    }
 
     let proxy_settings = schema_required(&spec, "ProxySettings");
     for field in ["username", "password", "vless_uri"] {

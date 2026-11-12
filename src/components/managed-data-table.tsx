@@ -73,6 +73,7 @@ const LABELS: Record<EntityTableId, Record<string, string>> = {
     hostPort: "proxies.management.hostPort",
     check: "common.labels.status",
     udp: "proxies.management.udpCol",
+    expires: "proxies.expiry.column",
     usage: "proxies.management.usage",
     sync: "proxies.management.syncCol",
   },
@@ -129,6 +130,8 @@ function extraValue(row: Entity, id: string): string | number {
       return canonicalProxyType(row.proxy_settings.proxy_type);
     if (id === "hostPort")
       return `${row.proxy_settings.host}:${row.proxy_settings.port}`;
+    // Proxies without a date sort after every dated one.
+    if (id === "expires") return row.expires_at ?? Number.MAX_SAFE_INTEGER;
   }
   return "";
 }
@@ -160,6 +163,7 @@ export function configureEntityColumns<T extends Entity>(
       "compat",
       "protocol",
       "hostPort",
+      "expires",
     ].includes(id);
     return {
       ...column,

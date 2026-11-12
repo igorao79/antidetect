@@ -52,6 +52,7 @@ import { ProfilesGroupsTabs } from "@/components/profiles-groups-tabs";
 import { ProxyAssignmentDialog } from "@/components/proxy-assignment-dialog";
 import { ProxyDistributionDialog } from "@/components/proxy-distribution-dialog";
 import { ProxyManagementDialog } from "@/components/proxy-management-dialog";
+import { ProxyOutageBanner } from "@/components/proxy-outage-banner";
 import { type AppPage, pageDirection, RailNav } from "@/components/rail-nav";
 import { RailUpdateButton } from "@/components/rail-update-button";
 import { SettingsDialog } from "@/components/settings-dialog";
@@ -87,8 +88,8 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useProfileEvents } from "@/hooks/use-profile-events";
 import { useProfileStatuses } from "@/hooks/use-profile-statuses";
 import { useProfileTableFilters } from "@/hooks/use-profile-table-filters";
-import { useProxyDownNotice } from "@/hooks/use-proxy-down-notice";
 import { useProxyEvents } from "@/hooks/use-proxy-events";
+import { useProxyOutages } from "@/hooks/use-proxy-outages";
 import { useSyncSessions } from "@/hooks/use-sync-session";
 import { useTips } from "@/hooks/use-tips";
 import { confirmLeave, hasUnsavedChanges } from "@/hooks/use-unsaved-changes";
@@ -195,7 +196,7 @@ export default function Home() {
     loadProfiles,
   } = useProfileEvents();
   useLaunchNotices(profiles);
-  useProxyDownNotice(profiles);
+  const proxyOutages = useProxyOutages(profiles, runningProfiles);
 
   // First-run product tour: coach marks on the real controls.
   const [tour, setTour] = useState<{ open: boolean; step: TourStep }>({
@@ -3070,6 +3071,21 @@ export default function Home() {
             agentRequests={agentConsole.openRequests.length}
           />
           <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+            <ProxyOutageBanner
+              rows={proxyOutages}
+              onOpen={(profileId) => {
+                const profile = profiles.find((p) => p.id === profileId);
+                if (!profile) return;
+                goToProfilesThen(() => {
+                  setProfileInfoOpenMethod("pointer");
+                  setProfileInfoDialog(profile);
+                });
+              }}
+              onStop={async (profileId) => {
+                const profile = profiles.find((p) => p.id === profileId);
+                if (profile) await handleKillProfile(profile);
+              }}
+            />
             <PageTransition
               pageKey={transitionKey}
               direction={pageMove.dir}

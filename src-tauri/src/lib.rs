@@ -508,10 +508,16 @@ async fn create_stored_proxy(
   app_handle: tauri::AppHandle,
   name: String,
   proxy_settings: Option<crate::browser::ProxySettings>,
+  expires_at: Option<u64>,
 ) -> Result<crate::proxy_manager::StoredProxy, String> {
   if let Some(settings) = proxy_settings {
-    crate::proxy_manager::PROXY_MANAGER
+    let manager = &crate::proxy_manager::PROXY_MANAGER;
+    manager
       .create_stored_proxy(&app_handle, name, settings)
+      .and_then(|proxy| match expires_at {
+        Some(_) => manager.set_expires_at(&proxy.id, expires_at),
+        None => Ok(proxy),
+      })
       .map_err(|e| crate::coded_failure("PROXY_SAVE_FAILED", e))
   } else {
     Err(backend_error_with_detail(
@@ -555,9 +561,22 @@ async fn update_stored_proxy(
   proxy_id: String,
   name: Option<String>,
   proxy_settings: Option<crate::browser::ProxySettings>,
+  expires_at: Option<u64>,
+  clear_expires_at: Option<bool>,
 ) -> Result<crate::proxy_manager::StoredProxy, String> {
-  crate::proxy_manager::PROXY_MANAGER
+  // An omitted date leaves it as it is; `clear_expires_at` removes it.
+  let expiry = match (expires_at, clear_expires_at.unwrap_or(false)) {
+    (Some(at), _) => Some(Some(at)),
+    (None, true) => Some(None),
+    (None, false) => None,
+  };
+  let manager = &crate::proxy_manager::PROXY_MANAGER;
+  manager
     .update_stored_proxy(&app_handle, &proxy_id, name, proxy_settings)
+    .and_then(|proxy| match expiry {
+      Some(expires_at) => manager.set_expires_at(&proxy_id, expires_at),
+      None => Ok(proxy),
+    })
     .map_err(|e| crate::coded_failure("PROXY_SAVE_FAILED", e))
 }
 

@@ -869,6 +869,23 @@
       "requestedMany_other": "Nouvelle IP demandée pour {{count}} proxys",
       "failedFor": "{{name}} : {{error}}",
       "noneSelected": "Aucun de ces proxys n'a de lien de changement d'IP. Ajoutez-en un en modifiant un proxy."
+    },
+    "expiry": {
+      "label": "Date d'expiration",
+      "hint": "Facultatif. Les profils sur ce proxy reçoivent une marque trois jours avant l'expiration.",
+      "presetDays": "{{days}} j",
+      "presetAria": "Expire dans {{days}} jours",
+      "column": "Expire",
+      "endsToday": "Expire aujourd'hui",
+      "expiredOn": "Expiré le {{date}}",
+      "daysLeft_one": "{{count}} jour restant",
+      "daysLeft_other": "{{count}} jours restants",
+      "daysLeft_many": "{{count}} jours restants",
+      "proxyEndsToday": "Le proxy expire aujourd'hui",
+      "proxyExpiredOn": "Le proxy a expiré le {{date}}",
+      "proxyEndsIn_one": "Le proxy expire dans {{count}} jour",
+      "proxyEndsIn_other": "Le proxy expire dans {{count}} jours",
+      "proxyEndsIn_many": "Le proxy expire dans {{count}} jours"
     }
   },
   "groups": {
@@ -2571,8 +2588,7 @@
     "emptyGroupMove": "Déplacer des profils ici",
     "health": {
       "degraded": "La connexion est lente ou instable",
-      "down": "La connexion est coupée",
-      "downToast": "Le proxy de {{name}} ne répond pas : le trafic du profil est arrêté"
+      "down": "La connexion est coupée"
     },
     "route": "Proxy / VPN : {{name}}",
     "routeNone": "Ni proxy ni VPN",
@@ -5136,5 +5152,18 @@
     "onDisk": "Sur cet ordinateur, les profils éphémères écrivent leurs données sur le disque. Owl les efface à la fermeture du navigateur. Installez WinFsp pour garder les données en mémoire.",
     "winfspError": "WinFsp n'a pas démarré, donc les profils éphémères écrivent leurs données sur le disque. Owl les efface à la fermeture du navigateur.",
     "download": "Télécharger WinFsp"
+  },
+  "proxyOutage": {
+    "bannerTitle_one": "Le proxy ne répond pas pour {{count}} profil",
+    "bannerTitle_many": "Le proxy ne répond pas pour {{count}} profils",
+    "bannerTitle_other": "Le proxy ne répond pas pour {{count}} profils",
+    "notifyTitleOne": "Profil « {{name}} » : le proxy ne répond pas",
+    "notifyTitleMany_one": "Le proxy ne répond pas pour {{count}} profil : {{names}}",
+    "notifyTitleMany_many": "Le proxy ne répond pas pour {{count}} profils : {{names}}",
+    "notifyTitleMany_other": "Le proxy ne répond pas pour {{count}} profils : {{names}}",
+    "namesMore": "{{names}} et {{more}} autres",
+    "trafficStopped": "Le trafic est arrêté.",
+    "waiting": "Le trafic reprendra dès que le proxy répondra.",
+    "cut": "La session a été coupée : arrêtez le profil et relancez-le pour vous reconnecter."
   }
 }

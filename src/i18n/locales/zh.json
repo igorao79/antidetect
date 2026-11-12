@@ -864,6 +864,21 @@
       "requestedMany_other": "已为 {{count}} 个代理请求新 IP",
       "failedFor": "{{name}}：{{error}}",
       "noneSelected": "这些代理都没有更换 IP 链接。请在编辑代理时添加。"
+    },
+    "expiry": {
+      "label": "到期日期",
+      "hint": "可选。到期前三天起，使用此代理的配置文件会显示标记。",
+      "presetDays": "{{days}} 天",
+      "presetAria": "从今天起 {{days}} 天后到期",
+      "column": "到期",
+      "endsToday": "今天到期",
+      "expiredOn": "已于 {{date}} 到期",
+      "daysLeft_one": "剩余 {{count}} 天",
+      "daysLeft_other": "剩余 {{count}} 天",
+      "proxyEndsToday": "代理今天到期",
+      "proxyExpiredOn": "代理已于 {{date}} 到期",
+      "proxyEndsIn_one": "代理将在 {{count}} 天后到期",
+      "proxyEndsIn_other": "代理将在 {{count}} 天后到期"
     }
   },
   "groups": {
@@ -2552,8 +2567,7 @@
     "emptyGroupMove": "将配置文件移到这里",
     "health": {
       "degraded": "连接缓慢或不稳定",
-      "down": "连接已中断",
-      "downToast": "{{name}} 的代理没有响应：该配置文件的流量已停止"
+      "down": "连接已中断"
     },
     "route": "代理 / VPN：{{name}}",
     "routeNone": "无代理或 VPN",
@@ -5086,5 +5100,16 @@
     "onDisk": "在这台电脑上,临时配置文件会把数据写入磁盘。浏览器关闭时 Owl 会清除这些数据。安装 WinFsp 可将数据保留在内存中。",
     "winfspError": "WinFsp 未能启动,因此临时配置文件会把数据写入磁盘。浏览器关闭时 Owl 会清除这些数据。",
     "download": "下载 WinFsp"
+  },
+  "proxyOutage": {
+    "bannerTitle_one": "{{count}} 个配置文件的代理没有响应",
+    "bannerTitle_other": "{{count}} 个配置文件的代理没有响应",
+    "notifyTitleOne": "配置文件“{{name}}”：代理没有响应",
+    "notifyTitleMany_one": "{{count}} 个配置文件的代理没有响应：{{names}}",
+    "notifyTitleMany_other": "{{count}} 个配置文件的代理没有响应：{{names}}",
+    "namesMore": "{{names}} 及另外 {{more}} 个",
+    "trafficStopped": "流量已停止。",
+    "waiting": "代理恢复响应后，流量会继续。",
+    "cut": "会话已断开：请停止该配置文件并重新启动以重新连接。"
   }
 }

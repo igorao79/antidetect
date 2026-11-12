@@ -211,6 +211,7 @@ import {
 } from "./data-table-action-bar";
 import MultipleSelector, { type Option } from "./multiple-selector";
 import { ProxyCheckButton } from "./proxy-check-button";
+import { ProxyExpiryMarker } from "./proxy-expiry";
 import { TrafficDetailsDialog } from "./traffic-details-dialog";
 import { Input } from "./ui/input";
 import { Skeleton } from "./ui/skeleton";
@@ -3647,20 +3648,29 @@ export function ProfilesDataTable({
           const vpnBadge = effectiveVpn ? "WG" : null;
           const isSelectorOpen = meta.openProxySelectorFor === profile.id;
           const selectedId = effectiveVpnId ?? effectiveProxyId ?? null;
+          const expiryMarker =
+            effectiveProxy && !effectiveVpn ? (
+              <ProxyExpiryMarker expiresAt={effectiveProxy.expires_at} />
+            ) : null;
 
           // A running row shows its live traffic; the route name moves into
           // the tooltip.
           if (isRunning) {
             return (
-              <RunningTrafficCell
-                key={profile.id}
-                profileId={profile.id}
-                profileName={profile.name}
-                store={meta.trafficStore}
-                routeName={hasAssignment ? displayName : null}
-                health={meta.proxyHealth.get(profile.id)}
-                onOpen={() => meta.onOpenTrafficDialog?.(profile.id)}
-              />
+              <div className="flex min-w-0 items-center gap-1">
+                {expiryMarker}
+                <div className="min-w-0 flex-1">
+                  <RunningTrafficCell
+                    key={profile.id}
+                    profileId={profile.id}
+                    profileName={profile.name}
+                    store={meta.trafficStore}
+                    routeName={hasAssignment ? displayName : null}
+                    health={meta.proxyHealth.get(profile.id)}
+                    onOpen={() => meta.onOpenTrafficDialog?.(profile.id)}
+                  />
+                </div>
+              </div>
             );
           }
 
@@ -3696,6 +3706,7 @@ export function ProfilesDataTable({
                   </PopoverContent>
                 )}
               </Popover>
+              {expiryMarker}
               {effectiveProxy && !effectiveVpn && !isDisabled && (
                 <ProxyCheckButton proxy={effectiveProxy} />
               )}

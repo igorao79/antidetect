@@ -864,6 +864,21 @@
       "requestedMany_other": "Neue IP für {{count}} Proxys angefordert",
       "failedFor": "{{name}}: {{error}}",
       "noneSelected": "Keiner dieser Proxys hat einen Link zum IP-Wechsel. Fügen Sie einen beim Bearbeiten eines Proxys hinzu."
+    },
+    "expiry": {
+      "label": "Ablaufdatum",
+      "hint": "Optional. Profile mit diesem Proxy erhalten drei Tage vor dem Ablauf eine Markierung.",
+      "presetDays": "{{days}} T.",
+      "presetAria": "Läuft in {{days}} Tagen ab",
+      "column": "Läuft ab",
+      "endsToday": "Läuft heute ab",
+      "expiredOn": "Abgelaufen am {{date}}",
+      "daysLeft_one": "Noch {{count}} Tag",
+      "daysLeft_other": "Noch {{count}} Tage",
+      "proxyEndsToday": "Proxy läuft heute ab",
+      "proxyExpiredOn": "Proxy ist am {{date}} abgelaufen",
+      "proxyEndsIn_one": "Proxy läuft in {{count}} Tag ab",
+      "proxyEndsIn_other": "Proxy läuft in {{count}} Tagen ab"
     }
   },
   "groups": {
@@ -2552,8 +2567,7 @@
     "emptyGroupMove": "Profile hierher verschieben",
     "health": {
       "degraded": "Verbindung ist langsam oder instabil",
-      "down": "Verbindung ist unterbrochen",
-      "downToast": "Der Proxy von {{name}} antwortet nicht: Der Datenverkehr des Profils steht"
+      "down": "Verbindung ist unterbrochen"
     },
     "route": "Proxy / VPN: {{name}}",
     "routeNone": "Kein Proxy und kein VPN",
@@ -5086,5 +5100,16 @@
     "onDisk": "Auf diesem Computer schreiben flüchtige Profile ihre Daten auf den Datenträger. Owl löscht sie, wenn der Browser geschlossen wird. Installieren Sie WinFsp, um die Daten im Arbeitsspeicher zu halten.",
     "winfspError": "WinFsp ist nicht gestartet, daher schreiben flüchtige Profile ihre Daten auf den Datenträger. Owl löscht sie, wenn der Browser geschlossen wird.",
     "download": "WinFsp herunterladen"
+  },
+  "proxyOutage": {
+    "bannerTitle_one": "Proxy antwortet nicht bei {{count}} Profil",
+    "bannerTitle_other": "Proxy antwortet nicht bei {{count}} Profilen",
+    "notifyTitleOne": "Profil „{{name}}“: Proxy antwortet nicht",
+    "notifyTitleMany_one": "Proxy antwortet nicht bei {{count}} Profil: {{names}}",
+    "notifyTitleMany_other": "Proxy antwortet nicht bei {{count}} Profilen: {{names}}",
+    "namesMore": "{{names}} und {{more}} weitere",
+    "trafficStopped": "Der Datenverkehr steht.",
+    "waiting": "Der Datenverkehr läuft weiter, sobald der Proxy antwortet.",
+    "cut": "Die Sitzung wurde getrennt: Profil stoppen und neu starten, um wieder zu verbinden."
   }
 }

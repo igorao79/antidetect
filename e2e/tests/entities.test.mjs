@@ -89,6 +89,36 @@ test("profile, group, proxy, tag, metadata, clone, and bulk-delete lifecycle", a
       assert.equal(updatedProxy.name, "Updated Proxy");
       assert.equal(updatedProxy.updated_at >= proxy.updated_at, true);
 
+      // The optional expiry date: set, kept by an edit that omits it, cleared.
+      assert.equal(proxy.expires_at ?? null, null);
+      const expiresAt = Math.floor(Date.now() / 1000) + 2 * 86_400;
+      const dated = await app.invoke("update_stored_proxy", {
+        proxyId: proxy.id,
+        expiresAt,
+      });
+      assert.equal(dated.expires_at, expiresAt);
+      const renamedDated = await app.invoke("update_stored_proxy", {
+        proxyId: proxy.id,
+        name: "Updated Proxy",
+      });
+      assert.equal(renamedDated.expires_at, expiresAt);
+      const listedDated = (await app.invoke("get_stored_proxies")).find(
+        (candidate) => candidate.id === proxy.id,
+      );
+      assert.equal(listedDated.expires_at, expiresAt);
+      const undated = await app.invoke("update_stored_proxy", {
+        proxyId: proxy.id,
+        clearExpiresAt: true,
+      });
+      assert.equal(undated.expires_at ?? null, null);
+      const createdDated = await app.invoke("create_stored_proxy", {
+        name: "Dated Proxy",
+        proxySettings: { proxy_type: "http", host: "127.0.0.1", port: 9 },
+        expiresAt,
+      });
+      assert.equal(createdDated.expires_at, expiresAt);
+      await app.invoke("delete_stored_proxy", { proxyId: createdDated.id });
+
       // The provider's change-IP link: checked when set, called on request.
       assert.match(
         await app.invokeError("rotate_proxy_ip", { proxyId: proxy.id }),

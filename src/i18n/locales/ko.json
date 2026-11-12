@@ -864,6 +864,21 @@
       "requestedMany_other": "프록시 {{count}}개의 새 IP를 요청했습니다",
       "failedFor": "{{name}}: {{error}}",
       "noneSelected": "이 프록시들에는 IP 변경 링크가 없습니다. 프록시를 편집할 때 추가하세요."
+    },
+    "expiry": {
+      "label": "만료일",
+      "hint": "선택 사항. 만료 3일 전부터 이 프록시를 쓰는 프로필에 표시가 붙습니다.",
+      "presetDays": "{{days}}일",
+      "presetAria": "오늘부터 {{days}}일 후 만료",
+      "column": "만료",
+      "endsToday": "오늘 만료",
+      "expiredOn": "{{date}}에 만료됨",
+      "daysLeft_one": "{{count}}일 남음",
+      "daysLeft_other": "{{count}}일 남음",
+      "proxyEndsToday": "프록시가 오늘 만료됩니다",
+      "proxyExpiredOn": "프록시가 {{date}}에 만료되었습니다",
+      "proxyEndsIn_one": "프록시가 {{count}}일 후 만료됩니다",
+      "proxyEndsIn_other": "프록시가 {{count}}일 후 만료됩니다"
     }
   },
   "groups": {
@@ -2552,8 +2567,7 @@
     "emptyGroupMove": "프로필을 여기로 이동",
     "health": {
       "degraded": "연결이 느리거나 불안정합니다",
-      "down": "연결이 끊겼습니다",
-      "downToast": "{{name}}의 프록시가 응답하지 않습니다. 프로필 트래픽이 멈췄습니다"
+      "down": "연결이 끊겼습니다"
     },
     "route": "프록시 / VPN: {{name}}",
     "routeNone": "프록시 또는 VPN 없음",
@@ -5086,5 +5100,16 @@
     "onDisk": "이 컴퓨터에서 임시 프로필은 데이터를 디스크에 씁니다. Owl은 브라우저가 닫히면 이를 지웁니다. 데이터를 메모리에 두려면 WinFsp를 설치하세요.",
     "winfspError": "WinFsp가 시작되지 않아 임시 프로필은 데이터를 디스크에 씁니다. Owl은 브라우저가 닫히면 이를 지웁니다.",
     "download": "WinFsp 다운로드"
+  },
+  "proxyOutage": {
+    "bannerTitle_one": "프로필 {{count}}개의 프록시가 응답하지 않습니다",
+    "bannerTitle_other": "프로필 {{count}}개의 프록시가 응답하지 않습니다",
+    "notifyTitleOne": "프로필 “{{name}}”: 프록시가 응답하지 않습니다",
+    "notifyTitleMany_one": "프로필 {{count}}개의 프록시가 응답하지 않습니다: {{names}}",
+    "notifyTitleMany_other": "프로필 {{count}}개의 프록시가 응답하지 않습니다: {{names}}",
+    "namesMore": "{{names}} 외 {{more}}개",
+    "trafficStopped": "트래픽이 멈췄습니다.",
+    "waiting": "프록시가 응답하면 트래픽이 다시 흐릅니다.",
+    "cut": "세션이 끊겼습니다. 다시 연결하려면 프로필을 중지한 뒤 다시 실행하세요."
   }
 }

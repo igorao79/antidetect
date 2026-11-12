@@ -8227,3 +8227,62 @@ test(
     });
   },
 );
+
+test("a running profile whose proxy goes down gets a banner that leaves when it recovers", async () => {
+  await withApp("ui-proxy-outage", async (app) => {
+    const profile = await createUiProfile(app, "Outage Profile");
+    await app.waitForText("Outage Profile");
+    const banner = () =>
+      app.execute(`
+        const node = document.querySelector('[data-testid="proxy-outage-banner"]');
+        if (!node) return null;
+        return {
+          text: node.innerText,
+          live: node.parentElement.getAttribute('aria-live'),
+          role: node.parentElement.getAttribute('role'),
+          modal: Boolean(node.closest('[role="dialog"]')),
+          rows: node.querySelectorAll('[data-testid="proxy-outage-row"]').length,
+        };
+      `);
+    const health = (status) =>
+      app.invoke("plugin:event|emit", {
+        event: "proxy-health-changed",
+        payload: {
+          profile_id: profile.id,
+          status,
+          at: Math.floor(Date.now() / 1000),
+          ...(status === "down" ? { code: "PROXY_UPSTREAM_TIMEOUT" } : {}),
+        },
+      });
+
+    // Degraded is shown in the table only, never as a banner.
+    await health("degraded");
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    assert.equal(await banner(), null);
+
+    await health("down");
+    const shown = await app.waitFor(
+      async () => {
+        const view = await banner();
+        return view?.text.includes("Outage Profile") ? view : null;
+      },
+      { description: "the proxy outage banner names the profile" },
+    );
+    assert.equal(shown.rows, 1);
+    assert.equal(shown.role, "status");
+    assert.equal(shown.live, "polite");
+    assert.equal(shown.modal, false);
+    assert.ok(shown.text.includes(en.backendErrors.proxyUpstreamTimeout));
+    assert.ok(
+      shown.text.includes(
+        en.proxyOutage.bannerTitle_one.replace("{{count}}", "1"),
+      ),
+    );
+    await app.capture("proxy-outage-banner");
+
+    await health("ok");
+    await app.waitFor(async () => (await banner()) === null, {
+      description: "the banner leaves when the proxy answers again",
+    });
+  });
+});

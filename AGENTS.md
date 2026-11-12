@@ -108,6 +108,19 @@ Fork-specific rules:
 - A configured proxy or VPN is probed live before every launch, even with "Block launches
   without a proxy or VPN" off; the switch additionally blocks a profile that declares no route
   at all. A route no probe can judge passes.
+- Proxy expiry (`StoredProxy.expires_at`, unix seconds, synced; `src/lib/proxy-expiry.ts`,
+  `proxy-expiry.tsx`): optional in the proxy form (a date, or 7/14/30/60/90-day presets; valid
+  through the end of that local day), `create_stored_proxy` `expiresAt`, `update_stored_proxy`
+  `expiresAt` or `clearExpiresAt`, REST `expires_at` (0 clears). The Network page has an
+  "Expires" column; a profile whose proxy has expired or has 3 days or fewer left shows a
+  calendar marker in the table's proxy cell.
+- A proxy going down (`proxy-health-changed` `down`; `src/lib/proxy-outages.ts`,
+  `use-proxy-outages.ts`, `proxy-outage-banner.tsx`): a non-modal banner at the top of the main
+  window lists the profiles with the reason and "Open details" / "Stop", until they recover, stop
+  or are deleted; a `cleared` for a profile still running (the kill switch cut its worker) keeps
+  the row and says to restart it. One native notification per outage, grouped when several
+  profiles go down within 3 s, and only while the window is not in front (`notifySystem`).
+  `degraded` stays a calm dot in the traffic cell.
 - An AMO-signed `.xpi` without `browser_specific_settings.gecko.id` in its manifest still gets
   its id from the signing certificate's subject CN (`META-INF/mozilla.rsa`), so Camoufox can
   sideload it instead of refusing the package.

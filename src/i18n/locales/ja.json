@@ -864,6 +864,21 @@
       "requestedMany_other": "{{count}} 件のプロキシの新しい IP をリクエストしました",
       "failedFor": "{{name}}: {{error}}",
       "noneSelected": "これらのプロキシには IP 変更リンクがありません。プロキシの編集時に追加してください。"
+    },
+    "expiry": {
+      "label": "有効期限",
+      "hint": "任意。期限の3日前から、このプロキシを使うプロファイルに印が付きます。",
+      "presetDays": "{{days}}日",
+      "presetAria": "今日から{{days}}日後に期限切れ",
+      "column": "期限",
+      "endsToday": "今日で期限切れ",
+      "expiredOn": "{{date}}に期限切れ",
+      "daysLeft_one": "残り{{count}}日",
+      "daysLeft_other": "残り{{count}}日",
+      "proxyEndsToday": "プロキシは今日で期限切れです",
+      "proxyExpiredOn": "プロキシは{{date}}に期限切れになりました",
+      "proxyEndsIn_one": "プロキシはあと{{count}}日で期限切れです",
+      "proxyEndsIn_other": "プロキシはあと{{count}}日で期限切れです"
     }
   },
   "groups": {
@@ -2552,8 +2567,7 @@
     "emptyGroupMove": "プロファイルをここに移動",
     "health": {
       "degraded": "接続が遅いか不安定です",
-      "down": "接続が切断されています",
-      "downToast": "{{name}} のプロキシが応答しません。プロファイルの通信は止まっています"
+      "down": "接続が切断されています"
     },
     "route": "プロキシ / VPN: {{name}}",
     "routeNone": "プロキシも VPN もありません",
@@ -5086,5 +5100,16 @@
     "onDisk": "このコンピューターでは、一時的なプロファイルはデータをディスクに書き込みます。ブラウザを閉じると Owl がそのデータを消去します。データをメモリに保持するには WinFsp をインストールしてください。",
     "winfspError": "WinFsp が起動しなかったため、一時的なプロファイルはデータをディスクに書き込みます。ブラウザを閉じると Owl がそのデータを消去します。",
     "download": "WinFsp をダウンロード"
+  },
+  "proxyOutage": {
+    "bannerTitle_one": "{{count}} 件のプロファイルでプロキシが応答しません",
+    "bannerTitle_other": "{{count}} 件のプロファイルでプロキシが応答しません",
+    "notifyTitleOne": "プロファイル「{{name}}」: プロキシが応答しません",
+    "notifyTitleMany_one": "{{count}} 件のプロファイルでプロキシが応答しません: {{names}}",
+    "notifyTitleMany_other": "{{count}} 件のプロファイルでプロキシが応答しません: {{names}}",
+    "namesMore": "{{names}} ほか {{more}} 件",
+    "trafficStopped": "通信は止まっています。",
+    "waiting": "プロキシが応答すると通信は再開します。",
+    "cut": "セッションが切断されました。再接続するには、プロファイルを停止してもう一度起動してください。"
   }
 }

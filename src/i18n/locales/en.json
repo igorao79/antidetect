@@ -864,6 +864,21 @@
       "requestedMany_other": "New IP requested for {{count}} proxies",
       "failedFor": "{{name}}: {{error}}",
       "noneSelected": "None of these proxies has a change IP link. Add one when you edit a proxy."
+    },
+    "expiry": {
+      "label": "Expiry date",
+      "hint": "Optional. Profiles on this proxy get a mark three days before it ends.",
+      "presetDays": "{{days}} d",
+      "presetAria": "Expire {{days}} days from today",
+      "column": "Expires",
+      "endsToday": "Ends today",
+      "expiredOn": "Expired {{date}}",
+      "daysLeft_one": "{{count}} day left",
+      "daysLeft_other": "{{count}} days left",
+      "proxyEndsToday": "Proxy expires today",
+      "proxyExpiredOn": "Proxy expired {{date}}",
+      "proxyEndsIn_one": "Proxy expires in {{count}} day",
+      "proxyEndsIn_other": "Proxy expires in {{count}} days"
     }
   },
   "groups": {
@@ -2552,8 +2567,7 @@
     "emptyGroupMove": "Move profiles here",
     "health": {
       "degraded": "Connection is slow or unstable",
-      "down": "Connection is down",
-      "downToast": "The proxy of {{name}} is not answering: the profile's traffic has stopped"
+      "down": "Connection is down"
     },
     "route": "Proxy / VPN: {{name}}",
     "routeNone": "No proxy or VPN",
@@ -5086,5 +5100,16 @@
     "onDisk": "On this computer, ephemeral profiles write their data to disk. Owl erases it when the browser closes. Install WinFsp to keep the data in memory.",
     "winfspError": "WinFsp did not start, so ephemeral profiles write their data to disk. Owl erases it when the browser closes.",
     "download": "Download WinFsp"
+  },
+  "proxyOutage": {
+    "bannerTitle_one": "Proxy not answering for {{count}} profile",
+    "bannerTitle_other": "Proxy not answering for {{count}} profiles",
+    "notifyTitleOne": "Profile “{{name}}”: proxy not answering",
+    "notifyTitleMany_one": "Proxy not answering for {{count}} profile: {{names}}",
+    "notifyTitleMany_other": "Proxy not answering for {{count}} profiles: {{names}}",
+    "namesMore": "{{names}} and {{more}} more",
+    "trafficStopped": "Traffic has stopped.",
+    "waiting": "Traffic resumes when the proxy answers.",
+    "cut": "The session was cut: stop the profile and launch it again to reconnect."
   }
 }

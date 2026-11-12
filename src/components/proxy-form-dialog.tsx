@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { translateBackendError } from "@/lib/backend-errors";
+import { dateInputFromExpiry, expiryFromDateInput } from "@/lib/proxy-expiry";
 import { looksLikeRotationUrl } from "@/lib/proxy-rotation";
 import {
   isFirstHopEncrypted,
@@ -33,6 +34,7 @@ import {
 } from "@/lib/proxy-string";
 import { canonicalProxyType } from "@/lib/proxy-type";
 import type { ProxyParseResult, StoredProxy } from "@/types";
+import { ProxyExpiryField } from "./proxy-expiry";
 import { RippleButton } from "./ui/ripple";
 
 interface ProxyFormData {
@@ -44,6 +46,8 @@ interface ProxyFormData {
   password: string;
   vless_uri: string;
   rotation_url: string;
+  /** The expiry day as `YYYY-MM-DD`, or "" for none. */
+  expires_on: string;
 }
 
 interface ProxyFormDialogProps {
@@ -67,6 +71,7 @@ const DEFAULT_FORM: ProxyFormData = {
   password: "",
   vless_uri: "",
   rotation_url: "",
+  expires_on: "",
 };
 
 /**
@@ -186,6 +191,9 @@ export function ProxyFormDialog({
       password: editingProxy.proxy_settings.password ?? "",
       vless_uri: editingProxy.proxy_settings.vless_uri ?? "",
       rotation_url: editingProxy.rotation_url ?? "",
+      expires_on: editingProxy.expires_at
+        ? dateInputFromExpiry(editingProxy.expires_at)
+        : "",
     });
   }, [editingProxy, isOpen, resetForm]);
 
@@ -232,6 +240,8 @@ export function ProxyFormDialog({
       return;
     }
 
+    const expiresAt = expiryFromDateInput(form.expires_on);
+
     setIsSubmitting(true);
     try {
       const payload = {
@@ -247,9 +257,21 @@ export function ProxyFormDialog({
       };
 
       if (editingProxy) {
+        // An untouched date is not sent, so a stored time of day other than
+        // the end of the day the form shows is kept as it was.
+        const storedOn = editingProxy.expires_at
+          ? dateInputFromExpiry(editingProxy.expires_at)
+          : "";
+        const expiry =
+          form.expires_on === storedOn
+            ? {}
+            : expiresAt === null
+              ? { clearExpiresAt: true }
+              : { expiresAt };
         await invoke("update_stored_proxy", {
           proxyId: editingProxy.id,
           ...payload,
+          ...expiry,
         });
         if (rotationUrl !== (editingProxy.rotation_url ?? "")) {
           await invoke("set_proxy_rotation_url", {
@@ -259,10 +281,10 @@ export function ProxyFormDialog({
         }
         toast.success(t("toasts.success.proxyUpdated"));
       } else {
-        const created = await invoke<StoredProxy>(
-          "create_stored_proxy",
-          payload,
-        );
+        const created = await invoke<StoredProxy>("create_stored_proxy", {
+          ...payload,
+          expiresAt: expiresAt ?? undefined,
+        });
         // The rotation link is stored after the proxy itself, and its answer
         // is the settled object: hand that one on when there is a link.
         const stored = rotationUrl
@@ -658,6 +680,14 @@ export function ProxyFormDialog({
               {t("proxies.rotation.hint")}
             </p>
           </div>
+
+          <ProxyExpiryField
+            value={form.expires_on}
+            onChange={(expires_on) => {
+              setForm((previous) => ({ ...previous, expires_on }));
+            }}
+            disabled={isSubmitting}
+          />
         </div>
 
         <DialogFooter>

@@ -48,6 +48,7 @@ import {
   useEntityTableTools,
 } from "@/components/managed-data-table";
 import { ProfileUsageButton } from "@/components/profile-usage-button";
+import { ProxyExpiryCell } from "@/components/proxy-expiry";
 import { ProxyExportDialog } from "@/components/proxy-export-dialog";
 import { ProxyFormDialog } from "@/components/proxy-form-dialog";
 import { ProxyImportDialog } from "@/components/proxy-import-dialog";
@@ -546,6 +547,14 @@ export function ProxyManagementDialog({
         enableSorting: false,
         header: () => t("proxies.management.udpCol"),
         cell: ({ row }) => <ProxyUdpBadge proxy={row.original} />,
+      },
+      {
+        id: "expires",
+        size: 84,
+        header: () => t("proxies.expiry.column"),
+        cell: ({ row }) => (
+          <ProxyExpiryCell expiresAt={row.original.expires_at} />
+        ),
       },
       {
         id: "usage",

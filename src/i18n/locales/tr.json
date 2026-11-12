@@ -864,6 +864,21 @@
       "requestedMany_other": "{{count}} proxy için yeni IP istendi",
       "failedFor": "{{name}}: {{error}}",
       "noneSelected": "Bu proxy'lerin hiçbirinde IP değiştirme bağlantısı yok. Bir proxy'yi düzenlerken ekleyin."
+    },
+    "expiry": {
+      "label": "Bitiş tarihi",
+      "hint": "İsteğe bağlı. Bu proxy'yi kullanan profiller bitişten üç gün önce işaretlenir.",
+      "presetDays": "{{days}} g",
+      "presetAria": "Bugünden {{days}} gün sonra bitsin",
+      "column": "Bitiş",
+      "endsToday": "Bugün bitiyor",
+      "expiredOn": "{{date}} tarihinde bitti",
+      "daysLeft_one": "{{count}} gün kaldı",
+      "daysLeft_other": "{{count}} gün kaldı",
+      "proxyEndsToday": "Proxy bugün bitiyor",
+      "proxyExpiredOn": "Proxy {{date}} tarihinde bitti",
+      "proxyEndsIn_one": "Proxy {{count}} gün sonra bitiyor",
+      "proxyEndsIn_other": "Proxy {{count}} gün sonra bitiyor"
     }
   },
   "groups": {
@@ -2552,8 +2567,7 @@
     "emptyGroupMove": "Profilleri buraya taşı",
     "health": {
       "degraded": "Bağlantı yavaş veya kararsız",
-      "down": "Bağlantı kesik",
-      "downToast": "{{name}} profilinin proxy'si yanıt vermiyor: profilin trafiği durdu"
+      "down": "Bağlantı kesik"
     },
     "route": "Proxy / VPN: {{name}}",
     "routeNone": "Proxy veya VPN yok",
@@ -5086,5 +5100,16 @@
     "onDisk": "Bu bilgisayarda geçici profiller verilerini diske yazar. Owl, tarayıcı kapandığında bu verileri siler. Verileri bellekte tutmak için WinFsp'yi yükleyin.",
     "winfspError": "WinFsp başlamadı, bu yüzden geçici profiller verilerini diske yazar. Owl, tarayıcı kapandığında bu verileri siler.",
     "download": "WinFsp'yi indir"
+  },
+  "proxyOutage": {
+    "bannerTitle_one": "{{count}} profilin proxy'si yanıt vermiyor",
+    "bannerTitle_other": "{{count}} profilin proxy'si yanıt vermiyor",
+    "notifyTitleOne": "“{{name}}” profili: proxy yanıt vermiyor",
+    "notifyTitleMany_one": "{{count}} profilin proxy'si yanıt vermiyor: {{names}}",
+    "notifyTitleMany_other": "{{count}} profilin proxy'si yanıt vermiyor: {{names}}",
+    "namesMore": "{{names}} ve {{more}} tane daha",
+    "trafficStopped": "Trafik durdu.",
+    "waiting": "Proxy yanıt verdiğinde trafik devam eder.",
+    "cut": "Oturum kesildi: yeniden bağlanmak için profili durdurup tekrar başlatın."
   }
 }

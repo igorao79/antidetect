@@ -38,6 +38,8 @@ pub struct ExportedProxy {
   pub password: Option<String>,
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub vless_uri: Option<String>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub expires_at: Option<u64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -243,6 +245,11 @@ pub struct StoredProxy {
   /// password: never logged, redacted for remote MCP callers.
   #[serde(default)]
   pub rotation_url: Option<String>,
+  /// Unix seconds when the provider's plan for this proxy ends; `None` when
+  /// the person set no date. Shown next to profiles that use it, never
+  /// enforced at launch.
+  #[serde(default)]
+  pub expires_at: Option<u64>,
 }
 
 /// Current unix time in whole seconds. Used to stamp `updated_at` on edits.
@@ -535,6 +542,7 @@ impl StoredProxy {
       dynamic_proxy_url: None,
       dynamic_proxy_format: None,
       rotation_url: None,
+      expires_at: None,
     }
   }
 
@@ -553,6 +561,17 @@ impl StoredProxy {
   pub fn update_settings(&mut self, proxy_settings: ProxySettings) {
     self.proxy_settings = proxy_settings;
     self.updated_at = Some(now_secs());
+  }
+
+  /// Sets the expiry date, bumping `updated_at` only when it changes, since
+  /// the date is synced with the rest of the proxy. Returns whether it changed.
+  pub fn set_expires_at(&mut self, expires_at: Option<u64>) -> bool {
+    if self.expires_at == expires_at {
+      return false;
+    }
+    self.expires_at = expires_at;
+    self.updated_at = Some(now_secs());
+    true
   }
 
   pub fn update_name(&mut self, name: String) {
@@ -922,6 +941,7 @@ impl ProxyManager {
         dynamic_proxy_url: None,
         dynamic_proxy_format: None,
         rotation_url: None,
+        expires_at: None,
       };
       stored_proxies.insert(CLOUD_PROXY_ID.to_string(), cloud_proxy.clone());
       drop(stored_proxies);
@@ -1116,6 +1136,7 @@ impl ProxyManager {
       dynamic_proxy_url: None,
       dynamic_proxy_format: None,
       rotation_url: None,
+      expires_at: None,
     };
 
     {
@@ -1320,6 +1341,49 @@ impl ProxyManager {
     Ok(updated_proxy)
   }
 
+  /// Saves a proxy after a one-field edit, tells the interface and queues its
+  /// sync.
+  fn commit_single_field_edit(&self, updated: StoredProxy) -> Result<StoredProxy, String> {
+    self
+      .save_proxy(&updated)
+      .map_err(|e| crate::wrap_backend_error(e, "Failed to save the proxy"))?;
+    if let Err(e) = events::emit_empty("proxies-changed") {
+      log::warn!("Event emit failed event=proxies-changed err=\"{e}\"");
+    }
+    if updated.sync_enabled {
+      if let Some(scheduler) = crate::sync::get_global_scheduler() {
+        let id = updated.id.clone();
+        tauri::async_runtime::spawn(async move {
+          scheduler.queue_proxy_sync(id).await;
+        });
+      }
+    }
+    Ok(updated)
+  }
+
+  /// Set or clear the date a proxy's plan ends. Cloud proxies are refused:
+  /// the cloud owns their configuration.
+  pub fn set_expires_at(
+    &self,
+    proxy_id: &str,
+    expires_at: Option<u64>,
+  ) -> Result<StoredProxy, String> {
+    let updated = {
+      let mut stored_proxies = self.stored_proxies.lock().unwrap();
+      let proxy = stored_proxies
+        .get_mut(proxy_id)
+        .ok_or_else(|| crate::backend_error("PROXY_NOT_FOUND"))?;
+      if proxy.is_cloud_managed || proxy.is_cloud_derived {
+        return Err(crate::backend_error("CANNOT_MODIFY_CLOUD_MANAGED_PROXY"));
+      }
+      if !proxy.set_expires_at(expires_at) {
+        return Ok(proxy.clone());
+      }
+      proxy.clone()
+    };
+    self.commit_single_field_edit(updated)
+  }
+
   /// Set or clear a proxy's "change IP" link. Cloud proxies are refused:
   /// the cloud owns their configuration.
   pub fn set_rotation_url(
@@ -1342,21 +1406,7 @@ impl ProxyManager {
       proxy.updated_at = Some(now_secs());
       proxy.clone()
     };
-    self
-      .save_proxy(&updated)
-      .map_err(|e| crate::wrap_backend_error(e, "Failed to save the proxy"))?;
-    if let Err(e) = events::emit_empty("proxies-changed") {
-      log::warn!("Event emit failed event=proxies-changed err=\"{e}\"");
-    }
-    if updated.sync_enabled {
-      if let Some(scheduler) = crate::sync::get_global_scheduler() {
-        let id = updated.id.clone();
-        tauri::async_runtime::spawn(async move {
-          scheduler.queue_proxy_sync(id).await;
-        });
-      }
-    }
-    Ok(updated)
+    self.commit_single_field_edit(updated)
   }
 
   /// Update the in-memory `sync_enabled` / `last_sync` fields of a stored
@@ -1834,6 +1884,7 @@ impl ProxyManager {
         username: p.proxy_settings.username.clone(),
         password: p.proxy_settings.password.clone(),
         vless_uri: p.proxy_settings.vless_uri.clone(),
+        expires_at: p.expires_at,
       })
       .collect();
 
@@ -2131,7 +2182,13 @@ impl ProxyManager {
         vless_uri: exported.vless_uri,
       };
 
-      match self.create_stored_proxy(app_handle, exported.name.clone(), proxy_settings) {
+      let created = self
+        .create_stored_proxy(app_handle, exported.name.clone(), proxy_settings)
+        .and_then(|proxy| match exported.expires_at {
+          Some(expires_at) => self.set_expires_at(&proxy.id, Some(expires_at)),
+          None => Ok(proxy),
+        });
+      match created {
         Ok(proxy) => imported.push(proxy),
         Err(e) => {
           if e.contains("already exists") {
@@ -3860,6 +3917,7 @@ mod route_check_tests {
       dynamic_proxy_url: None,
       dynamic_proxy_format: None,
       rotation_url: None,
+      expires_at: None,
     }
   }
 
@@ -5671,6 +5729,7 @@ mod tests {
       dynamic_proxy_url: None,
       dynamic_proxy_format: None,
       rotation_url: None,
+      expires_at: None,
     };
 
     // Before migration
@@ -5682,6 +5741,100 @@ mod tests {
     assert_eq!(proxy.geo_region.as_deref(), Some("california"));
     assert!(proxy.geo_state.is_none(), "geo_state should be taken");
     assert_eq!(proxy.effective_region().unwrap(), "california");
+  }
+
+  fn expiry_test_proxy(name: &str) -> StoredProxy {
+    let mut proxy = StoredProxy::new(
+      name.to_string(),
+      ProxySettings {
+        proxy_type: "http".to_string(),
+        host: "h.com".to_string(),
+        port: 80,
+        username: None,
+        password: None,
+        vless_uri: None,
+      },
+    );
+    proxy.sync_enabled = false;
+    proxy.updated_at = Some(1);
+    proxy
+  }
+
+  #[test]
+  fn setting_an_expiry_bumps_updated_at_only_when_it_changes() {
+    let mut proxy = expiry_test_proxy("expiry-struct");
+
+    assert!(proxy.set_expires_at(Some(1_900_000_000)));
+    assert_eq!(proxy.expires_at, Some(1_900_000_000));
+    let bumped = proxy.updated_at.unwrap();
+    assert!(bumped > 1, "a new date is a synced edit");
+
+    proxy.updated_at = Some(2);
+    assert!(!proxy.set_expires_at(Some(1_900_000_000)));
+    assert_eq!(proxy.updated_at, Some(2), "the same date is no edit");
+
+    assert!(proxy.set_expires_at(None));
+    assert_eq!(proxy.expires_at, None);
+    assert!(proxy.updated_at.unwrap() > 2);
+  }
+
+  #[test]
+  fn a_legacy_proxy_file_has_no_expiry() {
+    let legacy = serde_json::json!({
+      "id": "legacy",
+      "name": "Legacy",
+      "proxy_settings": { "proxy_type": "http", "host": "h.com", "port": 80 }
+    });
+    let proxy: StoredProxy = serde_json::from_value(legacy).unwrap();
+    assert_eq!(proxy.expires_at, None);
+  }
+
+  #[test]
+  fn the_manager_saves_exports_and_clears_an_expiry() {
+    let temp = tempfile::tempdir().unwrap();
+    let _data_guard = crate::app_dirs::set_test_data_dir(temp.path().to_path_buf());
+    let pm = ProxyManager::new();
+    let proxy = expiry_test_proxy("expiry-manager");
+    let id = proxy.id.clone();
+    pm.upsert_stored_proxy(proxy);
+
+    let updated = pm.set_expires_at(&id, Some(1_900_000_000)).unwrap();
+    assert_eq!(updated.expires_at, Some(1_900_000_000));
+    assert!(updated.updated_at.unwrap() > 1);
+    let on_disk: StoredProxy =
+      serde_json::from_str(&fs::read_to_string(pm.get_proxy_file_path(&id)).unwrap()).unwrap();
+    assert_eq!(on_disk.expires_at, Some(1_900_000_000));
+
+    let export: serde_json::Value =
+      serde_json::from_str(&pm.export_proxies_json().unwrap()).unwrap();
+    assert_eq!(export["proxies"][0]["expires_at"], 1_900_000_000);
+
+    let cleared = pm.set_expires_at(&id, None).unwrap();
+    assert_eq!(cleared.expires_at, None);
+    let export: serde_json::Value =
+      serde_json::from_str(&pm.export_proxies_json().unwrap()).unwrap();
+    assert!(export["proxies"][0].get("expires_at").is_none());
+
+    assert!(pm
+      .set_expires_at("missing", Some(1))
+      .unwrap_err()
+      .contains("PROXY_NOT_FOUND"));
+  }
+
+  #[test]
+  fn a_cloud_proxy_expiry_is_refused() {
+    let temp = tempfile::tempdir().unwrap();
+    let _data_guard = crate::app_dirs::set_test_data_dir(temp.path().to_path_buf());
+    let pm = ProxyManager::new();
+    let mut proxy = expiry_test_proxy("expiry-cloud");
+    proxy.is_cloud_derived = true;
+    let id = proxy.id.clone();
+    pm.upsert_stored_proxy(proxy);
+
+    assert!(pm
+      .set_expires_at(&id, Some(1))
+      .unwrap_err()
+      .contains("CANNOT_MODIFY_CLOUD_MANAGED_PROXY"));
   }
 
   #[test]
