@@ -44,6 +44,7 @@ import {
 import { FadingScrollArea } from "@/components/ui/fading-scroll-area";
 import { FOCUS_RING } from "@/components/ui/focus-ring";
 import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
 import { StepTransition } from "@/components/ui/step-transition";
 import licenses from "@/generated/licenses.json";
 import xraySource from "@/generated/xray-source.json";
@@ -773,15 +774,25 @@ function UpdateStatus({
       </Button>
     );
   } else if (info && update.isUpdating) {
-    state = "downloading";
+    const stage = update.updateProgress?.stage;
+    const speed = update.updateProgress?.speed;
+    state = stage === "downloading" || !stage ? "downloading" : "installing";
     icon = spinner;
     text =
-      typeof percent === "number"
-        ? t("about.update.downloadingPercent", {
-            version: info.new_version,
-            percent: Math.round(percent),
-          })
-        : t("about.update.downloading", { version: info.new_version });
+      state === "installing"
+        ? t("about.update.installing", { version: info.new_version })
+        : typeof percent === "number" && speed
+          ? t("about.update.downloadingDetail", {
+              version: info.new_version,
+              percent: Math.round(percent),
+              speed,
+            })
+          : typeof percent === "number"
+            ? t("about.update.downloadingPercent", {
+                version: info.new_version,
+                percent: Math.round(percent),
+              })
+            : t("about.update.downloading", { version: info.new_version });
   } else if (info?.repo_update) {
     state = "available";
     icon = arrow;
@@ -848,9 +859,14 @@ function UpdateStatus({
       className="flex min-h-12 items-center gap-3 rounded-lg bg-foreground/[0.035] py-2 pr-2 pl-3"
     >
       <span className="grid size-4 shrink-0 place-items-center">{icon}</span>
-      <p role="status" className="min-w-0 flex-1 text-sm text-foreground">
-        {text}
-      </p>
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <p role="status" className="text-sm text-foreground">
+          {text}
+        </p>
+        {state === "downloading" && typeof percent === "number" && (
+          <Progress value={percent} className="h-1" />
+        )}
+      </div>
       {action}
     </div>
   );

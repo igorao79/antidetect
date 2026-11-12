@@ -2598,6 +2598,8 @@
       "later": "Plus tard",
       "uploading": "Envoi",
       "downloading": "Téléchargement",
+      "downloadingPercent": "Téléchargement {{percent}} %",
+      "installing": "Installation",
       "startingUpdate": "Démarrage de la mise à jour..."
     }
   },
@@ -3496,6 +3498,8 @@
       "download": "Télécharger",
       "downloading": "Téléchargement de la version {{version}}…",
       "downloadingPercent": "Téléchargement de la version {{version}}… {{percent}} %",
+      "downloadingDetail": "Téléchargement de la version {{version}}… {{percent}} % · {{speed}} Mo/s",
+      "installing": "Installation de la version {{version}}…",
       "ready": "La version {{version}} est prête à être installée",
       "restart": "Redémarrer pour mettre à jour"
     },

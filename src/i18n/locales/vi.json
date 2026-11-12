@@ -2579,6 +2579,8 @@
       "later": "Để sau",
       "uploading": "Đang tải lên",
       "downloading": "Đang tải xuống",
+      "downloadingPercent": "Đang tải {{percent}}%",
+      "installing": "Đang cài đặt",
       "startingUpdate": "Đang bắt đầu cập nhật..."
     }
   },
@@ -3476,6 +3478,8 @@
       "download": "Tải xuống",
       "downloading": "Đang tải phiên bản {{version}}…",
       "downloadingPercent": "Đang tải phiên bản {{version}}… {{percent}}%",
+      "downloadingDetail": "Đang tải phiên bản {{version}}… {{percent}}% · {{speed}} MB/s",
+      "installing": "Đang cài đặt phiên bản {{version}}…",
       "ready": "Phiên bản {{version}} đã sẵn sàng để cài đặt",
       "restart": "Khởi động lại để cập nhật"
     },

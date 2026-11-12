@@ -2579,6 +2579,8 @@
       "later": "Daha Sonra",
       "uploading": "Yükleniyor",
       "downloading": "İndiriliyor",
+      "downloadingPercent": "İndiriliyor %{{percent}}",
+      "installing": "Yükleniyor",
       "startingUpdate": "Güncelleme başlatılıyor..."
     }
   },
@@ -3476,6 +3478,8 @@
       "download": "İndir",
       "downloading": "{{version}} sürümü indiriliyor…",
       "downloadingPercent": "{{version}} sürümü indiriliyor… %{{percent}}",
+      "downloadingDetail": "{{version}} sürümü indiriliyor… %{{percent}} · {{speed}} MB/sn",
+      "installing": "{{version}} sürümü yükleniyor…",
       "ready": "{{version}} sürümü yüklenmeye hazır",
       "restart": "Güncellemek için yeniden başlat"
     },

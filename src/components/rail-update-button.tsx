@@ -21,24 +21,36 @@ export function RailUpdateButton({ update }: { update: AppUpdateState }) {
   const version = info.new_version;
   const percent = update.updateProgress?.percentage;
   const downloading = update.isUpdating && !update.updateReady;
+  const stage = update.updateProgress?.stage;
+  const installing = downloading && !!stage && stage !== "downloading";
+  const shownPercent =
+    downloading && !installing && typeof percent === "number"
+      ? Math.round(percent)
+      : null;
 
   const label = update.updateReady
     ? t("appUpdate.toast.restartNow")
-    : downloading
-      ? t("appUpdate.toast.downloading")
-      : info.manual_update_required
-        ? t("about.update.download")
-        : t("about.update.update");
+    : installing
+      ? t("appUpdate.toast.installing")
+      : shownPercent !== null
+        ? t("appUpdate.toast.downloadingPercent", { percent: shownPercent })
+        : downloading
+          ? t("appUpdate.toast.downloading")
+          : info.manual_update_required
+            ? t("about.update.download")
+            : t("about.update.update");
   const hint = update.updateReady
     ? t("about.update.ready", { version })
-    : !downloading
-      ? t("about.update.available", { version })
-      : typeof percent === "number"
-        ? t("about.update.downloadingPercent", {
-            version,
-            percent: Math.round(percent),
-          })
-        : t("about.update.downloading", { version });
+    : installing
+      ? t("about.update.installing", { version })
+      : !downloading
+        ? t("about.update.available", { version })
+        : typeof percent === "number"
+          ? t("about.update.downloadingPercent", {
+              version,
+              percent: Math.round(percent),
+            })
+          : t("about.update.downloading", { version });
   const Icon = update.updateReady
     ? LuRefreshCw
     : downloading
@@ -79,6 +91,17 @@ export function RailUpdateButton({ update }: { update: AppUpdateState }) {
           <span aria-hidden="true" className={RAIL_LABEL_CLASS}>
             {label}
           </span>
+          {shownPercent !== null && (
+            <span
+              aria-hidden="true"
+              className="absolute inset-x-1 bottom-0.5 h-0.5 overflow-hidden rounded-full bg-primary/20"
+            >
+              <span
+                className="block h-full rounded-full bg-primary transition-[width] duration-200 motion-reduce:transition-none"
+                style={{ width: `${shownPercent}%` }}
+              />
+            </span>
+          )}
         </button>
       </TooltipTrigger>
       <TooltipContent side="right">{hint}</TooltipContent>

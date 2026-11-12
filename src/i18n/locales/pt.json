@@ -2598,6 +2598,8 @@
       "later": "Mais tarde",
       "uploading": "Enviando",
       "downloading": "Baixando",
+      "downloadingPercent": "Baixando {{percent}}%",
+      "installing": "Instalando",
       "startingUpdate": "Iniciando atualização..."
     }
   },
@@ -3496,6 +3498,8 @@
       "download": "Baixar",
       "downloading": "Baixando a versão {{version}}…",
       "downloadingPercent": "Baixando a versão {{version}}… {{percent}}%",
+      "downloadingDetail": "Baixando a versão {{version}}… {{percent}}% · {{speed}} MB/s",
+      "installing": "Instalando a versão {{version}}…",
       "ready": "A versão {{version}} está pronta para instalar",
       "restart": "Reiniciar para atualizar"
     },

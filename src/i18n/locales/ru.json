@@ -2617,6 +2617,8 @@
       "later": "Позже",
       "uploading": "Загрузка",
       "downloading": "Скачивание",
+      "downloadingPercent": "Скачивание {{percent}}%",
+      "installing": "Установка",
       "startingUpdate": "Запуск обновления..."
     }
   },
@@ -3516,6 +3518,8 @@
       "download": "Скачать",
       "downloading": "Загрузка версии {{version}}…",
       "downloadingPercent": "Загрузка версии {{version}}… {{percent}}%",
+      "downloadingDetail": "Загрузка версии {{version}}… {{percent}}% · {{speed}} МБ/с",
+      "installing": "Установка версии {{version}}…",
       "ready": "Версия {{version}} готова к установке",
       "restart": "Перезапустить и обновить"
     },

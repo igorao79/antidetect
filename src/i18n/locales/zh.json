@@ -2579,6 +2579,8 @@
       "later": "稍后",
       "uploading": "上传中",
       "downloading": "下载中",
+      "downloadingPercent": "正在下载 {{percent}}%",
+      "installing": "正在安装",
       "startingUpdate": "正在开始更新..."
     }
   },
@@ -3476,6 +3478,8 @@
       "download": "下载",
       "downloading": "正在下载版本 {{version}}…",
       "downloadingPercent": "正在下载版本 {{version}}… {{percent}}%",
+      "downloadingDetail": "正在下载版本 {{version}}… {{percent}}% · {{speed}} MB/s",
+      "installing": "正在安装版本 {{version}}…",
       "ready": "版本 {{version}} 已可安装",
       "restart": "重启以更新"
     },

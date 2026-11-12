@@ -134,7 +134,8 @@ Fork-specific rules:
   profile that never ran shows no cookies instead of an unavailable store. The Cookie section's
   "Copy" makes that profile the source and offers the others as targets
   (`fixedSourceProfileId` in `cookie-copy-dialog.tsx`); the row menu's "copy cookies to
-  profile" keeps it the target.
+  profile" keeps it the target. "Select all" there takes every target, and on the cookie list
+  every domain the search shows.
 - Firefox's remote agent, which every Camoufox launch starts (`--remote-debugging-port`),
   applies its test suite's prefs (`RecommendedPreferences` in the build's `omni.ja`) wherever a
   pref has no user value. `apz.content_response_timeout` 60000 made the wheel wait up to a
@@ -233,7 +234,10 @@ Fork-specific rules:
   turns the automatic install off (`disable_auto_updates`), and About checks for updates when
   it opens and has its own button (upstream's, through `check_for_app_updates_manual`). A
   known update also has a button in the rail (`rail-update-button.tsx`) that stays after its
-  toast is put off: it starts the download, shows progress and restarts. The tray's "Check for
+  toast is put off: it starts the download, shows progress and restarts. The download reports
+  `app-update-progress` every 250 ms (percentage, MB/s, seconds left; `DownloadProgress` in
+  `app_auto_updater.rs`, the fork's addition: upstream's silent download left the bar at 0% until
+  ready), then `verifying` and `installing`; the rail button and About draw it as a bar. The tray's "Check for
   updates" brings the window forward and reports the result in a toast
   (`checkForAppUpdatesNow`). A release is signed
   with the Developer ID certificate in the keychain and notarized (the app by Tauri with its

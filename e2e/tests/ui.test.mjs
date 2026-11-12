@@ -832,6 +832,20 @@ test("the rail's button updates after the toast was put off, and the tray's chec
       );
       assert.equal((await rail()).disabled, true, "one download at a time");
 
+      // The backend reports how far the download got; the button follows.
+      await app.invoke("plugin:event|emit", {
+        event: "app-update-progress",
+        payload: { stage: "downloading", percentage: 42, speed: "3.0" },
+      });
+      await app.waitFor(
+        async () =>
+          (await rail()).label ===
+          en.about.update.downloadingPercent
+            .replace("{{version}}", version)
+            .replace("{{percent}}", "42"),
+        { description: "the button shows the download's progress" },
+      );
+
       await app.invoke("plugin:event|emit", {
         event: "app-update-ready",
         payload: version,

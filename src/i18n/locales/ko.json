@@ -2579,6 +2579,8 @@
       "later": "나중에",
       "uploading": "업로드 중",
       "downloading": "다운로드 중",
+      "downloadingPercent": "다운로드 {{percent}}%",
+      "installing": "설치 중",
       "startingUpdate": "업데이트를 시작하는 중..."
     }
   },
@@ -3476,6 +3478,8 @@
       "download": "다운로드",
       "downloading": "버전 {{version}} 다운로드 중…",
       "downloadingPercent": "버전 {{version}} 다운로드 중… {{percent}}%",
+      "downloadingDetail": "버전 {{version}} 다운로드 중… {{percent}}% · {{speed}} MB/s",
+      "installing": "버전 {{version}} 설치 중…",
       "ready": "버전 {{version}}을(를) 설치할 준비가 되었습니다",
       "restart": "재시작하여 업데이트"
     },

@@ -2579,6 +2579,8 @@
       "later": "後で",
       "uploading": "アップロード中",
       "downloading": "ダウンロード中",
+      "downloadingPercent": "ダウンロード中 {{percent}}%",
+      "installing": "インストール中",
       "startingUpdate": "更新を開始しています..."
     }
   },
@@ -3476,6 +3478,8 @@
       "download": "ダウンロード",
       "downloading": "バージョン {{version}} をダウンロードしています…",
       "downloadingPercent": "バージョン {{version}} をダウンロードしています… {{percent}}%",
+      "downloadingDetail": "バージョン {{version}} をダウンロード中… {{percent}}% · {{speed}} MB/s",
+      "installing": "バージョン {{version}} をインストール中…",
       "ready": "バージョン {{version}} をインストールする準備ができました",
       "restart": "再起動してアップデート"
     },

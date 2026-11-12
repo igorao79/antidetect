@@ -1029,7 +1029,7 @@ impl AppAutoUpdater {
     Ok(())
   }
 
-  /// Download the update file without progress tracking (silent download)
+  /// Download the update file, reporting progress on `app-update-progress`.
   async fn download_update_silent(
     &self,
     download_url: &str,
@@ -1049,16 +1049,20 @@ impl AppAutoUpdater {
       return Err(format!("Download failed with status: {}", response.status()).into());
     }
 
+    let total = response.content_length();
     let raw_file = fs::File::create(&file_path)?;
     let mut file = std::io::BufWriter::with_capacity(8 * 1024 * 1024, raw_file);
     let mut stream = response.bytes_stream();
+    let mut progress = DownloadProgress::new(total);
 
     use futures_util::StreamExt;
     while let Some(chunk) = stream.next().await {
       let chunk = chunk?;
       file.write_all(&chunk)?;
+      progress.advance(chunk.len() as u64);
     }
     std::io::Write::flush(&mut file)?;
+    progress.finish();
     Ok(file_path)
   }
 
@@ -1120,6 +1124,7 @@ impl AppAutoUpdater {
     let bytes = fs::metadata(&download_path).map(|m| m.len()).unwrap_or(0);
 
     *stage = "verify";
+    emit_update_stage("verifying");
     Self::verify_update_checksum(
       &download_path,
       &filename,
@@ -1128,6 +1133,7 @@ impl AppAutoUpdater {
     )?;
 
     *stage = "extract";
+    emit_update_stage("installing");
     let extracted_app_path = self.extract_update(&download_path, &temp_dir).await?;
 
     // On Windows, MSI/EXE installers close the running app, so running them now
@@ -2325,8 +2331,113 @@ fn status_logged(cmd: &mut Command, purpose: &str) -> std::io::Result<std::proce
 #[cfg(target_os = "windows")]
 static PENDING_INSTALLER_PATH: std::sync::Mutex<Option<PathBuf>> = std::sync::Mutex::new(None);
 
+/// How often the download reports progress: often enough for a smooth bar,
+/// rarely enough not to flood the webview.
+const PROGRESS_INTERVAL: std::time::Duration = std::time::Duration::from_millis(250);
+
+/// The `app-update-progress` events of one download (fork): the bar in the
+/// rail and on the About page stood at 0% for the whole download and then
+/// jumped to ready, because nothing reported how far it got.
+struct DownloadProgress {
+  total: Option<u64>,
+  received: u64,
+  started: std::time::Instant,
+  last_emit: Option<std::time::Instant>,
+}
+
+impl DownloadProgress {
+  fn new(total: Option<u64>) -> Self {
+    Self {
+      total: total.filter(|t| *t > 0),
+      received: 0,
+      started: std::time::Instant::now(),
+      last_emit: None,
+    }
+  }
+
+  fn advance(&mut self, bytes: u64) {
+    self.received += bytes;
+    let now = std::time::Instant::now();
+    if self
+      .last_emit
+      .is_some_and(|last| now.duration_since(last) < PROGRESS_INTERVAL)
+    {
+      return;
+    }
+    self.last_emit = Some(now);
+    self.emit();
+  }
+
+  fn finish(&mut self) {
+    if let Some(total) = self.total {
+      self.received = self.received.max(total);
+    }
+    self.emit();
+  }
+
+  fn emit(&self) {
+    let payload = download_progress_payload(self.received, self.total, self.started.elapsed());
+    if let Err(e) = events::emit("app-update-progress", payload) {
+      log::debug!("Event emit failed event=app-update-progress err=\"{e}\"");
+    }
+  }
+}
+
+/// The payload the frontend's `AppUpdateProgress` reads: a percentage when
+/// the size is known, the speed in MB/s and the seconds left.
+fn download_progress_payload(
+  received: u64,
+  total: Option<u64>,
+  elapsed: std::time::Duration,
+) -> serde_json::Value {
+  let seconds = elapsed.as_secs_f64().max(0.001);
+  let bytes_per_second = received as f64 / seconds;
+  let mut payload = serde_json::json!({
+    "stage": "downloading",
+    "speed": format!("{:.1}", bytes_per_second / 1_000_000.0),
+    "message": "",
+  });
+  if let Some(total) = total {
+    let percentage = (received as f64 / total as f64 * 100.0).min(100.0);
+    payload["percentage"] = serde_json::json!(percentage);
+    if bytes_per_second > 0.0 {
+      let left = total.saturating_sub(received) as f64 / bytes_per_second;
+      payload["eta"] = serde_json::json!(format!("{}", left.ceil() as u64));
+    }
+  }
+  payload
+}
+
+/// After the download: the checksum and the install, which take seconds of
+/// their own and would otherwise sit at 100% with nothing said.
+fn emit_update_stage(stage: &str) {
+  let payload = serde_json::json!({ "stage": stage, "percentage": 100.0, "message": "" });
+  if let Err(e) = events::emit("app-update-progress", payload) {
+    log::debug!("Event emit failed event=app-update-progress err=\"{e}\"");
+  }
+}
+
 #[cfg(test)]
 mod tests {
+  #[test]
+  fn download_progress_reports_percent_speed_and_time_left() {
+    let payload = super::download_progress_payload(
+      50_000_000,
+      Some(100_000_000),
+      std::time::Duration::from_secs(10),
+    );
+    assert_eq!(payload["stage"], "downloading");
+    assert_eq!(payload["percentage"], 50.0);
+    assert_eq!(payload["speed"], "5.0");
+    assert_eq!(payload["eta"], "10");
+
+    let unknown = super::download_progress_payload(1_000, None, std::time::Duration::from_secs(1));
+    assert!(
+      unknown.get("percentage").is_none(),
+      "no size, no percentage"
+    );
+  }
+
   use super::*;
 
   #[test]

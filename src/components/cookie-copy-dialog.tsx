@@ -11,6 +11,7 @@ import {
   AnimatedDisclosureContent,
   AnimatedDisclosureItem,
 } from "@/components/ui/animated-disclosure";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -129,6 +130,16 @@ export function CookieCopyDialog({
     targetCandidates,
     chosenTargetIds,
   ]);
+
+  const allTargetsChosen =
+    targetCandidates.length > 0 &&
+    targetCandidates.every((p) => chosenTargetIds.has(p.id));
+
+  const toggleAllTargets = useCallback(() => {
+    setChosenTargetIds(
+      allTargetsChosen ? new Set() : new Set(targetCandidates.map((p) => p.id)),
+    );
+  }, [allTargetsChosen, targetCandidates]);
 
   const toggleTarget = useCallback((profileId: string) => {
     setChosenTargetIds((prev) => {
@@ -267,6 +278,29 @@ export function CookieCopyDialog({
       return next;
     });
   }, []);
+
+  // Acts on the domains the search shows, so "google" then "select all"
+  // takes every google domain and nothing else.
+  const allShownDomainsSelected =
+    filteredDomains.length > 0 &&
+    filteredDomains.every((d) => selection[d.domain]?.allSelected);
+
+  const toggleAllShownDomains = useCallback(() => {
+    setSelection((prev) => {
+      const next = { ...prev };
+      for (const domain of filteredDomains) {
+        if (allShownDomainsSelected) {
+          delete next[domain.domain];
+        } else {
+          next[domain.domain] = {
+            allSelected: true,
+            cookies: new Set(domain.cookies.map((c) => c.name)),
+          };
+        }
+      }
+      return next;
+    });
+  }, [filteredDomains, allShownDomainsSelected]);
 
   const buildSelectedCookies = useCallback((): SelectedCookie[] => {
     const result: SelectedCookie[] = [];
@@ -443,11 +477,25 @@ export function CookieCopyDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>
-              {t("cookies.copy.targetProfiles", {
-                count: targetProfiles.length,
-              })}
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label>
+                {t("cookies.copy.targetProfiles", {
+                  count: targetProfiles.length,
+                })}
+              </Label>
+              {fixedSourceProfileId && targetCandidates.length > 0 && (
+                <Button
+                  type="button"
+                  variant="subtle"
+                  size="sm"
+                  onClick={toggleAllTargets}
+                >
+                  {allTargetsChosen
+                    ? t("cookies.management.deselectAll")
+                    : t("cookies.management.selectAll")}
+                </Button>
+              )}
+            </div>
             {fixedSourceProfileId ? (
               <div className="max-h-40 space-y-1 overflow-y-auto rounded-md bg-foreground/5 p-2">
                 {targetCandidates.length === 0 ? (
@@ -525,6 +573,18 @@ export function CookieCopyDialog({
                     </span>
                   )}
                 </Label>
+                {filteredDomains.length > 0 && (
+                  <Button
+                    type="button"
+                    variant="subtle"
+                    size="sm"
+                    onClick={toggleAllShownDomains}
+                  >
+                    {allShownDomainsSelected
+                      ? t("cookies.management.deselectAll")
+                      : t("cookies.management.selectAll")}
+                  </Button>
+                )}
               </div>
 
               <div className="relative">
