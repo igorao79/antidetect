@@ -678,9 +678,44 @@ impl CookieManager {
         |row| row.get(0),
       )
       .map_err(|e| format!("Failed to inspect cookie database: {e}"))?;
-    drop(conn);
     if table == 0 {
+      drop(conn);
       Self::create_empty_firefox_cookies_db(db_path)?;
+      return Ok(());
+    }
+
+    // Older Camoufox builds wrote a shorter moz_cookies table. The writer
+    // names rawSameSite (and the columns around it); add what is missing
+    // instead of failing every insert on a profile that is otherwise valid.
+    let columns: Vec<String> = {
+      let mut statement = conn
+        .prepare("PRAGMA table_info(moz_cookies)")
+        .map_err(|e| format!("Failed to inspect cookie columns: {e}"))?;
+      let rows = statement
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|e| format!("Failed to inspect cookie columns: {e}"))?;
+      rows
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to read cookie columns: {e}"))?
+    };
+    for (name, definition) in [
+      ("originAttributes", "TEXT NOT NULL DEFAULT ''"),
+      ("lastAccessed", "INTEGER"),
+      ("creationTime", "INTEGER"),
+      ("isSecure", "INTEGER"),
+      ("isHttpOnly", "INTEGER"),
+      ("sameSite", "INTEGER DEFAULT 0"),
+      ("rawSameSite", "INTEGER DEFAULT 0"),
+      ("schemeMap", "INTEGER DEFAULT 0"),
+    ] {
+      if !columns.iter().any(|column| column == name) {
+        conn
+          .execute(
+            &format!("ALTER TABLE moz_cookies ADD COLUMN {name} {definition}"),
+            [],
+          )
+          .map_err(|e| format!("Failed to extend cookie database with {name}: {e}"))?;
+      }
     }
     Ok(())
   }
@@ -2493,6 +2528,48 @@ mod tests {
     std::fs::create_dir_all(&dir).unwrap();
     let db_path = dir.join("cookies.sqlite");
     std::fs::write(&db_path, b"").unwrap();
+
+    let cookies = vec![UnifiedCookie {
+      name: "sid".to_string(),
+      value: "ff-session".to_string(),
+      domain: ".example.org".to_string(),
+      path: "/".to_string(),
+      expires: 1900000000,
+      is_secure: true,
+      is_http_only: false,
+      same_site: 1,
+      creation_time: 1700000000,
+      last_accessed: 1700000000,
+    }];
+    let counts =
+      CookieManager::write_firefox_cookies_with_mode(&db_path, &cookies, CookieWriteMode::Merge)
+        .unwrap();
+    assert_eq!(counts.added, 1);
+    let read = CookieManager::read_firefox_cookies(&db_path).unwrap();
+    assert_eq!(read[0].value, "ff-session");
+
+    let _ = std::fs::remove_dir_all(&dir);
+  }
+
+  #[test]
+  fn test_write_firefox_cookies_migrates_an_older_schema() {
+    let dir = std::env::temp_dir().join(format!("donut_old_ff_{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let db_path = dir.join("cookies.sqlite");
+    let conn = Connection::open(&db_path).unwrap();
+    conn
+      .execute_batch(
+        "CREATE TABLE moz_cookies (
+          id INTEGER PRIMARY KEY,
+          originAttributes TEXT NOT NULL DEFAULT '',
+          name TEXT, value TEXT, host TEXT, path TEXT,
+          expiry INTEGER, lastAccessed INTEGER, creationTime INTEGER,
+          isSecure INTEGER, isHttpOnly INTEGER, inBrowserElement INTEGER DEFAULT 0,
+          sameSite INTEGER DEFAULT 0, schemeMap INTEGER DEFAULT 0
+        );",
+      )
+      .unwrap();
+    drop(conn);
 
     let cookies = vec![UnifiedCookie {
       name: "sid".to_string(),

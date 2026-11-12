@@ -2,8 +2,12 @@
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
   "description": "enables the default permissions",
-  "windows": ["main"],
-  "webviews": ["main"],
+  "windows": [
+    "main"
+  ],
+  "webviews": [
+    "main"
+  ],
   "permissions": [
     "core:event:allow-listen",
     "core:event:allow-emit",
@@ -37,6 +41,13 @@
       ]
     },
     "fs:allow-read-text-file",
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        "$HOME/**",
+        "$TEMP/**"
+      ]
+    },
     "fs:allow-write-text-file",
     "deep-link:allow-get-current",
     "dialog:allow-open",

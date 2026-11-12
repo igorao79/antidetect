@@ -1,7 +1,9 @@
 "use client";
 
+import { getCurrentWebview } from "@tauri-apps/api/webview";
+import { readTextFile } from "@tauri-apps/plugin-fs";
 import type { TFunction } from "i18next";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LuPaperclip, LuTriangleAlert, LuUpload } from "react-icons/lu";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -141,6 +143,45 @@ export function CookiePastePanel({
     },
     [onContentChange, t],
   );
+
+  // Tauri intercepts file drops before the webview on macOS. Listen to the
+  // native event as well as the HTML5 handlers: the native one carries paths.
+  useEffect(() => {
+    let disposed = false;
+    let unlisten: (() => void) | undefined;
+    void getCurrentWebview()
+      .onDragDropEvent((event) => {
+        if (disposed) return;
+        const payload = event.payload;
+        if (payload.type === "enter") {
+          setIsDraggingFile(true);
+        } else if (payload.type === "leave") {
+          setIsDraggingFile(false);
+        } else if (payload.type === "drop") {
+          setIsDraggingFile(false);
+          const path = payload.paths[0];
+          if (!path) return;
+          void readTextFile(path)
+            .then((text) => {
+              setFileError(null);
+              playUiSound("drop");
+              onContentChange(text);
+            })
+            .catch(() => {
+              setFileError(t("cookies.management.fileReadError"));
+            });
+        }
+      })
+      .then((fn) => {
+        if (disposed) fn();
+        else unlisten = fn;
+      })
+      .catch(() => {});
+    return () => {
+      disposed = true;
+      unlisten?.();
+    };
+  }, [onContentChange, t]);
 
   const hasFiles = (event: React.DragEvent) =>
     Array.from(event.dataTransfer.types).includes("Files");
