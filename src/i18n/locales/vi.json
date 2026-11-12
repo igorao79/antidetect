@@ -565,8 +565,6 @@
       "placeholder": "https://example.com/track-launch"
     },
     "bulkRun": {
-      "confirmTitle": "Chạy {{count}} hồ sơ?",
-      "confirmDescription": "Khởi chạy {{count}} hồ sơ cùng lúc có thể tiêu tốn nhiều tài nguyên hệ thống. Tiếp tục?",
       "confirmButton": "Chạy {{count}}",
       "noneToRun": "Không có hồ sơ nào được chọn để chạy.",
       "progress": "Đang khởi chạy {{done}} / {{total}}",
@@ -574,13 +572,19 @@
       "showFailed": "Hiện",
       "notStarted": "{{count}} / {{total}} lần khởi chạy chưa bắt đầu",
       "finishedTitle": "Đã khởi chạy hàng loạt xong",
-      "finishedBody": "Đã khởi chạy {{launched}} / {{total}} profile"
+      "finishedBody": "Đã khởi chạy {{launched}} / {{total}} profile",
+      "confirmTitle_one": "Chạy {{count}} hồ sơ?",
+      "confirmTitle_other": "Chạy {{count}} hồ sơ?",
+      "confirmDescription_one": "Khởi chạy {{count}} hồ sơ cùng lúc có thể tiêu tốn nhiều tài nguyên hệ thống. Tiếp tục?",
+      "confirmDescription_other": "Khởi chạy {{count}} hồ sơ cùng lúc có thể tiêu tốn nhiều tài nguyên hệ thống. Tiếp tục?"
     },
     "bulkStop": {
-      "confirmTitle": "Dừng {{count}} hồ sơ?",
-      "confirmDescription": "Dừng {{count}} hồ sơ đang chạy?",
       "confirmButton": "Dừng {{count}}",
-      "noneToStop": "Không có hồ sơ nào được chọn để dừng."
+      "noneToStop": "Không có hồ sơ nào được chọn để dừng.",
+      "confirmTitle_one": "Dừng {{count}} hồ sơ?",
+      "confirmTitle_other": "Dừng {{count}} hồ sơ?",
+      "confirmDescription_one": "Dừng {{count}} hồ sơ đang chạy?",
+      "confirmDescription_other": "Dừng {{count}} hồ sơ đang chạy?"
     },
     "sort": {
       "nameAsc": "Tên (A–Z)",
@@ -756,7 +760,8 @@
       "credentialsInClearBody": "Loại proxy này gửi tên người dùng và mật khẩu mà không mã hóa. Base64 là mã hóa ký tự, không phải mật mã. Hãy coi chúng đã bị lộ trên mọi mạng bạn không kiểm soát.",
       "nullCipherHeading": "Cipher này không mã hóa gì cả",
       "nullCipherBody": "Shadowsocks không bao giờ gửi mật khẩu qua mạng, nên ở đây không có thông tin đăng nhập nào bị lộ. Thứ bị lộ là lưu lượng: địa chỉ của mọi trang bạn truy cập, và mọi thứ bạn gửi, đi qua mạng ở dạng đọc được. Hãy chọn một cipher thực sự, ví dụ aes-256-gcm.",
-      "httpsTlsHint": "Loại này cần một điểm cuối proxy kết thúc TLS. Nhà cung cấp thường công bố nó ở một cổng riêng, và chứng chỉ phải hợp lệ."
+      "httpsTlsHint": "Loại này cần một điểm cuối proxy kết thúc TLS. Nhà cung cấp thường công bố nó ở một cổng riêng, và chứng chỉ phải hợp lệ.",
+      "hostInvalid": "Chỉ nhập tên máy chủ hoặc địa chỉ IP, không có http://, đường dẫn, cổng hay dấu cách"
     },
     "types": {
       "http": "HTTP",
@@ -1131,7 +1136,6 @@
       "remoteDescription": "Gọi trực tiếp endpoint MCP từ xa, hoặc thêm nó vào một client không có trong danh sách.",
       "response": "Phản hồi",
       "language": "Ngôn ngữ",
-      "paid": "Cần gói trả phí",
       "tokenIncluded": "Mã đã sao chép chứa toàn bộ token của bạn. Hãy giữ bí mật.",
       "credentialIncluded": "Mã đã sao chép chứa toàn bộ thông tin xác thực của bạn. Hãy giữ bí mật.",
       "languages": {
@@ -1536,7 +1540,8 @@
       "remaining": "còn {{time}}",
       "filesProgress": "{{completed}}/{{total}} tệp",
       "filesFailed": "{{count}} tệp thất bại"
-    }
+    },
+    "region": "Thông báo"
   },
   "errors": {
     "required": "Trường này là bắt buộc",
@@ -1993,10 +1998,12 @@
     "assignGroupFailed": "Gán nhóm tiện ích thất bại",
     "bulkDelete": {
       "extensionsTitle": "Xóa tiện ích",
-      "extensionsDescription": "Xóa {{count}} tiện ích? {{names}}",
       "groupsTitle": "Xóa nhóm tiện ích",
-      "groupsDescription": "Xóa {{count}} nhóm tiện ích? {{names}}",
-      "confirmButton": "Xóa"
+      "confirmButton": "Xóa",
+      "extensionsDescription_one": "Xóa {{count}} tiện ích? {{names}}",
+      "extensionsDescription_other": "Xóa {{count}} tiện ích? {{names}}",
+      "groupsDescription_one": "Xóa {{count}} nhóm tiện ích? {{names}}",
+      "groupsDescription_other": "Xóa {{count}} nhóm tiện ích? {{names}}"
     },
     "source": {
       "label": "Nguồn",
@@ -3126,7 +3133,15 @@
     "syncEntitiesLoadFailed": "Không thể đọc danh sách dữ liệu cần đồng bộ: {{detail}}",
     "logFolderFailed": "Không thể mở thư mục nhật ký: {{detail}}",
     "tagsLoadFailed": "Không thể tải danh sách thẻ: {{detail}}",
-    "synchronizerFailed": "Bộ đồng bộ thao tác không thành công: {{detail}}"
+    "synchronizerFailed": "Bộ đồng bộ thao tác không thành công: {{detail}}",
+    "profileProxyMissing": "Proxy mà hồ sơ này dùng không còn tồn tại. Hãy chọn proxy khác trong hồ sơ trước khi khởi chạy, nếu không trình duyệt sẽ kết nối trực tiếp.",
+    "profileVpnMissing": "VPN mà hồ sơ này dùng không còn tồn tại. Hãy chọn VPN khác trong hồ sơ trước khi khởi chạy, nếu không trình duyệt sẽ kết nối trực tiếp.",
+    "proxyHostInvalid": "Máy chủ proxy không hợp lệ. Chỉ dùng tên máy chủ hoặc địa chỉ IP, không có http://, đường dẫn, cổng hay dấu cách.",
+    "proxyPortInvalid": "Cổng proxy phải là một số từ 1 đến 65535.",
+    "proxyTypeUnsupported": "Loại proxy \"{{type}}\" không được hỗ trợ.",
+    "vpnNameExists": "Đã có VPN tên \"{{name}}\".",
+    "vpnImportInvalid": "Không thể nhập cấu hình VPN: {{detail}}",
+    "dnsSourceInvalid": "\"{{source}}\" không phải nguồn danh sách hợp lệ. Hãy dùng địa chỉ http:// hoặc https://."
   },
   "rail": {
     "profiles": "Profile",
@@ -3340,7 +3355,8 @@
       "stopAllRunning": "dừng tất cả đang chạy đóng thoát",
       "focusSearch": "tìm kiếm lọc",
       "goBack": "quay lại escape trang chủ"
-    }
+    },
+    "listLabel": "Lệnh"
   },
   "shortcuts": {
     "openPalette": "Mở bảng lệnh",
@@ -4688,7 +4704,6 @@
     "invalidFingerprint": "Cấu hình vân tay không hợp lệ",
     "invalidFingerprintDescription": "Cấu hình vân tay chứa JSON không hợp lệ. Vui lòng kiểm tra cài đặt nâng cao.",
     "saveFailed": "Lưu cấu hình thất bại",
-    "unknownError": "Đã xảy ra lỗi không xác định",
     "titleView": "Xem cài đặt vân tay - {{name}} ({{browser}})",
     "titleConfigure": "Cấu hình cài đặt vân tay - {{name}} ({{browser}})"
   },

@@ -347,13 +347,31 @@ function prettyKey(key: string): string {
   return key;
 }
 
+const PUNCTUATION_CODES: Record<string, string> = {
+  ",": "Comma",
+  "/": "Slash",
+};
+
+/** A non-ASCII-letter key (Cyrillic layout) falls back to the physical key. */
+function keyMatches(
+  shortcutKey: string,
+  e: Pick<KeyboardEvent, "key" | "code">,
+): boolean {
+  if (e.key.toLowerCase() === shortcutKey.toLowerCase()) return true;
+  if (/^[a-z]$/i.test(e.key)) return false;
+  const code = /^[a-z]$/i.test(shortcutKey)
+    ? `Key${shortcutKey.toUpperCase()}`
+    : PUNCTUATION_CODES[shortcutKey];
+  return code !== undefined && e.code === code;
+}
+
 /**
  * Match a real `KeyboardEvent` against a shortcut definition. Returns true
  * only when modifiers are an exact match (so Ctrl+Shift+K doesn't fire
  * Ctrl+K).
  */
 export function matchesShortcut(s: ShortcutDef, e: KeyboardEvent): boolean {
-  if (!isKey(e) || e.key.toLowerCase() !== s.key.toLowerCase()) return false;
+  if (!isKey(e) || !keyMatches(s.key, e)) return false;
   const mod = isMac() ? e.metaKey : e.ctrlKey;
   const oppositeMod = isMac() ? e.ctrlKey : e.metaKey;
   if (Boolean(s.mod) !== mod) return false;

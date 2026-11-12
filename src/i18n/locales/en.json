@@ -565,8 +565,6 @@
       "placeholder": "https://example.com/track-launch"
     },
     "bulkRun": {
-      "confirmTitle": "Run {{count}} profiles?",
-      "confirmDescription": "Launching {{count}} profiles at once can use a lot of system resources. Continue?",
       "confirmButton": "Run {{count}}",
       "noneToRun": "No selected profiles to run.",
       "progress": "Launching {{done}} of {{total}}",
@@ -574,13 +572,19 @@
       "showFailed": "Show",
       "notStarted": "{{count}} of {{total}} launches not started",
       "finishedTitle": "Bulk launch finished",
-      "finishedBody": "{{launched}} of {{total}} profiles launched"
+      "finishedBody": "{{launched}} of {{total}} profiles launched",
+      "confirmTitle_one": "Run {{count}} profile?",
+      "confirmTitle_other": "Run {{count}} profiles?",
+      "confirmDescription_one": "Launching {{count}} profile at once can use a lot of system resources. Continue?",
+      "confirmDescription_other": "Launching {{count}} profiles at once can use a lot of system resources. Continue?"
     },
     "bulkStop": {
-      "confirmTitle": "Stop {{count}} profiles?",
-      "confirmDescription": "Stop {{count}} running profiles?",
       "confirmButton": "Stop {{count}}",
-      "noneToStop": "No selected profiles to stop."
+      "noneToStop": "No selected profiles to stop.",
+      "confirmTitle_one": "Stop {{count}} profile?",
+      "confirmTitle_other": "Stop {{count}} profiles?",
+      "confirmDescription_one": "Stop {{count}} running profile?",
+      "confirmDescription_other": "Stop {{count}} running profiles?"
     },
     "sort": {
       "nameAsc": "Name (A–Z)",
@@ -756,7 +760,8 @@
       "credentialsInClearBody": "This proxy type sends the username and password without encryption. Base64 is an encoding, not encryption. Treat them as exposed on any network you do not control.",
       "nullCipherHeading": "This cipher does not encrypt anything",
       "nullCipherBody": "Shadowsocks never sends the password over the network, so there are no credentials to expose here. A null cipher exposes the traffic instead: the address of every site you reach, and everything you send, cross the network readable. Choose a real cipher, such as aes-256-gcm.",
-      "httpsTlsHint": "This type needs a proxy endpoint that terminates TLS. Providers usually publish it as a separate port, and its certificate must validate."
+      "httpsTlsHint": "This type needs a proxy endpoint that terminates TLS. Providers usually publish it as a separate port, and its certificate must validate.",
+      "hostInvalid": "Enter a host name or an IP address only, without http://, a path, a port or spaces"
     },
     "types": {
       "http": "HTTP",
@@ -1131,7 +1136,6 @@
       "remoteDescription": "Call the remote MCP endpoint directly, or add it to a client that is not in the list.",
       "response": "Response",
       "language": "Language",
-      "paid": "Needs a paid plan",
       "tokenIncluded": "Copied code includes your full token. Keep it private.",
       "credentialIncluded": "Copied code includes your full credential. Keep it private.",
       "languages": {
@@ -1536,7 +1540,8 @@
       "remaining": "{{time}} remaining",
       "filesProgress": "{{completed}}/{{total}} files",
       "filesFailed": "{{count}} file(s) failed"
-    }
+    },
+    "region": "Notifications"
   },
   "errors": {
     "required": "This field is required",
@@ -1993,10 +1998,12 @@
     "assignGroupFailed": "Failed to assign extension group",
     "bulkDelete": {
       "extensionsTitle": "Delete extensions",
-      "extensionsDescription": "Delete {{count}} extensions? {{names}}",
       "groupsTitle": "Delete extension groups",
-      "groupsDescription": "Delete {{count}} extension groups? {{names}}",
-      "confirmButton": "Delete"
+      "confirmButton": "Delete",
+      "extensionsDescription_one": "Delete {{count}} extension? {{names}}",
+      "extensionsDescription_other": "Delete {{count}} extensions? {{names}}",
+      "groupsDescription_one": "Delete {{count}} extension group? {{names}}",
+      "groupsDescription_other": "Delete {{count}} extension groups? {{names}}"
     },
     "source": {
       "label": "Source",
@@ -3126,7 +3133,15 @@
     "syncEntitiesLoadFailed": "Could not read what there is to sync: {{detail}}",
     "logFolderFailed": "Could not open the log folder: {{detail}}",
     "tagsLoadFailed": "Could not load the tags: {{detail}}",
-    "synchronizerFailed": "The synchronizer could not do this: {{detail}}"
+    "synchronizerFailed": "The synchronizer could not do this: {{detail}}",
+    "profileProxyMissing": "The proxy this profile uses no longer exists. Pick another proxy in the profile before launching, or the browser would connect directly.",
+    "profileVpnMissing": "The VPN this profile uses no longer exists. Pick another VPN in the profile before launching, or the browser would connect directly.",
+    "proxyHostInvalid": "The proxy host is not valid. Use a host name or an IP address only, without http://, a path, a port or spaces.",
+    "proxyPortInvalid": "The proxy port must be a number from 1 to 65535.",
+    "proxyTypeUnsupported": "Proxy type \"{{type}}\" is not supported.",
+    "vpnNameExists": "A VPN named \"{{name}}\" already exists.",
+    "vpnImportInvalid": "The VPN config could not be imported: {{detail}}",
+    "dnsSourceInvalid": "\"{{source}}\" is not a valid list source. Use an http:// or https:// address."
   },
   "rail": {
     "profiles": "Profiles",
@@ -3340,7 +3355,8 @@
       "stopAllRunning": "stop all running quit kill close everything",
       "focusSearch": "search find filter focus",
       "goBack": "back escape return home"
-    }
+    },
+    "listLabel": "Commands"
   },
   "shortcuts": {
     "openPalette": "Open command palette",
@@ -4688,7 +4704,6 @@
     "invalidFingerprint": "Invalid fingerprint configuration",
     "invalidFingerprintDescription": "The fingerprint configuration contains invalid JSON. Please check your advanced settings.",
     "saveFailed": "Failed to save configuration",
-    "unknownError": "Unknown error occurred",
     "titleView": "View Fingerprint Settings - {{name}} ({{browser}})",
     "titleConfigure": "Configure Fingerprint Settings - {{name}} ({{browser}})"
   },

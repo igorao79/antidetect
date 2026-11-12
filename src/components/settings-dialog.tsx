@@ -354,7 +354,7 @@ export function SettingsDialog({
     effectivePlanOf(cloudUser) !== "team" ||
     cloudUser.teamRole === "owner";
   const {
-    currentLanguage,
+    storedLanguage,
     changeLanguage,
     supportedLanguages,
     isLoading: isLanguageLoading,
@@ -541,8 +541,6 @@ export function SettingsDialog({
     setIsClearingCache(true);
     try {
       await invoke("clear_all_version_cache_and_refetch");
-      // Also clear traffic stats cache
-      await invoke("clear_all_traffic_stats");
       // Don't show immediate success toast - let the version update progress events handle it
     } catch (error) {
       console.error("Failed to clear cache:", error);
@@ -804,10 +802,10 @@ export function SettingsDialog({
   // Initialize language selection when dialog opens or language loads
   useEffect(() => {
     if (isOpen && !isLanguageLoading) {
-      setSelectedLanguage(currentLanguage);
-      setOriginalLanguage(currentLanguage);
+      setSelectedLanguage(storedLanguage ?? "system");
+      setOriginalLanguage(storedLanguage ?? "system");
     }
-  }, [isOpen, currentLanguage, isLanguageLoading]);
+  }, [isOpen, storedLanguage, isLanguageLoading]);
 
   const draftColors =
     settings.theme === "custom"
@@ -1061,6 +1059,7 @@ export function SettingsDialog({
         selectedThemeId: getThemeByColors(colors)?.id ?? null,
         colors,
       });
+      if (Object.keys(colors).length > 0) applyThemeColors(colors);
     }
   };
 

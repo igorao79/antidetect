@@ -1736,7 +1736,7 @@ async fn import_vpn_config(
       vpn_id: None,
       vpn_type: None,
       name: name.unwrap_or_else(|| filename.clone()),
-      error: Some(e.to_string()),
+      error: Some(crate::coded_failure("VPN_IMPORT_INVALID", e)),
     }),
   }
 }
@@ -1765,6 +1765,8 @@ async fn get_vpn_config(vpn_id: String) -> Result<vpn::VpnConfig, String> {
 
 #[tauri::command]
 async fn delete_vpn_config(app_handle: tauri::AppHandle, vpn_id: String) -> Result<(), String> {
+  entity_trash::refuse_in_use(entity_trash::EntityKind::Vpn, &vpn_id)?;
+
   // First disconnect if connected (stop VPN worker)
   let _ = vpn_worker_runner::stop_vpn_worker_by_vpn_id(&vpn_id).await;
 

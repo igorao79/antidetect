@@ -129,6 +129,12 @@ function categoryLabel(
   }
 }
 
+function parseWholePort(value: string): number | null {
+  if (!/^\d{1,5}$/.test(value.trim())) return null;
+  const port = Number(value);
+  return port >= 1 && port <= 65535 ? port : null;
+}
+
 export function IntegrationsDialog({
   isOpen,
   onClose,
@@ -710,7 +716,6 @@ export function IntegrationsDialog({
     title: t(`integrations.examples.items.${example.id}.title`),
     description: t(`integrations.examples.items.${example.id}.description`),
     method: example.request.method,
-    paid: example.paid,
     response: example.response,
     live: example.id === "listProfiles" ? liveListProfiles : undefined,
     snippets: Object.fromEntries(
@@ -1095,18 +1100,13 @@ export function IntegrationsDialog({
                           value={apiPortDraft}
                           onChange={(e) => {
                             setApiPortDraft(e.target.value);
-                            const val = Number.parseInt(e.target.value, 10);
-                            if (
-                              !Number.isNaN(val) &&
-                              val >= 1 &&
-                              val <= 65535
-                            ) {
+                            const val = parseWholePort(e.target.value);
+                            if (val !== null) {
                               setSettings({ ...settings, api_port: val });
                             }
                           }}
                           onBlur={() => {
-                            const val = Number.parseInt(apiPortDraft, 10);
-                            if (Number.isNaN(val) || val < 1 || val > 65535) {
+                            if (parseWholePort(apiPortDraft) === null) {
                               setApiPortDraft(String(settings.api_port));
                             }
                           }}

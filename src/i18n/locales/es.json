@@ -566,8 +566,6 @@
       "placeholder": "https://example.com/track-launch"
     },
     "bulkRun": {
-      "confirmTitle": "¿Ejecutar {{count}} perfiles?",
-      "confirmDescription": "Iniciar {{count}} perfiles a la vez puede consumir muchos recursos del sistema. ¿Continuar?",
       "confirmButton": "Ejecutar {{count}}",
       "noneToRun": "No hay perfiles seleccionados para ejecutar.",
       "progress": "Iniciando {{done}} de {{total}}",
@@ -575,13 +573,19 @@
       "showFailed": "Mostrar",
       "notStarted": "{{count}} de {{total}} inicios no comenzaron",
       "finishedTitle": "Inicio masivo terminado",
-      "finishedBody": "{{launched}} de {{total}} perfiles iniciados"
+      "finishedBody": "{{launched}} de {{total}} perfiles iniciados",
+      "confirmTitle_one": "¿Ejecutar {{count}} perfil?",
+      "confirmTitle_other": "¿Ejecutar {{count}} perfiles?",
+      "confirmDescription_one": "Iniciar {{count}} perfil a la vez puede consumir muchos recursos del sistema. ¿Continuar?",
+      "confirmDescription_other": "Iniciar {{count}} perfiles a la vez puede consumir muchos recursos del sistema. ¿Continuar?"
     },
     "bulkStop": {
-      "confirmTitle": "¿Detener {{count}} perfiles?",
-      "confirmDescription": "¿Detener {{count}} perfiles en ejecución?",
       "confirmButton": "Detener {{count}}",
-      "noneToStop": "No hay perfiles seleccionados para detener."
+      "noneToStop": "No hay perfiles seleccionados para detener.",
+      "confirmTitle_one": "¿Detener {{count}} perfil?",
+      "confirmTitle_other": "¿Detener {{count}} perfiles?",
+      "confirmDescription_one": "¿Detener {{count}} perfil en ejecución?",
+      "confirmDescription_other": "¿Detener {{count}} perfiles en ejecución?"
     },
     "sort": {
       "nameAsc": "Nombre (A–Z)",
@@ -758,7 +762,8 @@
       "credentialsInClearBody": "Este tipo de proxy envía el usuario y la contraseña sin cifrar. Base64 es una codificación, no cifrado. Considéralas expuestas en cualquier red que no controles.",
       "nullCipherHeading": "Este cifrado no cifra nada",
       "nullCipherBody": "Shadowsocks nunca envía la contraseña por la red, así que aquí no hay credenciales que exponer. Lo que queda expuesto es el tráfico: la dirección de cada sitio al que accedes, y todo lo que envías, viajan legibles por la red. Elige un cifrado real, como aes-256-gcm.",
-      "httpsTlsHint": "Este tipo requiere un punto de acceso de proxy que termine TLS. Los proveedores suelen publicarlo en un puerto aparte, y su certificado debe ser válido."
+      "httpsTlsHint": "Este tipo requiere un punto de acceso de proxy que termine TLS. Los proveedores suelen publicarlo en un puerto aparte, y su certificado debe ser válido.",
+      "hostInvalid": "Introduce solo un nombre de host o una dirección IP, sin http://, ruta, puerto ni espacios"
     },
     "types": {
       "http": "HTTP",
@@ -1142,7 +1147,6 @@
       "remoteDescription": "Llama directamente al endpoint de MCP remoto o añádelo a un cliente que no está en la lista.",
       "response": "Respuesta",
       "language": "Lenguaje",
-      "paid": "Requiere un plan de pago",
       "tokenIncluded": "El código copiado incluye tu token completo. Mantenlo en privado.",
       "credentialIncluded": "El código copiado incluye tu credencial completa. Mantenla en privado.",
       "languages": {
@@ -1549,7 +1553,8 @@
       "remaining": "{{time}} restante",
       "filesProgress": "{{completed}}/{{total}} archivos",
       "filesFailed": "{{count}} archivo(s) con error"
-    }
+    },
+    "region": "Notificaciones"
   },
   "errors": {
     "required": "Este campo es requerido",
@@ -2006,10 +2011,12 @@
     "assignGroupFailed": "Error al asignar grupo de extensiones",
     "bulkDelete": {
       "extensionsTitle": "Eliminar extensiones",
-      "extensionsDescription": "¿Eliminar {{count}} extensiones? {{names}}",
       "groupsTitle": "Eliminar grupos de extensiones",
-      "groupsDescription": "¿Eliminar {{count}} grupos de extensiones? {{names}}",
-      "confirmButton": "Eliminar"
+      "confirmButton": "Eliminar",
+      "extensionsDescription_one": "¿Eliminar {{count}} extensión? {{names}}",
+      "extensionsDescription_other": "¿Eliminar {{count}} extensiones? {{names}}",
+      "groupsDescription_one": "¿Eliminar {{count}} grupo de extensiones? {{names}}",
+      "groupsDescription_other": "¿Eliminar {{count}} grupos de extensiones? {{names}}"
     },
     "source": {
       "label": "Origen",
@@ -3148,7 +3155,15 @@
     "syncEntitiesLoadFailed": "No se pudo leer qué hay que sincronizar: {{detail}}",
     "logFolderFailed": "No se pudo abrir la carpeta de registros: {{detail}}",
     "tagsLoadFailed": "No se pudieron cargar las etiquetas: {{detail}}",
-    "synchronizerFailed": "El sincronizador no pudo hacer esto: {{detail}}"
+    "synchronizerFailed": "El sincronizador no pudo hacer esto: {{detail}}",
+    "profileProxyMissing": "El proxy que usa este perfil ya no existe. Elige otro proxy en el perfil antes de iniciarlo; de lo contrario, el navegador se conectaría directamente.",
+    "profileVpnMissing": "La VPN que usa este perfil ya no existe. Elige otra VPN en el perfil antes de iniciarlo; de lo contrario, el navegador se conectaría directamente.",
+    "proxyHostInvalid": "El host del proxy no es válido. Usa solo un nombre de host o una dirección IP, sin http://, ruta, puerto ni espacios.",
+    "proxyPortInvalid": "El puerto del proxy debe ser un número del 1 al 65535.",
+    "proxyTypeUnsupported": "El tipo de proxy «{{type}}» no es compatible.",
+    "vpnNameExists": "Ya existe una VPN llamada «{{name}}».",
+    "vpnImportInvalid": "No se pudo importar la configuración de la VPN: {{detail}}",
+    "dnsSourceInvalid": "\"{{source}}\" no es una fuente de lista válida. Usa una dirección http:// o https://."
   },
   "rail": {
     "profiles": "Perfiles",
@@ -3362,7 +3377,8 @@
       "stopAllRunning": "detener todos ejecución cerrar parar",
       "focusSearch": "buscar encontrar filtrar",
       "goBack": "volver atrás escape inicio"
-    }
+    },
+    "listLabel": "Comandos"
   },
   "shortcuts": {
     "openPalette": "Abrir paleta de comandos",
@@ -4738,7 +4754,6 @@
     "invalidFingerprint": "Configuración de huella inválida",
     "invalidFingerprintDescription": "La configuración de huella contiene JSON inválido. Revisa la configuración avanzada.",
     "saveFailed": "Error al guardar la configuración",
-    "unknownError": "Ocurrió un error desconocido",
     "titleView": "Ver configuración de huella - {{name}} ({{browser}})",
     "titleConfigure": "Configurar huella - {{name}} ({{browser}})"
   },

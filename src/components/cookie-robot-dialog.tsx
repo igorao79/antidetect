@@ -25,6 +25,14 @@ import { RippleButton } from "./ui/ripple";
 
 const SITES_KEY = "cookieRobot.sites";
 const MAX_PARALLEL = 5;
+const MIN_SECONDS = 3;
+const MAX_SECONDS = 600;
+
+const clampSeconds = (value: number) =>
+  Math.min(
+    MAX_SECONDS,
+    Math.max(MIN_SECONDS, Math.round(value) || MIN_SECONDS),
+  );
 
 /** The site list from the last run, kept only as a convenience. */
 function rememberedSites(): string {
@@ -114,8 +122,11 @@ export function CookieRobotDialog({
         request: {
           profile_ids: selectedProfiles,
           urls: sites.split("\n"),
-          min_seconds: minSeconds,
-          max_seconds: Math.max(minSeconds, maxSeconds),
+          min_seconds: clampSeconds(minSeconds),
+          max_seconds: Math.max(
+            clampSeconds(minSeconds),
+            clampSeconds(maxSeconds),
+          ),
           shuffle,
           headless,
           parallel,
@@ -198,11 +209,14 @@ export function CookieRobotDialog({
                 <Input
                   id={`${fieldId}-min`}
                   type="number"
-                  min={3}
-                  max={600}
+                  min={MIN_SECONDS}
+                  max={MAX_SECONDS}
                   value={minSeconds}
                   onChange={(e) => {
                     setMinSeconds(Number(e.target.value) || 0);
+                  }}
+                  onBlur={() => {
+                    setMinSeconds(clampSeconds(minSeconds));
                   }}
                 />
               </div>
@@ -213,11 +227,14 @@ export function CookieRobotDialog({
                 <Input
                   id={`${fieldId}-max`}
                   type="number"
-                  min={3}
-                  max={600}
+                  min={MIN_SECONDS}
+                  max={MAX_SECONDS}
                   value={maxSeconds}
                   onChange={(e) => {
                     setMaxSeconds(Number(e.target.value) || 0);
+                  }}
+                  onBlur={() => {
+                    setMaxSeconds(clampSeconds(maxSeconds));
                   }}
                 />
               </div>

@@ -430,6 +430,26 @@ impl VpnStorage {
     Ok(())
   }
 
+  /// The name as stored, refusing an empty one and one another config has
+  /// (compared without case).
+  fn checked_name(&self, name: &str, own_id: Option<&str>) -> Result<String, VpnError> {
+    let name = name.trim();
+    if name.is_empty() {
+      return Err(VpnError::Coded(crate::backend_error(
+        "NAME_CANNOT_BE_EMPTY",
+      )));
+    }
+    let taken = self.list_configs()?.iter().any(|c| {
+      Some(c.id.as_str()) != own_id && c.name.trim().to_lowercase() == name.to_lowercase()
+    });
+    if taken {
+      return Err(VpnError::Coded(
+        serde_json::json!({ "code": "VPN_NAME_EXISTS", "params": { "name": name } }).to_string(),
+      ));
+    }
+    Ok(name.to_string())
+  }
+
   /// Create a VPN config manually from validated data
   pub fn create_config_manual(
     &self,
@@ -443,13 +463,14 @@ impl VpnStorage {
       }
     }
     Self::ensure_single_peer(vpn_type, config_data)?;
+    let name = self.checked_name(name, None)?;
 
     let id = Uuid::new_v4().to_string();
     let sync_enabled = crate::sync::is_sync_configured();
 
     let config = VpnConfig {
       id,
-      name: name.to_string(),
+      name,
       vpn_type,
       config_data: config_data.to_string(),
       created_at: Utc::now().timestamp(),
@@ -467,7 +488,7 @@ impl VpnStorage {
   /// Update the name of an existing VPN config
   pub fn update_config_name(&self, id: &str, new_name: &str) -> Result<VpnConfig, VpnError> {
     let mut config = self.load_config(id)?;
-    config.name = new_name.to_string();
+    config.name = self.checked_name(new_name, Some(id))?;
     config.updated_at = Some(crate::proxy_manager::now_secs());
     self.save_config(&config)?;
     Ok(config)
@@ -512,6 +533,7 @@ impl VpnStorage {
       let base = filename.trim_end_matches(".conf");
       format!("{} ({})", base, vpn_type)
     });
+    let display_name = self.checked_name(&display_name, None)?;
     let sync_enabled = crate::sync::is_sync_configured();
 
     let config = VpnConfig {
@@ -639,6 +661,24 @@ mod tests {
 
     storage.delete_config("delete-me").unwrap();
     assert!(storage.load_config("delete-me").is_err());
+  }
+
+  #[test]
+  fn names_are_trimmed_non_empty_and_unique_without_case() {
+    let temp = TempDir::new().unwrap();
+    let storage = VpnStorage::with_dir(temp.path());
+    storage.save_config(&sample_config("a")).unwrap();
+
+    assert!(matches!(
+      storage.checked_name("  ", None),
+      Err(VpnError::Coded(m)) if m.contains("NAME_CANNOT_BE_EMPTY")
+    ));
+    assert!(matches!(
+      storage.checked_name(" office ", None),
+      Err(VpnError::Coded(m)) if m.contains("VPN_NAME_EXISTS")
+    ));
+    assert_eq!(storage.checked_name("Office", Some("a")).unwrap(), "Office");
+    assert_eq!(storage.checked_name(" Home ", None).unwrap(), "Home");
   }
 
   fn sample_config(id: &str) -> VpnConfig {

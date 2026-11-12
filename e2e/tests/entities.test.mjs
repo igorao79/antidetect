@@ -1187,6 +1187,16 @@ test("extensions, extension groups, VPN storage, DNS rules, and event-backed ass
     });
     assert.equal(importedVpn.success, true);
     await app.invoke("delete_vpn_config", { vpnId: importedVpn.vpn_id });
+    // A VPN a profile uses is not deleted out from under it: the profile
+    // would launch direct.
+    assert.match(
+      await app.invokeError("delete_vpn_config", { vpnId: vpn.id }),
+      /ENTITY_IN_USE/,
+    );
+    await app.invoke("update_profile_vpn", {
+      profileId: profile.id,
+      vpnId: null,
+    });
     await app.invoke("delete_vpn_config", { vpnId: vpn.id });
 
     const dns = await app.invoke("set_custom_dns_config", {

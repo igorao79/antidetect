@@ -565,8 +565,6 @@
       "placeholder": "https://example.com/track-launch"
     },
     "bulkRun": {
-      "confirmTitle": "{{count}} 個のプロファイルを実行しますか？",
-      "confirmDescription": "{{count}} 個のプロファイルを一度に起動すると、システムリソースを大量に消費する可能性があります。続行しますか？",
       "confirmButton": "{{count}} 個を実行",
       "noneToRun": "実行する選択中のプロファイルがありません。",
       "progress": "起動中 {{done}} / {{total}}",
@@ -574,13 +572,19 @@
       "showFailed": "表示",
       "notStarted": "{{total}} 件中 {{count}} 件は起動しませんでした",
       "finishedTitle": "一括起動が完了しました",
-      "finishedBody": "{{total}} 件中 {{launched}} 件のプロファイルを起動しました"
+      "finishedBody": "{{total}} 件中 {{launched}} 件のプロファイルを起動しました",
+      "confirmTitle_one": "{{count}} 個のプロファイルを実行しますか？",
+      "confirmTitle_other": "{{count}} 個のプロファイルを実行しますか？",
+      "confirmDescription_one": "{{count}} 個のプロファイルを一度に起動すると、システムリソースを大量に消費する可能性があります。続行しますか？",
+      "confirmDescription_other": "{{count}} 個のプロファイルを一度に起動すると、システムリソースを大量に消費する可能性があります。続行しますか？"
     },
     "bulkStop": {
-      "confirmTitle": "{{count}} 個のプロファイルを停止しますか？",
-      "confirmDescription": "実行中の {{count}} 個のプロファイルを停止しますか？",
       "confirmButton": "{{count}} 個を停止",
-      "noneToStop": "停止する選択中のプロファイルがありません。"
+      "noneToStop": "停止する選択中のプロファイルがありません。",
+      "confirmTitle_one": "{{count}} 個のプロファイルを停止しますか？",
+      "confirmTitle_other": "{{count}} 個のプロファイルを停止しますか？",
+      "confirmDescription_one": "実行中の {{count}} 個のプロファイルを停止しますか？",
+      "confirmDescription_other": "実行中の {{count}} 個のプロファイルを停止しますか？"
     },
     "sort": {
       "nameAsc": "名前 (A→Z)",
@@ -756,7 +760,8 @@
       "credentialsInClearBody": "このプロキシタイプはユーザー名とパスワードを暗号化せずに送信します。Base64 はエンコードであり暗号化ではありません。自分が管理していないネットワークでは漏洩したものとして扱ってください。",
       "nullCipherHeading": "この暗号方式では何も暗号化されません",
       "nullCipherBody": "Shadowsocks はパスワードをネットワークに送信しないため、ここに漏れる認証情報はありません。代わりに通信そのものが露出します。アクセスする各サイトのアドレスと送信する内容が、読み取り可能な状態でネットワークを通過します。aes-256-gcm などの実際の暗号方式を選んでください。",
-      "httpsTlsHint": "このタイプには TLS を終端するプロキシのエンドポイントが必要です。多くのプロバイダーは別のポートとして公開しており、証明書が検証できる必要があります。"
+      "httpsTlsHint": "このタイプには TLS を終端するプロキシのエンドポイントが必要です。多くのプロバイダーは別のポートとして公開しており、証明書が検証できる必要があります。",
+      "hostInvalid": "ホスト名または IP アドレスのみを入力してください（http://、パス、ポート、スペースは不可）"
     },
     "types": {
       "http": "HTTP",
@@ -1131,7 +1136,6 @@
       "remoteDescription": "リモート MCP エンドポイントを直接呼び出すか、一覧にないクライアントに追加します。",
       "response": "レスポンス",
       "language": "言語",
-      "paid": "有料プランが必要です",
       "tokenIncluded": "コピーしたコードにはトークン全体が含まれます。他人に共有しないでください。",
       "credentialIncluded": "コピーしたコードには資格情報全体が含まれます。他人に共有しないでください。",
       "languages": {
@@ -1536,7 +1540,8 @@
       "remaining": "残り {{time}}",
       "filesProgress": "{{completed}}/{{total}} ファイル",
       "filesFailed": "{{count}} 件のファイルが失敗しました"
-    }
+    },
+    "region": "通知"
   },
   "errors": {
     "required": "この項目は必須です",
@@ -1993,10 +1998,12 @@
     "assignGroupFailed": "拡張機能グループの割り当てに失敗しました",
     "bulkDelete": {
       "extensionsTitle": "拡張機能を削除",
-      "extensionsDescription": "{{count}}件の拡張機能を削除しますか？ {{names}}",
       "groupsTitle": "拡張機能グループを削除",
-      "groupsDescription": "{{count}}件の拡張機能グループを削除しますか？ {{names}}",
-      "confirmButton": "削除"
+      "confirmButton": "削除",
+      "extensionsDescription_one": "{{count}}件の拡張機能を削除しますか？ {{names}}",
+      "extensionsDescription_other": "{{count}}件の拡張機能を削除しますか？ {{names}}",
+      "groupsDescription_one": "{{count}}件の拡張機能グループを削除しますか？ {{names}}",
+      "groupsDescription_other": "{{count}}件の拡張機能グループを削除しますか？ {{names}}"
     },
     "source": {
       "label": "ソース",
@@ -3126,7 +3133,15 @@
     "syncEntitiesLoadFailed": "同期対象の確認ができませんでした: {{detail}}",
     "logFolderFailed": "ログフォルダーを開くことができませんでした: {{detail}}",
     "tagsLoadFailed": "タグの読み込みができませんでした: {{detail}}",
-    "synchronizerFailed": "シンクロナイザーがこの操作を実行できませんでした: {{detail}}"
+    "synchronizerFailed": "シンクロナイザーがこの操作を実行できませんでした: {{detail}}",
+    "profileProxyMissing": "このプロファイルが使用しているプロキシは存在しません。起動前にプロファイルで別のプロキシを選んでください。選ばないとブラウザーが直接接続してしまいます。",
+    "profileVpnMissing": "このプロファイルが使用している VPN は存在しません。起動前にプロファイルで別の VPN を選んでください。選ばないとブラウザーが直接接続してしまいます。",
+    "proxyHostInvalid": "プロキシのホストが正しくありません。ホスト名または IP アドレスのみを使用してください（http://、パス、ポート、スペースは不可）。",
+    "proxyPortInvalid": "プロキシのポートは 1 から 65535 までの数値にしてください。",
+    "proxyTypeUnsupported": "プロキシの種類「{{type}}」はサポートされていません。",
+    "vpnNameExists": "「{{name}}」という名前の VPN は既に存在します。",
+    "vpnImportInvalid": "VPN 設定をインポートできませんでした: {{detail}}",
+    "dnsSourceInvalid": "「{{source}}」はリストのソースとして使えません。http:// または https:// のアドレスを指定してください。"
   },
   "rail": {
     "profiles": "プロファイル",
@@ -3340,7 +3355,8 @@
       "stopAllRunning": "停止 すべて 実行中 終了 閉じる",
       "focusSearch": "検索 探す フィルター",
       "goBack": "戻る エスケープ ホーム"
-    }
+    },
+    "listLabel": "コマンド"
   },
   "shortcuts": {
     "openPalette": "コマンドパレットを開く",
@@ -4688,7 +4704,6 @@
     "invalidFingerprint": "無効なフィンガープリント設定",
     "invalidFingerprintDescription": "フィンガープリント設定に無効な JSON が含まれています。詳細設定を確認してください。",
     "saveFailed": "設定の保存に失敗しました",
-    "unknownError": "不明なエラーが発生しました",
     "titleView": "フィンガープリント設定を表示 - {{name}} ({{browser}})",
     "titleConfigure": "フィンガープリント設定 - {{name}} ({{browser}})"
   },

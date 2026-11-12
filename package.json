@@ -22,7 +22,7 @@
     "test:backend-errors": "node --test src/lib/backend-errors.test.mjs",
     "test:i18n-parity": "node --test src/lib/i18n-parity.test.mjs",
     "test:proxy-string": "node --test src/lib/proxy-string.test.mjs",
-    "test:proxy-type": "node --test src/lib/proxy-type.test.mjs",
+    "test:proxy-type": "node --test src/lib/proxy-type.test.mjs src/lib/proxy-host.test.mjs",
     "test:proxy-first-hop-claims": "node --test src/lib/proxy-first-hop-claims.test.mjs",
     "test:proxy-outages": "node --test src/lib/proxy-outages.test.mjs",
     "test:proxy-expiry": "node --test src/lib/proxy-expiry.test.mjs",

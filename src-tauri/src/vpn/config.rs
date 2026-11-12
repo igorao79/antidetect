@@ -28,6 +28,9 @@ pub enum VpnError {
   /// translated by the frontend.
   #[error("{{\"code\":\"VPN_KEY_UNREADABLE\"}}")]
   KeyUnreadable,
+  /// A refusal that is already a backend error code, passed on as it is.
+  #[error("{0}")]
+  Coded(String),
 }
 
 /// The type of VPN configuration

@@ -7,6 +7,7 @@ import {
   expiryFromDateInput,
   formatDateField,
   formatExpiryDate,
+  maskDateDigits,
   PROXY_EXPIRY_PRESET_DAYS,
   parseDateField,
   proxyExpiryStatus,
@@ -127,4 +128,31 @@ test("moving through the calendar by days and months", () => {
   assert.equal(shiftDateInput("2026-11-03", -7), "2026-10-27");
   assert.equal(shiftDateInputMonths("2026-01-31", 1), "2026-02-28");
   assert.equal(shiftDateInputMonths("2026-11-12", -1), "2026-10-12");
+});
+
+test("bare digits get the locale's separators as they are typed", () => {
+  assert.equal(maskDateDigits("311", "ru"), "311");
+  assert.equal(maskDateDigits("3112", "ru"), "31.12");
+  assert.equal(maskDateDigits("31122", "ru"), "31.12.2");
+  assert.equal(maskDateDigits("31122026", "ru"), "31.12.2026");
+  assert.equal(maskDateDigits("311220269", "ru"), "31.12.2026");
+  assert.equal(maskDateDigits("12312026", "en-US"), "12/31/2026");
+  assert.equal(maskDateDigits("20261231", "ja"), "2026/12/31");
+  assert.equal(maskDateDigits("31.1", "ru"), "31.1");
+  assert.equal(maskDateDigits("31.12" + "2", "ru"), "31.12.2");
+  assert.equal(maskDateDigits("31.12.202" + "6", "ru"), "31.12.2026");
+  assert.equal(maskDateDigits("3.11.2", "ru"), "3.11.2");
+  assert.equal(maskDateDigits("3.11.2026", "ru"), "3.11.2026");
+  assert.equal(maskDateDigits("2026-1", "ru"), "2026-1");
+  assert.equal(maskDateDigits("31.12.", "ru"), "31.12.");
+  assert.equal(maskDateDigits("30 дн.", "ru"), "30 дн.");
+  assert.equal(maskDateDigits("2026-12-31", "ru"), "2026-12-31");
+});
+
+test("a masked date reads back as the date", () => {
+  assert.equal(
+    parseDateField(maskDateDigits("31122026", "ru"), "ru", NOON),
+    "2026-12-31",
+  );
+  assert.equal(parseDateField("313123123", "ru", NOON), null);
 });

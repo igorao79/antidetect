@@ -20,9 +20,11 @@ import {
 } from "@/components/ui/tooltip";
 import {
   dateInputDaysFromToday,
+  expiryExample,
   expiryFromDateInput,
   formatDateField,
   formatExpiryDate,
+  maskDateDigits,
   PROXY_EXPIRY_PRESET_DAYS,
   type ProxyExpiryLevel,
   type ProxyExpiryStatus,
@@ -31,9 +33,6 @@ import {
 } from "@/lib/proxy-expiry";
 import { cn } from "@/lib/utils";
 import { ProxyExpiryCalendar } from "./proxy-expiry-calendar";
-
-/** The placeholder shows the date this many days ahead, as an example. */
-const PLACEHOLDER_DAYS = 30;
 
 const LEVEL_TEXT: Record<ProxyExpiryLevel, string> = {
   ok: "text-muted-foreground",
@@ -145,11 +144,14 @@ export function ProxyExpiryCell({
 export function ProxyExpiryField({
   value,
   onChange,
+  onValidityChange,
   disabled,
 }: {
   /** `YYYY-MM-DD`, or "" for none. */
   value: string;
   onChange: (value: string) => void;
+  /** False while the field holds text that is not a date, so the form waits. */
+  onValidityChange?: (isValid: boolean) => void;
   disabled?: boolean;
 }) {
   const { t, i18n } = useTranslation();
@@ -159,14 +161,12 @@ export function ProxyExpiryField({
   const [isInvalid, setIsInvalid] = useState(false);
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const status = proxyExpiryStatus(expiryFromDateInput(value));
-  const example = formatDateField(
-    dateInputDaysFromToday(PLACEHOLDER_DAYS),
-    locale,
-  );
+  const example = expiryExample(locale);
 
   const pick = (next: string) => {
     setDraft(null);
     setIsInvalid(false);
+    onValidityChange?.(true);
     onChange(next);
   };
 
@@ -201,8 +201,10 @@ export function ProxyExpiryField({
                 value={draft ?? formatDateField(value, locale)}
                 placeholder={example}
                 onChange={(e) => {
-                  setDraft(e.target.value);
+                  const text = maskDateDigits(e.target.value, locale);
+                  setDraft(text);
                   setIsInvalid(false);
+                  onValidityChange?.(parseDateField(text, locale) !== null);
                 }}
                 onBlur={commit}
                 onKeyDown={(e) => {

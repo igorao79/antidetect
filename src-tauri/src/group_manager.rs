@@ -42,6 +42,10 @@ struct GroupsData {
   groups: Vec<ProfileGroup>,
 }
 
+fn same_group_name(a: &str, b: &str) -> bool {
+  a.to_lowercase() == b.to_lowercase()
+}
+
 pub struct GroupManager;
 
 impl GroupManager {
@@ -99,7 +103,11 @@ impl GroupManager {
     let mut groups_data = self.load_groups_data()?;
 
     // Check if group with this name already exists
-    if groups_data.groups.iter().any(|g| g.name == name) {
+    if groups_data
+      .groups
+      .iter()
+      .any(|g| same_group_name(&g.name, &name))
+    {
       return Err(
         serde_json::json!({ "code": "GROUP_ALREADY_EXISTS" })
           .to_string()
@@ -158,7 +166,7 @@ impl GroupManager {
     if groups_data
       .groups
       .iter()
-      .any(|g| g.name == name && g.id != id)
+      .any(|g| g.id != id && same_group_name(&g.name, &name))
     {
       return Err(
         serde_json::json!({ "code": "GROUP_ALREADY_EXISTS" })
@@ -484,4 +492,15 @@ pub async fn delete_selected_profiles(
   })
   .await
   .map_err(|e| crate::coded_failure("PROFILES_DELETE_FAILED", e))?
+}
+
+#[cfg(test)]
+mod tests {
+  use super::same_group_name;
+
+  #[test]
+  fn group_names_differing_only_in_case_are_the_same_name() {
+    assert!(same_group_name("Existing Group", "Existing group"));
+    assert!(!same_group_name("Existing Group", "Other group"));
+  }
 }

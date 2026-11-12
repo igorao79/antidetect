@@ -565,8 +565,6 @@
       "placeholder": "https://example.com/track-launch"
     },
     "bulkRun": {
-      "confirmTitle": "{{count}}개의 프로필을 실행할까요?",
-      "confirmDescription": "{{count}}개의 프로필을 한 번에 실행하면 시스템 리소스를 많이 사용할 수 있습니다. 계속할까요?",
       "confirmButton": "{{count}}개 실행",
       "noneToRun": "실행할 선택된 프로필이 없습니다.",
       "progress": "실행 중 {{done}} / {{total}}",
@@ -574,13 +572,19 @@
       "showFailed": "보기",
       "notStarted": "{{total}}개 중 {{count}}개는 시작되지 않았습니다",
       "finishedTitle": "일괄 실행 완료",
-      "finishedBody": "프로필 {{total}}개 중 {{launched}}개 실행됨"
+      "finishedBody": "프로필 {{total}}개 중 {{launched}}개 실행됨",
+      "confirmTitle_one": "{{count}}개의 프로필을 실행할까요?",
+      "confirmTitle_other": "{{count}}개의 프로필을 실행할까요?",
+      "confirmDescription_one": "{{count}}개의 프로필을 한 번에 실행하면 시스템 리소스를 많이 사용할 수 있습니다. 계속할까요?",
+      "confirmDescription_other": "{{count}}개의 프로필을 한 번에 실행하면 시스템 리소스를 많이 사용할 수 있습니다. 계속할까요?"
     },
     "bulkStop": {
-      "confirmTitle": "{{count}}개의 프로필을 중지할까요?",
-      "confirmDescription": "실행 중인 {{count}}개의 프로필을 중지할까요?",
       "confirmButton": "{{count}}개 중지",
-      "noneToStop": "중지할 선택된 프로필이 없습니다."
+      "noneToStop": "중지할 선택된 프로필이 없습니다.",
+      "confirmTitle_one": "{{count}}개의 프로필을 중지할까요?",
+      "confirmTitle_other": "{{count}}개의 프로필을 중지할까요?",
+      "confirmDescription_one": "실행 중인 {{count}}개의 프로필을 중지할까요?",
+      "confirmDescription_other": "실행 중인 {{count}}개의 프로필을 중지할까요?"
     },
     "sort": {
       "nameAsc": "이름 (A→Z)",
@@ -756,7 +760,8 @@
       "credentialsInClearBody": "이 프록시 유형은 사용자 이름과 비밀번호를 암호화하지 않고 전송합니다. Base64는 인코딩이지 암호화가 아닙니다. 직접 관리하지 않는 네트워크에서는 노출된 것으로 간주하세요.",
       "nullCipherHeading": "이 암호화 방식은 아무것도 암호화하지 않습니다",
       "nullCipherBody": "Shadowsocks는 비밀번호를 네트워크로 보내지 않으므로 여기에서 노출될 자격 증명은 없습니다. 대신 트래픽이 노출됩니다. 접속하는 모든 사이트의 주소와 보내는 모든 내용이 읽을 수 있는 상태로 네트워크를 지나갑니다. aes-256-gcm 같은 실제 암호화 방식을 선택하세요.",
-      "httpsTlsHint": "이 유형에는 TLS를 종료하는 프록시 엔드포인트가 필요합니다. 제공업체는 보통 별도 포트로 제공하며, 인증서가 유효해야 합니다."
+      "httpsTlsHint": "이 유형에는 TLS를 종료하는 프록시 엔드포인트가 필요합니다. 제공업체는 보통 별도 포트로 제공하며, 인증서가 유효해야 합니다.",
+      "hostInvalid": "http://, 경로, 포트, 공백 없이 호스트 이름 또는 IP 주소만 입력하세요"
     },
     "types": {
       "http": "HTTP",
@@ -1131,7 +1136,6 @@
       "remoteDescription": "원격 MCP 엔드포인트를 직접 호출하거나 목록에 없는 클라이언트에 추가하세요.",
       "response": "응답",
       "language": "언어",
-      "paid": "유료 요금제가 필요합니다",
       "tokenIncluded": "복사한 코드에는 전체 토큰이 포함됩니다. 다른 사람과 공유하지 마세요.",
       "credentialIncluded": "복사한 코드에는 전체 자격 증명이 포함됩니다. 다른 사람과 공유하지 마세요.",
       "languages": {
@@ -1536,7 +1540,8 @@
       "remaining": "{{time}} 남음",
       "filesProgress": "{{completed}}/{{total}} 파일",
       "filesFailed": "{{count}}개 파일 실패"
-    }
+    },
+    "region": "알림"
   },
   "errors": {
     "required": "이 필드는 필수입니다",
@@ -1993,10 +1998,12 @@
     "assignGroupFailed": "확장 프로그램 그룹 할당 실패",
     "bulkDelete": {
       "extensionsTitle": "확장 프로그램 삭제",
-      "extensionsDescription": "{{count}}개의 확장 프로그램을 삭제하시겠습니까? {{names}}",
       "groupsTitle": "확장 프로그램 그룹 삭제",
-      "groupsDescription": "{{count}}개의 확장 프로그램 그룹을 삭제하시겠습니까? {{names}}",
-      "confirmButton": "삭제"
+      "confirmButton": "삭제",
+      "extensionsDescription_one": "{{count}}개의 확장 프로그램을 삭제하시겠습니까? {{names}}",
+      "extensionsDescription_other": "{{count}}개의 확장 프로그램을 삭제하시겠습니까? {{names}}",
+      "groupsDescription_one": "{{count}}개의 확장 프로그램 그룹을 삭제하시겠습니까? {{names}}",
+      "groupsDescription_other": "{{count}}개의 확장 프로그램 그룹을 삭제하시겠습니까? {{names}}"
     },
     "source": {
       "label": "소스",
@@ -3126,7 +3133,15 @@
     "syncEntitiesLoadFailed": "동기화할 항목을 읽지 못했습니다: {{detail}}",
     "logFolderFailed": "로그 폴더를 열지 못했습니다: {{detail}}",
     "tagsLoadFailed": "태그를 불러오지 못했습니다: {{detail}}",
-    "synchronizerFailed": "동기화 도구(synchronizer)가 이 작업을 수행하지 못했습니다: {{detail}}"
+    "synchronizerFailed": "동기화 도구(synchronizer)가 이 작업을 수행하지 못했습니다: {{detail}}",
+    "profileProxyMissing": "이 프로필이 사용하는 프록시가 더 이상 존재하지 않습니다. 실행하기 전에 프로필에서 다른 프록시를 선택하세요. 그렇지 않으면 브라우저가 직접 연결됩니다.",
+    "profileVpnMissing": "이 프로필이 사용하는 VPN이 더 이상 존재하지 않습니다. 실행하기 전에 프로필에서 다른 VPN을 선택하세요. 그렇지 않으면 브라우저가 직접 연결됩니다.",
+    "proxyHostInvalid": "프록시 호스트가 올바르지 않습니다. http://, 경로, 포트, 공백 없이 호스트 이름 또는 IP 주소만 사용하세요.",
+    "proxyPortInvalid": "프록시 포트는 1에서 65535 사이의 숫자여야 합니다.",
+    "proxyTypeUnsupported": "프록시 유형 \"{{type}}\"은(는) 지원되지 않습니다.",
+    "vpnNameExists": "\"{{name}}\" 이름의 VPN이 이미 있습니다.",
+    "vpnImportInvalid": "VPN 구성을 가져올 수 없습니다: {{detail}}",
+    "dnsSourceInvalid": "\"{{source}}\"은(는) 올바른 목록 소스가 아닙니다. http:// 또는 https:// 주소를 사용하세요."
   },
   "rail": {
     "profiles": "프로필",
@@ -3340,7 +3355,8 @@
       "stopAllRunning": "중지 모두 실행 종료 닫기",
       "focusSearch": "검색 찾기 필터",
       "goBack": "뒤로 이스케이프 홈"
-    }
+    },
+    "listLabel": "명령"
   },
   "shortcuts": {
     "openPalette": "명령 팔레트 열기",
@@ -4688,7 +4704,6 @@
     "invalidFingerprint": "잘못된 핑거프린트 구성",
     "invalidFingerprintDescription": "핑거프린트 구성에 잘못된 JSON이 포함되어 있습니다. 고급 설정을 확인하세요.",
     "saveFailed": "구성 저장 실패",
-    "unknownError": "알 수 없는 오류가 발생했습니다",
     "titleView": "핑거프린트 설정 보기 - {{name}} ({{browser}})",
     "titleConfigure": "핑거프린트 설정 구성 - {{name}} ({{browser}})"
   },

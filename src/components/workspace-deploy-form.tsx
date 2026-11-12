@@ -66,7 +66,7 @@ export function WorkspaceDeployForm() {
       const info = await invoke<{ name: string }>("deploy_workspace_server", {
         request: {
           host,
-          port: Number(port) || 22,
+          port: Number(port),
           user,
           password: password || null,
           keyPath: keyPath || null,
@@ -85,7 +85,12 @@ export function WorkspaceDeployForm() {
     }
   };
 
+  const portNumber = Number(port);
+  const portValid =
+    Number.isInteger(portNumber) && portNumber >= 1 && portNumber <= 65535;
+
   const canDeploy =
+    portValid &&
     host.trim() &&
     user.trim() &&
     (password || keyPath.trim()) &&
@@ -136,6 +141,7 @@ export function WorkspaceDeployForm() {
                 value={port}
                 inputMode="numeric"
                 className="tabular-nums"
+                aria-invalid={!portValid}
                 onChange={(event) =>
                   setPort(event.target.value.replace(/\D/g, "").slice(0, 5))
                 }

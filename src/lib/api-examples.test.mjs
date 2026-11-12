@@ -131,10 +131,10 @@ test("local examples only call routes the app publishes", () => {
   }
 });
 
-test("only the automation routes are marked paid", () => {
+test("no route is marked paid: the fork has no paid gate on the local API", () => {
   assert.deepEqual(
-    LOCAL_API_EXAMPLES.filter((example) => example.paid).map((e) => e.id),
-    ["runProfile", "openUrl", "killProfile"],
+    LOCAL_API_EXAMPLES.filter((example) => "paid" in example).map((e) => e.id),
+    [],
   );
 });
 

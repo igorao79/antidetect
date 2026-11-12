@@ -1027,6 +1027,7 @@ export interface CookieReadResult {
 export interface SelectedCookie {
   domain: string;
   name: string;
+  path?: string;
 }
 
 export interface CookieCopyRequest {
@@ -1110,6 +1111,7 @@ export interface ProxyImportResult {
   imported_count: number;
   skipped_count: number;
   errors: string[];
+  failures: { name: string; error: string }[];
   proxies: StoredProxy[];
 }
 

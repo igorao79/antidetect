@@ -224,3 +224,54 @@ export function shiftDateInputMonths(value: string, months: number): string {
     new Date(year, month - 1 + months, Math.min(day, last)),
   );
 }
+
+const MIN_MASKED_DIGITS = 4;
+const MAX_DATE_DIGITS = 8;
+
+/** The separator a locale writes between day, month and year. */
+function dateSeparator(locale: string): string {
+  const literal = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+    .formatToParts(new Date(2026, 10, 12))
+    .find((part) => part.type === "literal");
+  return literal?.value.trim().charAt(0) || ".";
+}
+
+/** Bare digits grouped into the locale's day, month and year order. */
+function groupDateDigits(digits: string, locale: string): string {
+  const widths = dateOrder(locale).map((part) => (part === "year" ? 4 : 2));
+  const groups: string[] = [];
+  let rest = digits;
+  for (const width of widths) {
+    if (!rest) break;
+    groups.push(rest.slice(0, width));
+    rest = rest.slice(width);
+  }
+  return groups.join(dateSeparator(locale));
+}
+
+/**
+ * Separators put in while a date is typed as bare digits: `3112` reads
+ * `31.12`, `31122026` reads `31.12.2026` (the locale's order and separator).
+ * Up to three digits stay as they are, since that is a number of days. Text
+ * the person separated themselves (`3.11.2026`, `2026-12-31`) is left alone;
+ * only a digit typed after the field's own grouping is grouped again.
+ */
+export function maskDateDigits(text: string, locale: string): string {
+  const digits = text.replace(/\D/g, "");
+  if (digits.length < MIN_MASKED_DIGITS) return text;
+  const bare = /^\d+$/.test(text);
+  const typedAfterMask =
+    !bare &&
+    text === groupDateDigits(digits.slice(0, -1), locale) + digits.slice(-1);
+  if (!bare && !typedAfterMask) return text;
+  return groupDateDigits(digits.slice(0, MAX_DATE_DIGITS), locale);
+}
+
+/** An example date (30 days ahead) the way the locale writes it. */
+export function expiryExample(locale: string, now = new Date()): string {
+  return formatDateField(dateInputDaysFromToday(30, now), locale);
+}

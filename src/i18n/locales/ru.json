@@ -567,8 +567,6 @@
       "placeholder": "https://example.com/track-launch"
     },
     "bulkRun": {
-      "confirmTitle": "Запустить {{count}} профилей?",
-      "confirmDescription": "Одновременный запуск {{count}} профилей может потребовать много системных ресурсов. Продолжить?",
       "confirmButton": "Запустить {{count}}",
       "noneToRun": "Нет выбранных профилей для запуска.",
       "progress": "Запуск {{done}} из {{total}}",
@@ -576,13 +574,27 @@
       "showFailed": "Показать",
       "notStarted": "Не запущено: {{count}} из {{total}}",
       "finishedTitle": "Массовый запуск завершён",
-      "finishedBody": "Запущено профилей: {{launched}} из {{total}}"
+      "finishedBody": "Запущено профилей: {{launched}} из {{total}}",
+      "confirmTitle_one": "Запустить {{count}} профиль?",
+      "confirmTitle_few": "Запустить {{count}} профиля?",
+      "confirmTitle_many": "Запустить {{count}} профилей?",
+      "confirmTitle_other": "Запустить {{count}} профилей?",
+      "confirmDescription_one": "Одновременный запуск {{count}} профиля может потребовать много системных ресурсов. Продолжить?",
+      "confirmDescription_few": "Одновременный запуск {{count}} профилей может потребовать много системных ресурсов. Продолжить?",
+      "confirmDescription_many": "Одновременный запуск {{count}} профилей может потребовать много системных ресурсов. Продолжить?",
+      "confirmDescription_other": "Одновременный запуск {{count}} профилей может потребовать много системных ресурсов. Продолжить?"
     },
     "bulkStop": {
-      "confirmTitle": "Остановить {{count}} профилей?",
-      "confirmDescription": "Остановить {{count}} запущенных профилей?",
       "confirmButton": "Остановить {{count}}",
-      "noneToStop": "Нет выбранных профилей для остановки."
+      "noneToStop": "Нет выбранных профилей для остановки.",
+      "confirmTitle_one": "Остановить {{count}} профиль?",
+      "confirmTitle_few": "Остановить {{count}} профиля?",
+      "confirmTitle_many": "Остановить {{count}} профилей?",
+      "confirmTitle_other": "Остановить {{count}} профилей?",
+      "confirmDescription_one": "Остановить {{count}} запущенный профиль?",
+      "confirmDescription_few": "Остановить {{count}} запущенных профиля?",
+      "confirmDescription_many": "Остановить {{count}} запущенных профилей?",
+      "confirmDescription_other": "Остановить {{count}} запущенных профилей?"
     },
     "sort": {
       "nameAsc": "Имя (А–Я)",
@@ -760,7 +772,8 @@
       "credentialsInClearBody": "Этот тип прокси отправляет имя пользователя и пароль без шифрования. Base64 является кодированием, а не шифрованием. Считайте их скомпрометированными в любой сети, которую вы не контролируете.",
       "nullCipherHeading": "Этот шифр ничего не шифрует",
       "nullCipherBody": "Shadowsocks никогда не передаёт пароль по сети, поэтому здесь нет учётных данных, которые могли бы утечь. Вместо этого раскрывается сам трафик: адрес каждого сайта, к которому вы обращаетесь, и всё, что вы отправляете, проходят по сети в читаемом виде. Выберите настоящий шифр, например aes-256-gcm.",
-      "httpsTlsHint": "Для этого типа нужна точка входа прокси, которая терминирует TLS. Провайдеры обычно публикуют её на отдельном порту, и её сертификат должен быть действительным."
+      "httpsTlsHint": "Для этого типа нужна точка входа прокси, которая терминирует TLS. Провайдеры обычно публикуют её на отдельном порту, и её сертификат должен быть действительным.",
+      "hostInvalid": "Введите только имя хоста или IP-адрес, без http://, пути, порта и пробелов"
     },
     "types": {
       "http": "HTTP",
@@ -1153,7 +1166,6 @@
       "remoteDescription": "Вызовите удалённый MCP-эндпоинт напрямую или добавьте его в клиент, которого нет в списке.",
       "response": "Ответ",
       "language": "Язык",
-      "paid": "Нужен платный тариф",
       "tokenIncluded": "Скопированный код содержит ваш полный токен. Не передавайте его другим.",
       "credentialIncluded": "Скопированный код содержит ваши полные учётные данные. Не передавайте их другим.",
       "languages": {
@@ -1562,7 +1574,8 @@
       "remaining": "осталось {{time}}",
       "filesProgress": "{{completed}}/{{total}} файлов",
       "filesFailed": "Ошибка в {{count}} файле(ах)"
-    }
+    },
+    "region": "Уведомления"
   },
   "errors": {
     "required": "Это поле обязательно",
@@ -2019,10 +2032,16 @@
     "assignGroupFailed": "Не удалось назначить группу расширений",
     "bulkDelete": {
       "extensionsTitle": "Удалить расширения",
-      "extensionsDescription": "Удалить {{count}} расширений? {{names}}",
       "groupsTitle": "Удалить группы расширений",
-      "groupsDescription": "Удалить {{count}} групп расширений? {{names}}",
-      "confirmButton": "Удалить"
+      "confirmButton": "Удалить",
+      "extensionsDescription_one": "Удалить {{count}} расширение? {{names}}",
+      "extensionsDescription_few": "Удалить {{count}} расширения? {{names}}",
+      "extensionsDescription_many": "Удалить {{count}} расширений? {{names}}",
+      "extensionsDescription_other": "Удалить {{count}} расширений? {{names}}",
+      "groupsDescription_one": "Удалить {{count}} группу расширений? {{names}}",
+      "groupsDescription_few": "Удалить {{count}} группы расширений? {{names}}",
+      "groupsDescription_many": "Удалить {{count}} групп расширений? {{names}}",
+      "groupsDescription_other": "Удалить {{count}} групп расширений? {{names}}"
     },
     "source": {
       "label": "Источник",
@@ -3170,7 +3189,15 @@
     "syncEntitiesLoadFailed": "Не удалось узнать, что нужно синхронизировать: {{detail}}",
     "logFolderFailed": "Не удалось открыть папку с журналами: {{detail}}",
     "tagsLoadFailed": "Не удалось загрузить теги: {{detail}}",
-    "synchronizerFailed": "Синхронизатор не смог выполнить это действие: {{detail}}"
+    "synchronizerFailed": "Синхронизатор не смог выполнить это действие: {{detail}}",
+    "profileProxyMissing": "Прокси, который использует этот профиль, больше не существует. Выберите другой прокси в профиле перед запуском, иначе браузер подключился бы напрямую.",
+    "profileVpnMissing": "VPN, который использует этот профиль, больше не существует. Выберите другой VPN в профиле перед запуском, иначе браузер подключился бы напрямую.",
+    "proxyHostInvalid": "Недопустимый хост прокси. Укажите только имя хоста или IP-адрес, без http://, пути, порта и пробелов.",
+    "proxyPortInvalid": "Порт прокси должен быть числом от 1 до 65535.",
+    "proxyTypeUnsupported": "Тип прокси «{{type}}» не поддерживается.",
+    "vpnNameExists": "VPN с именем «{{name}}» уже существует.",
+    "vpnImportInvalid": "Не удалось импортировать конфигурацию VPN: {{detail}}",
+    "dnsSourceInvalid": "«{{source}}» не подходит как источник списка. Укажите адрес http:// или https://."
   },
   "rail": {
     "profiles": "Профили",
@@ -3384,7 +3411,8 @@
       "stopAllRunning": "остановить все запущенные закрыть завершить",
       "focusSearch": "поиск найти фильтр",
       "goBack": "назад escape домой"
-    }
+    },
+    "listLabel": "Команды"
   },
   "shortcuts": {
     "openPalette": "Открыть командную палитру",
@@ -4790,7 +4818,6 @@
     "invalidFingerprint": "Неверная конфигурация отпечатка",
     "invalidFingerprintDescription": "Конфигурация отпечатка содержит недопустимый JSON. Проверьте расширенные настройки.",
     "saveFailed": "Не удалось сохранить конфигурацию",
-    "unknownError": "Произошла неизвестная ошибка",
     "titleView": "Просмотр настроек отпечатка - {{name}} ({{browser}})",
     "titleConfigure": "Настроить отпечаток - {{name}} ({{browser}})"
   },

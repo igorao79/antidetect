@@ -40,6 +40,16 @@ pub struct ExportedProxy {
   pub vless_uri: Option<String>,
   #[serde(default, skip_serializing_if = "Option::is_none")]
   pub expires_at: Option<u64>,
+  #[serde(default, skip_serializing_if = "Option::is_none")]
+  pub rotation_url: Option<String>,
+}
+
+/// One entry an import could not create. `error` is the backend error as the
+/// frontend's `translateBackendError` reads it.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProxyImportError {
+  pub name: String,
+  pub error: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,6 +57,9 @@ pub struct ProxyImportResult {
   pub imported_count: usize,
   pub skipped_count: usize,
   pub errors: Vec<String>,
+  /// The same failures with the backend error kept apart, for the UI to translate.
+  #[serde(default)]
+  pub failures: Vec<ProxyImportError>,
   pub proxies: Vec<StoredProxy>,
 }
 
@@ -74,6 +87,42 @@ pub enum ProxyParseResult {
   },
   #[serde(rename = "invalid")]
   Invalid { line: String, reason: String },
+}
+
+/// Proxy types the workers can dial besides the Xray ones.
+const SUPPORTED_PROXY_TYPES: [&str; 10] = [
+  "http",
+  "https",
+  "httpstls",
+  "socks4",
+  "socks4a",
+  "socks5",
+  "socks5h",
+  "ss",
+  "shadowsocks",
+  crate::ssh_upstream::SCHEME,
+];
+
+/// A host as stored: an IPv4 or IPv6 address (brackets removed) or a name of
+/// letters, digits, `-`, `_` and `.`. Anything that reads as a URL, a path, a
+/// `host:port` or markup is refused.
+fn normalize_proxy_host(host: &str) -> Option<String> {
+  let host = host.trim();
+  if host.is_empty() {
+    return None;
+  }
+  if let Some(inner) = host.strip_prefix('[').and_then(|h| h.strip_suffix(']')) {
+    return inner
+      .parse::<std::net::Ipv6Addr>()
+      .is_ok()
+      .then(|| inner.to_string());
+  }
+  if host.parse::<std::net::IpAddr>().is_ok() {
+    return Some(host.to_string());
+  }
+  let is_name_char = |c: char| c.is_alphanumeric() || matches!(c, '-' | '_' | '.');
+  (host.chars().all(is_name_char) && !host.starts_with('.') && !host.ends_with('.'))
+    .then(|| host.to_string())
 }
 
 /// The colon-separated fields of a proxy line. An IPv6 address in brackets at
@@ -824,6 +873,22 @@ impl ProxyManager {
   /// decides the type, so a VMess link saved under "VLESS" is stored as VMess.
   fn normalize_proxy_settings(mut proxy_settings: ProxySettings) -> Result<ProxySettings, String> {
     if !crate::xray::is_xray_proxy_type(&proxy_settings.proxy_type) {
+      let proxy_type = proxy_settings.proxy_type.trim().to_lowercase();
+      if !SUPPORTED_PROXY_TYPES.contains(&proxy_type.as_str()) {
+        return Err(
+          serde_json::json!({
+            "code": "PROXY_TYPE_UNSUPPORTED",
+            "params": { "type": proxy_settings.proxy_type.trim() }
+          })
+          .to_string(),
+        );
+      }
+      proxy_settings.host = normalize_proxy_host(&proxy_settings.host)
+        .ok_or_else(|| crate::backend_error("PROXY_HOST_INVALID"))?;
+      if proxy_settings.port == 0 {
+        return Err(crate::backend_error("PROXY_PORT_INVALID"));
+      }
+      proxy_settings.proxy_type = proxy_type;
       proxy_settings.vless_uri = None;
       return Ok(proxy_settings);
     }
@@ -1469,6 +1534,8 @@ impl ProxyManager {
         .unwrap_or(false)
     };
 
+    crate::entity_trash::refuse_in_use(crate::entity_trash::EntityKind::Proxy, proxy_id)?;
+
     {
       let mut stored_proxies = self.stored_proxies.lock().unwrap();
       if stored_proxies.remove(proxy_id).is_none() {
@@ -1885,6 +1952,7 @@ impl ProxyManager {
         password: p.proxy_settings.password.clone(),
         vless_uri: p.proxy_settings.vless_uri.clone(),
         expires_at: p.expires_at,
+        rotation_url: p.rotation_url.clone(),
       })
       .collect();
 
@@ -1914,8 +1982,24 @@ impl ProxyManager {
     content
       .lines()
       .filter(|line| !line.trim().is_empty() && !line.trim().starts_with('#'))
-      .map(|line| Self::parse_single_proxy_line(line.trim()))
+      .map(|line| Self::reject_invalid_host(Self::parse_single_proxy_line(line.trim())))
       .collect()
+  }
+
+  /// A parsed line whose host could not be stored (`:80`) is an invalid line.
+  fn reject_invalid_host(result: ProxyParseResult) -> ProxyParseResult {
+    match result {
+      ProxyParseResult::Parsed(parsed)
+        if !crate::xray::is_xray_proxy_type(&parsed.proxy_type)
+          && normalize_proxy_host(&parsed.host).is_none() =>
+      {
+        ProxyParseResult::Invalid {
+          line: parsed.original_line,
+          reason: "Invalid host".to_string(),
+        }
+      }
+      other => other,
+    }
   }
 
   // Parse a single proxy line with format auto-detection
@@ -2171,6 +2255,7 @@ impl ProxyManager {
     let mut imported = Vec::new();
     let mut skipped = 0;
     let mut errors = Vec::new();
+    let mut failures = Vec::new();
 
     for exported in export_data.proxies {
       let proxy_settings = ProxySettings {
@@ -2187,6 +2272,10 @@ impl ProxyManager {
         .and_then(|proxy| match exported.expires_at {
           Some(expires_at) => self.set_expires_at(&proxy.id, Some(expires_at)),
           None => Ok(proxy),
+        })
+        .and_then(|proxy| match exported.rotation_url {
+          Some(rotation_url) => self.set_rotation_url(&proxy.id, Some(rotation_url)),
+          None => Ok(proxy),
         });
       match created {
         Ok(proxy) => imported.push(proxy),
@@ -2195,6 +2284,10 @@ impl ProxyManager {
             skipped += 1;
           } else {
             errors.push(format!("Failed to import '{}': {}", exported.name, e));
+            failures.push(ProxyImportError {
+              name: exported.name,
+              error: e,
+            });
           }
         }
       }
@@ -2204,6 +2297,7 @@ impl ProxyManager {
       imported_count: imported.len(),
       skipped_count: skipped,
       errors,
+      failures,
       proxies: imported,
     })
   }
@@ -2218,6 +2312,7 @@ impl ProxyManager {
     let mut imported = Vec::new();
     let mut skipped = 0;
     let mut errors = Vec::new();
+    let mut failures = Vec::new();
     let prefix = name_prefix.unwrap_or_else(|| "Imported".to_string());
     // Numbered from the first free name, not from 1: a second batch under the
     // same prefix otherwise collided with every name of the first and was
@@ -2254,6 +2349,10 @@ impl ProxyManager {
             skipped += 1;
           } else {
             errors.push(format!("Failed to import '{}': {}", proxy_name, e));
+            failures.push(ProxyImportError {
+              name: proxy_name,
+              error: e,
+            });
           }
         }
       }
@@ -2263,6 +2362,7 @@ impl ProxyManager {
       imported_count: imported.len(),
       skipped_count: skipped,
       errors,
+      failures,
       proxies: imported,
     })
   }
@@ -4017,6 +4117,74 @@ mod route_check_tests {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn proxy_hosts_keep_names_and_addresses_and_refuse_everything_else() {
+    for good in [
+      "1.2.3.4",
+      "proxy.example.com",
+      "прокси.рф",
+      "host_1-a.io",
+      "2001:db8::1",
+    ] {
+      assert_eq!(normalize_proxy_host(good).as_deref(), Some(good), "{good}");
+    }
+    assert_eq!(
+      normalize_proxy_host(" [2001:db8::1] ").as_deref(),
+      Some("2001:db8::1")
+    );
+    for bad in [
+      "",
+      "  ",
+      "http://evil.com",
+      "bad host name",
+      "host/path",
+      "1.2.3.4:8080",
+      "<script>",
+      "a@b",
+      "[nope]",
+      ".x",
+      "x.",
+      "a\u{0}b",
+    ] {
+      assert_eq!(normalize_proxy_host(bad), None, "{bad:?}");
+    }
+  }
+
+  #[test]
+  fn settings_with_a_bad_host_port_or_type_are_refused_with_codes() {
+    let settings = |proxy_type: &str, host: &str, port: u16| ProxySettings {
+      proxy_type: proxy_type.to_string(),
+      host: host.to_string(),
+      port,
+      username: None,
+      password: None,
+      vless_uri: None,
+    };
+    let code = |s: ProxySettings| {
+      let err = ProxyManager::normalize_proxy_settings(s).unwrap_err();
+      serde_json::from_str::<serde_json::Value>(&err).unwrap()["code"]
+        .as_str()
+        .unwrap()
+        .to_string()
+    };
+    assert_eq!(code(settings("http", "", 80)), "PROXY_HOST_INVALID");
+    assert_eq!(code(settings("http", "x", 0)), "PROXY_PORT_INVALID");
+    assert_eq!(code(settings("weird", "x", 5)), "PROXY_TYPE_UNSUPPORTED");
+    let ok = ProxyManager::normalize_proxy_settings(settings("SOCKS5", " 1.2.3.4 ", 1080)).unwrap();
+    assert_eq!(
+      (ok.proxy_type.as_str(), ok.host.as_str()),
+      ("socks5", "1.2.3.4")
+    );
+  }
+
+  #[test]
+  fn a_txt_line_with_an_empty_host_is_invalid() {
+    let results = ProxyManager::parse_txt_proxies("1.2.3.4:80\n:80\nfoo\n");
+    assert!(matches!(results[0], ProxyParseResult::Parsed(_)));
+    assert!(matches!(results[1], ProxyParseResult::Invalid { .. }));
+    assert!(matches!(results[2], ProxyParseResult::Invalid { .. }));
+  }
 
   #[tokio::test]
   async fn a_sidecar_that_exits_is_read_while_its_worker_holds_the_pipe() {

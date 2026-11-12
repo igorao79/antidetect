@@ -665,6 +665,7 @@ export function CommandPalette({
         }
       />
       <CommandList
+        label={t("commandPalette.listLabel")}
         data-sound="off"
         className="h-(--cmdk-list-height) max-h-[min(60vh,480px)] transition-[height] duration-150 ease-out motion-reduce:transition-none"
       >

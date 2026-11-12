@@ -368,7 +368,7 @@ fn profiles() -> Result<Vec<crate::profile::BrowserProfile>, String> {
 
 /// A proxy or VPN that a profile uses stays: a launch through a proxy that is
 /// not there goes out direct.
-fn refuse_in_use(kind: EntityKind, id: &str) -> Result<(), String> {
+pub(crate) fn refuse_in_use(kind: EntityKind, id: &str) -> Result<(), String> {
   let count = match kind {
     EntityKind::Proxy => profiles()?
       .iter()

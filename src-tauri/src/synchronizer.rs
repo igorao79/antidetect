@@ -912,6 +912,27 @@ struct SynchronizerInner {
 
 static SYNCHRONIZER: std::sync::OnceLock<SynchronizerManager> = std::sync::OnceLock::new();
 
+fn validate_follower_ids(
+  leader_profile_id: &str,
+  follower_profile_ids: &[String],
+) -> Result<(), String> {
+  if follower_profile_ids.is_empty() {
+    return Err("A sync session needs at least one follower profile.".to_string());
+  }
+  let mut seen = std::collections::HashSet::new();
+  for fid in follower_profile_ids {
+    if fid == leader_profile_id {
+      return Err("The leader profile cannot also be a follower.".to_string());
+    }
+    if !seen.insert(fid.as_str()) {
+      return Err(format!(
+        "Follower profile '{fid}' is listed more than once."
+      ));
+    }
+  }
+  Ok(())
+}
+
 impl SynchronizerManager {
   pub fn instance() -> &'static SynchronizerManager {
     SYNCHRONIZER.get_or_init(|| SynchronizerManager {
@@ -954,6 +975,7 @@ impl SynchronizerManager {
         },
       )
     };
+    validate_follower_ids(&leader_profile_id, &follower_profile_ids)?;
     // Validate: leader must be on an engine the synchronizer drives
     let profiles = ProfileManager::instance()
       .list_profiles()
@@ -2584,6 +2606,15 @@ pub async fn arrange_sync_windows(
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn follower_ids_are_validated_before_any_launch() {
+    let ids = |v: &[&str]| v.iter().map(|s| s.to_string()).collect::<Vec<_>>();
+    assert!(validate_follower_ids("a", &ids(&["b", "c"])).is_ok());
+    assert!(validate_follower_ids("a", &[]).is_err());
+    assert!(validate_follower_ids("a", &ids(&["b", "a"])).is_err());
+    assert!(validate_follower_ids("a", &ids(&["b", "b"])).is_err());
+  }
 
   fn overlaps(a: &WindowRect, b: &WindowRect) -> bool {
     let a_right = a.left + a.width as i32;

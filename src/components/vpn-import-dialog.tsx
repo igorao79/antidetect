@@ -20,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { RippleButton } from "@/components/ui/ripple";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StepTransition } from "@/components/ui/step-transition";
+import { translateBackendError } from "@/lib/backend-errors";
 import { getCurrentOS } from "@/lib/browser-utils";
 import { playUiSound } from "@/lib/ui-sounds";
 import type { VpnImportResult, VpnType } from "@/types";
@@ -148,7 +149,9 @@ export function VpnImportDialog({ isOpen, onClose }: VpnImportDialogProps) {
       e.preventDefault();
       setIsDragOver(false);
       const files = Array.from(e.dataTransfer.files);
-      const validFile = files.find((f) => f.name.endsWith(".conf"));
+      const validFile = files.find((f) =>
+        f.name.toLowerCase().endsWith(".conf"),
+      );
       if (validFile) {
         playUiSound("drop");
         handleFileRead(validFile);
@@ -350,7 +353,8 @@ export function VpnImportDialog({ isOpen, onClose }: VpnImportDialogProps) {
                       {t("vpns.import.importFailed")}
                     </div>
                     <div className="text-sm text-destructive-text">
-                      {vpnImportResult.error}
+                      {vpnImportResult.error &&
+                        translateBackendError(t, vpnImportResult.error)}
                     </div>
                   </div>
                 )}

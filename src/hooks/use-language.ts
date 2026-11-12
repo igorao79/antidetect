@@ -34,11 +34,13 @@ export function useLanguage() {
   const { i18n } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [currentLanguage, setCurrentLanguage] = useState<string>("en");
+  const [storedLanguage, setStoredLanguage] = useState<string | null>(null);
 
   const loadLanguage = useCallback(async () => {
     try {
       const settings = await invoke<AppSettings>("get_app_settings");
       let language = settings.language;
+      setStoredLanguage(language ?? null);
 
       if (!language) {
         const systemLanguage = await invoke<string>("get_system_language");
@@ -69,6 +71,7 @@ export function useLanguage() {
         };
         await invoke("save_app_settings", { settings: updatedSettings });
 
+        setStoredLanguage(language);
         if (language) {
           await i18n.changeLanguage(language);
           setCurrentLanguage(language);
@@ -92,6 +95,7 @@ export function useLanguage() {
 
   return {
     currentLanguage,
+    storedLanguage,
     changeLanguage,
     isLoading,
     supportedLanguages: SUPPORTED_LANGUAGES,

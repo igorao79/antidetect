@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StepTransition } from "@/components/ui/step-transition";
+import { translateBackendError } from "@/lib/backend-errors";
 import { getCurrentOS } from "@/lib/browser-utils";
 import {
   isFirstHopEncrypted,
@@ -188,7 +189,7 @@ export function ProxyImportDialog({ isOpen, onClose }: ProxyImportDialogProps) {
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target?.result as string;
-        const isJson = file.name.endsWith(".json");
+        const isJson = file.name.toLowerCase().endsWith(".json");
         void processContent(content, isJson, file.name);
       };
       reader.onerror = () => {
@@ -205,9 +206,10 @@ export function ProxyImportDialog({ isOpen, onClose }: ProxyImportDialogProps) {
       setIsDragOver(false);
 
       const files = Array.from(e.dataTransfer.files);
-      const validFile = files.find(
-        (f) => f.name.endsWith(".json") || f.name.endsWith(".txt"),
-      );
+      const validFile = files.find((f) => {
+        const name = f.name.toLowerCase();
+        return name.endsWith(".json") || name.endsWith(".txt");
+      });
 
       if (validFile) {
         playUiSound("drop");
@@ -575,12 +577,13 @@ export function ProxyImportDialog({ isOpen, onClose }: ProxyImportDialogProps) {
                   <Label>{t("proxies.importDialog.errors")}</Label>
                   <ScrollArea className="h-[100px] rounded-md border">
                     <div className="space-y-1 p-2">
-                      {importResult.errors.map((error, i) => (
+                      {importResult.failures.map((failure, i) => (
                         <div
                           key={`error-${i}`}
                           className="text-xs text-destructive-text"
                         >
-                          {error}
+                          {failure.name}:{" "}
+                          {translateBackendError(t, failure.error)}
                         </div>
                       ))}
                     </div>

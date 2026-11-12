@@ -758,6 +758,38 @@ pub(crate) fn path_is_load_extension_safe(path: &Path) -> bool {
   !path.to_string_lossy().contains(',')
 }
 
+/// Drop `ext_id` from every group that lists it and bump those groups'
+/// `updated_at`, so the removal wins the sync. Returns the changed group ids.
+fn remove_extension_from_groups(groups: &mut [ExtensionGroup], ext_id: &str) -> Vec<String> {
+  let now = now_secs();
+  groups
+    .iter_mut()
+    .filter(|group| group.extension_ids.iter().any(|eid| eid == ext_id))
+    .map(|group| {
+      group.extension_ids.retain(|eid| eid != ext_id);
+      group.updated_at = now;
+      group.id.clone()
+    })
+    .collect()
+}
+
+#[cfg(test)]
+pub(crate) fn minimal_extension_zip() -> Vec<u8> {
+  let mut buffer = std::io::Cursor::new(Vec::new());
+  {
+    let mut writer = zip::ZipWriter::new(&mut buffer);
+    let options: zip::write::SimpleFileOptions = zip::write::FileOptions::default();
+    writer.start_file("manifest.json", options).unwrap();
+    std::io::Write::write_all(
+      &mut writer,
+      br#"{"manifest_version":3,"name":"Test Ext","version":"1.0"}"#,
+    )
+    .unwrap();
+    writer.finish().unwrap();
+  }
+  buffer.into_inner()
+}
+
 fn err_code(code: &str) -> Box<dyn std::error::Error> {
   serde_json::json!({ "code": code }).to_string().into()
 }
@@ -1031,6 +1063,11 @@ impl ExtensionManager {
   ) -> Result<Extension, Box<dyn std::error::Error>> {
     if determine_browser_compatibility(&file_type).is_empty() || !is_plain_path_part(&file_name) {
       return Err(err_code("EXTENSION_UNSUPPORTED_FILE_TYPE"));
+    }
+    if matches!(file_type.as_str(), "zip" | "crx")
+      && read_manifest_from_archive(&file_data, &file_type).is_none()
+    {
+      return Err(err_code("EXTENSION_MANIFEST_MISSING"));
     }
     let now = now_secs();
 
@@ -1469,9 +1506,7 @@ impl ExtensionManager {
 
     // Remove from all groups
     let mut groups_data = self.load_groups_data()?;
-    for group in &mut groups_data.groups {
-      group.extension_ids.retain(|eid| eid != id);
-    }
+    remove_extension_from_groups(&mut groups_data.groups, id);
     self.save_groups_data(&groups_data)?;
 
     if let Err(e) = events::emit_empty("extensions-changed") {
@@ -1535,7 +1570,11 @@ impl ExtensionManager {
     let mut data = self.load_groups_data()?;
 
     if data.groups.iter().any(|g| g.name == name) {
-      return Err(format!("Extension group with name '{name}' already exists").into());
+      return Err(
+        serde_json::json!({ "code": "GROUP_ALREADY_EXISTS" })
+          .to_string()
+          .into(),
+      );
     }
 
     let now = now_secs();
@@ -1605,7 +1644,11 @@ impl ExtensionManager {
         .iter()
         .any(|g| g.name == *new_name && g.id != id)
       {
-        return Err(format!("Extension group with name '{new_name}' already exists").into());
+        return Err(
+          serde_json::json!({ "code": "GROUP_ALREADY_EXISTS" })
+            .to_string()
+            .into(),
+        );
       }
     }
 
@@ -1830,9 +1873,7 @@ impl ExtensionManager {
     self.cleanup_staged_copies(id);
     // Remove from all groups
     let mut groups_data = self.load_groups_data()?;
-    for group in &mut groups_data.groups {
-      group.extension_ids.retain(|eid| eid != id);
-    }
+    remove_extension_from_groups(&mut groups_data.groups, id);
     self.save_groups_data(&groups_data)?;
     Ok(())
   }
@@ -1900,9 +1941,7 @@ impl ExtensionManager {
     let ext_dir = self.get_extension_dir(id);
     crate::profile::trash::move_dir(&ext_dir, into)?;
     if !groups.is_empty() {
-      for group in &mut data.groups {
-        group.extension_ids.retain(|eid| eid != id);
-      }
+      remove_extension_from_groups(&mut data.groups, id);
       if let Err(e) = self.save_groups_data(&data) {
         if let Err(back) = crate::profile::trash::move_dir(into, &ext_dir) {
           log::error!("Extension folder not put back extension={id} err=\"{back}\"");
@@ -2818,12 +2857,12 @@ mod tests {
       .add_extension(
         "Test Ext".to_string(),
         "test.zip".to_string(),
-        vec![0, 1, 2, 3],
+        minimal_extension_zip(),
       )
       .unwrap();
     assert_eq!(ext.name, "Test Ext");
     assert_eq!(ext.file_type, "zip");
-    // No manifest, so no gecko id: Camoufox could not install it.
+    // The manifest names no gecko id: Camoufox could not install it.
     assert_eq!(ext.browser_compatibility, vec!["chromium".to_string()]);
 
     // Get
@@ -2867,7 +2906,7 @@ mod tests {
       .add_extension(
         "Test Ext".to_string(),
         "test.zip".to_string(),
-        vec![0, 1, 2, 3],
+        minimal_extension_zip(),
       )
       .unwrap();
 
@@ -2915,7 +2954,7 @@ mod tests {
       .add_extension(
         "Chromium Ext".to_string(),
         "test.crx".to_string(),
-        vec![0, 1, 2, 3],
+        minimal_extension_zip(),
       )
       .unwrap();
     let chrome_group = mgr.create_group("Chromium Group".to_string()).unwrap();
@@ -3492,7 +3531,11 @@ mod tests {
     let mgr = ExtensionManager::new();
 
     let ext = mgr
-      .add_extension("Test".to_string(), "test.zip".to_string(), vec![0, 1, 2, 3])
+      .add_extension(
+        "Test".to_string(),
+        "test.zip".to_string(),
+        minimal_extension_zip(),
+      )
       .unwrap();
 
     let group = mgr.create_group("G1".to_string()).unwrap();
@@ -3503,6 +3546,57 @@ mod tests {
 
     let updated_group = mgr.get_group(&group.id).unwrap();
     assert!(updated_group.extension_ids.is_empty());
+  }
+
+  #[test]
+  fn removing_an_extension_from_groups_bumps_only_the_groups_that_held_it() {
+    let group = |id: &str, ids: &[&str]| ExtensionGroup {
+      id: id.to_string(),
+      name: id.to_string(),
+      extension_ids: ids.iter().map(|s| s.to_string()).collect(),
+      created_at: 0,
+      updated_at: 0,
+      sync_enabled: false,
+      last_sync: None,
+    };
+    let mut groups = vec![group("a", &["x", "y"]), group("b", &["y"])];
+
+    let changed = remove_extension_from_groups(&mut groups, "x");
+
+    assert_eq!(changed, vec!["a".to_string()]);
+    assert_eq!(groups[0].extension_ids, vec!["y".to_string()]);
+    assert!(groups[0].updated_at > 0);
+    assert_eq!(groups[1].updated_at, 0);
+  }
+
+  #[test]
+  fn an_archive_without_a_manifest_is_refused() {
+    let tmp = tempfile::tempdir().unwrap();
+    let _guard = crate::app_dirs::set_test_data_dir(tmp.path().to_path_buf());
+    let mgr = ExtensionManager::new();
+
+    let err = mgr
+      .add_extension(
+        "Garbage".to_string(),
+        "garbage.zip".to_string(),
+        vec![0, 1, 2, 3, 4],
+      )
+      .unwrap_err();
+
+    assert!(err.to_string().contains("EXTENSION_MANIFEST_MISSING"));
+    assert!(mgr.list_extensions().unwrap().is_empty());
+  }
+
+  #[test]
+  fn a_duplicate_extension_group_name_is_a_coded_error() {
+    let tmp = tempfile::tempdir().unwrap();
+    let _guard = crate::app_dirs::set_test_data_dir(tmp.path().to_path_buf());
+    let mgr = ExtensionManager::new();
+    mgr.create_group("Ext Alpha".to_string()).unwrap();
+
+    let err = mgr.create_group("Ext Alpha".to_string()).unwrap_err();
+
+    assert!(err.to_string().contains("GROUP_ALREADY_EXISTS"));
   }
 
   /// Build a zip whose manifest localizes its name and description, the shape

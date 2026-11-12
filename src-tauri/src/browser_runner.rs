@@ -195,7 +195,7 @@ impl BrowserRunner {
     proxy_id: Option<&String>,
     profile_id: Option<&str>,
   ) -> Result<Option<ProxySettings>, String> {
-    let proxy_id = match proxy_id {
+    let proxy_id = match proxy_id.filter(|id| !id.is_empty()) {
       Some(id) => id,
       None => return Ok(None),
     };
@@ -207,10 +207,36 @@ impl BrowserRunner {
     // For cloud-derived proxies, inject profile-specific sid for sticky sessions
     if let Some(pid) = profile_id {
       if PROXY_MANAGER.is_cloud_or_derived(proxy_id) {
-        return Ok(PROXY_MANAGER.resolve_proxy_for_profile(proxy_id, pid));
+        return PROXY_MANAGER
+          .resolve_proxy_for_profile(proxy_id, pid)
+          .map(Some)
+          .ok_or_else(|| crate::backend_error("PROFILE_PROXY_MISSING"));
       }
     }
-    Ok(PROXY_MANAGER.get_proxy_settings_by_id(proxy_id))
+    // A proxy that is gone must stop the launch: starting without an upstream
+    // would show the real address.
+    PROXY_MANAGER
+      .get_proxy_settings_by_id(proxy_id)
+      .map(Some)
+      .ok_or_else(|| crate::backend_error("PROFILE_PROXY_MISSING"))
+  }
+
+  /// A VPN the profile names that is no longer stored. The same rule as for a
+  /// missing proxy; a store that cannot be read is left to the worker start.
+  fn ensure_profile_vpn_exists(vpn_id: Option<&String>) -> Result<(), String> {
+    let Some(vpn_id) = vpn_id.filter(|id| !id.is_empty()) else {
+      return Ok(());
+    };
+    let configs = crate::vpn::VPN_STORAGE
+      .lock()
+      .ok()
+      .and_then(|storage| storage.list_configs().ok());
+    match configs {
+      Some(configs) if !configs.iter().any(|config| &config.id == vpn_id) => {
+        Err(crate::backend_error("PROFILE_VPN_MISSING"))
+      }
+      _ => Ok(()),
+    }
   }
 
   /// Whether this launch may keep a list of the sites it reaches. Never for a
@@ -304,6 +330,7 @@ impl BrowserRunner {
     &self,
     profile: &BrowserProfile,
   ) -> Result<Option<ProxySettings>, String> {
+    Self::ensure_profile_vpn_exists(profile.vpn_id.as_ref())?;
     self
       .resolve_proxy_with_refresh(profile.proxy_id.as_ref(), Some(&profile.id.to_string()))
       .await

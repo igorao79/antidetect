@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/select";
 import { translateBackendError } from "@/lib/backend-errors";
 import { getBrowserIcon } from "@/lib/browser-utils";
+import { cookieKey } from "@/lib/cookie-key";
 import type {
   BrowserProfile,
   CookieCopyRequest,
@@ -224,7 +225,7 @@ export function CookieCopyDialog({
           ...prev,
           [domain]: {
             allSelected: true,
-            cookies: new Set(cookies.map((c) => c.name)),
+            cookies: new Set(cookies.map(cookieKey)),
           },
         };
       });
@@ -233,7 +234,7 @@ export function CookieCopyDialog({
   );
 
   const toggleCookie = useCallback(
-    (domain: string, cookieName: string, totalCookies: number) => {
+    (domain: string, key: string, totalCookies: number) => {
       setSelection((prev) => {
         const current = prev[domain] ?? {
           allSelected: false,
@@ -241,10 +242,10 @@ export function CookieCopyDialog({
         };
         const newCookies = new Set(current.cookies);
 
-        if (newCookies.has(cookieName)) {
-          newCookies.delete(cookieName);
+        if (newCookies.has(key)) {
+          newCookies.delete(key);
         } else {
-          newCookies.add(cookieName);
+          newCookies.add(key);
         }
 
         const allSelected = newCookies.size === totalCookies;
@@ -294,7 +295,7 @@ export function CookieCopyDialog({
         } else {
           next[domain.domain] = {
             allSelected: true,
-            cookies: new Set(domain.cookies.map((c) => c.name)),
+            cookies: new Set(domain.cookies.map(cookieKey)),
           };
         }
       }
@@ -309,14 +310,17 @@ export function CookieCopyDialog({
       if (domainSelection.allSelected) {
         result.push({ domain, name: "" });
       } else {
-        for (const cookieName of domainSelection.cookies) {
-          result.push({ domain, name: cookieName });
+        const domainData = cookieData?.domains.find((d) => d.domain === domain);
+        for (const cookie of domainData?.cookies ?? []) {
+          if (domainSelection.cookies.has(cookieKey(cookie))) {
+            result.push({ domain, name: cookie.name, path: cookie.path });
+          }
         }
       }
     }
 
     return result;
-  }, [selection]);
+  }, [selection, cookieData]);
 
   const handleCopy = useCallback(async () => {
     if (!sourceProfileId || targetProfiles.length === 0) return;
@@ -674,7 +678,7 @@ interface DomainRowProps {
   onToggleDomain: (domain: string, cookies: UnifiedCookie[]) => void;
   onToggleCookie: (
     domain: string,
-    cookieName: string,
+    cookieKey: string,
     totalCookies: number,
   ) => void;
   onToggleExpand: (domain: string) => void;
@@ -730,10 +734,11 @@ function DomainRow({
         className="ml-8 space-y-1 border-l pl-2"
       >
         {domain.cookies.map((cookie) => {
-          const isSelected = domainSelection?.cookies.has(cookie.name) ?? false;
+          const isSelected =
+            domainSelection?.cookies.has(cookieKey(cookie)) ?? false;
           return (
             <div
-              key={`${domain.domain}-${cookie.name}`}
+              key={`${domain.domain}-${cookieKey(cookie)}`}
               className="flex items-center gap-2 rounded p-1 text-sm hover:bg-accent/30"
             >
               <Checkbox
@@ -741,7 +746,7 @@ function DomainRow({
                 onCheckedChange={() => {
                   onToggleCookie(
                     domain.domain,
-                    cookie.name,
+                    cookieKey(cookie),
                     domain.cookie_count,
                   );
                 }}

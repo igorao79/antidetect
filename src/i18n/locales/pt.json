@@ -566,8 +566,6 @@
       "placeholder": "https://example.com/track-launch"
     },
     "bulkRun": {
-      "confirmTitle": "Executar {{count}} perfis?",
-      "confirmDescription": "Iniciar {{count}} perfis de uma vez pode consumir muitos recursos do sistema. Continuar?",
       "confirmButton": "Executar {{count}}",
       "noneToRun": "Nenhum perfil selecionado para executar.",
       "progress": "Iniciando {{done}} de {{total}}",
@@ -575,13 +573,19 @@
       "showFailed": "Mostrar",
       "notStarted": "{{count}} de {{total}} inicializações não começaram",
       "finishedTitle": "Inicialização em massa concluída",
-      "finishedBody": "{{launched}} de {{total}} perfis iniciados"
+      "finishedBody": "{{launched}} de {{total}} perfis iniciados",
+      "confirmTitle_one": "Executar {{count}} perfil?",
+      "confirmTitle_other": "Executar {{count}} perfis?",
+      "confirmDescription_one": "Iniciar {{count}} perfil de uma vez pode consumir muitos recursos do sistema. Continuar?",
+      "confirmDescription_other": "Iniciar {{count}} perfis de uma vez pode consumir muitos recursos do sistema. Continuar?"
     },
     "bulkStop": {
-      "confirmTitle": "Parar {{count}} perfis?",
-      "confirmDescription": "Parar {{count}} perfis em execução?",
       "confirmButton": "Parar {{count}}",
-      "noneToStop": "Nenhum perfil selecionado para parar."
+      "noneToStop": "Nenhum perfil selecionado para parar.",
+      "confirmTitle_one": "Parar {{count}} perfil?",
+      "confirmTitle_other": "Parar {{count}} perfis?",
+      "confirmDescription_one": "Parar {{count}} perfil em execução?",
+      "confirmDescription_other": "Parar {{count}} perfis em execução?"
     },
     "sort": {
       "nameAsc": "Nome (A–Z)",
@@ -758,7 +762,8 @@
       "credentialsInClearBody": "Este tipo de proxy envia o nome de utilizador e a palavra-passe sem cifra. Base64 é uma codificação, não cifra. Considere-as expostas em qualquer rede que não controle.",
       "nullCipherHeading": "Esta cifra não cifra nada",
       "nullCipherBody": "O Shadowsocks nunca envia a palavra-passe pela rede, por isso não há aqui credenciais para expor. O que fica exposto é o tráfego: o endereço de cada site que alcança, e tudo o que envia, atravessam a rede legíveis. Escolha uma cifra real, como aes-256-gcm.",
-      "httpsTlsHint": "Este tipo exige um ponto de acesso de proxy que termine TLS. Normalmente os fornecedores publicam-no numa porta separada, e o certificado tem de ser válido."
+      "httpsTlsHint": "Este tipo exige um ponto de acesso de proxy que termine TLS. Normalmente os fornecedores publicam-no numa porta separada, e o certificado tem de ser válido.",
+      "hostInvalid": "Digite apenas um nome de host ou um endereço IP, sem http://, caminho, porta ou espaços"
     },
     "types": {
       "http": "HTTP",
@@ -1142,7 +1147,6 @@
       "remoteDescription": "Chame o endpoint MCP remoto diretamente ou adicione-o a um cliente que não está na lista.",
       "response": "Resposta",
       "language": "Linguagem",
-      "paid": "Requer um plano pago",
       "tokenIncluded": "O código copiado inclui seu token completo. Mantenha-o privado.",
       "credentialIncluded": "O código copiado inclui sua credencial completa. Mantenha-a privada.",
       "languages": {
@@ -1549,7 +1553,8 @@
       "remaining": "{{time}} restante",
       "filesProgress": "{{completed}}/{{total}} arquivos",
       "filesFailed": "{{count}} arquivo(s) com falha"
-    }
+    },
+    "region": "Notificações"
   },
   "errors": {
     "required": "Este campo é obrigatório",
@@ -2006,10 +2011,12 @@
     "assignGroupFailed": "Falha ao atribuir grupo de extensões",
     "bulkDelete": {
       "extensionsTitle": "Excluir extensões",
-      "extensionsDescription": "Excluir {{count}} extensões? {{names}}",
       "groupsTitle": "Excluir grupos de extensões",
-      "groupsDescription": "Excluir {{count}} grupos de extensões? {{names}}",
-      "confirmButton": "Excluir"
+      "confirmButton": "Excluir",
+      "extensionsDescription_one": "Excluir {{count}} extensão? {{names}}",
+      "extensionsDescription_other": "Excluir {{count}} extensões? {{names}}",
+      "groupsDescription_one": "Excluir {{count}} grupo de extensões? {{names}}",
+      "groupsDescription_other": "Excluir {{count}} grupos de extensões? {{names}}"
     },
     "source": {
       "label": "Origem",
@@ -3148,7 +3155,15 @@
     "syncEntitiesLoadFailed": "Não foi possível ler o que há para sincronizar: {{detail}}",
     "logFolderFailed": "Não foi possível abrir a pasta de logs: {{detail}}",
     "tagsLoadFailed": "Não foi possível carregar as tags: {{detail}}",
-    "synchronizerFailed": "O sincronizador não conseguiu fazer isto: {{detail}}"
+    "synchronizerFailed": "O sincronizador não conseguiu fazer isto: {{detail}}",
+    "profileProxyMissing": "O proxy usado por este perfil não existe mais. Escolha outro proxy no perfil antes de iniciar, ou o navegador se conectaria diretamente.",
+    "profileVpnMissing": "A VPN usada por este perfil não existe mais. Escolha outra VPN no perfil antes de iniciar, ou o navegador se conectaria diretamente.",
+    "proxyHostInvalid": "O host do proxy não é válido. Use apenas um nome de host ou um endereço IP, sem http://, caminho, porta ou espaços.",
+    "proxyPortInvalid": "A porta do proxy deve ser um número de 1 a 65535.",
+    "proxyTypeUnsupported": "O tipo de proxy \"{{type}}\" não é compatível.",
+    "vpnNameExists": "Já existe uma VPN chamada \"{{name}}\".",
+    "vpnImportInvalid": "Não foi possível importar a configuração da VPN: {{detail}}",
+    "dnsSourceInvalid": "\"{{source}}\" não é uma fonte de lista válida. Use um endereço http:// ou https://."
   },
   "rail": {
     "profiles": "Perfis",
@@ -3362,7 +3377,8 @@
       "stopAllRunning": "parar todos execução fechar encerrar",
       "focusSearch": "pesquisar buscar encontrar filtrar",
       "goBack": "voltar escape início"
-    }
+    },
+    "listLabel": "Comandos"
   },
   "shortcuts": {
     "openPalette": "Abrir paleta de comandos",
@@ -4738,7 +4754,6 @@
     "invalidFingerprint": "Configuração de impressão digital inválida",
     "invalidFingerprintDescription": "A configuração de impressão digital contém JSON inválido. Verifique suas configurações avançadas.",
     "saveFailed": "Falha ao salvar configuração",
-    "unknownError": "Ocorreu um erro desconhecido",
     "titleView": "Ver configurações de impressão digital - {{name}} ({{browser}})",
     "titleConfigure": "Configurar impressão digital - {{name}} ({{browser}})"
   },

@@ -565,8 +565,6 @@
       "placeholder": "https://example.com/track-launch"
     },
     "bulkRun": {
-      "confirmTitle": "{{count}} profil çalıştırılsın mı?",
-      "confirmDescription": "{{count}} profili aynı anda başlatmak çok fazla sistem kaynağı kullanabilir. Devam edilsin mi?",
       "confirmButton": "{{count}} Profili Çalıştır",
       "noneToRun": "Çalıştırılacak seçili profil yok.",
       "progress": "Başlatılıyor {{done}} / {{total}}",
@@ -574,13 +572,19 @@
       "showFailed": "Göster",
       "notStarted": "{{total}} başlatmadan {{count}} tanesi başlamadı",
       "finishedTitle": "Toplu başlatma bitti",
-      "finishedBody": "{{total}} profilden {{launched}} tanesi başlatıldı"
+      "finishedBody": "{{total}} profilden {{launched}} tanesi başlatıldı",
+      "confirmTitle_one": "{{count}} profil çalıştırılsın mı?",
+      "confirmTitle_other": "{{count}} profil çalıştırılsın mı?",
+      "confirmDescription_one": "{{count}} profili aynı anda başlatmak çok fazla sistem kaynağı kullanabilir. Devam edilsin mi?",
+      "confirmDescription_other": "{{count}} profili aynı anda başlatmak çok fazla sistem kaynağı kullanabilir. Devam edilsin mi?"
     },
     "bulkStop": {
-      "confirmTitle": "{{count}} profil durdurulsun mu?",
-      "confirmDescription": "Çalışan {{count}} profil durdurulsun mu?",
       "confirmButton": "{{count}} Profili Durdur",
-      "noneToStop": "Durdurulacak seçili profil yok."
+      "noneToStop": "Durdurulacak seçili profil yok.",
+      "confirmTitle_one": "{{count}} profil durdurulsun mu?",
+      "confirmTitle_other": "{{count}} profil durdurulsun mu?",
+      "confirmDescription_one": "Çalışan {{count}} profil durdurulsun mu?",
+      "confirmDescription_other": "Çalışan {{count}} profil durdurulsun mu?"
     },
     "sort": {
       "nameAsc": "Ad (A–Z)",
@@ -756,7 +760,8 @@
       "credentialsInClearBody": "Bu proxy türü kullanıcı adını ve parolayı şifrelemeden gönderir. Base64 bir kodlamadır, şifreleme değildir. Denetiminizde olmayan her ağda bunları açığa çıkmış sayın.",
       "nullCipherHeading": "Bu şifreleme algoritması hiçbir şeyi şifrelemez",
       "nullCipherBody": "Shadowsocks parolayı ağ üzerinden hiç göndermez, bu yüzden burada açığa çıkacak bir kimlik bilgisi yoktur. Bunun yerine trafiğin kendisi açığa çıkar: ulaştığınız her sitenin adresi ve gönderdiğiniz her şey ağ üzerinden okunabilir biçimde geçer. aes-256-gcm gibi gerçek bir şifreleme algoritması seçin.",
-      "httpsTlsHint": "Bu tür, TLS'i sonlandıran bir proxy uç noktası gerektirir. Sağlayıcılar bunu genellikle ayrı bir bağlantı noktasında yayımlar ve sertifikasının doğrulanması gerekir."
+      "httpsTlsHint": "Bu tür, TLS'i sonlandıran bir proxy uç noktası gerektirir. Sağlayıcılar bunu genellikle ayrı bir bağlantı noktasında yayımlar ve sertifikasının doğrulanması gerekir.",
+      "hostInvalid": "Yalnızca bir ana makine adı veya IP adresi girin; http://, yol, bağlantı noktası veya boşluk olmasın"
     },
     "types": {
       "http": "HTTP",
@@ -1131,7 +1136,6 @@
       "remoteDescription": "Uzak MCP uç noktasını doğrudan çağırın veya listede olmayan bir istemciye ekleyin.",
       "response": "Yanıt",
       "language": "Dil",
-      "paid": "Ücretli plan gerektirir",
       "tokenIncluded": "Kopyalanan kod tam token'ınızı içerir. Gizli tutun.",
       "credentialIncluded": "Kopyalanan kod tam kimlik bilginizi içerir. Gizli tutun.",
       "languages": {
@@ -1536,7 +1540,8 @@
       "remaining": "{{time}} kaldı",
       "filesProgress": "{{completed}}/{{total}} dosya",
       "filesFailed": "{{count}} dosya başarısız"
-    }
+    },
+    "region": "Bildirimler"
   },
   "errors": {
     "required": "Bu alan zorunludur",
@@ -1993,10 +1998,12 @@
     "assignGroupFailed": "Uzantı grubu atanamadı",
     "bulkDelete": {
       "extensionsTitle": "Uzantıları sil",
-      "extensionsDescription": "{{count}} uzantı silinsin mi? {{names}}",
       "groupsTitle": "Uzantı gruplarını sil",
-      "groupsDescription": "{{count}} uzantı grubu silinsin mi? {{names}}",
-      "confirmButton": "Sil"
+      "confirmButton": "Sil",
+      "extensionsDescription_one": "{{count}} uzantı silinsin mi? {{names}}",
+      "extensionsDescription_other": "{{count}} uzantı silinsin mi? {{names}}",
+      "groupsDescription_one": "{{count}} uzantı grubu silinsin mi? {{names}}",
+      "groupsDescription_other": "{{count}} uzantı grubu silinsin mi? {{names}}"
     },
     "source": {
       "label": "Kaynak",
@@ -3126,7 +3133,15 @@
     "syncEntitiesLoadFailed": "Senkronize edilecek öğeler okunamadı: {{detail}}",
     "logFolderFailed": "Günlük klasörü açılamadı: {{detail}}",
     "tagsLoadFailed": "Etiketler yüklenemedi: {{detail}}",
-    "synchronizerFailed": "Eşzamanlayıcı bu işlemi yapamadı: {{detail}}"
+    "synchronizerFailed": "Eşzamanlayıcı bu işlemi yapamadı: {{detail}}",
+    "profileProxyMissing": "Bu profilin kullandığı proxy artık yok. Başlatmadan önce profilde başka bir proxy seçin, aksi halde tarayıcı doğrudan bağlanırdı.",
+    "profileVpnMissing": "Bu profilin kullandığı VPN artık yok. Başlatmadan önce profilde başka bir VPN seçin, aksi halde tarayıcı doğrudan bağlanırdı.",
+    "proxyHostInvalid": "Proxy ana makinesi geçerli değil. Yalnızca bir ana makine adı veya IP adresi kullanın; http://, yol, bağlantı noktası veya boşluk olmasın.",
+    "proxyPortInvalid": "Proxy bağlantı noktası 1 ile 65535 arasında bir sayı olmalıdır.",
+    "proxyTypeUnsupported": "\"{{type}}\" proxy türü desteklenmiyor.",
+    "vpnNameExists": "\"{{name}}\" adlı bir VPN zaten var.",
+    "vpnImportInvalid": "VPN yapılandırması içe aktarılamadı: {{detail}}",
+    "dnsSourceInvalid": "\"{{source}}\" geçerli bir liste kaynağı değil. http:// veya https:// adresi kullanın."
   },
   "rail": {
     "profiles": "Profiller",
@@ -3340,7 +3355,8 @@
       "stopAllRunning": "durdur tümü çalışan kapat sonlandır",
       "focusSearch": "ara bul filtrele",
       "goBack": "geri escape ana sayfa"
-    }
+    },
+    "listLabel": "Komutlar"
   },
   "shortcuts": {
     "openPalette": "Komut paletini aç",
@@ -4688,7 +4704,6 @@
     "invalidFingerprint": "Geçersiz parmak izi yapılandırması",
     "invalidFingerprintDescription": "Parmak izi yapılandırması geçersiz JSON içeriyor. Lütfen gelişmiş ayarlarınızı kontrol edin.",
     "saveFailed": "Yapılandırma kaydedilemedi",
-    "unknownError": "Bilinmeyen bir hata oluştu",
     "titleView": "Parmak İzi Ayarlarını Görüntüle - {{name}} ({{browser}})",
     "titleConfigure": "Parmak İzi Ayarlarını Yapılandır - {{name}} ({{browser}})"
   },

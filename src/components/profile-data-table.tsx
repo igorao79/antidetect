@@ -3363,8 +3363,7 @@ export function ProfilesDataTable({
         cell: ({ row, table }) => {
           const meta = table.options.meta as TableMeta;
           const profile = row.original as BrowserProfile;
-          const rawName: string = row.getValue("name");
-          const name = getBrowserDisplayName(rawName);
+          const name: string = row.getValue("name");
           const runtime = getRowRuntime(profile, meta);
           const isCrossOsBlocked = isCrossOsProfile(profile);
           const isEditing =

@@ -3155,11 +3155,26 @@ test("a proxy's expiry is typed as a date or days, or picked in the calendar", a
       description: "30 days written as a date",
     });
 
-    // Something that is no date is kept and called out.
+    // Bare digits get the separators as they are typed.
+    await app.fillSelector("#proxy-expires-at", "1231");
+    assert.equal(await fieldValue(), "12/31");
+
+    // Something that is no date is kept, called out, and not saved.
     await app.fillSelector("#proxy-expires-at", "someday");
     await blurField();
     await app.waitForText(en.proxies.expiry.invalid.split(".")[0]);
     assert.equal(await fieldValue(), "someday");
+    await app.clickTextIn('[role="dialog"]', en.proxies.add, {
+      roles: ["button"],
+    });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    assert.equal(
+      (await app.invoke("get_stored_proxies")).some(
+        (proxy) => proxy.name === "E2E Expiry",
+      ),
+      false,
+      "an unreadable expiry keeps the form open",
+    );
 
     // The calendar: next month, the 15th.
     await app.clickSelector(`[aria-label="${en.proxies.expiry.openCalendar}"]`);
@@ -3189,8 +3204,12 @@ test("a proxy's expiry is typed as a date or days, or picked in the calendar", a
     });
     assert.equal(await fieldValue(), shown(fifteenth));
     assert.equal(
-      await app.visibleTextIncludes(en.proxies.expiry.invalid.split(".")[0]),
+      await app.execute(
+        `return document.querySelector("#proxy-expires-at-hint").textContent.includes(arguments[0]);`,
+        [en.proxies.expiry.invalid.split(".")[0]],
+      ),
       false,
+      "a pick clears the field's complaint",
     );
 
     // The keys: the picked day has the focus, the arrow moves it, Enter picks.

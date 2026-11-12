@@ -180,6 +180,14 @@ interface PendingUrl {
   url: string;
 }
 
+function isEmptySettingsSearch(target: HTMLElement | null): boolean {
+  return (
+    target instanceof HTMLInputElement &&
+    target.dataset.slot === "settings-search" &&
+    !target.value
+  );
+}
+
 export default function Home() {
   const { t } = useTranslation();
   const reducedMotion = useReducedMotion();
@@ -1029,7 +1037,12 @@ export default function Home() {
 
       for (const s of SHORTCUTS) {
         if (!matchesShortcut(s, e)) continue;
-        if (isTyping && s.id !== "openPalette" && s.id !== "openShortcuts") {
+        if (
+          isTyping &&
+          s.id !== "openPalette" &&
+          s.id !== "openShortcuts" &&
+          !(s.id === "goBack" && isEmptySettingsSearch(target))
+        ) {
           return;
         }
         if (s.id === "goBack") {
@@ -2113,7 +2126,6 @@ export default function Home() {
   const handleBulkGroupAssignment = useCallback(() => {
     if (selectedProfiles.length === 0) return;
     handleAssignProfilesToGroup(selectedProfiles);
-    setSelectedProfiles([]);
   }, [selectedProfiles, handleAssignProfilesToGroup]);
 
   const handleAssignExtensionGroup = useCallback((profileIds: string[]) => {
@@ -2124,12 +2136,12 @@ export default function Home() {
   const handleBulkExtensionGroupAssignment = useCallback(() => {
     if (selectedProfiles.length === 0) return;
     handleAssignExtensionGroup(selectedProfiles);
-    setSelectedProfiles([]);
   }, [selectedProfiles, handleAssignExtensionGroup]);
 
   const handleExtensionGroupAssignmentComplete = useCallback(() => {
     setExtensionGroupAssignmentDialogOpen(false);
     setSelectedProfilesForExtensionGroup([]);
+    setSelectedProfiles([]);
   }, []);
 
   const handleAssignProfilesToProxy = useCallback((profileIds: string[]) => {
@@ -2140,7 +2152,6 @@ export default function Home() {
   const handleBulkProxyAssignment = useCallback(() => {
     if (selectedProfiles.length === 0) return;
     handleAssignProfilesToProxy(selectedProfiles);
-    setSelectedProfiles([]);
   }, [selectedProfiles, handleAssignProfilesToProxy]);
 
   const handleBulkProxyDistribution = useCallback(() => {
@@ -3204,7 +3215,11 @@ export default function Home() {
                       void handleDuplicateProfile(profile)
                     }
                     onLockProfile={(profile) => void handleLockProfile(profile)}
-                    onRunRemote={(profile) => void handleRunRemote(profile)}
+                    onRunRemote={
+                      DONUT_CLOUD
+                        ? (profile) => void handleRunRemote(profile)
+                        : undefined
+                    }
                   />
                   <TipCoachMark
                     flow={tipsFlow}

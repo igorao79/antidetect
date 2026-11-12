@@ -565,8 +565,6 @@
       "placeholder": "https://example.com/track-launch"
     },
     "bulkRun": {
-      "confirmTitle": "{{count}} Profile starten?",
-      "confirmDescription": "Wenn Sie {{count}} Profile gleichzeitig starten, kann das viele Systemressourcen beanspruchen. Fortfahren?",
       "confirmButton": "{{count}} starten",
       "noneToRun": "Keine ausgewählten Profile zum Starten.",
       "progress": "Starte {{done}} von {{total}}",
@@ -574,13 +572,19 @@
       "showFailed": "Anzeigen",
       "notStarted": "{{count}} von {{total}} Starts nicht begonnen",
       "finishedTitle": "Massenstart abgeschlossen",
-      "finishedBody": "{{launched}} von {{total}} Profilen gestartet"
+      "finishedBody": "{{launched}} von {{total}} Profilen gestartet",
+      "confirmTitle_one": "{{count}} Profil starten?",
+      "confirmTitle_other": "{{count}} Profile starten?",
+      "confirmDescription_one": "Wenn Sie {{count}} Profil gleichzeitig starten, kann das viele Systemressourcen beanspruchen. Fortfahren?",
+      "confirmDescription_other": "Wenn Sie {{count}} Profile gleichzeitig starten, kann das viele Systemressourcen beanspruchen. Fortfahren?"
     },
     "bulkStop": {
-      "confirmTitle": "{{count}} Profile stoppen?",
-      "confirmDescription": "{{count}} laufende Profile stoppen?",
       "confirmButton": "{{count}} stoppen",
-      "noneToStop": "Keine ausgewählten Profile zum Stoppen."
+      "noneToStop": "Keine ausgewählten Profile zum Stoppen.",
+      "confirmTitle_one": "{{count}} Profil stoppen?",
+      "confirmTitle_other": "{{count}} Profile stoppen?",
+      "confirmDescription_one": "{{count}} laufendes Profil stoppen?",
+      "confirmDescription_other": "{{count}} laufende Profile stoppen?"
     },
     "sort": {
       "nameAsc": "Name (A–Z)",
@@ -756,7 +760,8 @@
       "credentialsInClearBody": "Dieser Proxytyp sendet Benutzername und Passwort unverschlüsselt. Base64 ist eine Kodierung, keine Verschlüsselung. Betrachten Sie die Daten in jedem Netzwerk, das Sie nicht kontrollieren, als offengelegt.",
       "nullCipherHeading": "Diese Methode verschlüsselt nichts",
       "nullCipherBody": "Shadowsocks sendet das Passwort nie über das Netzwerk, daher gibt es hier keine Zugangsdaten, die offengelegt werden könnten. Eine Null-Methode legt stattdessen den Datenverkehr offen: Die Adresse jeder aufgerufenen Seite und alles, was Sie senden, gehen lesbar über das Netzwerk. Wählen Sie eine echte Methode, z. B. aes-256-gcm.",
-      "httpsTlsHint": "Dieser Typ benötigt einen Proxy-Endpunkt, der TLS terminiert. Anbieter stellen ihn meist als eigenen Port bereit, und sein Zertifikat muss gültig sein."
+      "httpsTlsHint": "Dieser Typ benötigt einen Proxy-Endpunkt, der TLS terminiert. Anbieter stellen ihn meist als eigenen Port bereit, und sein Zertifikat muss gültig sein.",
+      "hostInvalid": "Nur einen Hostnamen oder eine IP-Adresse eingeben, ohne http://, Pfad, Port oder Leerzeichen"
     },
     "types": {
       "http": "HTTP",
@@ -1131,7 +1136,6 @@
       "remoteDescription": "Rufe den Remote-MCP-Endpunkt direkt auf oder füge ihn einem Client hinzu, der nicht in der Liste steht.",
       "response": "Antwort",
       "language": "Sprache",
-      "paid": "Erfordert einen kostenpflichtigen Plan",
       "tokenIncluded": "Kopierter Code enthält dein vollständiges Token. Halte es geheim.",
       "credentialIncluded": "Kopierter Code enthält deine vollständigen Zugangsdaten. Halte sie geheim.",
       "languages": {
@@ -1536,7 +1540,8 @@
       "remaining": "Noch {{time}}",
       "filesProgress": "{{completed}}/{{total}} Dateien",
       "filesFailed": "{{count}} Datei(en) fehlgeschlagen"
-    }
+    },
+    "region": "Benachrichtigungen"
   },
   "errors": {
     "required": "Dieses Feld ist erforderlich",
@@ -1993,10 +1998,12 @@
     "assignGroupFailed": "Die Erweiterungsgruppe konnte nicht zugewiesen werden",
     "bulkDelete": {
       "extensionsTitle": "Erweiterungen löschen",
-      "extensionsDescription": "{{count}} Erweiterungen löschen? {{names}}",
       "groupsTitle": "Erweiterungsgruppen löschen",
-      "groupsDescription": "{{count}} Erweiterungsgruppen löschen? {{names}}",
-      "confirmButton": "Löschen"
+      "confirmButton": "Löschen",
+      "extensionsDescription_one": "{{count}} Erweiterung löschen? {{names}}",
+      "extensionsDescription_other": "{{count}} Erweiterungen löschen? {{names}}",
+      "groupsDescription_one": "{{count}} Erweiterungsgruppe löschen? {{names}}",
+      "groupsDescription_other": "{{count}} Erweiterungsgruppen löschen? {{names}}"
     },
     "source": {
       "label": "Quelle",
@@ -3126,7 +3133,15 @@
     "syncEntitiesLoadFailed": "Konnte nicht ermitteln, was synchronisiert werden kann: {{detail}}",
     "logFolderFailed": "Konnte den Protokollordner nicht öffnen: {{detail}}",
     "tagsLoadFailed": "Konnte die Tags nicht laden: {{detail}}",
-    "synchronizerFailed": "Der Synchronizer konnte das nicht ausführen: {{detail}}"
+    "synchronizerFailed": "Der Synchronizer konnte das nicht ausführen: {{detail}}",
+    "profileProxyMissing": "Der Proxy, den dieses Profil verwendet, existiert nicht mehr. Wählen Sie vor dem Start einen anderen Proxy im Profil, sonst würde der Browser direkt verbinden.",
+    "profileVpnMissing": "Das VPN, das dieses Profil verwendet, existiert nicht mehr. Wählen Sie vor dem Start ein anderes VPN im Profil, sonst würde der Browser direkt verbinden.",
+    "proxyHostInvalid": "Der Proxy-Host ist ungültig. Verwenden Sie nur einen Hostnamen oder eine IP-Adresse, ohne http://, Pfad, Port oder Leerzeichen.",
+    "proxyPortInvalid": "Der Proxy-Port muss eine Zahl von 1 bis 65535 sein.",
+    "proxyTypeUnsupported": "Der Proxy-Typ „{{type}}“ wird nicht unterstützt.",
+    "vpnNameExists": "Ein VPN mit dem Namen „{{name}}“ existiert bereits.",
+    "vpnImportInvalid": "Die VPN-Konfiguration konnte nicht importiert werden: {{detail}}",
+    "dnsSourceInvalid": "„{{source}}“ ist keine gültige Listenquelle. Verwenden Sie eine http://- oder https://-Adresse."
   },
   "rail": {
     "profiles": "Profile",
@@ -3340,7 +3355,8 @@
       "stopAllRunning": "stoppen alle laufend beenden schließen",
       "focusSearch": "suchen finden filtern",
       "goBack": "zurück escape start"
-    }
+    },
+    "listLabel": "Befehle"
   },
   "shortcuts": {
     "openPalette": "Befehlspalette öffnen",
@@ -4688,7 +4704,6 @@
     "invalidFingerprint": "Ungültige Fingerprint-Konfiguration",
     "invalidFingerprintDescription": "Die Fingerprint-Konfiguration enthält ungültiges JSON. Bitte prüfe die erweiterten Einstellungen.",
     "saveFailed": "Konfiguration konnte nicht gespeichert werden",
-    "unknownError": "Ein unbekannter Fehler ist aufgetreten",
     "titleView": "Fingerprint-Einstellungen anzeigen – {{name}} ({{browser}})",
     "titleConfigure": "Fingerprint-Einstellungen konfigurieren – {{name}} ({{browser}})"
   },

@@ -380,6 +380,14 @@ export type BackendErrorCode =
   | "TRASH_ENTRY_NOT_FOUND"
   | "TRASH_RESTORE_CONFLICT"
   | "ENTITY_IN_USE"
+  | "PROFILE_PROXY_MISSING"
+  | "PROFILE_VPN_MISSING"
+  | "PROXY_HOST_INVALID"
+  | "PROXY_PORT_INVALID"
+  | "PROXY_TYPE_UNSUPPORTED"
+  | "VPN_NAME_EXISTS"
+  | "VPN_IMPORT_INVALID"
+  | "DNS_SOURCE_INVALID"
   | "VPN_KEY_UNREADABLE"
   // Synchronised windows.
   | "SYNC_SESSION_NOT_FOUND"
@@ -1258,6 +1266,30 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       return t("backendErrors.trashEntryNotFound");
     case "TRASH_RESTORE_CONFLICT":
       return t("backendErrors.trashRestoreConflict");
+    case "PROFILE_PROXY_MISSING":
+      return t("backendErrors.profileProxyMissing");
+    case "PROFILE_VPN_MISSING":
+      return t("backendErrors.profileVpnMissing");
+    case "PROXY_HOST_INVALID":
+      return t("backendErrors.proxyHostInvalid");
+    case "PROXY_PORT_INVALID":
+      return t("backendErrors.proxyPortInvalid");
+    case "PROXY_TYPE_UNSUPPORTED":
+      return t("backendErrors.proxyTypeUnsupported", {
+        type: parsed.params?.type ?? "",
+      });
+    case "VPN_NAME_EXISTS":
+      return t("backendErrors.vpnNameExists", {
+        name: parsed.params?.name ?? "",
+      });
+    case "VPN_IMPORT_INVALID":
+      return t("backendErrors.vpnImportInvalid", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "DNS_SOURCE_INVALID":
+      return t("backendErrors.dnsSourceInvalid", {
+        source: parsed.params?.source ?? "",
+      });
     case "ENTITY_IN_USE":
       return t("backendErrors.entityInUse", {
         count: Number(parsed.params?.count ?? 0),

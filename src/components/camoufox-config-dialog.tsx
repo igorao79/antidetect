@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { WayfernConfigForm } from "@/components/wayfern-config-form";
+import { translateBackendError } from "@/lib/backend-errors";
 import type {
   BrowserProfile,
   CamoufoxConfig,
@@ -114,10 +115,7 @@ export function CamoufoxConfigDialog({
       console.error("Failed to save config:", error);
       const { toast } = await import("sonner");
       toast.error(t("camoufoxDialog.saveFailed"), {
-        description:
-          error instanceof Error
-            ? error.message
-            : t("camoufoxDialog.unknownError"),
+        description: translateBackendError(t, error),
       });
     } finally {
       setIsSaving(false);

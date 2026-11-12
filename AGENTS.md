@@ -107,7 +107,14 @@ Fork-specific rules:
   layer and the existing title/badge/colour layer are macOS-only.
 - A configured proxy or VPN is probed live before every launch, even with "Block launches
   without a proxy or VPN" off; the switch additionally blocks a profile that declares no route
-  at all. A route no probe can judge passes.
+  at all. A route no probe can judge passes. A profile whose `proxy_id` or `vpn_id` names one that
+  is no longer stored never launches direct: every launch path refuses with
+  `PROFILE_PROXY_MISSING` / `PROFILE_VPN_MISSING` (`browser_runner.rs`), and deleting a proxy or
+  VPN that profiles use is refused with `ENTITY_IN_USE` everywhere, as the Network page already
+  did. Stored proxies are validated in `normalize_proxy_settings`: a host is an IP address or a
+  name (no scheme, path, port or spaces; `src/lib/proxy-host.ts` mirrors it in the form), port
+  1-65535 and a known type (`PROXY_HOST_INVALID`, `PROXY_PORT_INVALID`,
+  `PROXY_TYPE_UNSUPPORTED`), so JSON and TXT imports skip such entries.
 - Proxy expiry (`StoredProxy.expires_at`, unix seconds, synced; `src/lib/proxy-expiry.ts`,
   `proxy-expiry.tsx`, `proxy-expiry-calendar.tsx`): optional in the proxy form, valid through
   the end of that local day. The field takes a date typed in the locale's order (the year may be
@@ -543,6 +550,10 @@ and the full suite additionally require Docker plus `RESIDENTIAL_PROXY_URL_ONE_H
 `--no-build` only when the frontend, Rust app, sidecar, and WebDriver binaries are already current.
 Keep failed artifacts and inspect the per-session app/driver logs and screenshot before changing
 assertions.
+
+`DONUT_E2E_FILES=a.test.mjs,b.test.mjs` runs those files from `e2e/tests` instead of the suite's
+(with any `--suite`, for its build and services). Exploratory click-through scripts live there as
+`explore-*.test.mjs`, which git ignores; rerun them after a fix round.
 
 The `donut-sync` row is the one suite the root `pnpm test` does not cover (`test:sync-e2e` runs
 the Rust sync harness only). It needs the S3 server in `donut-sync/docker-compose.test.yml`

@@ -105,28 +105,28 @@ pub fn list(profile_id: &str) -> Result<Vec<TotpEntry>, String> {
   Ok(read(profile_id)?.iter().map(view).collect())
 }
 
+fn entry_label(typed: &str, key: &TotpKey, existing: usize) -> String {
+  let typed = typed.trim();
+  if !typed.is_empty() {
+    return typed.to_string();
+  }
+  key
+    .issuer
+    .clone()
+    .or_else(|| key.account.clone())
+    .unwrap_or_else(|| format!("2FA {}", existing + 1))
+}
+
 pub fn add(profile_id: &str, label: &str, key: &str) -> Result<TotpEntry, String> {
   ensure_profile(profile_id)?;
   let key = TotpKey::parse(key).map_err(|_| crate::backend_error("TOTP_KEY_INVALID"))?;
-  let label = label.trim();
-  let label = if label.is_empty() {
-    key
-      .issuer
-      .clone()
-      .or_else(|| key.account.clone())
-      .unwrap_or_default()
-  } else {
-    label.to_string()
-  };
-  if label.is_empty() {
-    return Err(crate::backend_error("NAME_CANNOT_BE_EMPTY"));
-  }
-  if label.chars().count() > MAX_LABEL_CHARS {
-    return Err(crate::backend_error("TOTP_LABEL_TOO_LONG"));
-  }
   let mut entries = read(profile_id)?;
   if entries.len() >= MAX_ENTRIES {
     return Err(crate::backend_error("TOTP_LIMIT_REACHED"));
+  }
+  let label = entry_label(label, &key, entries.len());
+  if label.chars().count() > MAX_LABEL_CHARS {
+    return Err(crate::backend_error("TOTP_LABEL_TOO_LONG"));
   }
   let entry = StoredEntry {
     id: uuid::Uuid::new_v4().to_string(),
@@ -243,6 +243,16 @@ mod tests {
     assert!(remove(&profile, "e1")
       .unwrap_err()
       .contains("TOTP_ENTRY_NOT_FOUND"));
+  }
+
+  #[test]
+  fn a_bare_secret_without_a_name_gets_a_numbered_label() {
+    let bare = TotpKey::parse("JBSWY3DPEHPK3PXP").unwrap();
+    assert_eq!(entry_label("  ", &bare, 2), "2FA 3");
+    assert_eq!(entry_label(" Shop ", &bare, 2), "Shop");
+    let link =
+      TotpKey::parse("otpauth://totp/Shop:alice?secret=JBSWY3DPEHPK3PXP&issuer=Shop").unwrap();
+    assert_eq!(entry_label("", &link, 0), "Shop");
   }
 
   #[test]

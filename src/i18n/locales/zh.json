@@ -565,8 +565,6 @@
       "placeholder": "https://example.com/track-launch"
     },
     "bulkRun": {
-      "confirmTitle": "运行 {{count}} 个配置文件？",
-      "confirmDescription": "一次启动 {{count}} 个配置文件可能会占用大量系统资源。是否继续？",
       "confirmButton": "运行 {{count}} 个",
       "noneToRun": "没有选中可运行的配置文件。",
       "progress": "正在启动 {{done}} / {{total}}",
@@ -574,13 +572,19 @@
       "showFailed": "显示",
       "notStarted": "{{total}} 个启动中有 {{count}} 个未开始",
       "finishedTitle": "批量启动已完成",
-      "finishedBody": "已启动 {{launched}} / {{total}} 个配置文件"
+      "finishedBody": "已启动 {{launched}} / {{total}} 个配置文件",
+      "confirmTitle_one": "运行 {{count}} 个配置文件？",
+      "confirmTitle_other": "运行 {{count}} 个配置文件？",
+      "confirmDescription_one": "一次启动 {{count}} 个配置文件可能会占用大量系统资源。是否继续？",
+      "confirmDescription_other": "一次启动 {{count}} 个配置文件可能会占用大量系统资源。是否继续？"
     },
     "bulkStop": {
-      "confirmTitle": "停止 {{count}} 个配置文件？",
-      "confirmDescription": "停止 {{count}} 个正在运行的配置文件？",
       "confirmButton": "停止 {{count}} 个",
-      "noneToStop": "没有选中可停止的配置文件。"
+      "noneToStop": "没有选中可停止的配置文件。",
+      "confirmTitle_one": "停止 {{count}} 个配置文件？",
+      "confirmTitle_other": "停止 {{count}} 个配置文件？",
+      "confirmDescription_one": "停止 {{count}} 个正在运行的配置文件？",
+      "confirmDescription_other": "停止 {{count}} 个正在运行的配置文件？"
     },
     "sort": {
       "nameAsc": "名称 (A–Z)",
@@ -756,7 +760,8 @@
       "credentialsInClearBody": "此代理类型发送用户名和密码时不加密。Base64 是编码，不是加密。在你无法控制的网络上，请把它们视为已泄露。",
       "nullCipherHeading": "此加密方式不加密任何内容",
       "nullCipherBody": "Shadowsocks 从不通过网络发送密码，因此这里没有会泄露的凭据。暴露的是流量本身：你访问的每个站点的地址，以及你发送的一切，都会以可读形式经过网络。请选择真正的加密方式，例如 aes-256-gcm。",
-      "httpsTlsHint": "此类型需要一个终止 TLS 的代理端点。服务商通常将其发布在单独的端口上，并且证书必须能够验证。"
+      "httpsTlsHint": "此类型需要一个终止 TLS 的代理端点。服务商通常将其发布在单独的端口上，并且证书必须能够验证。",
+      "hostInvalid": "只输入主机名或 IP 地址，不要包含 http://、路径、端口或空格"
     },
     "types": {
       "http": "HTTP",
@@ -1131,7 +1136,6 @@
       "remoteDescription": "直接调用远程 MCP 端点，或将其添加到列表中没有的客户端。",
       "response": "响应",
       "language": "语言",
-      "paid": "需要付费套餐",
       "tokenIncluded": "复制的代码包含你的完整令牌。请妥善保管。",
       "credentialIncluded": "复制的代码包含你的完整凭据。请妥善保管。",
       "languages": {
@@ -1536,7 +1540,8 @@
       "remaining": "剩余 {{time}}",
       "filesProgress": "{{completed}}/{{total}} 个文件",
       "filesFailed": "{{count}} 个文件失败"
-    }
+    },
+    "region": "通知"
   },
   "errors": {
     "required": "此字段为必填项",
@@ -1993,10 +1998,12 @@
     "assignGroupFailed": "分配扩展组失败",
     "bulkDelete": {
       "extensionsTitle": "删除扩展",
-      "extensionsDescription": "删除 {{count}} 个扩展？{{names}}",
       "groupsTitle": "删除扩展组",
-      "groupsDescription": "删除 {{count}} 个扩展组？{{names}}",
-      "confirmButton": "删除"
+      "confirmButton": "删除",
+      "extensionsDescription_one": "删除 {{count}} 个扩展？{{names}}",
+      "extensionsDescription_other": "删除 {{count}} 个扩展？{{names}}",
+      "groupsDescription_one": "删除 {{count}} 个扩展组？{{names}}",
+      "groupsDescription_other": "删除 {{count}} 个扩展组？{{names}}"
     },
     "source": {
       "label": "来源",
@@ -3126,7 +3133,15 @@
     "syncEntitiesLoadFailed": "无法读取可同步的内容：{{detail}}",
     "logFolderFailed": "无法打开日志文件夹：{{detail}}",
     "tagsLoadFailed": "无法加载标签：{{detail}}",
-    "synchronizerFailed": "同步器无法完成此操作：{{detail}}"
+    "synchronizerFailed": "同步器无法完成此操作：{{detail}}",
+    "profileProxyMissing": "此配置文件使用的代理已不存在。启动前请在配置文件中选择其他代理，否则浏览器会直接连接。",
+    "profileVpnMissing": "此配置文件使用的 VPN 已不存在。启动前请在配置文件中选择其他 VPN，否则浏览器会直接连接。",
+    "proxyHostInvalid": "代理主机无效。只能使用主机名或 IP 地址，不要包含 http://、路径、端口或空格。",
+    "proxyPortInvalid": "代理端口必须是 1 到 65535 之间的数字。",
+    "proxyTypeUnsupported": "不支持代理类型“{{type}}”。",
+    "vpnNameExists": "已存在名为“{{name}}”的 VPN。",
+    "vpnImportInvalid": "无法导入 VPN 配置：{{detail}}",
+    "dnsSourceInvalid": "“{{source}}”不是有效的列表来源。请使用 http:// 或 https:// 地址。"
   },
   "rail": {
     "profiles": "配置文件",
@@ -3340,7 +3355,8 @@
       "stopAllRunning": "停止 全部 运行 关闭 退出",
       "focusSearch": "搜索 查找 筛选",
       "goBack": "返回 退出 主页"
-    }
+    },
+    "listLabel": "命令"
   },
   "shortcuts": {
     "openPalette": "打开命令面板",
@@ -4688,7 +4704,6 @@
     "invalidFingerprint": "无效的指纹配置",
     "invalidFingerprintDescription": "指纹配置包含无效的 JSON。请检查高级设置。",
     "saveFailed": "保存配置失败",
-    "unknownError": "发生未知错误",
     "titleView": "查看指纹设置 - {{name}} ({{browser}})",
     "titleConfigure": "配置指纹设置 - {{name}} ({{browser}})"
   },

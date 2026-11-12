@@ -111,6 +111,9 @@ export function DnsBlocklistDialog({
       await loadStatuses();
     } catch (e) {
       console.error("Failed to refresh blocklists:", e);
+      toast.error(t("dnsBlocklist.refreshFailed"), {
+        description: translateBackendError(t, e),
+      });
     } finally {
       setIsRefreshing(false);
     }

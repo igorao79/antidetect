@@ -687,6 +687,13 @@ pub async fn get_custom_dns_config() -> Result<CustomDnsConfig, String> {
   Ok(CustomDnsConfig::load())
 }
 
+fn is_http_source(source: &str) -> bool {
+  let rest = source
+    .strip_prefix("https://")
+    .or_else(|| source.strip_prefix("http://"));
+  rest.is_some_and(|r| !r.is_empty() && !r.starts_with('/') && !r.contains(char::is_whitespace))
+}
+
 /// Normalize, persist, recompile and announce a custom DNS config. Shared by
 /// the set and import commands so both apply the same normalization and the
 /// same side effects — a step added here reaches both.
@@ -696,6 +703,11 @@ async fn persist_custom_config(mut config: CustomDnsConfig) -> Result<CustomDnsC
     .map(|s| s.trim().to_string())
     .filter(|s| !s.is_empty())
     .collect();
+  if let Some(bad) = config.sources.iter().find(|s| !is_http_source(s)) {
+    return Err(
+      serde_json::json!({ "code": "DNS_SOURCE_INVALID", "params": { "source": bad } }).to_string(),
+    );
+  }
   config.block_domains = config
     .block_domains
     .iter()
@@ -807,6 +819,17 @@ mod tests {
     assert_eq!(reparsed.block_domains, cfg.block_domains);
     assert_eq!(reparsed.allow_domains, cfg.allow_domains);
     assert_eq!(reparsed.sources, cfg.sources);
+  }
+
+  #[test]
+  fn test_is_http_source() {
+    assert!(is_http_source("https://example.com/list.txt"));
+    assert!(is_http_source("http://example.com"));
+    assert!(!is_http_source("garbage"));
+    assert!(!is_http_source("ftp://example.com/x"));
+    assert!(!is_http_source("https://"));
+    assert!(!is_http_source("https:///x"));
+    assert!(!is_http_source("https://a b.com"));
   }
 
   #[test]

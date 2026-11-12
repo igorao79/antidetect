@@ -25,7 +25,12 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { translateBackendError } from "@/lib/backend-errors";
-import { dateInputFromExpiry, expiryFromDateInput } from "@/lib/proxy-expiry";
+import {
+  dateInputFromExpiry,
+  expiryExample,
+  expiryFromDateInput,
+} from "@/lib/proxy-expiry";
+import { isValidProxyHost } from "@/lib/proxy-host";
 import { looksLikeRotationUrl } from "@/lib/proxy-rotation";
 import {
   isFirstHopEncrypted,
@@ -149,7 +154,7 @@ export function ProxyFormDialog({
   editingProxy,
   onCreated,
 }: ProxyFormDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<ProxyFormData>(DEFAULT_FORM);
   // A share link is read by the Rust parser alone: VMess hides its server in
@@ -171,11 +176,13 @@ export function ProxyFormDialog({
   const resetForm = useCallback(() => {
     setForm(DEFAULT_FORM);
   }, []);
+  const [isExpiryValid, setIsExpiryValid] = useState(true);
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
+    setIsExpiryValid(true);
 
     if (!editingProxy) {
       resetForm();
@@ -226,6 +233,11 @@ export function ProxyFormDialog({
       return;
     }
 
+    if (!isXray && !isValidProxyHost(form.host)) {
+      toast.error(t("proxies.form.hostInvalid"));
+      return;
+    }
+
     if (
       canonicalType === "ss" &&
       (!form.username.trim() || !form.password.trim())
@@ -240,6 +252,13 @@ export function ProxyFormDialog({
       return;
     }
 
+    if (!isExpiryValid) {
+      toast.error(
+        t("proxies.expiry.invalid", { example: expiryExample(i18n.language) }),
+      );
+      document.getElementById("proxy-expires-at")?.focus();
+      return;
+    }
     const expiresAt = expiryFromDateInput(form.expires_on);
 
     setIsSubmitting(true);
@@ -308,7 +327,17 @@ export function ProxyFormDialog({
     } finally {
       setIsSubmitting(false);
     }
-  }, [editingProxy, form, onClose, onCreated, t, linkError, linkSummary]);
+  }, [
+    editingProxy,
+    form,
+    onClose,
+    onCreated,
+    t,
+    i18n.language,
+    isExpiryValid,
+    linkError,
+    linkSummary,
+  ]);
 
   const handleClose = useCallback(() => {
     if (!isSubmitting) {
@@ -444,14 +473,30 @@ export function ProxyFormDialog({
     form.name.trim() &&
     (isXray
       ? linkSummary !== null
-      : form.host.trim() &&
+      : isValidProxyHost(form.host) &&
         form.port > 0 &&
         form.port <= 65535 &&
         (!isShadowsocks || (form.username.trim() && form.password.trim())));
 
+  const hostInvalid = form.host.trim() !== "" && !isValidProxyHost(form.host);
+
+  const submitOnEnter = (event: React.KeyboardEvent) => {
+    if (
+      event.key !== "Enter" ||
+      event.nativeEvent.isComposing ||
+      !(event.target instanceof HTMLInputElement) ||
+      !isFormValid ||
+      isSubmitting
+    ) {
+      return;
+    }
+    event.preventDefault();
+    void handleSubmit();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" onKeyDown={submitOnEnter}>
         <DialogHeader>
           <DialogTitle>
             {editingProxy ? t("proxies.edit") : t("proxies.add")}
@@ -575,8 +620,20 @@ export function ProxyFormDialog({
                     }}
                     onPaste={handleProxyPaste}
                     placeholder={t("proxies.form.hostPlaceholder")}
+                    aria-invalid={hostInvalid}
+                    aria-describedby={
+                      hostInvalid ? "proxy-host-error" : undefined
+                    }
                     disabled={isSubmitting}
                   />
+                  {hostInvalid && (
+                    <p
+                      id="proxy-host-error"
+                      className="text-xs text-destructive-text"
+                    >
+                      {t("proxies.form.hostInvalid")}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid gap-2">
@@ -686,6 +743,7 @@ export function ProxyFormDialog({
             onChange={(expires_on) => {
               setForm((previous) => ({ ...previous, expires_on }));
             }}
+            onValidityChange={setIsExpiryValid}
             disabled={isSubmitting}
           />
         </div>

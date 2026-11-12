@@ -20,7 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ProBadge } from "@/components/ui/pro-badge";
 import { SECTION_LABEL_CLASS } from "@/components/ui/settings-panel";
 import { useMotionAllowed } from "@/hooks/use-motion-allowed";
 import type { SnippetLanguage } from "@/lib/api-examples";
@@ -46,7 +45,6 @@ export interface CodeExample {
   title: string;
   description: string;
   method?: string;
-  paid?: boolean;
   snippets: Partial<Record<SnippetLanguage, { display: string; copy: string }>>;
   response?: string;
   live?: LiveRequest;
@@ -156,7 +154,6 @@ export function CodeExamplesDialog({
                     <span className="min-w-0 flex-1 truncate">
                       {example.title}
                     </span>
-                    {example.paid && <ProBadge />}
                   </TabsPrimitive.Trigger>
                 );
               })}
@@ -188,11 +185,6 @@ export function CodeExamplesDialog({
                   >
                     <h3 className="flex items-center gap-2 text-sm font-medium">
                       {example.title}
-                      {example.paid && (
-                        <span className="text-xs font-normal text-muted-foreground">
-                          {t("integrations.examples.paid")}
-                        </span>
-                      )}
                     </h3>
                     <p className="text-xs leading-relaxed text-muted-foreground">
                       {example.description}

@@ -179,6 +179,8 @@ pub struct CookieCopyRequest {
 pub struct SelectedCookie {
   pub domain: String,
   pub name: String,
+  #[serde(default)]
+  pub path: Option<String>,
 }
 
 /// Result of a copy operation
@@ -1288,7 +1290,9 @@ impl CookieManager {
             if s.name.is_empty() {
               c.domain == s.domain
             } else {
-              c.domain == s.domain && c.name == s.name
+              c.domain == s.domain
+                && c.name == s.name
+                && s.path.as_ref().is_none_or(|path| *path == c.path)
             }
           })
         })

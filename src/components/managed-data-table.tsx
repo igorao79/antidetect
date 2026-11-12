@@ -108,7 +108,10 @@ const LABELS: Record<EntityTableId, Record<string, string>> = {
 function entitySearch(row: Entity) {
   const parts = [row.name];
   if ("proxy_settings" in row)
-    parts.push(row.proxy_settings.host, row.proxy_settings.proxy_type);
+    parts.push(
+      `${row.proxy_settings.host}:${row.proxy_settings.port}`,
+      row.proxy_settings.proxy_type,
+    );
   if ("file_name" in row) parts.push(row.file_name, row.manifest_name ?? "");
   return parts.join(" ");
 }

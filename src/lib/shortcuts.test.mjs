@@ -56,6 +56,17 @@ test("a keydown without a key matches nothing", () => {
   assert.equal(matchesGroupDigit(keyEvent("3", { mod: true })), 3);
 });
 
+test("a letter shortcut matches the physical key on a Cyrillic layout", () => {
+  const palette = SHORTCUTS.find((s) => s.id === "openPalette");
+  const cyrillic = { ...keyEvent("л", { mod: true }), code: "KeyK" };
+  assert.equal(matchesShortcut(palette, cyrillic), true);
+  // A Latin layout keeps matching by key, so Dvorak's K on another code stays K.
+  const dvorak = { ...keyEvent("k", { mod: true }), code: "KeyV" };
+  assert.equal(matchesShortcut(palette, dvorak), true);
+  const otherLatin = { ...keyEvent("v", { mod: true }), code: "KeyK" };
+  assert.equal(matchesShortcut(palette, otherLatin), false);
+});
+
 test("no two shortcuts share a chord", () => {
   const seen = new Map();
   for (const s of SHORTCUTS) {

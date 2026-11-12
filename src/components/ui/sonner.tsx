@@ -1,15 +1,18 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 import { useTheme } from "@/components/theme-provider";
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme();
+  const { t } = useTranslation();
 
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="group toaster"
+      customAriaLabel={t("toasts.region")}
       style={
         {
           "--normal-bg": "var(--card)",

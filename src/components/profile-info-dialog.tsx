@@ -1137,6 +1137,7 @@ function ProfileInfoLayout({
   visibleActions,
   t,
 }: ProfileInfoLayoutProps) {
+  const { i18n } = useTranslation();
   const contentId = React.useId();
   const motionAllowed = useMotionAllowed();
   const [unlocked, recheckUnlocked] = useProfileUnlocked(profile, isRunning);
@@ -1569,7 +1570,7 @@ function ProfileInfoLayout({
                       value={
                         profile.created_at
                           ? new Date(profile.created_at * 1000).toLocaleString(
-                              undefined,
+                              i18n.language,
                               { dateStyle: "medium", timeStyle: "short" },
                             )
                           : t("profileInfo.values.unknown")
@@ -3259,77 +3260,83 @@ function SecuritySectionInline({
         </div>
       )}
 
-      <div className="flex flex-col gap-2">
-        {(mode === "change" || mode === "remove") && (
-          <Input
-            type="password"
-            value={oldPassword}
-            onChange={(e) => {
-              setOldPassword(e.target.value);
-              setError(null);
-            }}
-            aria-label={t("profilePassword.fields.currentPassword")}
-            placeholder={t("profilePassword.fields.currentPassword")}
-            disabled={isRunning || isSubmitting}
-            className="h-8 text-xs"
-          />
-        )}
-        {(mode === "set" || mode === "change") && (
-          <>
-            <Input
-              type="password"
-              value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setError(null);
-              }}
-              aria-label={t("profilePassword.fields.newPassword")}
-              placeholder={t("profilePassword.fields.newPassword")}
-              disabled={isRunning || isSubmitting}
-              className="h-8 text-xs"
-            />
-            <Input
-              type="password"
-              value={confirm}
-              onChange={(e) => {
-                setConfirm(e.target.value);
-                setError(null);
-              }}
-              aria-label={t("profilePassword.fields.confirmPassword")}
-              placeholder={t("profilePassword.fields.confirmPassword")}
-              disabled={isRunning || isSubmitting}
-              className="h-8 text-xs"
-            />
-          </>
-        )}
-      </div>
-
-      {error && <p className="text-xs text-destructive-text">{error}</p>}
-      {success && !error && (
-        <p className="text-xs text-success-text">{success}</p>
-      )}
-
-      {isRunning && (
-        <p className="text-xs text-muted-foreground">
-          {t("profileInfo.security.cannotWhileRunning")}
-        </p>
-      )}
-
-      <Button
-        size="sm"
-        variant={mode === "remove" ? "destructive" : "default"}
-        className="h-7 self-start text-xs"
-        disabled={isRunning || isSubmitting}
-        onClick={() => {
-          void onSubmit();
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!isRunning && !isSubmitting) void onSubmit();
         }}
       >
-        {mode === "set"
-          ? t("profilePassword.modes.set")
-          : mode === "change"
-            ? t("profilePassword.modes.change")
-            : t("profilePassword.modes.remove")}
-      </Button>
+        <div className="flex flex-col gap-2">
+          {(mode === "change" || mode === "remove") && (
+            <Input
+              type="password"
+              value={oldPassword}
+              onChange={(e) => {
+                setOldPassword(e.target.value);
+                setError(null);
+              }}
+              aria-label={t("profilePassword.fields.currentPassword")}
+              placeholder={t("profilePassword.fields.currentPassword")}
+              disabled={isRunning || isSubmitting}
+              className="h-8 text-xs"
+            />
+          )}
+          {(mode === "set" || mode === "change") && (
+            <>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  setError(null);
+                }}
+                aria-label={t("profilePassword.fields.newPassword")}
+                placeholder={t("profilePassword.fields.newPassword")}
+                disabled={isRunning || isSubmitting}
+                className="h-8 text-xs"
+              />
+              <Input
+                type="password"
+                value={confirm}
+                onChange={(e) => {
+                  setConfirm(e.target.value);
+                  setError(null);
+                }}
+                aria-label={t("profilePassword.fields.confirmPassword")}
+                placeholder={t("profilePassword.fields.confirmPassword")}
+                disabled={isRunning || isSubmitting}
+                className="h-8 text-xs"
+              />
+            </>
+          )}
+        </div>
+
+        {error && <p className="text-xs text-destructive-text">{error}</p>}
+        {success && !error && (
+          <p className="text-xs text-success-text">{success}</p>
+        )}
+
+        {isRunning && (
+          <p className="text-xs text-muted-foreground">
+            {t("profileInfo.security.cannotWhileRunning")}
+          </p>
+        )}
+
+        <Button
+          size="sm"
+          variant={mode === "remove" ? "destructive" : "default"}
+          className="h-7 self-start text-xs"
+          type="submit"
+          disabled={isRunning || isSubmitting}
+        >
+          {mode === "set"
+            ? t("profilePassword.modes.set")
+            : mode === "change"
+              ? t("profilePassword.modes.change")
+              : t("profilePassword.modes.remove")}
+        </Button>
+      </form>
 
       <Dialog
         open={isVerifyOpen}

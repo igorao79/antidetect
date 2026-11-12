@@ -1036,7 +1036,12 @@ async function main() {
       );
     }
 
-    const files = suiteFiles[options.suite]
+    // Named files from e2e/tests instead of the suite's, for one-off
+    // exploratory scripts (explore-*.test.mjs is gitignored).
+    const namedFiles = process.env.DONUT_E2E_FILES?.split(",")
+      .map((file) => file.trim())
+      .filter(Boolean);
+    const files = (namedFiles?.length ? namedFiles : suiteFiles[options.suite])
       .filter((file) => networkEnabled || file !== "network.test.mjs")
       .map((file) => path.join(dirname, "tests", file));
     const testArgs = [

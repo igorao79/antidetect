@@ -932,7 +932,7 @@ mod tests {
       .add_extension(
         "Chromium".to_string(),
         "test.crx".to_string(),
-        vec![0, 1, 2, 3],
+        crate::extension_manager::minimal_extension_zip(),
       )
       .unwrap();
     let chromium_group = mgr.create_group("Chromium Group".to_string()).unwrap();
