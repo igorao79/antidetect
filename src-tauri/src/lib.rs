@@ -2735,7 +2735,10 @@ pub fn run_with_builder(
         .fullscreen(false)
         .center()
         .focused(!headless)
-        .visible(!headless);
+        .visible(!headless)
+        // Let the webview own HTML5 file drop. Tauri's native handler otherwise
+        // swallows file drops before the cookie/import drop zones see them.
+        .disable_drag_drop_handler();
 
       #[cfg(feature = "e2e")]
       let win_builder = match e2e_automation_profile_dir() {

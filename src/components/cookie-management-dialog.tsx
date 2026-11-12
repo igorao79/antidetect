@@ -3,9 +3,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LuChevronRight } from "react-icons/lu";
+import { LuChevronRight, LuPaperclip } from "react-icons/lu";
 import { toast } from "sonner";
 import { CookiePastePanel, IssueRow } from "@/components/cookie-paste-panel";
 import { LoadingButton } from "@/components/loading-button";
@@ -267,6 +267,22 @@ export function CookieManagementDialog({
     };
   }, [isOpen, profileId, pasteContent, pasteSite, importResult, t]);
 
+  const importFileInputRef = useRef<HTMLInputElement>(null);
+  const handleImportFile = useCallback(
+    (file: File) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setImportError(null);
+        setPasteContent(String(event.target?.result ?? ""));
+      };
+      reader.onerror = () => {
+        setImportError(t("cookies.management.fileReadError"));
+      };
+      reader.readAsText(file);
+    },
+    [t],
+  );
+
   const handleImport = useCallback(async () => {
     if (!profileId) return;
     setIsImporting(true);
@@ -484,7 +500,26 @@ export function CookieManagementDialog({
                       <AlertDescription>{importError}</AlertDescription>
                     </Alert>
                   )}
-                  <div className="flex justify-end gap-2">
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    <RippleButton
+                      variant="outline"
+                      onClick={() => importFileInputRef.current?.click()}
+                      disabled={isImporting}
+                    >
+                      <LuPaperclip className="size-4" />
+                      {t("cookies.paste.attachFile")}
+                    </RippleButton>
+                    <input
+                      ref={importFileInputRef}
+                      type="file"
+                      accept=".txt,.cookies,.json"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0];
+                        if (file) handleImportFile(file);
+                        event.target.value = "";
+                      }}
+                    />
                     <RippleButton variant="outline" onClick={handleClose}>
                       {t("common.buttons.cancel")}
                     </RippleButton>

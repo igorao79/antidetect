@@ -647,6 +647,7 @@ impl CookieManager {
     cookies: &[UnifiedCookie],
     mode: CookieWriteMode,
   ) -> Result<CookieWriteCounts, String> {
+    Self::ensure_firefox_cookie_schema(db_path)?;
     let mut deleted = 0;
     if mode == CookieWriteMode::ReplaceMatchingSites {
       let conn = Connection::open(db_path).map_err(|e| format!("Failed to open database: {e}"))?;
@@ -662,6 +663,26 @@ impl CookieManager {
       overwritten,
       deleted,
     })
+  }
+
+  /// A `cookies.sqlite` can exist without the Firefox schema: an interrupted
+  /// import or a zero-byte file left by an older build. Creating only when the
+  /// path is absent would then fail every INSERT with "no such table". Add the
+  /// table if it is missing; a real Firefox database already has it.
+  fn ensure_firefox_cookie_schema(db_path: &Path) -> Result<(), String> {
+    let conn = Connection::open(db_path).map_err(|e| format!("Failed to open database: {e}"))?;
+    let table: i64 = conn
+      .query_row(
+        "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'moz_cookies'",
+        [],
+        |row| row.get(0),
+      )
+      .map_err(|e| format!("Failed to inspect cookie database: {e}"))?;
+    drop(conn);
+    if table == 0 {
+      Self::create_empty_firefox_cookies_db(db_path)?;
+    }
+    Ok(())
   }
 
   /// Write cookies to a Chrome/Wayfern profile.
@@ -1361,6 +1382,21 @@ impl CookieManager {
   ///
   /// `check_browser_status` is async and every caller must await it before
   /// getting here; only this synchronous tail belongs on a blocking thread.
+  /// Classify a SQLite write failure. A browser holding the database is a
+  /// locked store, not a missing one: telling the person to close the browser
+  /// is actionable, while "cookie storage unavailable" is not.
+  fn write_paste_error(profile_id: &str, error: impl std::fmt::Display) -> String {
+    let detail = error.to_string();
+    let lower = detail.to_lowercase();
+    let code = if lower.contains("locked") || lower.contains("busy") {
+      "COOKIE_DB_LOCKED"
+    } else {
+      "COOKIE_DB_UNAVAILABLE"
+    };
+    log::warn!("Cookie write failed profile={profile_id} err=\"{detail}\"");
+    crate::backend_error_with_detail(code, detail)
+  }
+
   async fn write_paste(
     profile: &BrowserProfile,
     cookies: &[UnifiedCookie],
@@ -1380,7 +1416,7 @@ impl CookieManager {
     // A profile that has never launched has no Cookies file yet.
     let db_path =
       Self::ensure_cookie_db_path(profile, &ProfileManager::instance().get_profiles_dir())
-        .map_err(|e| crate::backend_error_with_detail("COOKIE_DB_UNAVAILABLE", e))?;
+        .map_err(|e| Self::write_paste_error(&profile.id.to_string(), e))?;
     let owned: Vec<UnifiedCookie> = cookies.to_vec();
 
     tokio::task::spawn_blocking(move || {
@@ -1391,8 +1427,8 @@ impl CookieManager {
       }
     })
     .await
-    .map_err(|e| crate::backend_error_with_detail("COOKIE_DB_UNAVAILABLE", e))?
-    .map_err(|e| crate::backend_error_with_detail("COOKIE_DB_UNAVAILABLE", e))
+    .map_err(|e| Self::write_paste_error(&profile.id.to_string(), e))?
+    .map_err(|e| Self::write_paste_error(&profile.id.to_string(), e))
   }
 
   fn now_secs() -> i64 {
@@ -2449,5 +2485,42 @@ mod tests {
     assert_eq!(read[0].value, "ff-session");
 
     let _ = std::fs::remove_dir_all(&dir);
+  }
+
+  #[test]
+  fn test_write_firefox_cookies_repairs_an_empty_cookie_file() {
+    let dir = std::env::temp_dir().join(format!("donut_empty_ff_file_{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let db_path = dir.join("cookies.sqlite");
+    std::fs::write(&db_path, b"").unwrap();
+
+    let cookies = vec![UnifiedCookie {
+      name: "sid".to_string(),
+      value: "ff-session".to_string(),
+      domain: ".example.org".to_string(),
+      path: "/".to_string(),
+      expires: 1900000000,
+      is_secure: true,
+      is_http_only: false,
+      same_site: 1,
+      creation_time: 1700000000,
+      last_accessed: 1700000000,
+    }];
+    let counts =
+      CookieManager::write_firefox_cookies_with_mode(&db_path, &cookies, CookieWriteMode::Merge)
+        .unwrap();
+    assert_eq!(counts.added, 1);
+    let read = CookieManager::read_firefox_cookies(&db_path).unwrap();
+    assert_eq!(read[0].value, "ff-session");
+
+    let _ = std::fs::remove_dir_all(&dir);
+  }
+
+  #[test]
+  fn a_locked_cookie_database_is_reported_as_locked() {
+    let error = CookieManager::write_paste_error("p-1", "database is locked");
+    assert!(error.contains("COOKIE_DB_LOCKED"), "{error}");
+    let error = CookieManager::write_paste_error("p-1", "no such table: moz_cookies");
+    assert!(error.contains("COOKIE_DB_UNAVAILABLE"), "{error}");
   }
 }
