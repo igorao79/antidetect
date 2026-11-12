@@ -94,9 +94,10 @@ Fork-specific rules:
 - A macOS Camoufox launch runs from a per-profile clone of `Camoufox.app`, not the shared
   build (`camoufox/profile_app.rs`): macOS gives one Dock tile per bundle, so the clone gets
   the profile name, a generated `.icns` and a per-profile `CFBundleIdentifier` that stays
-  stable across renames and recolours, so macOS TCC grants (camera, microphone) survive an
-  edit; LaunchServices is told to re-read the rebuilt bundle so the Dock icon/name still
-  changes. The build hooks are applied to the source before cloning and the clone is
+  stable across renames and recolours; LaunchServices is told to re-read the rebuilt bundle so
+  the Dock icon/name still changes. The clone is ad-hoc signed, and macOS keys an ad-hoc app's
+  camera and microphone grants to its code hash, so a rebuilt clone (rename, recolour, a new
+  build or hook) asks for them again. The build hooks are applied to the source before cloning and the clone is
   deep-signed after every resource change. The clone is an APFS clonefile in the app cache
   (a full copy only when the filesystem cannot clone), rebuilt when the source build, the
   hooked resources it copied (`camoufox.cfg`, `policies.json`, `owl.js`, the fonts marker) or
@@ -110,6 +111,20 @@ Fork-specific rules:
 - An AMO-signed `.xpi` without `browser_specific_settings.gecko.id` in its manifest still gets
   its id from the signing certificate's subject CN (`META-INF/mozilla.rsa`), so Camoufox can
   sideload it instead of refusing the package.
+- File drops (`dropped_files.rs`): on macOS Tauri's native handler takes file drops, so the
+  webview's HTML5 drop gets no file and only `tauri://drag-drop` carries the path. The window
+  event records the dropped paths and `read_dropped_text_file` reads only those (60 s, 8 MB,
+  UTF-8); the webview has no fs scope of its own beyond the paths the dialogs pick.
+- Cookie import into Camoufox (`cookie_manager.rs`). Camoufox 156/158 keep cookies in Firefox's
+  schema 17: `expiry` in milliseconds (older schemas: seconds), no `rawSameSite`,
+  `isPartitionedAttributeSet` and `updateTime` added. Owl wrote seconds, so Firefox read every
+  imported cookie as January 1970 and dropped it, and the table Owl made for a profile not yet
+  launched lacked the new columns, so Firefox recreated it empty at first launch. The writer
+  now takes the unit from the stored rows (or the schema version for an empty table), fills
+  only the columns the table has, makes new tables in schema 17's columns at version 0 (which
+  Firefox checks and adopts), and never alters a table Firefox made (a column added behind its
+  migration makes it recreate the database). Pasted cookies without SameSite are stored as
+  none (0). Checked by launching Camoufox and reading the cookie back over BiDi.
 - Firefox's remote agent, which every Camoufox launch starts (`--remote-debugging-port`),
   applies its test suite's prefs (`RecommendedPreferences` in the build's `omni.ja`) wherever a
   pref has no user value. `apz.content_response_timeout` 60000 made the wheel wait up to a
@@ -269,7 +284,8 @@ Fork-specific rules:
   `api_client/camoufox.rs`, `camoufox/`, `camoufox_manager.rs`,
   `interface_language.rs`, `donut_cloud.rs`,
   `profile/{after_exit,camoufox}.rs`, `ssh_upstream.rs`,
-  `cookie_robot.rs`, `octo_compat_api.rs`, `synchronizer_bidi.rs`, `workspace.rs`,
+  `cookie_robot.rs`, `dropped_files.rs`, `octo_compat_api.rs`, `synchronizer_bidi.rs`,
+  `workspace.rs`,
   `workspace_deploy.rs` (with `workspace_deploy.sh` and `build_owl_server.rs`),
   `workspace_servers.rs`, `workspace_api.rs`, and on the
   frontend `camoufox-config-dialog.tsx`, `shared-camoufox-config-form.tsx`,

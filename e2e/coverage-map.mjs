@@ -187,6 +187,7 @@ export const commandCoverage = {
       "copy_profile_cookies",
       "analyze_pasted_cookies",
       "import_pasted_cookies",
+      "dropped_files::read_dropped_text_file",
       "export_profile_cookies",
       "local_storage::get_profile_local_storage_stats",
       "local_storage::export_profile_storage_state",

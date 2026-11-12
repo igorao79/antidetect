@@ -1,7 +1,7 @@
 "use client";
 
+import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { readTextFile } from "@tauri-apps/plugin-fs";
 import type { TFunction } from "i18next";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { translateBackendError } from "@/lib/backend-errors";
 import { playUiSound } from "@/lib/ui-sounds";
 import { cn } from "@/lib/utils";
 import type {
@@ -145,7 +146,8 @@ export function CookiePastePanel({
   );
 
   // Tauri intercepts file drops before the webview on macOS. Listen to the
-  // native event as well as the HTML5 handlers: the native one carries paths.
+  // native event as well as the HTML5 handlers: the native one carries paths,
+  // and the backend reads only a path that was really dropped on the window.
   useEffect(() => {
     let disposed = false;
     let unlisten: (() => void) | undefined;
@@ -161,14 +163,14 @@ export function CookiePastePanel({
           setIsDraggingFile(false);
           const path = payload.paths[0];
           if (!path) return;
-          void readTextFile(path)
+          void invoke<string>("read_dropped_text_file", { path })
             .then((text) => {
               setFileError(null);
               playUiSound("drop");
               onContentChange(text);
             })
-            .catch(() => {
-              setFileError(t("cookies.management.fileReadError"));
+            .catch((error: unknown) => {
+              setFileError(translateBackendError(t, error));
             });
         }
       })
@@ -176,7 +178,9 @@ export function CookiePastePanel({
         if (disposed) fn();
         else unlisten = fn;
       })
-      .catch(() => {});
+      .catch((error: unknown) => {
+        console.warn("File drop listener unavailable", error);
+      });
     return () => {
       disposed = true;
       unlisten?.();

@@ -96,6 +96,10 @@ export type BackendErrorCode =
   | "BULK_CREATE_COUNT_INVALID"
   | "BULK_CREATE_BUSY"
   | "COOKIE_DB_LOCKED"
+  | "DROPPED_FILE_NOT_ALLOWED"
+  | "DROPPED_FILE_TOO_LARGE"
+  | "DROPPED_FILE_UNREADABLE"
+  | "DROPPED_FILE_NOT_TEXT"
   | "COOKIE_DB_UNAVAILABLE"
   | "COOKIE_IMPORT_BROWSER_RUNNING"
   | "COOKIE_IMPORT_PROFILE_PROTECTED"
@@ -611,6 +615,14 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       return t("backendErrors.bulkCreateBusy");
     case "COOKIE_DB_LOCKED":
       return t("backendErrors.cookieDbLocked");
+    case "DROPPED_FILE_NOT_ALLOWED":
+      return t("backendErrors.droppedFileNotAllowed");
+    case "DROPPED_FILE_TOO_LARGE":
+      return t("backendErrors.droppedFileTooLarge");
+    case "DROPPED_FILE_UNREADABLE":
+      return t("backendErrors.droppedFileUnreadable");
+    case "DROPPED_FILE_NOT_TEXT":
+      return t("backendErrors.droppedFileNotText");
     case "COOKIE_DB_UNAVAILABLE":
       return t("backendErrors.cookieDbUnavailable");
     case "COOKIE_IMPORT_BROWSER_RUNNING":

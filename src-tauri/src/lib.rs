@@ -219,6 +219,7 @@ mod cookie_manager;
 mod cookie_paste;
 mod cookie_robot;
 mod donut_cloud;
+mod dropped_files;
 pub mod events;
 mod interface_language;
 mod local_storage;
@@ -2808,6 +2809,10 @@ pub fn run_with_builder(
       {
         let app_handle = app.handle().clone();
         window.on_window_event(move |event| {
+          if let tauri::WindowEvent::DragDrop(tauri::DragDropEvent::Drop { paths, .. }) = event {
+            dropped_files::remember(paths);
+            return;
+          }
           if let tauri::WindowEvent::CloseRequested { api, .. } = event {
             if QUIT_CONFIRMED.load(Ordering::SeqCst) {
               return;
@@ -3805,6 +3810,7 @@ pub fn run_with_builder(
       copy_profile_cookies,
       analyze_pasted_cookies,
       import_pasted_cookies,
+      dropped_files::read_dropped_text_file,
       export_profile_cookies,
       check_wayfern_terms_accepted,
       check_wayfern_downloaded,

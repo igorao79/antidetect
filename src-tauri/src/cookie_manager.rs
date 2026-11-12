@@ -1,11 +1,44 @@
 use crate::profile::manager::ProfileManager;
 use crate::profile::BrowserProfile;
+use rusqlite::types::Value as SqlValue;
 use rusqlite::{params, Connection, OpenFlags};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use tauri::AppHandle;
+
+/// An expiry this large can only be milliseconds: as seconds it would be
+/// the year 5138.
+const MILLISECOND_EXPIRY_FLOOR: i64 = 100_000_000_000;
+
+fn firefox_expiry_scale_for(largest_stored: Option<i64>, schema_version: i64) -> i64 {
+  let in_ms = match largest_stored {
+    Some(expiry) if expiry > 0 => expiry >= MILLISECOND_EXPIRY_FLOOR,
+    _ => schema_version == 0 || schema_version >= 17,
+  };
+  if in_ms {
+    1000
+  } else {
+    1
+  }
+}
+
+/// `moz_cookies` columns past the essential ones (name, value, host, path,
+/// expiry) that the writer fills when the table has them, with the definition
+/// an Owl-made table gets them with. Older Firefox schemas lack some of them.
+const FIREFOX_OPTIONAL_COLUMNS: [(&str, &str); 10] = [
+  ("originAttributes", "TEXT NOT NULL DEFAULT ''"),
+  ("lastAccessed", "INTEGER"),
+  ("creationTime", "INTEGER"),
+  ("isSecure", "INTEGER"),
+  ("isHttpOnly", "INTEGER"),
+  ("sameSite", "INTEGER DEFAULT 0"),
+  ("rawSameSite", "INTEGER DEFAULT 0"),
+  ("schemeMap", "INTEGER DEFAULT 0"),
+  ("isPartitionedAttributeSet", "INTEGER DEFAULT 0"),
+  ("updateTime", "INTEGER"),
+];
 
 /// Chromium cookie decryption support for reading existing encrypted cookies.
 /// Writes always go through the plaintext `value` column (see `write_chrome_cookies`),
@@ -426,8 +459,9 @@ impl CookieManager {
           isHttpOnly INTEGER,
           inBrowserElement INTEGER DEFAULT 0,
           sameSite INTEGER DEFAULT 0,
-          rawSameSite INTEGER DEFAULT 0,
           schemeMap INTEGER DEFAULT 0,
+          isPartitionedAttributeSet INTEGER DEFAULT 0,
+          updateTime INTEGER,
           CONSTRAINT moz_uniqueid UNIQUE (name, host, path, originAttributes)
         );",
       )
@@ -454,6 +488,7 @@ impl CookieManager {
   /// Read cookies from a Firefox/Camoufox profile
   fn read_firefox_cookies(db_path: &Path) -> Result<Vec<UnifiedCookie>, String> {
     let conn = Connection::open(db_path).map_err(|e| format!("Failed to open database: {e}"))?;
+    let expiry_scale = Self::firefox_expiry_scale(&conn)?;
 
     let mut stmt = conn
       .prepare(
@@ -470,7 +505,7 @@ impl CookieManager {
           value: row.get(1)?,
           domain: row.get(2)?,
           path: row.get(3)?,
-          expires: row.get(4)?,
+          expires: row.get::<_, i64>(4)? / expiry_scale,
           is_secure: row.get::<_, i32>(5)? != 0,
           is_http_only: row.get::<_, i32>(6)? != 0,
           same_site: row.get(7)?,
@@ -550,7 +585,8 @@ impl CookieManager {
 
   /// Write cookies to a Firefox/Camoufox profile.
   ///
-  /// Firefox's `moz_cookies.expiry` is "seconds since Unix epoch", so `expiry = 0`
+  /// Firefox's `moz_cookies.expiry` is milliseconds since the Unix epoch in
+  /// schema 17 and seconds before it (`firefox_expiry_scale`), so `expiry = 0`
   /// is interpreted as 1970-01-01 and purged on read. To let imported session
   /// cookies survive browser restart, we rewrite them to a far-future expiry.
   ///
@@ -561,6 +597,8 @@ impl CookieManager {
     cookies: &[UnifiedCookie],
   ) -> Result<(usize, usize), String> {
     let conn = Connection::open(db_path).map_err(|e| format!("Failed to open database: {e}"))?;
+    let columns = Self::moz_cookie_columns(&conn)?;
+    let expiry_scale = Self::firefox_expiry_scale(&conn)?;
 
     let mut copied = 0;
     let mut replaced = 0;
@@ -577,7 +615,7 @@ impl CookieManager {
         cookie.expires
       } else {
         session_cookie_expiry
-      };
+      } * expiry_scale;
       // schemeMap bitfield: 1 = HTTP, 2 = HTTPS
       let scheme_map: i32 = if cookie.is_secure { 2 } else { 1 };
 
@@ -589,49 +627,58 @@ impl CookieManager {
         )
         .ok();
 
+      let optional = Self::firefox_optional_values(cookie, scheme_map);
+      let present: Vec<&(&str, SqlValue)> = optional
+        .iter()
+        .filter(|(column, _)| columns.contains(*column))
+        .collect();
+
       if existing.is_some() {
+        // Only what a re-import may change; the row keeps its identity
+        // (originAttributes) and its creationTime.
+        let updated: Vec<&&(&str, SqlValue)> = present
+          .iter()
+          .filter(|(column, _)| *column != "originAttributes" && *column != "creationTime")
+          .collect();
+        let mut sql = String::from("UPDATE moz_cookies SET value = ?, expiry = ?");
+        let mut values: Vec<SqlValue> = vec![
+          SqlValue::Text(cookie.value.clone()),
+          SqlValue::Integer(expiry),
+        ];
+        for (column, value) in &updated {
+          sql.push_str(&format!(", {column} = ?"));
+          values.push(value.clone());
+        }
+        sql.push_str(" WHERE host = ? AND name = ? AND path = ?");
+        values.extend([
+          SqlValue::Text(cookie.domain.clone()),
+          SqlValue::Text(cookie.name.clone()),
+          SqlValue::Text(cookie.path.clone()),
+        ]);
         conn
-          .execute(
-            "UPDATE moz_cookies SET value = ?1, expiry = ?2, isSecure = ?3,
-                     isHttpOnly = ?4, sameSite = ?5, rawSameSite = ?5,
-                     lastAccessed = ?6, schemeMap = ?7
-                     WHERE host = ?8 AND name = ?9 AND path = ?10",
-            params![
-              &cookie.value,
-              expiry,
-              cookie.is_secure as i32,
-              cookie.is_http_only as i32,
-              cookie.same_site,
-              cookie.last_accessed * 1_000_000,
-              scheme_map,
-              &cookie.domain,
-              &cookie.name,
-              &cookie.path,
-            ],
-          )
+          .execute(&sql, rusqlite::params_from_iter(values))
           .map_err(|e| format!("Failed to update cookie: {e}"))?;
         replaced += 1;
       } else {
+        let mut names = vec!["name", "value", "host", "path", "expiry"];
+        let mut values: Vec<SqlValue> = vec![
+          SqlValue::Text(cookie.name.clone()),
+          SqlValue::Text(cookie.value.clone()),
+          SqlValue::Text(cookie.domain.clone()),
+          SqlValue::Text(cookie.path.clone()),
+          SqlValue::Integer(expiry),
+        ];
+        for (column, value) in &present {
+          names.push(column);
+          values.push(value.clone());
+        }
+        let sql = format!(
+          "INSERT INTO moz_cookies ({}) VALUES ({})",
+          names.join(", "),
+          vec!["?"; names.len()].join(", ")
+        );
         conn
-          .execute(
-            "INSERT INTO moz_cookies
-                     (originAttributes, name, value, host, path, expiry, lastAccessed,
-                      creationTime, isSecure, isHttpOnly, sameSite, rawSameSite, schemeMap)
-                     VALUES ('', ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10, ?11)",
-            params![
-              &cookie.name,
-              &cookie.value,
-              &cookie.domain,
-              &cookie.path,
-              expiry,
-              cookie.last_accessed * 1_000_000,
-              cookie.creation_time * 1_000_000,
-              cookie.is_secure as i32,
-              cookie.is_http_only as i32,
-              cookie.same_site,
-              scheme_map,
-            ],
-          )
+          .execute(&sql, rusqlite::params_from_iter(values))
           .map_err(|e| format!("Failed to insert cookie: {e}"))?;
         copied += 1;
       }
@@ -669,6 +716,69 @@ impl CookieManager {
   /// import or a zero-byte file left by an older build. Creating only when the
   /// path is absent would then fail every INSERT with "no such table". Add the
   /// table if it is missing; a real Firefox database already has it.
+  /// What `moz_cookies.expiry` counts in: 1 for seconds, 1000 for
+  /// milliseconds. Firefox's cookie schema 17 (Camoufox 156 and 158) keeps
+  /// milliseconds, older schemas seconds, so a cookie written in seconds reads
+  /// as January 1970 and Firefox drops it as expired. Stored rows tell for
+  /// sure; an empty table goes by its schema version, where 0 is a table Owl
+  /// made, which the current Firefox adopts.
+  fn firefox_expiry_scale(conn: &Connection) -> Result<i64, String> {
+    let largest: Option<i64> = conn
+      .query_row("SELECT MAX(expiry) FROM moz_cookies", [], |row| row.get(0))
+      .map_err(|e| format!("Failed to inspect cookie expiry: {e}"))?;
+    let version: i64 = conn
+      .query_row("PRAGMA user_version", [], |row| row.get(0))
+      .map_err(|e| format!("Failed to inspect cookie database: {e}"))?;
+    Ok(firefox_expiry_scale_for(largest, version))
+  }
+
+  fn moz_cookie_columns(conn: &Connection) -> Result<HashSet<String>, String> {
+    let mut statement = conn
+      .prepare("PRAGMA table_info(moz_cookies)")
+      .map_err(|e| format!("Failed to inspect cookie columns: {e}"))?;
+    let rows = statement
+      .query_map([], |row| row.get::<_, String>(1))
+      .map_err(|e| format!("Failed to inspect cookie columns: {e}"))?;
+    rows
+      .collect::<Result<HashSet<_>, _>>()
+      .map_err(|e| format!("Failed to read cookie columns: {e}"))
+  }
+
+  /// The values of `FIREFOX_OPTIONAL_COLUMNS` for one cookie, in that order.
+  fn firefox_optional_values(
+    cookie: &UnifiedCookie,
+    scheme_map: i32,
+  ) -> [(&'static str, SqlValue); FIREFOX_OPTIONAL_COLUMNS.len()] {
+    // Firefox knows none (0), lax (1) and strict (2); a pasted cookie with no
+    // SameSite comes as Chromium's -1 and is stored as none, which is what
+    // Firefox does with a cookie that sets no SameSite.
+    let same_site = i64::from(cookie.same_site.clamp(0, 2));
+    [
+      ("originAttributes", SqlValue::Text(String::new())),
+      (
+        "lastAccessed",
+        SqlValue::Integer(cookie.last_accessed * 1_000_000),
+      ),
+      (
+        "creationTime",
+        SqlValue::Integer(cookie.creation_time * 1_000_000),
+      ),
+      ("isSecure", SqlValue::Integer(i64::from(cookie.is_secure))),
+      (
+        "isHttpOnly",
+        SqlValue::Integer(i64::from(cookie.is_http_only)),
+      ),
+      ("sameSite", SqlValue::Integer(same_site)),
+      ("rawSameSite", SqlValue::Integer(same_site)),
+      ("schemeMap", SqlValue::Integer(i64::from(scheme_map))),
+      ("isPartitionedAttributeSet", SqlValue::Integer(0)),
+      (
+        "updateTime",
+        SqlValue::Integer(cookie.creation_time * 1_000_000),
+      ),
+    ]
+  }
+
   fn ensure_firefox_cookie_schema(db_path: &Path) -> Result<(), String> {
     let conn = Connection::open(db_path).map_err(|e| format!("Failed to open database: {e}"))?;
     let table: i64 = conn
@@ -684,31 +794,29 @@ impl CookieManager {
       return Ok(());
     }
 
-    // Older Camoufox builds wrote a shorter moz_cookies table. The writer
-    // names rawSameSite (and the columns around it); add what is missing
-    // instead of failing every insert on a profile that is otherwise valid.
-    let columns: Vec<String> = {
-      let mut statement = conn
-        .prepare("PRAGMA table_info(moz_cookies)")
-        .map_err(|e| format!("Failed to inspect cookie columns: {e}"))?;
-      let rows = statement
-        .query_map([], |row| row.get::<_, String>(1))
-        .map_err(|e| format!("Failed to inspect cookie columns: {e}"))?;
-      rows
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to read cookie columns: {e}"))?
-    };
-    for (name, definition) in [
-      ("originAttributes", "TEXT NOT NULL DEFAULT ''"),
-      ("lastAccessed", "INTEGER"),
-      ("creationTime", "INTEGER"),
-      ("isSecure", "INTEGER"),
-      ("isHttpOnly", "INTEGER"),
-      ("sameSite", "INTEGER DEFAULT 0"),
-      ("rawSameSite", "INTEGER DEFAULT 0"),
-      ("schemeMap", "INTEGER DEFAULT 0"),
-    ] {
-      if !columns.iter().any(|column| column == name) {
+    // A table Owl created has no schema version; Firefox adopts it at its
+    // first launch after checking it has every column, so add what an older
+    // Owl left out. A table Firefox made (version > 0) is never altered:
+    // Firefox migrates it itself, and a column added behind its back fails
+    // that migration, which makes Firefox recreate the database empty. The
+    // writer then fills only the columns the table has.
+    let version: i64 = conn
+      .query_row("PRAGMA user_version", [], |row| row.get(0))
+      .map_err(|e| format!("Failed to inspect cookie database: {e}"))?;
+    if version != 0 {
+      return Ok(());
+    }
+    let columns = Self::moz_cookie_columns(&conn)?;
+    // An older Owl wrote seconds into its own tables, which Firefox adopts
+    // as milliseconds.
+    conn
+      .execute(
+        "UPDATE moz_cookies SET expiry = expiry * 1000 WHERE expiry > 0 AND expiry < ?1",
+        params![MILLISECOND_EXPIRY_FLOOR],
+      )
+      .map_err(|e| format!("Failed to convert cookie expiry: {e}"))?;
+    for (name, definition) in FIREFOX_OPTIONAL_COLUMNS {
+      if !columns.contains(name) {
         conn
           .execute(
             &format!("ALTER TABLE moz_cookies ADD COLUMN {name} {definition}"),
@@ -2548,6 +2656,134 @@ mod tests {
     let read = CookieManager::read_firefox_cookies(&db_path).unwrap();
     assert_eq!(read[0].value, "ff-session");
 
+    let _ = std::fs::remove_dir_all(&dir);
+  }
+
+  #[test]
+  fn firefox_expiry_units_follow_the_rows_then_the_schema() {
+    assert_eq!(firefox_expiry_scale_for(Some(1_825_985_474_243), 17), 1000);
+    assert_eq!(firefox_expiry_scale_for(Some(1_900_000_000), 12), 1);
+    assert_eq!(firefox_expiry_scale_for(Some(1_825_985_474_243), 12), 1000);
+    assert_eq!(firefox_expiry_scale_for(None, 0), 1000);
+    assert_eq!(firefox_expiry_scale_for(None, 17), 1000);
+    assert_eq!(firefox_expiry_scale_for(None, 12), 1);
+  }
+
+  /// What Camoufox 158 checks before it adopts a table Owl made: every column
+  /// of its schema 17, and expiry in milliseconds.
+  #[test]
+  fn an_owl_made_cookie_table_matches_firefox_schema_17() {
+    let dir = std::env::temp_dir().join(format!("donut_ff_v17_{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let db_path = dir.join("cookies.sqlite");
+    let cookie = UnifiedCookie {
+      name: "sid".to_string(),
+      value: "v".to_string(),
+      domain: ".example.org".to_string(),
+      path: "/".to_string(),
+      expires: 1_900_000_000,
+      is_secure: true,
+      is_http_only: false,
+      same_site: -1,
+      creation_time: 1_700_000_000,
+      last_accessed: 1_700_000_000,
+    };
+    CookieManager::write_firefox_cookies_with_mode(
+      &db_path,
+      std::slice::from_ref(&cookie),
+      CookieWriteMode::Merge,
+    )
+    .unwrap();
+
+    let conn = Connection::open(&db_path).unwrap();
+    conn
+      .query_row(
+        "SELECT id, originAttributes, name, value, host, path, expiry, lastAccessed,
+                creationTime, isSecure, isHttpOnly, inBrowserElement, sameSite, schemeMap,
+                isPartitionedAttributeSet, updateTime FROM moz_cookies",
+        [],
+        |_| Ok(()),
+      )
+      .unwrap();
+    let (expiry, same_site): (i64, i64) = conn
+      .query_row("SELECT expiry, sameSite FROM moz_cookies", [], |row| {
+        Ok((row.get(0)?, row.get(1)?))
+      })
+      .unwrap();
+    assert_eq!(expiry, 1_900_000_000_000, "milliseconds");
+    assert_eq!(same_site, 0, "no SameSite is stored as none");
+    drop(conn);
+    let read = CookieManager::read_firefox_cookies(&db_path).unwrap();
+    assert_eq!(read[0].expires, 1_900_000_000, "read back in seconds");
+    let _ = std::fs::remove_dir_all(&dir);
+  }
+
+  #[test]
+  fn a_firefox_versioned_cookie_table_is_written_without_altering_it() {
+    let dir = std::env::temp_dir().join(format!("donut_ff_versioned_{}", uuid::Uuid::new_v4()));
+    std::fs::create_dir_all(&dir).unwrap();
+    let db_path = dir.join("cookies.sqlite");
+    let conn = Connection::open(&db_path).unwrap();
+    conn
+      .execute_batch(
+        "CREATE TABLE moz_cookies (
+          id INTEGER PRIMARY KEY,
+          originAttributes TEXT NOT NULL DEFAULT '',
+          name TEXT, value TEXT, host TEXT, path TEXT,
+          expiry INTEGER, lastAccessed INTEGER, creationTime INTEGER,
+          isSecure INTEGER, isHttpOnly INTEGER, inBrowserElement INTEGER DEFAULT 0,
+          sameSite INTEGER DEFAULT 0
+        );
+        PRAGMA user_version = 11;",
+      )
+      .unwrap();
+    drop(conn);
+
+    let cookie = UnifiedCookie {
+      name: "sid".to_string(),
+      value: "first".to_string(),
+      domain: ".example.org".to_string(),
+      path: "/".to_string(),
+      expires: 1900000000,
+      is_secure: true,
+      is_http_only: true,
+      same_site: 1,
+      creation_time: 1700000000,
+      last_accessed: 1700000000,
+    };
+    let counts = CookieManager::write_firefox_cookies_with_mode(
+      &db_path,
+      std::slice::from_ref(&cookie),
+      CookieWriteMode::Merge,
+    )
+    .unwrap();
+    assert_eq!(counts.added, 1);
+    let again = UnifiedCookie {
+      value: "second".to_string(),
+      ..cookie
+    };
+    let counts =
+      CookieManager::write_firefox_cookies_with_mode(&db_path, &[again], CookieWriteMode::Merge)
+        .unwrap();
+    assert_eq!(counts.overwritten, 1);
+
+    let conn = Connection::open(&db_path).unwrap();
+    let columns = CookieManager::moz_cookie_columns(&conn).unwrap();
+    assert!(
+      !columns.contains("rawSameSite") && !columns.contains("schemeMap"),
+      "Firefox migrates its own table"
+    );
+    let version: i64 = conn
+      .query_row("PRAGMA user_version", [], |row| row.get(0))
+      .unwrap();
+    assert_eq!(version, 11);
+    let (value, secure): (String, i64) = conn
+      .query_row("SELECT value, isSecure FROM moz_cookies", [], |row| {
+        Ok((row.get(0)?, row.get(1)?))
+      })
+      .unwrap();
+    assert_eq!((value.as_str(), secure), ("second", 1));
+    drop(conn);
     let _ = std::fs::remove_dir_all(&dir);
   }
 

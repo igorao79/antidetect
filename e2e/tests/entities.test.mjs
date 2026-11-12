@@ -1226,6 +1226,14 @@ test("cookie import/copy/export, profile encryption, and traffic-stat read/clear
     assert.equal(imported.added, 1);
     assert.equal(imported.overwritten, 0);
     assert.equal(imported.deleted, 0);
+    // The webview reads a file only after the person dropped it on the
+    // window; a path it names on its own is refused.
+    assert.match(
+      await app.invokeError("read_dropped_text_file", {
+        path: "/etc/hosts",
+      }),
+      /DROPPED_FILE_NOT_ALLOWED/,
+    );
     const cookies = await app.invoke("read_profile_cookies", {
       profileId: source.id,
     });
