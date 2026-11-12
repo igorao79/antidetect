@@ -867,7 +867,7 @@
     },
     "expiry": {
       "label": "만료일",
-      "hint": "선택 사항. 만료 3일 전부터 이 프록시를 쓰는 프로필에 표시가 붙습니다.",
+      "hint": "선택 사항. 날짜나 일수를 입력하세요. 만료 3일 전부터 이 프록시를 쓰는 프로필에 표시가 붙습니다.",
       "presetDays": "{{days}}일",
       "presetAria": "오늘부터 {{days}}일 후 만료",
       "column": "만료",
@@ -878,7 +878,11 @@
       "proxyEndsToday": "프록시가 오늘 만료됩니다",
       "proxyExpiredOn": "프록시가 {{date}}에 만료되었습니다",
       "proxyEndsIn_one": "프록시가 {{count}}일 후 만료됩니다",
-      "proxyEndsIn_other": "프록시가 {{count}}일 후 만료됩니다"
+      "proxyEndsIn_other": "프록시가 {{count}}일 후 만료됩니다",
+      "invalid": "날짜가 아닙니다. {{example}} 형식이나 일수로 입력하세요.",
+      "openCalendar": "날짜 선택",
+      "prevMonth": "이전 달",
+      "nextMonth": "다음 달"
     }
   },
   "groups": {

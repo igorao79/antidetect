@@ -872,7 +872,7 @@
     },
     "expiry": {
       "label": "Data de expiração",
-      "hint": "Opcional. Perfis com este proxy recebem uma marca três dias antes de expirar.",
+      "hint": "Opcional. Digite uma data ou um número de dias. Perfis com este proxy recebem uma marca três dias antes de expirar.",
       "presetDays": "{{days}} d",
       "presetAria": "Expira daqui a {{days}} dias",
       "column": "Expira",
@@ -885,7 +885,11 @@
       "proxyExpiredOn": "O proxy expirou em {{date}}",
       "proxyEndsIn_one": "O proxy expira em {{count}} dia",
       "proxyEndsIn_other": "O proxy expira em {{count}} dias",
-      "proxyEndsIn_many": "O proxy expira em {{count}} dias"
+      "proxyEndsIn_many": "O proxy expira em {{count}} dias",
+      "invalid": "Não é uma data. Digite como {{example}} ou como número de dias.",
+      "openCalendar": "Escolher data",
+      "prevMonth": "Mês anterior",
+      "nextMonth": "Próximo mês"
     }
   },
   "groups": {

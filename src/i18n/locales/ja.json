@@ -867,7 +867,7 @@
     },
     "expiry": {
       "label": "有効期限",
-      "hint": "任意。期限の3日前から、このプロキシを使うプロファイルに印が付きます。",
+      "hint": "任意。日付か日数を入力します。期限の3日前から、このプロキシを使うプロファイルに印が付きます。",
       "presetDays": "{{days}}日",
       "presetAria": "今日から{{days}}日後に期限切れ",
       "column": "期限",
@@ -878,7 +878,11 @@
       "proxyEndsToday": "プロキシは今日で期限切れです",
       "proxyExpiredOn": "プロキシは{{date}}に期限切れになりました",
       "proxyEndsIn_one": "プロキシはあと{{count}}日で期限切れです",
-      "proxyEndsIn_other": "プロキシはあと{{count}}日で期限切れです"
+      "proxyEndsIn_other": "プロキシはあと{{count}}日で期限切れです",
+      "invalid": "日付として読めません。{{example}} の形式か日数で入力してください。",
+      "openCalendar": "日付を選択",
+      "prevMonth": "前の月",
+      "nextMonth": "次の月"
     }
   },
   "groups": {

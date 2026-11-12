@@ -867,7 +867,7 @@
     },
     "expiry": {
       "label": "到期日期",
-      "hint": "可选。到期前三天起，使用此代理的配置文件会显示标记。",
+      "hint": "可选。输入日期或天数。到期前三天起，使用此代理的配置文件会显示标记。",
       "presetDays": "{{days}} 天",
       "presetAria": "从今天起 {{days}} 天后到期",
       "column": "到期",
@@ -878,7 +878,11 @@
       "proxyEndsToday": "代理今天到期",
       "proxyExpiredOn": "代理已于 {{date}} 到期",
       "proxyEndsIn_one": "代理将在 {{count}} 天后到期",
-      "proxyEndsIn_other": "代理将在 {{count}} 天后到期"
+      "proxyEndsIn_other": "代理将在 {{count}} 天后到期",
+      "invalid": "不是有效日期。请按 {{example}} 的格式或天数输入。",
+      "openCalendar": "选择日期",
+      "prevMonth": "上个月",
+      "nextMonth": "下个月"
     }
   },
   "groups": {

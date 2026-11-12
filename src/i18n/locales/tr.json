@@ -867,7 +867,7 @@
     },
     "expiry": {
       "label": "Bitiş tarihi",
-      "hint": "İsteğe bağlı. Bu proxy'yi kullanan profiller bitişten üç gün önce işaretlenir.",
+      "hint": "İsteğe bağlı. Bir tarih ya da gün sayısı yazın. Bu proxy'yi kullanan profiller bitişten üç gün önce işaretlenir.",
       "presetDays": "{{days}} g",
       "presetAria": "Bugünden {{days}} gün sonra bitsin",
       "column": "Bitiş",
@@ -878,7 +878,11 @@
       "proxyEndsToday": "Proxy bugün bitiyor",
       "proxyExpiredOn": "Proxy {{date}} tarihinde bitti",
       "proxyEndsIn_one": "Proxy {{count}} gün sonra bitiyor",
-      "proxyEndsIn_other": "Proxy {{count}} gün sonra bitiyor"
+      "proxyEndsIn_other": "Proxy {{count}} gün sonra bitiyor",
+      "invalid": "Tarih değil. {{example}} biçiminde ya da gün sayısı olarak yazın.",
+      "openCalendar": "Tarih seç",
+      "prevMonth": "Önceki ay",
+      "nextMonth": "Sonraki ay"
     }
   },
   "groups": {

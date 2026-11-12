@@ -872,7 +872,7 @@
     },
     "expiry": {
       "label": "Fecha de caducidad",
-      "hint": "Opcional. Los perfiles con este proxy reciben una marca tres días antes de que caduque.",
+      "hint": "Opcional. Escribe una fecha o un número de días. Los perfiles con este proxy reciben una marca tres días antes de que caduque.",
       "presetDays": "{{days}} d",
       "presetAria": "Caduca dentro de {{days}} días",
       "column": "Caduca",
@@ -885,7 +885,11 @@
       "proxyExpiredOn": "El proxy caducó el {{date}}",
       "proxyEndsIn_one": "El proxy caduca en {{count}} día",
       "proxyEndsIn_other": "El proxy caduca en {{count}} días",
-      "proxyEndsIn_many": "El proxy caduca en {{count}} días"
+      "proxyEndsIn_many": "El proxy caduca en {{count}} días",
+      "invalid": "No es una fecha. Escríbela como {{example}} o como número de días.",
+      "openCalendar": "Elegir fecha",
+      "prevMonth": "Mes anterior",
+      "nextMonth": "Mes siguiente"
     }
   },
   "groups": {

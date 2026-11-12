@@ -305,6 +305,9 @@ export const RAIL_BUTTON = cn(
 export const RAIL_LABEL_CLASS =
   "relative hidden min-w-0 truncate text-[13px] lg:block";
 
+/** A rail tooltip that only repeats the label the wide sidebar already shows. */
+const WIDE_RAIL_HIDDEN = "lg:hidden";
+
 /**
  * The active item's pill, shared between the rail items so the whole pill
  * glides to the next page, its 2px bar with it.
@@ -634,7 +637,12 @@ export function RailNav({
                   {page === "agent" && <WaitingBadge count={waiting} />}
                 </button>
               </TooltipTrigger>
-              <TooltipContent side="right">{label}</TooltipContent>
+              <TooltipContent
+                side="right"
+                className={cn(label === t(labelKey) && WIDE_RAIL_HIDDEN)}
+              >
+                {label}
+              </TooltipContent>
             </Tooltip>
           );
         })}
@@ -664,7 +672,9 @@ export function RailNav({
               </button>
             </DropdownMenuTrigger>
           </TooltipTrigger>
-          <TooltipContent side="right">{t("rail.more.label")}</TooltipContent>
+          <TooltipContent side="right" className={WIDE_RAIL_HIDDEN}>
+            {t("rail.more.label")}
+          </TooltipContent>
         </Tooltip>
         <DropdownMenuContent
           side="right"
@@ -720,7 +730,9 @@ export function RailNav({
             </span>
           </button>
         </TooltipTrigger>
-        <TooltipContent side="right">{t("rail.settings")}</TooltipContent>
+        <TooltipContent side="right" className={WIDE_RAIL_HIDDEN}>
+          {t("rail.settings")}
+        </TooltipContent>
       </Tooltip>
     </nav>
   );

@@ -867,7 +867,7 @@
     },
     "expiry": {
       "label": "Ngày hết hạn",
-      "hint": "Không bắt buộc. Hồ sơ dùng proxy này được đánh dấu ba ngày trước khi hết hạn.",
+      "hint": "Không bắt buộc. Nhập ngày hoặc số ngày. Hồ sơ dùng proxy này được đánh dấu ba ngày trước khi hết hạn.",
       "presetDays": "{{days}} ngày",
       "presetAria": "Hết hạn sau {{days}} ngày kể từ hôm nay",
       "column": "Hết hạn",
@@ -878,7 +878,11 @@
       "proxyEndsToday": "Proxy hết hạn hôm nay",
       "proxyExpiredOn": "Proxy đã hết hạn ngày {{date}}",
       "proxyEndsIn_one": "Proxy hết hạn sau {{count}} ngày",
-      "proxyEndsIn_other": "Proxy hết hạn sau {{count}} ngày"
+      "proxyEndsIn_other": "Proxy hết hạn sau {{count}} ngày",
+      "invalid": "Không phải ngày. Hãy nhập như {{example}} hoặc số ngày.",
+      "openCalendar": "Chọn ngày",
+      "prevMonth": "Tháng trước",
+      "nextMonth": "Tháng sau"
     }
   },
   "groups": {

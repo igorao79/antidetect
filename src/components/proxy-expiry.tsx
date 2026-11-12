@@ -1,11 +1,18 @@
 "use client";
 
 import type { TFunction } from "i18next";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LuCalendarClock, LuX } from "react-icons/lu";
+import { LuCalendarClock, LuCalendarDays, LuX } from "react-icons/lu";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverAnchor,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Tooltip,
   TooltipContent,
@@ -14,13 +21,19 @@ import {
 import {
   dateInputDaysFromToday,
   expiryFromDateInput,
+  formatDateField,
   formatExpiryDate,
   PROXY_EXPIRY_PRESET_DAYS,
   type ProxyExpiryLevel,
   type ProxyExpiryStatus,
+  parseDateField,
   proxyExpiryStatus,
 } from "@/lib/proxy-expiry";
 import { cn } from "@/lib/utils";
+import { ProxyExpiryCalendar } from "./proxy-expiry-calendar";
+
+/** The placeholder shows the date this many days ahead, as an example. */
+const PLACEHOLDER_DAYS = 30;
 
 const LEVEL_TEXT: Record<ProxyExpiryLevel, string> = {
   ok: "text-muted-foreground",
@@ -125,43 +138,124 @@ export function ProxyExpiryCell({
 }
 
 /**
- * The proxy form's optional expiry: a date, quick presets counted from today,
- * a clear button and how much time is left.
+ * The proxy form's optional expiry: a date typed in the locale's order or as
+ * a number of days, or picked in the calendar; quick presets counted from
+ * today, a clear button and how much time is left.
  */
 export function ProxyExpiryField({
   value,
   onChange,
   disabled,
 }: {
-  /** The date input's `YYYY-MM-DD`, or "" for none. */
+  /** `YYYY-MM-DD`, or "" for none. */
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
 }) {
   const { t, i18n } = useTranslation();
+  const locale = i18n.language;
+  /** What is being typed; null while the field shows the stored value. */
+  const [draft, setDraft] = useState<string | null>(null);
+  const [isInvalid, setIsInvalid] = useState(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const status = proxyExpiryStatus(expiryFromDateInput(value));
+  const example = formatDateField(
+    dateInputDaysFromToday(PLACEHOLDER_DAYS),
+    locale,
+  );
+
+  const pick = (next: string) => {
+    setDraft(null);
+    setIsInvalid(false);
+    onChange(next);
+  };
+
+  const commit = () => {
+    if (draft === null) return;
+    const parsed = parseDateField(draft, locale);
+    if (parsed === null) {
+      setIsInvalid(true);
+      return;
+    }
+    pick(parsed);
+  };
+
+  const hint = isInvalid
+    ? t("proxies.expiry.invalid", { example })
+    : status
+      ? describeRemaining(t, status, locale)
+      : t("proxies.expiry.hint");
+
   return (
     <div className="grid gap-2">
       <Label htmlFor="proxy-expires-at">{t("proxies.expiry.label")}</Label>
       <div className="flex items-center gap-2">
-        <Input
-          id="proxy-expires-at"
-          type="date"
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-          }}
-          disabled={disabled}
-          aria-describedby="proxy-expires-at-hint"
-          className="w-auto flex-1"
-        />
-        {value && (
+        <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+          <PopoverAnchor asChild>
+            <div className="relative flex-1">
+              <Input
+                id="proxy-expires-at"
+                inputMode="numeric"
+                autoComplete="off"
+                spellCheck={false}
+                value={draft ?? formatDateField(value, locale)}
+                placeholder={example}
+                onChange={(e) => {
+                  setDraft(e.target.value);
+                  setIsInvalid(false);
+                }}
+                onBlur={commit}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    commit();
+                  } else if (e.key === "ArrowDown" && e.altKey) {
+                    e.preventDefault();
+                    setIsCalendarOpen(true);
+                  }
+                }}
+                disabled={disabled}
+                aria-invalid={isInvalid || undefined}
+                aria-describedby="proxy-expires-at-hint"
+                className="pr-9 tabular-nums"
+              />
+              <PopoverTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  disabled={disabled}
+                  aria-label={t("proxies.expiry.openCalendar")}
+                  className="absolute top-1/2 right-1 size-7 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <LuCalendarDays aria-hidden="true" />
+                </Button>
+              </PopoverTrigger>
+            </div>
+          </PopoverAnchor>
+          <PopoverContent
+            align="start"
+            className="w-auto p-3"
+            onOpenAutoFocus={(e) => {
+              e.preventDefault();
+            }}
+          >
+            <ProxyExpiryCalendar
+              value={value}
+              onSelect={(next) => {
+                pick(next);
+                setIsCalendarOpen(false);
+              }}
+            />
+          </PopoverContent>
+        </Popover>
+        {(value || draft) && (
           <Button
             type="button"
             variant="subtle"
             size="icon"
             onClick={() => {
-              onChange("");
+              pick("");
             }}
             disabled={disabled}
             aria-label={t("common.buttons.clear")}
@@ -179,7 +273,7 @@ export function ProxyExpiryField({
             size="sm"
             className="h-7 px-2.5 text-xs tabular-nums"
             onClick={() => {
-              onChange(dateInputDaysFromToday(days));
+              pick(dateInputDaysFromToday(days));
             }}
             disabled={disabled}
             aria-label={t("proxies.expiry.presetAria", { days })}
@@ -192,12 +286,14 @@ export function ProxyExpiryField({
         id="proxy-expires-at-hint"
         className={cn(
           "text-xs",
-          status ? LEVEL_TEXT[status.level] : "text-muted-foreground",
+          isInvalid
+            ? "text-destructive-text"
+            : status
+              ? LEVEL_TEXT[status.level]
+              : "text-muted-foreground",
         )}
       >
-        {status
-          ? describeRemaining(t, status, i18n.language)
-          : t("proxies.expiry.hint")}
+        {hint}
       </p>
     </div>
   );

@@ -3110,6 +3110,134 @@ test("an SSH proxy string fills the form, reads as an encrypted first hop, and i
   });
 });
 
+test("a proxy's expiry is typed as a date or days, or picked in the calendar", async () => {
+  await withApp("ui-proxy-expiry-field", async (app) => {
+    const ARROW_RIGHT = "";
+    const ENTER = "";
+    const pad = (n) => String(n).padStart(2, "0");
+    const iso = (date) =>
+      `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    const shown = (date) =>
+      new Intl.DateTimeFormat("en", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }).format(date);
+    const today = new Date();
+    const fieldValue = () =>
+      app.execute(
+        `return document.querySelector("#proxy-expires-at")?.value ?? null;`,
+      );
+    const blurField = () =>
+      app.execute(`document.querySelector("#proxy-expires-at").blur();`);
+    const calendarOpen = () =>
+      app.execute(
+        `return Boolean(document.querySelector('[data-testid="proxy-expiry-calendar"]'));`,
+      );
+
+    await app.clickSelector('[aria-label="Network"]');
+    await app.waitForText("New proxy");
+    await app.clickSelector('[aria-label="New proxy"]');
+    await app.waitForText("Add Proxy");
+    await app.fillSelector("#proxy-name", "E2E Expiry");
+    await app.fillSelector("#proxy-host", "198.51.100.7");
+    await app.fillSelector("#proxy-port", "8080");
+
+    // A lone number is days from today.
+    await app.fillSelector("#proxy-expires-at", "30");
+    await blurField();
+    const inThirty = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() + 30,
+    );
+    await app.waitFor(async () => (await fieldValue()) === shown(inThirty), {
+      description: "30 days written as a date",
+    });
+
+    // Something that is no date is kept and called out.
+    await app.fillSelector("#proxy-expires-at", "someday");
+    await blurField();
+    await app.waitForText(en.proxies.expiry.invalid.split(".")[0]);
+    assert.equal(await fieldValue(), "someday");
+
+    // The calendar: next month, the 15th.
+    await app.clickSelector(`[aria-label="${en.proxies.expiry.openCalendar}"]`);
+    await app.waitFor(calendarOpen, { description: "calendar open" });
+    const activeDay = () =>
+      app.execute(
+        `const node = document.activeElement;
+         return node?.dataset?.day ?? (node ? node.tagName + "." + (node.getAttribute("aria-label") ?? node.id) : null);`,
+      );
+    await app
+      .waitFor(async () => (await activeDay()) === iso(inThirty), {
+        timeoutMs: 5_000,
+        description: "the calendar opens on the date set",
+      })
+      .catch(async (error) => {
+        throw new Error(`${error.message}; focus is on ${await activeDay()}`);
+      });
+    await app.clickSelector(`[aria-label="${en.proxies.expiry.nextMonth}"]`);
+    const fifteenth = new Date(
+      inThirty.getFullYear(),
+      inThirty.getMonth() + 1,
+      15,
+    );
+    await app.clickSelector(`[data-day="${iso(fifteenth)}"]`);
+    await app.waitFor(async () => !(await calendarOpen()), {
+      description: "calendar closes on a pick",
+    });
+    assert.equal(await fieldValue(), shown(fifteenth));
+    assert.equal(
+      await app.visibleTextIncludes(en.proxies.expiry.invalid.split(".")[0]),
+      false,
+    );
+
+    // The keys: the picked day has the focus, the arrow moves it, Enter picks.
+    await app.clickSelector(`[aria-label="${en.proxies.expiry.openCalendar}"]`);
+    await app.waitFor(async () => (await activeDay()) === iso(fifteenth), {
+      description: "the picked day takes the focus",
+    });
+    const sixteenth = new Date(
+      fifteenth.getFullYear(),
+      fifteenth.getMonth(),
+      16,
+    );
+    await app.pressShortcut({ key: ARROW_RIGHT });
+    await app.waitFor(async () => (await activeDay()) === iso(sixteenth), {
+      description: "the arrow moves the focus a day on",
+    });
+    await app.pressShortcut({ key: ENTER });
+    await app.waitFor(async () => (await fieldValue()) === shown(sixteenth), {
+      description: "the keyboard picks the next day",
+    });
+
+    await app.clickTextIn('[role="dialog"]', en.proxies.add, {
+      roles: ["button"],
+    });
+    const saved = await app.waitFor(
+      async () =>
+        (await app.invoke("get_stored_proxies")).find(
+          (proxy) => proxy.name === "E2E Expiry",
+        ) ?? null,
+      { description: "the proxy to be stored" },
+    );
+    assert.equal(
+      saved.expires_at,
+      Math.floor(
+        new Date(
+          sixteenth.getFullYear(),
+          sixteenth.getMonth(),
+          16,
+          23,
+          59,
+          59,
+        ).getTime() / 1000,
+      ),
+    );
+  });
+});
+
 test("About exposes a searchable, responsive third-party license inventory", async () => {
   await withApp("ui-about-licenses", async (app) => {
     await app.clickSelector('[aria-label="More"]');

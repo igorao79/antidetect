@@ -91,3 +91,136 @@ export function formatExpiryDate(
     ...(date.getFullYear() === now.getFullYear() ? {} : { year: "numeric" }),
   }).format(date);
 }
+
+type DatePart = "day" | "month" | "year";
+
+const LONE_DAYS = /^\+?(\d{1,3})\s*[\p{L}.]*$/u;
+const ISO_LIKE = /^(\d{4})\D+(\d{1,2})\D+(\d{1,2})$/;
+const MAX_DAYS_TYPED = 3650;
+
+/** The order a locale writes day, month and year in (`ru`: day, month, year). */
+export function dateOrder(locale: string): DatePart[] {
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+    .formatToParts(new Date(2026, 10, 12))
+    .map((part) => part.type)
+    .filter(
+      (type): type is DatePart =>
+        type === "day" || type === "month" || type === "year",
+    );
+}
+
+/** A `YYYY-MM-DD` value the way the locale writes it in full: `03.11.2026`. */
+export function formatDateField(value: string, locale: string): string {
+  const expiry = expiryFromDateInput(value);
+  if (expiry === null) return "";
+  return new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(new Date(expiry * 1000));
+}
+
+const isoIfReal = (year: number, month: number, day: number): string | null => {
+  const value = `${year}-${pad(month)}-${pad(day)}`;
+  return expiryFromDateInput(value) === null ? null : value;
+};
+
+/**
+ * What a person typed into the expiry field, as `YYYY-MM-DD`: a date in the
+ * locale's order (`3.11.2026`, `3.11.26`, `3.11`, the next such day when the
+ * year is left out), `2026-11-03`, or a number of days from today (`30`,
+ * `30 дн.`). "" for an empty field, null for anything else.
+ */
+export function parseDateField(
+  text: string,
+  locale: string,
+  now = new Date(),
+): string | null {
+  const typed = text.trim();
+  if (!typed) return "";
+  const days = LONE_DAYS.exec(typed);
+  if (days) {
+    const count = Number(days[1]);
+    return count <= MAX_DAYS_TYPED ? dateInputDaysFromToday(count, now) : null;
+  }
+  const iso = ISO_LIKE.exec(typed);
+  if (iso) return isoIfReal(Number(iso[1]), Number(iso[2]), Number(iso[3]));
+
+  const numbers = typed.split(/\D+/).filter(Boolean);
+  if (numbers.length !== 2 && numbers.length !== 3) return null;
+  const order = dateOrder(locale).filter(
+    (part) => numbers.length === 3 || part !== "year",
+  );
+  const value: Record<DatePart, number> = { day: 0, month: 0, year: 0 };
+  order.forEach((part, index) => {
+    value[part] = Number(numbers[index]);
+  });
+  if (numbers.length === 3) {
+    const year = value.year < 100 ? 2000 + value.year : value.year;
+    return isoIfReal(year, value.month, value.day);
+  }
+  const thisYear = isoIfReal(now.getFullYear(), value.month, value.day);
+  if (thisYear === null) return null;
+  const passed = (expiryFromDateInput(thisYear) ?? 0) * 1000 < startOfDay(now);
+  return passed
+    ? isoIfReal(now.getFullYear() + 1, value.month, value.day)
+    : thisYear;
+}
+
+/** The weekday a locale's weeks start on, as `Date.getDay()` (Monday = 1). */
+export function weekStart(locale: string): number {
+  try {
+    const info = new Intl.Locale(locale) as Intl.Locale & {
+      getWeekInfo?: () => { firstDay: number };
+      weekInfo?: { firstDay: number };
+    };
+    const firstDay = info.getWeekInfo?.().firstDay ?? info.weekInfo?.firstDay;
+    return typeof firstDay === "number" ? firstDay % 7 : 1;
+  } catch {
+    return 1;
+  }
+}
+
+export interface CalendarDay {
+  /** `YYYY-MM-DD`. */
+  value: string;
+  day: number;
+  inMonth: boolean;
+}
+
+/** Six weeks of days around a month (`month` 0-11), for a calendar grid. */
+export function calendarDays(
+  year: number,
+  month: number,
+  firstWeekday: number,
+): CalendarDay[] {
+  const first = new Date(year, month, 1);
+  const lead = (first.getDay() - firstWeekday + 7) % 7;
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(year, month, 1 - lead + index);
+    return {
+      value: toDateInputValue(date),
+      day: date.getDate(),
+      inMonth: date.getMonth() === month,
+    };
+  });
+}
+
+/** The `YYYY-MM-DD` `days` days from another such value. */
+export function shiftDateInput(value: string, days: number): string {
+  const [year, month, day] = value.split("-").map(Number);
+  return toDateInputValue(new Date(year, month - 1, day + days));
+}
+
+/** The same day `months` months later, clamped to that month's last day. */
+export function shiftDateInputMonths(value: string, months: number): string {
+  const [year, month, day] = value.split("-").map(Number);
+  const last = new Date(year, month - 1 + months + 1, 0).getDate();
+  return toDateInputValue(
+    new Date(year, month - 1 + months, Math.min(day, last)),
+  );
+}

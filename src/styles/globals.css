@@ -172,6 +172,43 @@
   .dark * {
     scrollbar-color: oklch(0.8 0 0 / 25%) transparent;
   }
+  /* WebKit draws a light, always-on scrollbar when macOS shows scroll bars
+     permanently (a mouse is connected) and ignores scrollbar-color, so it
+     gets the same thin thumb on a transparent track. */
+  :root {
+    color-scheme: light;
+  }
+  .dark {
+    color-scheme: dark;
+  }
+  /* WebKit draws its own bar, light and deaf to the colour, whenever
+     scrollbar-width or scrollbar-color is set, and then skips the pseudo
+     elements below; only WebKit knows -apple-system-body. */
+  @supports (font: -apple-system-body) {
+    *,
+    .dark * {
+      scrollbar-width: auto;
+      scrollbar-color: auto;
+    }
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+    background: transparent;
+  }
+  ::-webkit-scrollbar-track,
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    border: 3px solid transparent;
+    border-radius: 9999px;
+    background-color: color-mix(in oklab, var(--foreground) 22%, transparent);
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in oklab, var(--foreground) 38%, transparent);
+  }
   body {
     @apply bg-background text-foreground;
   }

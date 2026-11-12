@@ -109,8 +109,11 @@ Fork-specific rules:
   without a proxy or VPN" off; the switch additionally blocks a profile that declares no route
   at all. A route no probe can judge passes.
 - Proxy expiry (`StoredProxy.expires_at`, unix seconds, synced; `src/lib/proxy-expiry.ts`,
-  `proxy-expiry.tsx`): optional in the proxy form (a date, or 7/14/30/60/90-day presets; valid
-  through the end of that local day), `create_stored_proxy` `expiresAt`, `update_stored_proxy`
+  `proxy-expiry.tsx`, `proxy-expiry-calendar.tsx`): optional in the proxy form, valid through
+  the end of that local day. The field takes a date typed in the locale's order (the year may be
+  left out), `YYYY-MM-DD` or a number of days, a pick from the app's own calendar (the
+  WebView's native date picker is not used), or a 7/14/30/60/90-day preset;
+  `create_stored_proxy` `expiresAt`, `update_stored_proxy`
   `expiresAt` or `clearExpiresAt`, REST `expires_at` (0 clears). The Network page has an
   "Expires" column; a profile whose proxy has expired or has 3 days or fewer left shows a
   calendar marker in the table's proxy cell.
@@ -844,6 +847,11 @@ destination above it, and the window opens at 1200x760.
 - Use these as Tailwind classes: `bg-success`, `text-destructive`, `border-warning`, etc.
 - For lighter variants use opacity: `bg-destructive/10`, `bg-success/10`, `border-warning/50`
 - Quiet, borderless fills (soft buttons, fields, chips, hover and selected rows) are tints of the theme's own `foreground` (`bg-foreground/5`) or `primary` (`bg-primary/10`), never `muted`, `accent` or `secondary`: several custom themes make those loud (Tokyo Night's accent is purple, its secondary cyan). Reach for the `soft`/`subtle` Button, `soft` Badge, `soft`/`bare` Input and `soft` SelectTrigger variants, or wrap a form section in `SoftFields` (`ui/field-variant.tsx`).
+- Scrollbars: macOS with "Show scroll bars: Always" made WKWebView draw light native bars, since
+  WebKit ignores `scrollbar-color` and lets `scrollbar-width`/`scrollbar-color` switch off the
+  `::-webkit-scrollbar` styles. `globals.css` resets both for WebKit only
+  (`@supports (font: -apple-system-body)`) and draws a thin `foreground`-tinted thumb on a
+  transparent track; `color-scheme` follows the theme's mode.
 - Data tables use `.data-table` (globals.css) with `DATA_TABLE_CLASSES` and `SortableColumnHeader` from `table-controls.tsx`: no row rules, one tinted header strip, rounded row highlight. Secondary row controls take `row-reveal` to appear on row hover or focus.
 
 ## App data directory naming
