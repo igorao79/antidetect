@@ -1,5 +1,11 @@
 import { execFileSync, execSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+} from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { downloadXray } from "./download-xray.mjs";
@@ -53,6 +59,36 @@ if (TARGET === HOST_TARGET || TARGET === "unknown") {
 const destDir = join(MANIFEST_DIR, "binaries");
 mkdirSync(destDir, { recursive: true });
 
+/**
+ * The environment the app's own `tauri build` compiles with. Tauri sets
+ * MACOSX_DEPLOYMENT_TARGET from `bundle.macOS.minimumSystemVersion`; a
+ * sidecar built without it gets other fingerprints for every crate with C
+ * code (objc2, ring, wry...), so the app build compiled them all again.
+ */
+function cargoEnv() {
+  // Only for the release build `tauri build` runs right after; local cargo
+  // test and clippy runs have no deployment target, and mixing the two in
+  // the debug target dir would rebuild those crates back and forth.
+  if (
+    PROFILE !== "release" ||
+    process.platform !== "darwin" ||
+    process.env.MACOSX_DEPLOYMENT_TARGET
+  ) {
+    return process.env;
+  }
+  try {
+    const config = JSON.parse(
+      readFileSync(join(MANIFEST_DIR, "tauri.conf.json"), "utf-8"),
+    );
+    const minimum = config?.bundle?.macOS?.minimumSystemVersion;
+    return minimum
+      ? { ...process.env, MACOSX_DEPLOYMENT_TARGET: minimum }
+      : process.env;
+  } catch {
+    return process.env;
+  }
+}
+
 function copyBinary(baseName) {
   const binName = isWindows ? `${baseName}.exe` : baseName;
   const source = join(srcDir, binName);
@@ -68,6 +104,7 @@ function copyBinary(baseName) {
   }
   execFileSync("cargo", buildArgs, {
     cwd: MANIFEST_DIR,
+    env: cargoEnv(),
     stdio: "inherit",
   });
 

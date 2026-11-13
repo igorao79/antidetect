@@ -283,9 +283,10 @@ Fork-specific rules:
   hand (a minor one) ships as it is. Pull before working on the branch again, the bump commit
   is only on GitHub (`gh workflow run release-macos.yml` starts a release by hand). GitHub's
   macOS runner runs `scripts/release-macos.sh`,
-  which builds, writes `SHA256SUMS.txt` and publishes the release (`beforeBuildCommand` builds the
-  frontend before the `donut-proxy` sidecar: the crate embeds `dist`, so the other order compiled
-  it twice and added about 11 minutes), with the signing certificate
+  which builds, writes `SHA256SUMS.txt` and publishes the release (the release sidecar build in
+  `copy-proxy-binary.mjs` sets `MACOSX_DEPLOYMENT_TARGET` from `minimumSystemVersion` as `tauri
+  build` does: without it every crate with C code got other fingerprints and the app build
+  compiled the whole crate graph a second time, about 15 minutes), with the signing certificate
   and the API key from the repository's Actions secrets (listed in the workflow). The script
   also runs on this Mac.
   Publishing is public (the repository is public): ask before pushing app changes to
