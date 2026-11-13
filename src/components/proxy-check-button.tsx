@@ -12,6 +12,7 @@ import {
   type CheckState,
 } from "@/components/entity-page";
 import { FlagIcon } from "@/components/flag-icon";
+import { RouteDiagnosisNote } from "@/components/route-diagnosis-note";
 import { Button } from "@/components/ui/button";
 import { ConfirmationMark } from "@/components/ui/confirmation-mark";
 import { OperationFlow } from "@/components/ui/operation-flow";
@@ -27,7 +28,12 @@ import {
 } from "@/components/ui/tooltip";
 import { translateBackendError } from "@/lib/backend-errors";
 import { formatRelativeTime } from "@/lib/flag-utils";
+import {
+  GENERIC_ROUTE_DIAGNOSIS,
+  type RouteDiagnosis,
+} from "@/lib/proxy-check-diagnosis";
 import { runProxyCheck, useProxyCheck } from "@/lib/proxy-check-store";
+import { showRouteFailureToast } from "@/lib/route-failure-toast";
 import { playUiSound } from "@/lib/ui-sounds";
 import { cn } from "@/lib/utils";
 import type { ProxyCheckHistoryEntry, StoredProxy, UdpSupport } from "@/types";
@@ -218,7 +224,12 @@ export function ProxyCheckButton({
 }: ProxyCheckButtonProps) {
   const { t } = useTranslation();
   const [open, setOpen] = React.useState(false);
-  const { result, checking, failure } = useProxyCheck(proxy);
+  const {
+    result,
+    checking,
+    failure,
+    diagnosis: failureDiagnosis,
+  } = useProxyCheck(proxy);
   const [copied, setCopied] = React.useState(false);
   const copiedTimer = React.useRef<number | null>(null);
   const [history, setHistory] = React.useState<ProxyCheckHistoryEntry[] | null>(
@@ -279,9 +290,14 @@ export function ProxyCheckButton({
         </div>,
       );
     } catch (error) {
-      toast.error(
-        t("proxyCheck.failed", { error: translateBackendError(t, error) }),
-      );
+      showRouteFailureToast(t, {
+        title: t("proxyCheck.failed", {
+          error: translateBackendError(t, error),
+        }),
+        error,
+        assumeRoute: true,
+        id: `proxy-check-failed-${proxy.id}`,
+      });
     } finally {
       // A failed check is a line in the trail too, so the list is refreshed
       // either way.
@@ -316,6 +332,11 @@ export function ProxyCheckButton({
         ? "appFeedback.routeDetails"
         : "proxyCheck.tooltipDefault",
   );
+  // A failed receipt read back from disk has no error text, only the verdict.
+  const diagnosis: RouteDiagnosis | null =
+    result && !result.is_valid && !checking
+      ? (failureDiagnosis ?? GENERIC_ROUTE_DIAGNOSIS)
+      : null;
   const state: CheckState = checking
     ? "checking"
     : !result
@@ -436,6 +457,11 @@ export function ProxyCheckButton({
                   time: formatRelativeTime(result.timestamp),
                 })}
               </p>
+              {diagnosis && (
+                <p className="mt-1 max-w-64 text-xs text-primary-foreground">
+                  {t(diagnosis.meaningKey)}
+                </p>
+              )}
             </div>
           ) : (
             <p>{t("appFeedback.notChecked")}</p>
@@ -560,6 +586,7 @@ export function ProxyCheckButton({
           {failure && (
             <p className="break-words text-destructive-text">{failure}</p>
           )}
+          {diagnosis && <RouteDiagnosisNote diagnosis={diagnosis} />}
           <p>{t("appFeedback.routeScope")}</p>
         </div>
         <section

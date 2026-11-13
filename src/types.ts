@@ -36,6 +36,8 @@ export interface BrowserProfile {
   ephemeral?: boolean;
   temporary?: boolean; // Created for one automation run; deleted when its browser stops
   clear_on_close?: boolean;
+  /** Bulk launch, stop, delete and assign skip this profile. */
+  bulk_locked?: boolean;
   extension_group_id?: string;
   proxy_bypass_rules?: string[];
   created_by_id?: string;

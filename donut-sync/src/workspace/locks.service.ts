@@ -90,6 +90,25 @@ export class LocksService {
     return true;
   }
 
+  /**
+   * Drop a lock on behalf of the server's owner or the member holding it, for
+   * a session that went away without letting go. Null when no lock is held,
+   * false when the caller may not, true when it was dropped.
+   */
+  forceRelease(
+    profileId: string,
+    memberId: string,
+    isOwner: boolean,
+  ): boolean | null {
+    this.sweep();
+    const held = this.locks.get(profileId);
+    if (!held) return null;
+    if (!isOwner && held.lockedBy !== memberId) return false;
+    this.locks.delete(profileId);
+    this.announce(profileId);
+    return true;
+  }
+
   /** Drop every lock a removed member held. */
   releaseAllOf(memberId: string): void {
     for (const [profileId, lock] of this.locks) {

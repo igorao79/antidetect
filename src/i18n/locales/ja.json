@@ -367,7 +367,10 @@
     "donutLogo": "Owl ロゴ",
     "scrollGroupsLeft": "グループを左へスクロール",
     "scrollGroupsRight": "グループを右へスクロール",
-    "allGroups": "すべてのグループ"
+    "allGroups": "すべてのグループ",
+    "quickProfile": "クイックプロファイル",
+    "quickProfileHint": "既定の設定で一時プロファイルを作成し、すぐに起動します。閉じたときに保存するか選べます。",
+    "moreWaysToCreate": "プロファイルを作成するその他の方法"
   },
   "search": {
     "helpLabel": "検索構文",
@@ -887,7 +890,40 @@
       "invalid": "日付として読めません。{{example}} の形式か日数で入力してください。",
       "openCalendar": "日付を選択",
       "prevMonth": "前の月",
-      "nextMonth": "次の月"
+      "nextMonth": "次の月",
+      "summary": "{{days}}日以内に期限切れ: {{count}}",
+      "summaryFilter": "これらのみ表示",
+      "summaryShowAll": "すべて表示",
+      "extend": "期限を延長",
+      "extendBy": "{{days}}日延長",
+      "extended": "{{days}}日延長したプロキシ: {{count}}"
+    },
+    "actions": {
+      "copyProxy": "プロキシをコピー",
+      "copied": "プロキシをコピーしました",
+      "copyFailed": "プロキシをコピーできませんでした",
+      "more": "{{name}} のその他の操作",
+      "moreTooltip": "その他の操作",
+      "replaceInProfiles": "プロファイル内で置き換え…",
+      "assignToProfiles": "プロファイルに割り当て…"
+    },
+    "replace": {
+      "title": "プロファイルのプロキシを置き換え",
+      "description": "「{{name}}」を使用しているすべてのプロファイルが、選んだプロキシに切り替わります。",
+      "target": "新しいプロキシ",
+      "targetPlaceholder": "プロキシを選択",
+      "confirm": "置き換え",
+      "done": "「{{name}}」に切り替えたプロファイル: {{count}}",
+      "usedBy": "現在使用中のプロファイル: {{count}}",
+      "noneUsing": "このプロキシを使用しているプロファイルはありません。"
+    },
+    "assign": {
+      "title": "「{{name}}」をプロファイルに割り当て",
+      "description": "このプロキシを使うプロファイルにチェックを入れてください。チェックを外すと、そのプロファイルからプロキシが外れます。",
+      "search": "プロファイルを検索",
+      "empty": "プロファイルが見つかりません",
+      "save": "保存",
+      "saved": "変更したプロファイル: {{count}}"
     }
   },
   "groups": {
@@ -1803,7 +1839,12 @@
       "title": "プロフィールを複製",
       "description": "複製されたプロフィールの名前を入力してください",
       "namePlaceholder": "プロフィール名",
-      "button": "複製"
+      "button": "複製",
+      "copiedNote": "コピーされるもの: 設定とブラウザフォルダ全体(Cookie、保存済みログイン、開いているタブを含む)。新規になるもの: フィンガープリントのノイズシード。コピーされないもの: 同期とパスワードロック。",
+      "madeMany": "{{count}} 個のコピーを作成しました",
+      "buttonMany": "{{count}} 個クローン",
+      "namesHint": "コピーは {{first}}、{{second}}… と名付けられます(使用済みの名前は飛ばされます)",
+      "maxHint": "一度に最大 {{max}} 個まで"
     },
     "duplicate": "複製",
     "breadcrumbRoot": "プロファイル",
@@ -1824,7 +1865,8 @@
       "startPages": "スタートページ",
       "twoFactor": "2FA コード",
       "requests": "リクエスト",
-      "logs": "ログ"
+      "logs": "ログ",
+      "tasks": "タスク"
     },
     "sectionDesc": {
       "fingerprint": "フィンガープリント対策スクリプトに対するこのプロファイルの表示を設定します。",
@@ -1902,6 +1944,14 @@
       "copyPort": "ポートをコピー",
       "copyWsUrl": "WebSocket URL をコピー",
       "copyCode": "{{tool}} のコードをコピー"
+    },
+    "lockHeld": {
+      "byMember": "{{name}} が別のコンピューターで開いています",
+      "byYou": "あなたの別のセッションで開いています",
+      "release": "解放",
+      "confirmTitle": "このプロファイルを解放しますか？",
+      "confirmBody": "「{{profile}}」は {{name}} が開いています。解放すると、そのセッションの未同期の変更が失われる可能性があります。",
+      "released": "「{{profile}}」を解放しました"
     }
   },
   "profileTransfer": {
@@ -2570,7 +2620,12 @@
       "copyId": "ID をコピー",
       "runRemote": "クラウドで実行",
       "lockNow": "今すぐロック",
-      "moveToTrash": "ゴミ箱に移動"
+      "moveToTrash": "ゴミ箱に移動",
+      "pin": "先頭に固定",
+      "unpin": "固定を解除",
+      "bulkLock": "一括操作から保護",
+      "bulkUnlock": "一括操作を許可",
+      "copyProxy": "プロキシをコピー"
     },
     "emptyGroupTitle": "このグループは空です",
     "emptyGroupHint": "このグループにプロファイルを作成するか、既存のプロファイルを移動してください。",
@@ -2586,6 +2641,26 @@
       "launching": "起動中…",
       "stopping": "停止中…",
       "singleInstance": "このブラウザーは一度に 1 つしか実行できません。先に実行中のものを停止してください。"
+    },
+    "pin": {
+      "pin": "{{name}} を固定",
+      "unpin": "{{name}} の固定を解除",
+      "pinSelected": "選択を先頭に固定",
+      "unpinSelected": "選択の固定を解除",
+      "filter": "固定",
+      "filterPinned": "固定済み",
+      "filterUnpinned": "固定なし"
+    },
+    "bulkLock": {
+      "label": "一括操作から保護済み",
+      "tooltip": "一括の起動・停止・削除・割り当てではこのプロファイルはスキップされます。1行ごとの操作は引き続き使えます。",
+      "toggleSelected": "選択を一括操作から保護(または許可)",
+      "skipped": "保護されたプロファイル {{count}} 件をスキップしました"
+    },
+    "bulkProxyCheck": {
+      "action": "選択したプロファイルのプロキシを確認",
+      "none": "選択したプロファイルに確認できるプロキシがありません",
+      "summary": "プロキシ確認結果: 正常 {{ok}} 件、失敗 {{failed}} 件"
     }
   },
   "dataTableActionBar": {
@@ -2768,7 +2843,7 @@
     "profileNameExists": "「{{name}}」という名前のプロファイルは既に存在します",
     "importSourceNotFound": "ソースパスが存在しません",
     "importNoItems": "インポートする項目が選択されていません",
-    "browserNotDownloaded": "{{browser}}のダウンロード済みバージョンがありません。先にダウンロードしてから、再度インポートしてください。",
+    "browserNotDownloaded": "{{browser}}のダウンロード済みバージョンがありません。先にダウンロードしてください。",
     "archiveExtractionFailed": "アーカイブの展開に失敗しました：{{detail}}",
     "unsupportedArchiveFormat": "サポートされていないアーカイブ形式です。ZIPアーカイブのみサポートされています。",
     "clearOnCloseUnavailable": "終了時消去は、一時プロファイルやパスワード保護されたプロファイルでは利用できません。",
@@ -3141,7 +3216,24 @@
     "proxyTypeUnsupported": "プロキシの種類「{{type}}」はサポートされていません。",
     "vpnNameExists": "「{{name}}」という名前の VPN は既に存在します。",
     "vpnImportInvalid": "VPN 設定をインポートできませんでした: {{detail}}",
-    "dnsSourceInvalid": "「{{source}}」はリストのソースとして使えません。http:// または https:// のアドレスを指定してください。"
+    "dnsSourceInvalid": "「{{source}}」はリストのソースとして使えません。http:// または https:// のアドレスを指定してください。",
+    "groupNameTooLong": "グループ名は40文字以内にしてください。",
+    "groupNameInvalid": "グループ名は制御文字を含まない1行で入力してください。",
+    "proxyReplaceSame": "置き換え先には別のプロキシを選んでください。",
+    "proxyReplaceFailed": "プロファイル内のプロキシを置き換えられませんでした: {{detail}}",
+    "cloneCountInvalid": "コピー数は 1 から {{max}} の間で指定してください。",
+    "profileCloneFailed": "{{total}} 個中 {{done}} 個をコピーしたところで停止しました: {{detail}}",
+    "lockReleaseNotAllowed": "ロックを解放できるのはサーバーのオーナーまたはロックを保持しているメンバーのみで、このコンピューターで開いているプロファイルは対象外です。",
+    "lockReleaseFailed": "プロファイルのロックを解放できませんでした: {{detail}}",
+    "profileTaskTitleEmpty": "タスクのタイトルを入力してください。",
+    "profileTaskTitleTooLong": "タスクのタイトルが長すぎます(最大200文字)。",
+    "profileTaskNotFound": "そのタスクは既に存在しません。",
+    "profileTaskLimitReached": "このプロファイルのタスクが多すぎます。完了したものを先に削除してください。",
+    "profileTasksLoadFailed": "タスクファイルを読み込めませんでした: {{detail}}",
+    "profileTasksSaveFailed": "タスクを保存できませんでした: {{detail}}",
+    "profilesExportPathInvalid": "拡張子が .csv のファイルを選んでください。",
+    "profilesExportTooLarge": "エクスポートが大きすぎて保存できません。",
+    "profilesExportFailed": "エクスポートファイルを書き込めませんでした: {{detail}}"
   },
   "rail": {
     "profiles": "プロファイル",
@@ -5130,5 +5222,137 @@
     "trafficStopped": "通信は止まっています。",
     "waiting": "プロキシが応答すると通信は再開します。",
     "cut": "セッションが切断されました。再接続するには、プロファイルを停止してもう一度起動してください。"
+  },
+  "proxyPicker": {
+    "current": "現在",
+    "check": "確認",
+    "checking": "確認中...",
+    "checkNamed": "プロキシ {{name}} を確認",
+    "copy": "プロキシをコピー",
+    "copyTooltip": "scheme://user:pass@host:port の形式でプロキシをコピー",
+    "copied": "プロキシのアドレスをコピーしました",
+    "copyFailed": "プロキシのアドレスをコピーできませんでした"
+  },
+  "profileExit": {
+    "title": "接続元の見え方",
+    "country": "国",
+    "city": "都市",
+    "timezone": "タイムゾーン",
+    "language": "言語",
+    "notChecked": "まだ確認していません。プロキシを確認すると、このプロファイルの接続元が表示されます。",
+    "recheck": "再確認"
+  },
+  "quickProfile": {
+    "title": "このプロファイルを保存しますか?",
+    "body": "クイックプロファイルが閉じられました。Cookie とデータごと保存するか、破棄してください。",
+    "nameLabel": "プロファイル名",
+    "keep": "保存",
+    "discard": "破棄",
+    "kept": "プロファイルを保存しました: {{name}}"
+  },
+  "routeDiagnosis": {
+    "details": "詳細",
+    "tryLabel": "試すこと:",
+    "localNote": "チェックはこのコンピューターから実行されるため、ローカルのVPNやシステムプロキシで結果が変わることがあります。",
+    "timeout": {
+      "meaning": "プロキシが時間内に応答しませんでした。遅い、過負荷、または停止している可能性があります。",
+      "action": "1分ほど待ってからもう一度お試しください。続く場合はプロキシの提供元に確認してください。"
+    },
+    "unreachable": {
+      "meaning": "プロキシに接続できませんでした。",
+      "action": "ホストとポートを確認し、プロキシが有効なままか提供元に確認してください。"
+    },
+    "refused": {
+      "meaning": "プロキシサーバーが接続を拒否または切断しました。",
+      "action": "ポートとプロキシの種類（HTTP、SOCKS5）を確認し、プロキシが稼働しているか確かめてください。"
+    },
+    "dns": {
+      "meaning": "プロキシのホスト名が見つかりませんでした。",
+      "action": "ホスト名に誤りがないか確認するか、代わりにプロキシのIPアドレスを使ってください。"
+    },
+    "auth": {
+      "meaning": "プロキシがユーザー名またはパスワードを受け付けないか、お使いのIPアドレスを許可していません。",
+      "action": "ユーザー名とパスワードを入力し直し、提供元のIP許可リストを確認してください。"
+    },
+    "forbidden": {
+      "meaning": "プロキシがアクセスを拒否しました（403）。",
+      "action": "お使いのIPアドレスが提供元で許可されているか、プランが有効か確認してください。"
+    },
+    "payment": {
+      "meaning": "提供元が支払いを求めています（402）。プランの期限切れ、または通信量の使い切りの可能性があります。",
+      "action": "提供元で残高とプランを確認してください。"
+    },
+    "gateway": {
+      "meaning": "プロキシがサーバーエラー（502または503）を返しました。提供元側の障害か混雑が考えられます。",
+      "action": "少し待ってから再確認するか、提供元に別のエンドポイントを問い合わせてください。"
+    },
+    "tls": {
+      "meaning": "プロキシとの安全な接続を確立できませんでした。このポートでTLSを使っていないか、証明書がホスト名と一致していない可能性があります。",
+      "action": "プロキシの種類とポートを確認するか、証明書の発行先のホスト名を使ってください。"
+    },
+    "notWorking": {
+      "meaning": "このルートはチェックに通らなかったため、現在は使用できません。",
+      "action": "プロキシのチェックを実行して原因を確認し、修正または交換してください。"
+    },
+    "missing": {
+      "meaning": "このプロファイルが使用しているプロキシまたはVPNは削除されています。",
+      "action": "起動する前に、プロファイルで別のプロキシまたはVPNを選んでください。"
+    },
+    "config": {
+      "meaning": "プロキシのアドレス、ポート、または種類が正しくありません。",
+      "action": "プロキシを開いて、ホスト、ポート、種類を修正してください。"
+    },
+    "generic": {
+      "meaning": "チェックがプロキシを通過できませんでした。",
+      "action": "ホスト、ポート、種類、ログイン情報を確認してもう一度お試しください。それでも失敗する場合は提供元に問い合わせてください。"
+    }
+  },
+  "profileTasks": {
+    "description": "このプロファイルのタスクです。期限は任意です。このコンピュータにのみ保存され、同期されません。",
+    "titleLabel": "タスク",
+    "titlePlaceholder": "やることを入力",
+    "dueDate": "期限の日付",
+    "dueTime": "期限の時刻",
+    "add": "タスクを追加",
+    "empty": "タスクはまだありません。",
+    "openCount_one": "未完了のタスク {{count}} 件",
+    "openCount_other": "未完了のタスク {{count}} 件",
+    "openCount_few": "未完了のタスク {{count}} 件",
+    "openCount_many": "未完了のタスク {{count}} 件",
+    "dueAt": "期限 {{when}}",
+    "overdue": "{{when}} から期限切れ",
+    "markDone": "「{{title}}」を完了にする",
+    "edit": "「{{title}}」を編集",
+    "delete": "「{{title}}」を削除",
+    "reminderTitle": "タスクの期限です: {{title}}",
+    "reminderTitleMany_one": "{{count}} 件のタスクの期限です",
+    "reminderTitleMany_other": "{{count}} 件のタスクの期限です",
+    "reminderTitleMany_few": "{{count}} 件のタスクの期限です",
+    "reminderTitleMany_many": "{{count}} 件のタスクの期限です"
+  },
+  "profilesExport": {
+    "action": "CSV にエクスポート",
+    "title": "プロファイルを CSV にエクスポート",
+    "description": "表を Excel で文字化けせずに開けるファイルとして保存します。",
+    "scopeSelected": "選択したプロファイル ({{count}})",
+    "scopeShown": "表に表示中のすべてのプロファイル ({{count}})",
+    "columnsHint": "列: 名前、グループ、タグ、メモ、ステータス、プロキシ、エンジン、作成日、最終起動。プロキシの認証情報は出力されません。",
+    "saved_one": "{{count}} 件のプロファイルをエクスポートしました",
+    "saved_other": "{{count}} 件のプロファイルをエクスポートしました",
+    "saved_few": "{{count}} 件のプロファイルをエクスポートしました",
+    "saved_many": "{{count}} 件のプロファイルをエクスポートしました",
+    "failed": "プロファイルをエクスポートできませんでした",
+    "columns": {
+      "name": "名前",
+      "group": "グループ",
+      "tags": "タグ",
+      "note": "メモ",
+      "status": "ステータス",
+      "proxyName": "プロキシ",
+      "proxyAddress": "プロキシのアドレス",
+      "engine": "エンジン",
+      "created": "作成日",
+      "lastLaunched": "最終起動"
+    }
   }
 }

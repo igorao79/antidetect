@@ -1413,6 +1413,7 @@ mod tests {
       start_urls: Vec::new(),
       password_protected: false,
       clear_on_close: false,
+      bulk_locked: false,
       created_at: None,
       updated_at: None,
     };

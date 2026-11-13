@@ -116,7 +116,7 @@ function entitySearch(row: Entity) {
   return parts.join(" ");
 }
 
-function extraValue(row: Entity, id: string): string | number {
+function extraValue(row: Entity, id: string): string | number | undefined {
   if (id === "sync") return row.sync_enabled ? 1 : 0;
   if (id === "count" && "count" in row) return row.count;
   if (id === "bookmarks" && "bookmark_count" in row)
@@ -133,8 +133,8 @@ function extraValue(row: Entity, id: string): string | number {
       return canonicalProxyType(row.proxy_settings.proxy_type);
     if (id === "hostPort")
       return `${row.proxy_settings.host}:${row.proxy_settings.port}`;
-    // Proxies without a date sort after every dated one.
-    if (id === "expires") return row.expires_at ?? Number.MAX_SAFE_INTEGER;
+    // Undefined, so the column's sortUndefined keeps undated proxies last both ways.
+    if (id === "expires") return row.expires_at ?? undefined;
   }
   return "";
 }
@@ -309,21 +309,16 @@ export function ManagedDataTable<T extends Entity>({
   const rows = table.getRowModel().rows;
   const animateRows = motionAllowed && rows.length <= ANIMATED_ROW_LIMIT;
   const rowHeight = view.preferences.density === "comfortable" ? 48 : 36;
-  const sized =
-    Object.keys(view.preferences.sizing).length > 0 ||
-    Object.values(view.preferences.visibility).some(Boolean);
-  const minWidth = sized
-    ? table
-        .getVisibleLeafColumns()
-        .reduce(
-          (sum, column) =>
-            sum +
-            (column.id === "name" && !view.preferences.sizing.name
-              ? 220
-              : column.getSize()),
-          0,
-        )
-    : undefined;
+  const minWidth = table
+    .getVisibleLeafColumns()
+    .reduce(
+      (sum, column) =>
+        sum +
+        (column.id === "name" && !view.preferences.sizing.name
+          ? 220
+          : column.getSize()),
+      0,
+    );
   if (!loading && filters.total === 0 && empty)
     return (
       <div

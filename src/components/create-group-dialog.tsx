@@ -19,6 +19,8 @@ import { translateBackendError } from "@/lib/backend-errors";
 import type { ProfileGroup } from "@/types";
 import { RippleButton } from "./ui/ripple";
 
+export const GROUP_NAME_MAX_LENGTH = 40;
+
 interface CreateGroupDialogProps {
   isOpen: boolean;
   onClose: () => void;
@@ -78,6 +80,7 @@ export function CreateGroupDialog({
             <Label htmlFor="group-name">{t("groups.form.name")}</Label>
             <Input
               id="group-name"
+              maxLength={GROUP_NAME_MAX_LENGTH}
               placeholder={t("groups.form.namePlaceholder")}
               value={groupName}
               onChange={(e) => {

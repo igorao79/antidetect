@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { usePinnedProfiles } from "@/hooks/use-pinned-profiles";
 import { useTableFilters } from "@/hooks/use-table-tools";
 import {
   matchesProfile,
@@ -19,6 +20,7 @@ export function useProfileTableFilters(
   context: ProfileSearchContext,
 ) {
   const { t } = useTranslation();
+  const { pinned } = usePinnedProfiles();
   const searched = useMemo(() => {
     const parsed = parseProfileSearch(query);
     return parsed.isEmpty
@@ -35,6 +37,15 @@ export function useProfileTableFilters(
         options: [
           { value: "running", label: t("tables.running") },
           { value: "stopped", label: t("tables.stopped") },
+        ],
+      },
+      {
+        id: "pinned",
+        label: t("profileTable.pin.filter"),
+        value: (row) => (pinned.has(row.id) ? "pinned" : "unpinned"),
+        options: [
+          { value: "pinned", label: t("profileTable.pin.filterPinned") },
+          { value: "unpinned", label: t("profileTable.pin.filterUnpinned") },
         ],
       },
       {
@@ -83,7 +94,7 @@ export function useProfileTableFilters(
         ],
       },
     ],
-    [profiles, context, t],
+    [profiles, context, pinned, t],
   );
   return useTableFilters(searched, noTextSearch, definitions, "profiles");
 }

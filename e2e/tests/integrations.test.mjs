@@ -2077,3 +2077,14 @@ test("the Octo-compatible API reads, edits and filters profiles, moves cookies, 
     },
   );
 });
+
+test("releasing a profile lock is refused without a joined Owl server", async () => {
+  await withApp("integrations-lock-release", async (app) => {
+    assert.match(
+      await app.invokeError("release_team_lock", {
+        profileId: "00000000-0000-0000-0000-000000000000",
+      }),
+      /LOCK_RELEASE_NOT_ALLOWED/,
+    );
+  });
+});

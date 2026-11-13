@@ -21,7 +21,26 @@ export function useTableFilters<T>(
   tableId?: TableId,
 ) {
   const [query, setQuery] = useState("");
-  const [values, setValues] = useState<TableFilterValues>({});
+  const [chosen, setValues] = useState<TableFilterValues>({});
+  const values = useMemo(() => {
+    let changed = false;
+    const kept: TableFilterValues = {};
+    for (const [id, selected] of Object.entries(chosen)) {
+      const options = definitions.find((filter) => filter.id === id)?.options;
+      const present = options?.length
+        ? selected.filter((value) =>
+            options.some((option) => option.value === value),
+          )
+        : selected;
+      if (present.length !== selected.length) changed = true;
+      if (present.length) kept[id] = present;
+      else changed = true;
+    }
+    return changed ? kept : chosen;
+  }, [chosen, definitions]);
+  useEffect(() => {
+    if (values !== chosen) setValues(values);
+  }, [values, chosen]);
   const rows = useMemo(
     () => filterTableRows(data, query, searchText, definitions, values),
     [data, query, searchText, definitions, values],
@@ -104,6 +123,7 @@ export function useTableKeyboard<T extends RowData>(
   options?: {
     scrollToIndex?: (index: number) => void;
     edit?: (rowId: string, columnId: string) => boolean;
+    rows?: readonly { id: string }[];
   },
 ) {
   const element = useRef<HTMLTableElement | null>(null);
@@ -123,7 +143,7 @@ export function useTableKeyboard<T extends RowData>(
       if (pending.current !== null) cancelAnimationFrame(pending.current);
     };
   }, []);
-  const rows = table.getRowModel().rows;
+  const rows = options?.rows ?? table.getRowModel().rows;
   const columns = table.getVisibleLeafColumns();
   const rowId = rows.some((row) => row.id === active?.rowId)
     ? active?.rowId

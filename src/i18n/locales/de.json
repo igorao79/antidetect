@@ -367,7 +367,10 @@
     "donutLogo": "Logo von Owl",
     "scrollGroupsLeft": "Gruppen nach links scrollen",
     "scrollGroupsRight": "Gruppen nach rechts scrollen",
-    "allGroups": "Alle Gruppen"
+    "allGroups": "Alle Gruppen",
+    "quickProfile": "Schnellprofil",
+    "quickProfileHint": "Ein temporäres Profil mit Standardeinstellungen, sofort gestartet. Beim Schließen entscheiden Sie, ob es bleibt.",
+    "moreWaysToCreate": "Weitere Möglichkeiten, ein Profil zu erstellen"
   },
   "search": {
     "helpLabel": "Suchsyntax",
@@ -887,7 +890,40 @@
       "invalid": "Kein Datum. Schreibe es wie {{example}} oder als Anzahl Tage.",
       "openCalendar": "Datum wählen",
       "prevMonth": "Vorheriger Monat",
-      "nextMonth": "Nächster Monat"
+      "nextMonth": "Nächster Monat",
+      "summary": "Läuft innerhalb von {{days}} Tagen ab: {{count}}",
+      "summaryFilter": "Nur diese anzeigen",
+      "summaryShowAll": "Alle anzeigen",
+      "extend": "Ablauf verlängern",
+      "extendBy": "Um {{days}} Tage verlängern",
+      "extended": "Ablauf um {{days}} Tage verlängert bei Proxys: {{count}}"
+    },
+    "actions": {
+      "copyProxy": "Proxy kopieren",
+      "copied": "Proxy kopiert",
+      "copyFailed": "Der Proxy konnte nicht kopiert werden",
+      "more": "Weitere Aktionen für {{name}}",
+      "moreTooltip": "Weitere Aktionen",
+      "replaceInProfiles": "In Profilen ersetzen…",
+      "assignToProfiles": "Profilen zuweisen…"
+    },
+    "replace": {
+      "title": "Proxy in Profilen ersetzen",
+      "description": "Alle Profile mit „{{name}}“ wechseln zum gewählten Proxy.",
+      "target": "Neuer Proxy",
+      "targetPlaceholder": "Proxy auswählen",
+      "confirm": "Ersetzen",
+      "done": "Profile auf „{{name}}“ umgestellt: {{count}}",
+      "usedBy": "Aktuell verwendende Profile: {{count}}",
+      "noneUsing": "Kein Profil verwendet diesen Proxy."
+    },
+    "assign": {
+      "title": "„{{name}}“ Profilen zuweisen",
+      "description": "Wähle die Profile, die diesen Proxy verwenden sollen. Wer abgewählt wird, verliert den Proxy.",
+      "search": "Profile suchen",
+      "empty": "Keine Profile gefunden",
+      "save": "Speichern",
+      "saved": "Geänderte Profile: {{count}}"
     }
   },
   "groups": {
@@ -1803,7 +1839,12 @@
       "title": "Profil klonen",
       "description": "Geben Sie einen Namen für das geklonte Profil ein",
       "namePlaceholder": "Profilname",
-      "button": "Klonen"
+      "button": "Klonen",
+      "copiedNote": "Kopiert: Einstellungen und der gesamte Browser-Ordner, einschließlich Cookies, gespeicherter Logins und offener Tabs. Neu: die Rauschwerte des Fingerabdrucks. Nicht kopiert: Synchronisierung und Passwortschutz.",
+      "madeMany": "{{count}} Kopien erstellt",
+      "buttonMany": "{{count}} klonen",
+      "namesHint": "Kopien heißen {{first}}, {{second}} … (vergebene Namen werden übersprungen)",
+      "maxHint": "Bis zu {{max}} Kopien auf einmal"
     },
     "duplicate": "Duplizieren",
     "breadcrumbRoot": "Profil",
@@ -1824,7 +1865,8 @@
       "startPages": "Startseiten",
       "twoFactor": "2FA-Codes",
       "requests": "Anfragen",
-      "logs": "Protokolle"
+      "logs": "Protokolle",
+      "tasks": "Aufgaben"
     },
     "sectionDesc": {
       "fingerprint": "Legen Sie fest, wie dieses Profil für Fingerprinting-Skripte erscheint.",
@@ -1902,6 +1944,14 @@
       "copyPort": "Port kopieren",
       "copyWsUrl": "WebSocket-URL kopieren",
       "copyCode": "{{tool}}-Code kopieren"
+    },
+    "lockHeld": {
+      "byMember": "Bei {{name}} auf einem anderen Computer geöffnet",
+      "byYou": "In einer anderen Ihrer Sitzungen geöffnet",
+      "release": "Freigeben",
+      "confirmTitle": "Profil freigeben?",
+      "confirmBody": "„{{profile}}“ ist bei {{name}} geöffnet. Wenn Sie es freigeben, können nicht synchronisierte Änderungen dieser Sitzung verloren gehen.",
+      "released": "„{{profile}}“ wurde freigegeben"
     }
   },
   "profileTransfer": {
@@ -2570,7 +2620,12 @@
       "copyId": "ID kopieren",
       "runRemote": "In der Cloud ausführen",
       "lockNow": "Jetzt sperren",
-      "moveToTrash": "In den Papierkorb"
+      "moveToTrash": "In den Papierkorb",
+      "pin": "Oben anheften",
+      "unpin": "Lösen",
+      "bulkLock": "Vor Massenaktionen schützen",
+      "bulkUnlock": "Massenaktionen erlauben",
+      "copyProxy": "Proxy kopieren"
     },
     "emptyGroupTitle": "Diese Gruppe ist leer",
     "emptyGroupHint": "Erstellen Sie ein Profil in dieser Gruppe oder verschieben Sie vorhandene Profile hierher.",
@@ -2586,6 +2641,26 @@
       "launching": "Wird gestartet…",
       "stopping": "Wird beendet…",
       "singleInstance": "Von diesem Browser kann nur eine Instanz gleichzeitig laufen. Beende zuerst die laufende."
+    },
+    "pin": {
+      "pin": "{{name}} anheften",
+      "unpin": "{{name}} lösen",
+      "pinSelected": "Auswahl oben anheften",
+      "unpinSelected": "Auswahl lösen",
+      "filter": "Angeheftet",
+      "filterPinned": "Angeheftet",
+      "filterUnpinned": "Nicht angeheftet"
+    },
+    "bulkLock": {
+      "label": "Vor Massenaktionen geschützt",
+      "tooltip": "Massenstart, -stopp, -löschen und -zuweisung überspringen dieses Profil. Aktionen auf einzelne Zeilen funktionieren weiterhin.",
+      "toggleSelected": "Auswahl vor Massenaktionen schützen (oder erlauben)",
+      "skipped": "{{count}} geschützte(s) Profil(e) übersprungen"
+    },
+    "bulkProxyCheck": {
+      "action": "Proxys der gewählten Profile prüfen",
+      "none": "Keines der gewählten Profile hat einen Proxy zum Prüfen",
+      "summary": "Proxys geprüft: {{ok}} funktionieren, {{failed}} fehlgeschlagen"
     }
   },
   "dataTableActionBar": {
@@ -2768,7 +2843,7 @@
     "profileNameExists": "Ein Profil namens „{{name}}“ existiert bereits",
     "importSourceNotFound": "Der Quellpfad existiert nicht",
     "importNoItems": "Nichts zum Importieren ausgewählt",
-    "browserNotDownloaded": "Es ist keine heruntergeladene Version von {{browser}} verfügbar. Laden Sie sie zuerst herunter und wiederholen Sie dann den Import.",
+    "browserNotDownloaded": "Es ist keine heruntergeladene Version von {{browser}} verfügbar. Laden Sie sie zuerst herunter.",
     "archiveExtractionFailed": "Das Archiv konnte nicht entpackt werden: {{detail}}",
     "unsupportedArchiveFormat": "Nicht unterstütztes Archivformat. Nur ZIP-Archive werden unterstützt.",
     "clearOnCloseUnavailable": "„Beim Schließen löschen“ ist für flüchtige oder passwortgeschützte Profile nicht verfügbar.",
@@ -3141,7 +3216,24 @@
     "proxyTypeUnsupported": "Der Proxy-Typ „{{type}}“ wird nicht unterstützt.",
     "vpnNameExists": "Ein VPN mit dem Namen „{{name}}“ existiert bereits.",
     "vpnImportInvalid": "Die VPN-Konfiguration konnte nicht importiert werden: {{detail}}",
-    "dnsSourceInvalid": "„{{source}}“ ist keine gültige Listenquelle. Verwenden Sie eine http://- oder https://-Adresse."
+    "dnsSourceInvalid": "„{{source}}“ ist keine gültige Listenquelle. Verwenden Sie eine http://- oder https://-Adresse.",
+    "groupNameTooLong": "Ein Gruppenname darf höchstens 40 Zeichen lang sein.",
+    "groupNameInvalid": "Ein Gruppenname muss einzeilig sein und darf keine Steuerzeichen enthalten.",
+    "proxyReplaceSame": "Wähle zum Ersetzen einen anderen Proxy.",
+    "proxyReplaceFailed": "Der Proxy konnte in den Profilen nicht ersetzt werden: {{detail}}",
+    "cloneCountInvalid": "Wählen Sie zwischen 1 und {{max}} Kopien.",
+    "profileCloneFailed": "Das Klonen wurde nach {{done}} von {{total}} Kopien abgebrochen: {{detail}}",
+    "lockReleaseNotAllowed": "Nur der Serverbesitzer oder das Mitglied, das die Sperre hält, kann sie freigeben, und nicht für ein auf diesem Computer geöffnetes Profil.",
+    "lockReleaseFailed": "Die Profilsperre konnte nicht freigegeben werden: {{detail}}",
+    "profileTaskTitleEmpty": "Gib einen Aufgabentitel ein.",
+    "profileTaskTitleTooLong": "Der Aufgabentitel ist zu lang (höchstens 200 Zeichen).",
+    "profileTaskNotFound": "Diese Aufgabe existiert nicht mehr.",
+    "profileTaskLimitReached": "Dieses Profil hat zu viele Aufgaben. Lösche zuerst erledigte.",
+    "profileTasksLoadFailed": "Die Aufgabendatei konnte nicht gelesen werden: {{detail}}",
+    "profileTasksSaveFailed": "Die Aufgaben konnten nicht gespeichert werden: {{detail}}",
+    "profilesExportPathInvalid": "Wähle eine Datei mit der Endung .csv.",
+    "profilesExportTooLarge": "Der Export ist zu groß zum Speichern.",
+    "profilesExportFailed": "Die Exportdatei konnte nicht geschrieben werden: {{detail}}"
   },
   "rail": {
     "profiles": "Profile",
@@ -5130,5 +5222,137 @@
     "trafficStopped": "Der Datenverkehr steht.",
     "waiting": "Der Datenverkehr läuft weiter, sobald der Proxy antwortet.",
     "cut": "Die Sitzung wurde getrennt: Profil stoppen und neu starten, um wieder zu verbinden."
+  },
+  "proxyPicker": {
+    "current": "aktuell",
+    "check": "Prüfen",
+    "checking": "Prüfe...",
+    "checkNamed": "Proxy {{name}} prüfen",
+    "copy": "Proxy kopieren",
+    "copyTooltip": "Proxy als Schema://Benutzer:Passwort@Host:Port kopieren",
+    "copied": "Proxy-Adresse kopiert",
+    "copyFailed": "Proxy-Adresse konnte nicht kopiert werden"
+  },
+  "profileExit": {
+    "title": "Erscheint aus",
+    "country": "Land",
+    "city": "Stadt",
+    "timezone": "Zeitzone",
+    "language": "Sprache",
+    "notChecked": "Noch nicht geprüft. Prüfe den Proxy, um zu sehen, woher dieses Profil erscheint.",
+    "recheck": "Erneut prüfen"
+  },
+  "quickProfile": {
+    "title": "Dieses Profil behalten?",
+    "body": "Das Schnellprofil wurde geschlossen. Behalten Sie es mit Cookies und Daten oder verwerfen Sie es.",
+    "nameLabel": "Profilname",
+    "keep": "Behalten",
+    "discard": "Verwerfen",
+    "kept": "Profil behalten: {{name}}"
+  },
+  "routeDiagnosis": {
+    "details": "Details",
+    "tryLabel": "Das können Sie versuchen:",
+    "localNote": "Die Prüfung läuft von diesem Computer aus, ein lokales VPN oder ein System-Proxy kann das Ergebnis daher verändern.",
+    "timeout": {
+      "meaning": "Der Proxy hat nicht rechtzeitig geantwortet. Er ist langsam, überlastet oder ausgefallen.",
+      "action": "Versuchen Sie es in einer Minute erneut. Tritt es weiter auf, fragen Sie Ihren Anbieter nach dem Proxy."
+    },
+    "unreachable": {
+      "meaning": "Es konnte keine Verbindung zum Proxy aufgebaut werden.",
+      "action": "Prüfen Sie Host und Port und fragen Sie Ihren Anbieter, ob der Proxy noch aktiv ist."
+    },
+    "refused": {
+      "meaning": "Der Proxy-Server hat die Verbindung abgelehnt oder getrennt.",
+      "action": "Prüfen Sie Port und Proxy-Typ (HTTP, SOCKS5) und ob der Proxy läuft."
+    },
+    "dns": {
+      "meaning": "Der Hostname des Proxys konnte nicht gefunden werden.",
+      "action": "Prüfen Sie den Hostnamen auf Tippfehler oder verwenden Sie stattdessen die IP-Adresse des Proxys."
+    },
+    "auth": {
+      "meaning": "Der Proxy hat Benutzername oder Passwort nicht akzeptiert oder erlaubt Ihre IP-Adresse nicht.",
+      "action": "Geben Sie Benutzername und Passwort erneut ein und prüfen Sie die IP-Freigabeliste beim Anbieter."
+    },
+    "forbidden": {
+      "meaning": "Der Proxy hat den Zugriff verweigert (403).",
+      "action": "Prüfen Sie, ob Ihre IP-Adresse beim Anbieter freigegeben und der Tarif aktiv ist."
+    },
+    "payment": {
+      "meaning": "Der Anbieter verlangt eine Zahlung (402). Der Tarif ist womöglich abgelaufen oder das Datenvolumen aufgebraucht.",
+      "action": "Prüfen Sie Guthaben und Tarif bei Ihrem Anbieter."
+    },
+    "gateway": {
+      "meaning": "Der Proxy hat mit einem Serverfehler geantwortet (502 oder 503): Beim Anbieter liegt eine Störung oder Überlastung vor.",
+      "action": "Warten Sie kurz und prüfen Sie erneut, oder fragen Sie den Anbieter nach einem anderen Endpunkt."
+    },
+    "tls": {
+      "meaning": "Eine sichere Verbindung zum Proxy konnte nicht aufgebaut werden. Der Proxy nutzt auf diesem Port möglicherweise kein TLS, oder sein Zertifikat passt nicht zum Hostnamen.",
+      "action": "Prüfen Sie Proxy-Typ und Port oder verwenden Sie den Hostnamen, für den das Zertifikat ausgestellt wurde."
+    },
+    "notWorking": {
+      "meaning": "Die Route hat die Prüfung nicht bestanden und ist derzeit nicht nutzbar.",
+      "action": "Starten Sie die Proxy-Prüfung für Details und beheben oder ersetzen Sie den Proxy dann."
+    },
+    "missing": {
+      "meaning": "Der Proxy oder das VPN, das dieses Profil nutzt, wurde gelöscht.",
+      "action": "Wählen Sie im Profil einen anderen Proxy oder ein anderes VPN, bevor Sie starten."
+    },
+    "config": {
+      "meaning": "Adresse, Port oder Typ des Proxys ist ungültig.",
+      "action": "Öffnen Sie den Proxy und korrigieren Sie Host, Port und Typ."
+    },
+    "generic": {
+      "meaning": "Die Prüfung kam nicht über den Proxy durch.",
+      "action": "Prüfen Sie Host, Port, Typ und Zugangsdaten und versuchen Sie es erneut. Hilft das nicht, fragen Sie den Anbieter."
+    }
+  },
+  "profileTasks": {
+    "description": "Aufgaben für dieses Profil mit optionaler Fälligkeit. Sie bleiben auf diesem Computer und werden nicht synchronisiert.",
+    "titleLabel": "Aufgabe",
+    "titlePlaceholder": "Was ist zu tun",
+    "dueDate": "Fälligkeitsdatum",
+    "dueTime": "Fälligkeitszeit",
+    "add": "Aufgabe hinzufügen",
+    "empty": "Noch keine Aufgaben.",
+    "openCount_one": "{{count}} offene Aufgabe",
+    "openCount_other": "{{count}} offene Aufgaben",
+    "openCount_few": "{{count}} offene Aufgaben",
+    "openCount_many": "{{count}} offene Aufgaben",
+    "dueAt": "Fällig {{when}}",
+    "overdue": "Überfällig seit {{when}}",
+    "markDone": "„{{title}}“ als erledigt markieren",
+    "edit": "„{{title}}“ bearbeiten",
+    "delete": "„{{title}}“ löschen",
+    "reminderTitle": "Aufgabe fällig: {{title}}",
+    "reminderTitleMany_one": "{{count}} Aufgabe ist fällig",
+    "reminderTitleMany_other": "{{count}} Aufgaben sind fällig",
+    "reminderTitleMany_few": "{{count}} Aufgaben sind fällig",
+    "reminderTitleMany_many": "{{count}} Aufgaben sind fällig"
+  },
+  "profilesExport": {
+    "action": "Als CSV exportieren",
+    "title": "Profile als CSV exportieren",
+    "description": "Speichert die Tabelle als Datei, die Excel mit den richtigen Zeichen öffnet.",
+    "scopeSelected": "Ausgewählte Profile ({{count}})",
+    "scopeShown": "Alle in der Tabelle angezeigten Profile ({{count}})",
+    "columnsHint": "Spalten: Name, Gruppe, Tags, Notiz, Status, Proxy, Engine, erstellt, zuletzt gestartet. Proxy-Zugangsdaten werden nie exportiert.",
+    "saved_one": "{{count}} Profil exportiert",
+    "saved_other": "{{count}} Profile exportiert",
+    "saved_few": "{{count}} Profile exportiert",
+    "saved_many": "{{count}} Profile exportiert",
+    "failed": "Die Profile konnten nicht exportiert werden",
+    "columns": {
+      "name": "Name",
+      "group": "Gruppe",
+      "tags": "Tags",
+      "note": "Notiz",
+      "status": "Status",
+      "proxyName": "Proxy",
+      "proxyAddress": "Proxy-Adresse",
+      "engine": "Engine",
+      "created": "Erstellt",
+      "lastLaunched": "Zuletzt gestartet"
+    }
   }
 }

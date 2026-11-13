@@ -292,6 +292,26 @@ describe("Owl server with members (disk storage)", () => {
     );
   });
 
+  it("lets the owner force a stale lock free, and a member only their own", async () => {
+    await call("POST", "/v1/profile-locks/p4", owner);
+    expect(
+      (await call("DELETE", "/v1/profile-locks/p4?force=1", member)).status,
+    ).toBe(403);
+    expect((await call("DELETE", "/v1/profile-locks/p4", member)).status).toBe(
+      404,
+    );
+    await call("POST", "/v1/profile-locks/p5", member);
+    expect(
+      (await call("DELETE", "/v1/profile-locks/p5?force=1", owner)).status,
+    ).toBe(204);
+    expect(
+      (await call("DELETE", "/v1/profile-locks/p5?force=1", owner)).status,
+    ).toBe(404);
+    expect(
+      (await call("DELETE", "/v1/profile-locks/p4?force=1", owner)).status,
+    ).toBe(204);
+  });
+
   it("shuts a removed member out at once", async () => {
     expect(
       (await call("DELETE", `/v1/members/${memberId}`, member)).status,

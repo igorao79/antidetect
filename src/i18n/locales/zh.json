@@ -367,7 +367,10 @@
     "donutLogo": "Owl 标识",
     "scrollGroupsLeft": "向左滚动分组",
     "scrollGroupsRight": "向右滚动分组",
-    "allGroups": "所有分组"
+    "allGroups": "所有分组",
+    "quickProfile": "快速配置文件",
+    "quickProfileHint": "使用默认设置的临时配置文件,立即启动。关闭后由你决定是否保留。",
+    "moreWaysToCreate": "更多创建配置文件的方式"
   },
   "search": {
     "helpLabel": "搜索语法",
@@ -887,7 +890,40 @@
       "invalid": "不是有效日期。请按 {{example}} 的格式或天数输入。",
       "openCalendar": "选择日期",
       "prevMonth": "上个月",
-      "nextMonth": "下个月"
+      "nextMonth": "下个月",
+      "summary": "{{days}} 天内到期：{{count}}",
+      "summaryFilter": "仅显示这些",
+      "summaryShowAll": "显示全部",
+      "extend": "延长有效期",
+      "extendBy": "延长 {{days}} 天",
+      "extended": "已为 {{count}} 个代理延长 {{days}} 天"
+    },
+    "actions": {
+      "copyProxy": "复制代理",
+      "copied": "已复制代理",
+      "copyFailed": "无法复制代理",
+      "more": "{{name}} 的更多操作",
+      "moreTooltip": "更多操作",
+      "replaceInProfiles": "在配置文件中替换…",
+      "assignToProfiles": "分配给配置文件…"
+    },
+    "replace": {
+      "title": "替换配置文件中的代理",
+      "description": "所有使用“{{name}}”的配置文件都将切换到你选择的代理。",
+      "target": "新代理",
+      "targetPlaceholder": "选择代理",
+      "confirm": "替换",
+      "done": "已迁移到“{{name}}”的配置文件：{{count}}",
+      "usedBy": "当前使用它的配置文件：{{count}}",
+      "noneUsing": "没有配置文件使用此代理。"
+    },
+    "assign": {
+      "title": "将“{{name}}”分配给配置文件",
+      "description": "勾选应使用此代理的配置文件。取消勾选将从该配置文件移除代理。",
+      "search": "搜索配置文件",
+      "empty": "未找到配置文件",
+      "save": "保存",
+      "saved": "已更改的配置文件：{{count}}"
     }
   },
   "groups": {
@@ -1803,7 +1839,12 @@
       "title": "克隆配置文件",
       "description": "输入克隆配置文件的名称",
       "namePlaceholder": "配置文件名称",
-      "button": "克隆"
+      "button": "克隆",
+      "copiedNote": "会复制:设置和整个浏览器文件夹,包括 Cookie、已保存的登录信息和打开的标签页。会重新生成:指纹的噪声种子。不会复制:同步和密码锁。",
+      "madeMany": "已创建 {{count}} 个副本",
+      "buttonMany": "克隆 {{count}} 个",
+      "namesHint": "副本将命名为 {{first}}、{{second}}…(已被占用的名称会跳过)",
+      "maxHint": "一次最多 {{max}} 个副本"
     },
     "duplicate": "复制",
     "breadcrumbRoot": "配置文件",
@@ -1824,7 +1865,8 @@
       "startPages": "启动页",
       "twoFactor": "2FA 验证码",
       "requests": "请求",
-      "logs": "日志"
+      "logs": "日志",
+      "tasks": "任务"
     },
     "sectionDesc": {
       "fingerprint": "配置此配置文件如何对指纹脚本显示。",
@@ -1902,6 +1944,14 @@
       "copyPort": "复制端口",
       "copyWsUrl": "复制 WebSocket URL",
       "copyCode": "复制 {{tool}} 代码"
+    },
+    "lockHeld": {
+      "byMember": "{{name}} 正在另一台电脑上打开",
+      "byYou": "已在你的另一个会话中打开",
+      "release": "释放",
+      "confirmTitle": "要释放此配置文件吗？",
+      "confirmBody": "“{{profile}}”正由 {{name}} 打开。释放后，该会话中尚未同步的更改可能会丢失。",
+      "released": "已释放“{{profile}}”"
     }
   },
   "profileTransfer": {
@@ -2570,7 +2620,12 @@
       "copyId": "复制 ID",
       "runRemote": "在云端运行",
       "lockNow": "立即锁定",
-      "moveToTrash": "移到回收站"
+      "moveToTrash": "移到回收站",
+      "pin": "置顶",
+      "unpin": "取消置顶",
+      "bulkLock": "防止批量操作",
+      "bulkUnlock": "允许批量操作",
+      "copyProxy": "复制代理"
     },
     "emptyGroupTitle": "此分组为空",
     "emptyGroupHint": "在此分组中创建配置文件，或将现有配置文件移到这里。",
@@ -2586,6 +2641,26 @@
       "launching": "正在启动…",
       "stopping": "正在停止…",
       "singleInstance": "此浏览器同一时间只能运行一个实例。请先停止正在运行的实例。"
+    },
+    "pin": {
+      "pin": "置顶 {{name}}",
+      "unpin": "取消置顶 {{name}}",
+      "pinSelected": "将所选项置顶",
+      "unpinSelected": "取消所选项置顶",
+      "filter": "置顶",
+      "filterPinned": "已置顶",
+      "filterUnpinned": "未置顶"
+    },
+    "bulkLock": {
+      "label": "已防止批量操作",
+      "tooltip": "批量启动、停止、删除和分配会跳过此配置文件。单行操作仍然可用。",
+      "toggleSelected": "防止所选项被批量操作(或允许)",
+      "skipped": "已跳过 {{count}} 个受保护的配置文件"
+    },
+    "bulkProxyCheck": {
+      "action": "检查所选配置文件的代理",
+      "none": "所选配置文件都没有可检查的代理",
+      "summary": "代理检查完成:{{ok}} 个可用,{{failed}} 个失败"
     }
   },
   "dataTableActionBar": {
@@ -2768,7 +2843,7 @@
     "profileNameExists": "名为“{{name}}”的配置文件已存在",
     "importSourceNotFound": "源路径不存在",
     "importNoItems": "未选择要导入的内容",
-    "browserNotDownloaded": "没有已下载的 {{browser}} 版本。请先下载，然后重试导入。",
+    "browserNotDownloaded": "没有已下载的 {{browser}} 版本。请先下载。",
     "archiveExtractionFailed": "解压压缩包失败：{{detail}}",
     "unsupportedArchiveFormat": "不支持的压缩包格式。仅支持 ZIP 压缩包。",
     "clearOnCloseUnavailable": "关闭时清除功能不适用于临时配置文件或受密码保护的配置文件。",
@@ -3141,7 +3216,24 @@
     "proxyTypeUnsupported": "不支持代理类型“{{type}}”。",
     "vpnNameExists": "已存在名为“{{name}}”的 VPN。",
     "vpnImportInvalid": "无法导入 VPN 配置：{{detail}}",
-    "dnsSourceInvalid": "“{{source}}”不是有效的列表来源。请使用 http:// 或 https:// 地址。"
+    "dnsSourceInvalid": "“{{source}}”不是有效的列表来源。请使用 http:// 或 https:// 地址。",
+    "groupNameTooLong": "分组名称最多 40 个字符。",
+    "groupNameInvalid": "分组名称必须为单行，且不能包含控制字符。",
+    "proxyReplaceSame": "请选择另一个代理进行替换。",
+    "proxyReplaceFailed": "无法替换配置文件中的代理：{{detail}}",
+    "cloneCountInvalid": "请选择 1 到 {{max}} 个副本。",
+    "profileCloneFailed": "克隆在完成 {{done}}/{{total}} 个副本后中止:{{detail}}",
+    "lockReleaseNotAllowed": "只有服务器所有者或持有该锁的成员可以释放，且不能释放在本机上打开的配置文件。",
+    "lockReleaseFailed": "无法释放配置文件锁：{{detail}}",
+    "profileTaskTitleEmpty": "请输入任务标题。",
+    "profileTaskTitleTooLong": "任务标题过长(最多 200 个字符)。",
+    "profileTaskNotFound": "该任务已不存在。",
+    "profileTaskLimitReached": "此配置文件的任务过多,请先删除已完成的任务。",
+    "profileTasksLoadFailed": "无法读取任务文件:{{detail}}",
+    "profileTasksSaveFailed": "无法保存任务:{{detail}}",
+    "profilesExportPathInvalid": "请选择扩展名为 .csv 的文件。",
+    "profilesExportTooLarge": "导出内容过大,无法保存。",
+    "profilesExportFailed": "无法写入导出文件:{{detail}}"
   },
   "rail": {
     "profiles": "配置文件",
@@ -5130,5 +5222,137 @@
     "trafficStopped": "流量已停止。",
     "waiting": "代理恢复响应后，流量会继续。",
     "cut": "会话已断开：请停止该配置文件并重新启动以重新连接。"
+  },
+  "proxyPicker": {
+    "current": "当前",
+    "check": "检测",
+    "checking": "检测中...",
+    "checkNamed": "检测代理 {{name}}",
+    "copy": "复制代理",
+    "copyTooltip": "以 scheme://user:pass@host:port 的格式复制代理",
+    "copied": "已复制代理地址",
+    "copyFailed": "无法复制代理地址"
+  },
+  "profileExit": {
+    "title": "将显示的位置",
+    "country": "国家",
+    "city": "城市",
+    "timezone": "时区",
+    "language": "语言",
+    "notChecked": "尚未检测。检测代理即可查看此配置文件将显示的位置。",
+    "recheck": "重新检测"
+  },
+  "quickProfile": {
+    "title": "保留这个配置文件?",
+    "body": "快速配置文件已关闭。可连同 Cookie 和数据一并保留,或将其丢弃。",
+    "nameLabel": "配置文件名称",
+    "keep": "保留",
+    "discard": "丢弃",
+    "kept": "已保留配置文件:{{name}}"
+  },
+  "routeDiagnosis": {
+    "details": "详情",
+    "tryLabel": "可以尝试:",
+    "localNote": "检测从这台电脑发出，因此本地 VPN 或系统代理可能改变结果。",
+    "timeout": {
+      "meaning": "代理未在规定时间内响应，可能速度慢、负载过高或已宕机。",
+      "action": "请一分钟后重试。若持续出现，请向服务商确认该代理的状态。"
+    },
+    "unreachable": {
+      "meaning": "无法与代理建立连接。",
+      "action": "请检查主机和端口，并向服务商确认该代理仍在有效期内。"
+    },
+    "refused": {
+      "meaning": "代理服务器拒绝或中断了连接。",
+      "action": "请检查端口和代理类型（HTTP、SOCKS5），并确认代理正在运行。"
+    },
+    "dns": {
+      "meaning": "找不到代理的主机名。",
+      "action": "请检查主机名是否有拼写错误，或改用代理的 IP 地址。"
+    },
+    "auth": {
+      "meaning": "代理不接受该用户名或密码，或未允许你的 IP 地址。",
+      "action": "请重新输入用户名和密码，并检查服务商的 IP 白名单。"
+    },
+    "forbidden": {
+      "meaning": "代理拒绝了访问（403）。",
+      "action": "请确认服务商已允许你的 IP 地址，且套餐仍然有效。"
+    },
+    "payment": {
+      "meaning": "服务商要求付款（402），套餐可能已到期或流量已用完。",
+      "action": "请向服务商确认余额和套餐情况。"
+    },
+    "gateway": {
+      "meaning": "代理返回了服务器错误（502 或 503），服务商一侧出现故障或繁忙。",
+      "action": "请稍等片刻后重新检测，或向服务商索取其他接入点。"
+    },
+    "tls": {
+      "meaning": "无法与代理建立安全连接。该端口可能未启用 TLS，或证书与主机名不匹配。",
+      "action": "请检查代理类型和端口，或使用证书所签发的主机名。"
+    },
+    "notWorking": {
+      "meaning": "该线路未通过检测，目前无法使用。",
+      "action": "请运行代理检测查看详情，然后修复或更换代理。"
+    },
+    "missing": {
+      "meaning": "此配置文件使用的代理或 VPN 已被删除。",
+      "action": "启动前请在配置文件中选择其他代理或 VPN。"
+    },
+    "config": {
+      "meaning": "代理的地址、端口或类型无效。",
+      "action": "请打开该代理，修正主机、端口和类型。"
+    },
+    "generic": {
+      "meaning": "检测未能通过该代理。",
+      "action": "请检查主机、端口、类型和登录信息后重试。仍然失败请联系服务商。"
+    }
+  },
+  "profileTasks": {
+    "description": "此配置文件的待办事项,可设置截止时间。仅保存在本机,不会同步。",
+    "titleLabel": "任务",
+    "titlePlaceholder": "需要做什么",
+    "dueDate": "截止日期",
+    "dueTime": "截止时间",
+    "add": "添加任务",
+    "empty": "还没有任务。",
+    "openCount_one": "{{count}} 个未完成任务",
+    "openCount_other": "{{count}} 个未完成任务",
+    "openCount_few": "{{count}} 个未完成任务",
+    "openCount_many": "{{count}} 个未完成任务",
+    "dueAt": "截止 {{when}}",
+    "overdue": "自 {{when}} 起已逾期",
+    "markDone": "将“{{title}}”标记为已完成",
+    "edit": "编辑“{{title}}”",
+    "delete": "删除“{{title}}”",
+    "reminderTitle": "任务到期:{{title}}",
+    "reminderTitleMany_one": "{{count}} 个任务到期",
+    "reminderTitleMany_other": "{{count}} 个任务到期",
+    "reminderTitleMany_few": "{{count}} 个任务到期",
+    "reminderTitleMany_many": "{{count}} 个任务到期"
+  },
+  "profilesExport": {
+    "action": "导出为 CSV",
+    "title": "将配置文件导出为 CSV",
+    "description": "将表格保存为 Excel 能正确显示字符的文件。",
+    "scopeSelected": "已选配置文件 ({{count}})",
+    "scopeShown": "表格中显示的全部配置文件 ({{count}})",
+    "columnsHint": "列:名称、分组、标签、备注、状态、代理、引擎、创建时间、上次启动。代理登录信息不会被导出。",
+    "saved_one": "已导出 {{count}} 个配置文件",
+    "saved_other": "已导出 {{count}} 个配置文件",
+    "saved_few": "已导出 {{count}} 个配置文件",
+    "saved_many": "已导出 {{count}} 个配置文件",
+    "failed": "无法导出配置文件",
+    "columns": {
+      "name": "名称",
+      "group": "分组",
+      "tags": "标签",
+      "note": "备注",
+      "status": "状态",
+      "proxyName": "代理",
+      "proxyAddress": "代理地址",
+      "engine": "引擎",
+      "created": "创建时间",
+      "lastLaunched": "上次启动"
+    }
   }
 }

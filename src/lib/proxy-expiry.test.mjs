@@ -156,3 +156,24 @@ test("a masked date reads back as the date", () => {
   );
   assert.equal(parseDateField("313123123", "ru", NOON), null);
 });
+
+test("extending counts from the current date, or from today when expired or none", async () => {
+  const { extendedExpiry, compareExpiry, expiresWithin } = await import(
+    "./proxy-expiry.ts"
+  );
+  const future = endOf(2026, 10, 20);
+  assert.equal(extendedExpiry(future, 7, NOON), endOf(2026, 10, 27));
+  assert.equal(
+    extendedExpiry(endOf(2026, 10, 1), 30, NOON),
+    endOf(2026, 11, 12),
+  );
+  assert.equal(extendedExpiry(null, 7, NOON), endOf(2026, 10, 19));
+  assert.equal(
+    [3, null, 1, undefined, 2].sort(compareExpiry).join(","),
+    "1,2,3,,",
+  );
+  assert.equal(expiresWithin(endOf(2026, 10, 18), 7, NOON), true);
+  assert.equal(expiresWithin(endOf(2026, 10, 25), 7, NOON), false);
+  assert.equal(expiresWithin(endOf(2026, 10, 1), 7, NOON), true);
+  assert.equal(expiresWithin(null, 7, NOON), false);
+});

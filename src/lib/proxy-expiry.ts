@@ -275,3 +275,52 @@ export function maskDateDigits(text: string, locale: string): string {
 export function expiryExample(locale: string, now = new Date()): string {
   return formatDateField(dateInputDaysFromToday(30, now), locale);
 }
+
+/** What the selection bar's "Extend by" menu offers. */
+export const PROXY_EXPIRY_EXTEND_DAYS = [7, 30, 90] as const;
+
+/**
+ * The new expiry after extending by `days`: counted from the current date, or
+ * from today when the proxy has none or has already expired. Valid through the
+ * end of that day, like every stored expiry.
+ */
+export function extendedExpiry(
+  expiresAt: number | null | undefined,
+  days: number,
+  now = new Date(),
+): number {
+  const status = proxyExpiryStatus(expiresAt, now);
+  const base = status && status.level !== "expired" ? status.date : now;
+  const target = new Date(
+    base.getFullYear(),
+    base.getMonth(),
+    base.getDate() + days,
+  );
+  return (
+    expiryFromDateInput(toDateInputValue(target)) ??
+    Math.floor(target.getTime() / 1000)
+  );
+}
+
+/** Soonest first, proxies without an expiry last. */
+export function compareExpiry(
+  a: number | null | undefined,
+  b: number | null | undefined,
+): number {
+  const hasA = typeof a === "number";
+  const hasB = typeof b === "number";
+  if (hasA && hasB) return a - b;
+  if (hasA) return -1;
+  if (hasB) return 1;
+  return 0;
+}
+
+/** Whether the plan has ended or ends within `days` days. */
+export function expiresWithin(
+  expiresAt: number | null | undefined,
+  days: number,
+  now = new Date(),
+): boolean {
+  const status = proxyExpiryStatus(expiresAt, now);
+  return status !== null && status.daysLeft <= days;
+}

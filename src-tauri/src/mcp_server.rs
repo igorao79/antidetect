@@ -9427,19 +9427,21 @@ impl McpServer {
       .and_then(|v| v.as_str())
       .map(|s| s.to_string());
 
-    let storage = crate::vpn::VPN_STORAGE.lock().map_err(|e| McpError {
-      code: -32000,
-      message: format!("Failed to lock VPN storage: {e}"),
-      data: None,
-    })?;
-
-    let config = storage
-      .import_config(content, filename, name)
-      .map_err(|e| McpError {
+    let config = {
+      let storage = crate::vpn::VPN_STORAGE.lock().map_err(|e| McpError {
         code: -32000,
-        message: format!("Failed to import VPN config: {e}"),
+        message: format!("Failed to lock VPN storage: {e}"),
         data: None,
       })?;
+      storage
+        .import_config(content, filename, name)
+        .map_err(|e| McpError {
+          code: -32000,
+          message: format!("Failed to import VPN config: {e}"),
+          data: None,
+        })?
+    };
+    let _ = crate::events::emit("vpn-configs-changed", ());
 
     Ok(serde_json::json!({
       "content": [{

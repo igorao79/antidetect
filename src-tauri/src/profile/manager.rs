@@ -441,6 +441,7 @@ impl ProfileManager {
           updated_at: None,
           temporary: false,
           clear_on_close: false,
+          bulk_locked: false,
         };
 
         match self
@@ -568,6 +569,7 @@ impl ProfileManager {
           start_urls: Vec::new(),
           password_protected: false,
           clear_on_close: false,
+          bulk_locked: false,
           created_at: None,
           updated_at: None,
         };
@@ -693,6 +695,7 @@ impl ProfileManager {
       start_urls: Vec::new(),
       password_protected: false,
       clear_on_close: false,
+      bulk_locked: false,
       created_at: Some(
         std::time::SystemTime::now()
           .duration_since(std::time::UNIX_EPOCH)
@@ -1147,6 +1150,10 @@ impl ProfileManager {
     crate::traffic_stats::delete_traffic_stats(profile_id);
     // Device-only 2FA keys for the profile's accounts.
     crate::profile_totp::forget_profile(profile_id);
+    // Its to-dos; a trashed profile keeps them until it is purged.
+    if let Err(e) = crate::profile_tasks::delete_profile_tasks(profile_id.to_string()) {
+      log::warn!("Profile tasks cleanup failed profile={profile_id} err=\"{e}\"");
+    }
   }
 
   /// Bookkeeping after one or more profiles left the live list.
@@ -1466,6 +1473,30 @@ impl ProfileManager {
     report_team_edit(&profile, "profile.update", &["note"]);
 
     // Emit profile note update event
+    if let Err(e) = events::emit_empty("profiles-changed") {
+      log::warn!("Event emit failed event=profiles-changed err=\"{e}\"");
+    }
+
+    Ok(profile)
+  }
+
+  pub fn update_profile_bulk_locked(
+    &self,
+    profile_id: &str,
+    bulk_locked: bool,
+  ) -> Result<BrowserProfile, Box<dyn std::error::Error>> {
+    let mut profile = self.find_profile(profile_id)?;
+    if profile.bulk_locked == bulk_locked {
+      return Ok(profile);
+    }
+    profile.bulk_locked = bulk_locked;
+    profile.updated_at = Some(crate::proxy_manager::now_secs());
+
+    self.save_profile(&profile)?;
+
+    crate::sync::queue_profile_sync_if_eligible(&profile);
+    report_team_edit(&profile, "profile.update", &["bulk_locked"]);
+
     if let Err(e) = events::emit_empty("profiles-changed") {
       log::warn!("Event emit failed event=profiles-changed err=\"{e}\"");
     }
@@ -1911,6 +1942,7 @@ impl ProfileManager {
       start_urls: source.start_urls,
       password_protected: false,
       clear_on_close: false,
+      bulk_locked: false,
       created_at: Some(
         std::time::SystemTime::now()
           .duration_since(std::time::UNIX_EPOCH)
@@ -1939,6 +1971,9 @@ impl ProfileManager {
       cfg.identity_id = None;
       cfg.identity_baseline = None;
       keep_source_claim(cfg, source_native_os);
+    }
+    if let Some(cfg) = new_profile.camoufox_config.as_mut() {
+      super::clone_copies::refresh_camoufox_seeds(cfg);
     }
 
     self.save_profile(&new_profile)?;
@@ -3583,6 +3618,19 @@ pub async fn update_profile_window_color(
     ProfileManager::instance()
       .update_profile_window_color(&app_handle, &profile_id, window_color)
       .map_err(|e| format!("Failed to update profile window color: {e}"))
+  })
+  .await
+}
+
+#[tauri::command]
+pub async fn update_profile_bulk_locked(
+  profile_id: String,
+  bulk_locked: bool,
+) -> Result<BrowserProfile, String> {
+  edit_off_main_thread(move || {
+    ProfileManager::instance()
+      .update_profile_bulk_locked(&profile_id, bulk_locked)
+      .map_err(crate::profile_importer::error_to_code_string)
   })
   .await
 }

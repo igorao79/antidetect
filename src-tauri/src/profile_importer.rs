@@ -1115,6 +1115,7 @@ impl ProfileImporter {
           start_urls: Vec::new(),
           password_protected: false,
           clear_on_close: false,
+          bulk_locked: false,
           created_at: None,
           updated_at: None,
         };
@@ -1201,6 +1202,7 @@ impl ProfileImporter {
       start_urls: Vec::new(),
       password_protected: false,
       clear_on_close: false,
+      bulk_locked: false,
       created_at: Some(
         std::time::SystemTime::now()
           .duration_since(std::time::UNIX_EPOCH)

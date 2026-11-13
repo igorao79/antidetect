@@ -13,10 +13,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { translateBackendError } from "@/lib/backend-errors";
-import { showErrorToast } from "@/lib/toast-utils";
+import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
 import type { BrowserProfile } from "@/types";
+import { type CountHintLine, CountStepper } from "./create-profile-dialog";
 import { LoadingButton } from "./loading-button";
 import { RippleButton } from "./ui/ripple";
+
+/** The most copies one clone makes; the backend refuses more. */
+const MAX_COPIES = 50;
 
 interface CloneProfileDialogProps {
   isOpen: boolean;
@@ -33,6 +37,7 @@ export function CloneProfileDialog({
 }: CloneProfileDialogProps) {
   const { t } = useTranslation();
   const [name, setName] = React.useState("");
+  const [count, setCount] = React.useState(1);
   const [isLoading, setIsLoading] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
@@ -41,7 +46,8 @@ export function CloneProfileDialog({
       setIsLoading(false);
       return;
     }
-    setName(`${profile.name} (Copy)`);
+    setName(profile.name);
+    setCount(1);
     const handle = window.setTimeout(() => {
       inputRef.current?.focus();
       inputRef.current?.select();
@@ -57,10 +63,16 @@ export function CloneProfileDialog({
     if (!name.trim() || isLoading) return;
     setIsLoading(true);
     try {
-      await invoke<BrowserProfile>("clone_profile", {
+      const copies = await invoke<BrowserProfile[]>("clone_profile_copies", {
         profileId: profile.id,
         name: name.trim(),
+        count,
       });
+      showSuccessToast(
+        copies.length === 1
+          ? t("profiles.duplicated", { name: copies[0].name })
+          : t("profileInfo.clone.madeMany", { count: copies.length }),
+      );
       onClose();
       onCloneComplete?.();
     } catch (err: unknown) {
@@ -70,6 +82,22 @@ export function CloneProfileDialog({
       setIsLoading(false);
     }
   };
+
+  const base = name.trim() || profile.name;
+  const countHint: CountHintLine[] = [];
+  if (count > 1) {
+    countHint.push({
+      text: t("profileInfo.clone.namesHint", {
+        first: `${base} 2`,
+        second: `${base} 3`,
+      }),
+    });
+  }
+  countHint.push({
+    text: t("profileInfo.clone.maxHint", { max: MAX_COPIES }),
+    limit: true,
+    atLimitOnly: true,
+  });
 
   return (
     <Dialog
@@ -97,6 +125,9 @@ export function CloneProfileDialog({
           placeholder={t("profileInfo.clone.namePlaceholder")}
           disabled={isLoading}
         />
+        <p className="text-xs text-muted-foreground">
+          {t("profileInfo.clone.copiedNote")}
+        </p>
         <DialogFooter>
           <RippleButton
             variant="outline"
@@ -105,12 +136,22 @@ export function CloneProfileDialog({
           >
             {t("common.buttons.cancel")}
           </RippleButton>
+          <CountStepper
+            value={count}
+            max={MAX_COPIES}
+            onChange={setCount}
+            disabled={isLoading}
+            hint={countHint}
+            onEnter={() => void handleClone()}
+          />
           <LoadingButton
             onClick={() => void handleClone()}
             isLoading={isLoading}
             disabled={!name.trim()}
           >
-            {t("profileInfo.clone.button")}
+            {count > 1
+              ? t("profileInfo.clone.buttonMany", { count })
+              : t("profileInfo.clone.button")}
           </LoadingButton>
         </DialogFooter>
       </DialogContent>

@@ -4,7 +4,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LuCheck, LuChevronDown, LuPlus } from "react-icons/lu";
+import { LuCheck, LuChevronDown, LuPlus, LuZap } from "react-icons/lu";
 import { useMotionAllowed } from "@/hooks/use-motion-allowed";
 import { useWindowDecorations } from "@/hooks/use-window-decorations";
 import { getCurrentOS } from "@/lib/browser-utils";
@@ -84,6 +84,10 @@ function GroupUnderline({ animate }: { animate: boolean }) {
 
 interface Props {
   onCreateProfileDialogOpen: (open: boolean) => void;
+  /** Makes a temporary profile and launches it; offered beside New. */
+  onQuickProfile?: () => void;
+  /** A quick profile is being made and launched. */
+  quickProfileStarting?: boolean;
   /** False for a team seat that may not add profiles. */
   canCreateProfiles?: boolean;
   searchQuery: string;
@@ -104,6 +108,8 @@ interface Props {
 
 const HomeHeader = ({
   onCreateProfileDialogOpen,
+  onQuickProfile,
+  quickProfileStarting = false,
   canCreateProfiles = true,
   searchQuery,
   onSearchQueryChange,
@@ -479,18 +485,53 @@ const HomeHeader = ({
       {showProfileToolbar && canCreateProfiles && (
         <Tooltip>
           <TooltipTrigger asChild>
-            <span className="shrink-0">
+            <span className="flex shrink-0 items-center gap-px">
               <Button
                 size="sm"
                 {...tipAnchor("new-profile")}
                 onClick={() => {
                   onCreateProfileDialogOpen(true);
                 }}
-                className="flex h-7 items-center gap-1.5 px-2.5 text-xs"
+                className={cn(
+                  "flex h-7 items-center gap-1.5 px-2.5 text-xs",
+                  onQuickProfile && "rounded-r-none",
+                )}
               >
                 <LuPlus className="size-3.5" />
                 {t("header.newProfile")}
               </Button>
+              {onQuickProfile && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      data-slot="new-profile-menu"
+                      aria-label={t("header.moreWaysToCreate")}
+                      className="h-7 w-6 rounded-l-none p-0"
+                    >
+                      <LuChevronDown className="size-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-64">
+                    <DropdownMenuItem
+                      data-slot="quick-profile-action"
+                      disabled={quickProfileStarting}
+                      onSelect={onQuickProfile}
+                      className="items-start gap-2 text-xs focus:bg-foreground/5 focus:text-foreground"
+                    >
+                      <LuZap aria-hidden="true" className="mt-0.5 size-3.5" />
+                      <span className="flex flex-col">
+                        <span className="font-medium">
+                          {t("header.quickProfile")}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {t("header.quickProfileHint")}
+                        </span>
+                      </span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </span>
           </TooltipTrigger>
           <TooltipContent>{t("header.createProfile")}</TooltipContent>

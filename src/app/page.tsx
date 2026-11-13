@@ -53,6 +53,7 @@ import { ProxyAssignmentDialog } from "@/components/proxy-assignment-dialog";
 import { ProxyDistributionDialog } from "@/components/proxy-distribution-dialog";
 import { ProxyManagementDialog } from "@/components/proxy-management-dialog";
 import { ProxyOutageBanner } from "@/components/proxy-outage-banner";
+import { QuickProfilePrompt } from "@/components/quick-profile-prompt";
 import { type AppPage, pageDirection, RailNav } from "@/components/rail-nav";
 import { RailUpdateButton } from "@/components/rail-update-button";
 import { SettingsDialog } from "@/components/settings-dialog";
@@ -88,8 +89,10 @@ import { usePermissions } from "@/hooks/use-permissions";
 import { useProfileEvents } from "@/hooks/use-profile-events";
 import { useProfileStatuses } from "@/hooks/use-profile-statuses";
 import { useProfileTableFilters } from "@/hooks/use-profile-table-filters";
+import { useProfileTaskReminders } from "@/hooks/use-profile-task-reminders";
 import { useProxyEvents } from "@/hooks/use-proxy-events";
 import { useProxyOutages } from "@/hooks/use-proxy-outages";
+import { useQuickProfile } from "@/hooks/use-quick-profile";
 import { useSyncSessions } from "@/hooks/use-sync-session";
 import { useTips } from "@/hooks/use-tips";
 import { confirmLeave, hasUnsavedChanges } from "@/hooks/use-unsaved-changes";
@@ -99,6 +102,7 @@ import { useVpnEvents } from "@/hooks/use-vpn-events";
 import { useWayfernTerms } from "@/hooks/use-wayfern-terms";
 import { useWorkspace } from "@/hooks/use-workspace";
 import { parseBackendError, translateBackendError } from "@/lib/backend-errors";
+import { splitBulkLocked } from "@/lib/bulk-lock";
 import { DONUT_CLOUD } from "@/lib/cloud-only-pages";
 import { fireSprinkleConfetti } from "@/lib/confetti";
 import {
@@ -114,6 +118,7 @@ import {
 } from "@/lib/permission-prompt";
 import { type ProfileSearchContext } from "@/lib/profile-search";
 import { startRemoteSession } from "@/lib/remote-sessions";
+import { showRouteFailureToast } from "@/lib/route-failure-toast";
 import {
   matchesGroupDigit,
   matchesShortcut,
@@ -205,6 +210,7 @@ export default function Home() {
   } = useProfileEvents();
   useLaunchNotices(profiles);
   const proxyOutages = useProxyOutages(profiles, runningProfiles);
+  useProfileTaskReminders(profiles);
 
   // First-run product tour: coach marks on the real controls.
   const [tour, setTour] = useState<{ open: boolean; step: TourStep }>({
@@ -545,6 +551,16 @@ export default function Home() {
     string[]
   >([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>("__all__");
+
+  useEffect(() => {
+    if (groupsLoading || groupsError) return;
+    if (
+      selectedGroupId !== "__all__" &&
+      !groupsData.some((g) => g.id === selectedGroupId)
+    ) {
+      setSelectedGroupId("__all__");
+    }
+  }, [groupsData, groupsLoading, groupsError, selectedGroupId]);
   const [selectedProfilesForGroup, setSelectedProfilesForGroup] = useState<
     string[]
   >([]);
@@ -1851,12 +1867,14 @@ export default function Home() {
           } catch (retryErr: unknown) {
             noteLaunchError(profile.id, retryErr);
             if (!opts?.quiet) {
-              showErrorToast(
-                t("errors.launchBrowserFailed", {
+              showRouteFailureToast(t, {
+                title: t("errors.launchBrowserFailed", {
                   name: profile.name,
                   error: translateBackendError(t, retryErr),
                 }),
-              );
+                error: retryErr,
+                id: `launch-failed-${profile.id}`,
+              });
             }
             return { status: "blocked" };
           }
@@ -1865,18 +1883,22 @@ export default function Home() {
         console.error("Failed to launch browser:", err);
         noteLaunchError(profile.id, err);
         if (!opts?.quiet) {
-          showErrorToast(
-            t("errors.launchBrowserFailed", {
+          showRouteFailureToast(t, {
+            title: t("errors.launchBrowserFailed", {
               name: profile.name,
               error: translateBackendError(t, err),
             }),
-          );
+            error: err,
+            id: `launch-failed-${profile.id}`,
+          });
         }
         throw err;
       }
     },
     [persistGateAcks, requestGateDecision, noteLaunchError, t],
   );
+
+  const quickProfile = useQuickProfile(launchProfile);
 
   const handleCloneProfile = useCallback((profile: BrowserProfile) => {
     setCloneProfile(profile);
@@ -2082,16 +2104,25 @@ export default function Home() {
     [profiles, runningProfiles, groupsData, loadProfiles, loadGroups, t],
   );
 
+  // The selection without the profiles locked against bulk actions; says how
+  // many were left out.
+  const unlockedSelection = useCallback((): string[] => {
+    const { allowed, skipped } = splitBulkLocked(profiles, selectedProfiles);
+    if (skipped > 0) {
+      showErrorToast(t("profileTable.bulkLock.skipped", { count: skipped }));
+    }
+    return allowed;
+  }, [profiles, selectedProfiles, t]);
+
   const confirmBulkDelete = useCallback(async () => {
-    if (selectedProfiles.length === 0) return;
-    const targets = profiles.filter((profile) =>
-      selectedProfiles.includes(profile.id),
-    );
+    const ids = unlockedSelection();
+    if (ids.length === 0) return;
+    const targets = profiles.filter((profile) => ids.includes(profile.id));
 
     setIsBulkDeleting(true);
     try {
       await invoke("delete_selected_profiles", {
-        profileIds: selectedProfiles,
+        profileIds: ids,
       });
       // useProfileEvents refreshes the list.
       setSelectedProfiles([]);
@@ -2107,14 +2138,17 @@ export default function Home() {
     } finally {
       setIsBulkDeleting(false);
     }
-  }, [selectedProfiles, profiles, announceTrashed, t]);
+  }, [unlockedSelection, profiles, announceTrashed, t]);
 
   // To the trash at once, with Undo. Only an ephemeral profile, which is
   // destroyed for good, still asks first.
   const handleBulkDelete = useCallback(() => {
     if (selectedProfiles.length === 0) return;
     const permanent = profiles.some(
-      (profile) => selectedProfiles.includes(profile.id) && profile.ephemeral,
+      (profile) =>
+        selectedProfiles.includes(profile.id) &&
+        !profile.bulk_locked &&
+        profile.ephemeral,
     );
     if (permanent) {
       setShowBulkDeleteConfirmation(true);
@@ -2124,9 +2158,10 @@ export default function Home() {
   }, [selectedProfiles, profiles, confirmBulkDelete]);
 
   const handleBulkGroupAssignment = useCallback(() => {
-    if (selectedProfiles.length === 0) return;
-    handleAssignProfilesToGroup(selectedProfiles);
-  }, [selectedProfiles, handleAssignProfilesToGroup]);
+    const ids = unlockedSelection();
+    if (ids.length === 0) return;
+    handleAssignProfilesToGroup(ids);
+  }, [unlockedSelection, handleAssignProfilesToGroup]);
 
   const handleAssignExtensionGroup = useCallback((profileIds: string[]) => {
     setSelectedProfilesForExtensionGroup(profileIds);
@@ -2134,9 +2169,10 @@ export default function Home() {
   }, []);
 
   const handleBulkExtensionGroupAssignment = useCallback(() => {
-    if (selectedProfiles.length === 0) return;
-    handleAssignExtensionGroup(selectedProfiles);
-  }, [selectedProfiles, handleAssignExtensionGroup]);
+    const ids = unlockedSelection();
+    if (ids.length === 0) return;
+    handleAssignExtensionGroup(ids);
+  }, [unlockedSelection, handleAssignExtensionGroup]);
 
   const handleExtensionGroupAssignmentComplete = useCallback(() => {
     setExtensionGroupAssignmentDialogOpen(false);
@@ -2150,15 +2186,17 @@ export default function Home() {
   }, []);
 
   const handleBulkProxyAssignment = useCallback(() => {
-    if (selectedProfiles.length === 0) return;
-    handleAssignProfilesToProxy(selectedProfiles);
-  }, [selectedProfiles, handleAssignProfilesToProxy]);
+    const ids = unlockedSelection();
+    if (ids.length === 0) return;
+    handleAssignProfilesToProxy(ids);
+  }, [unlockedSelection, handleAssignProfilesToProxy]);
 
   const handleBulkProxyDistribution = useCallback(() => {
-    if (selectedProfiles.length === 0) return;
-    setSelectedProfilesForDistribution(selectedProfiles);
+    const ids = unlockedSelection();
+    if (ids.length === 0) return;
+    setSelectedProfilesForDistribution(ids);
     setProxyDistributionDialogOpen(true);
-  }, [selectedProfiles]);
+  }, [unlockedSelection]);
 
   const handleBulkCopyCookies = useCallback(() => {
     if (selectedProfiles.length === 0) return;
@@ -2371,8 +2409,9 @@ export default function Home() {
   // no-op (guard), and 10+ targets require confirmation before launching/stopping.
   const handleBulkRun = useCallback(() => {
     if (selectedProfiles.length === 0) return;
+    const allowed = unlockedSelection();
     const targets = profiles.filter(
-      (p) => selectedProfiles.includes(p.id) && !runningProfiles.has(p.id),
+      (p) => allowed.includes(p.id) && !runningProfiles.has(p.id),
     );
     if (targets.length === 0) {
       showErrorToast(t("profiles.bulkRun.noneToRun"));
@@ -2383,12 +2422,20 @@ export default function Home() {
       return;
     }
     void executeBulkRun(targets);
-  }, [selectedProfiles, profiles, runningProfiles, executeBulkRun, t]);
+  }, [
+    selectedProfiles,
+    unlockedSelection,
+    profiles,
+    runningProfiles,
+    executeBulkRun,
+    t,
+  ]);
 
   const handleBulkStop = useCallback(() => {
     if (selectedProfiles.length === 0) return;
+    const allowed = unlockedSelection();
     const targets = profiles.filter(
-      (p) => selectedProfiles.includes(p.id) && runningProfiles.has(p.id),
+      (p) => allowed.includes(p.id) && runningProfiles.has(p.id),
     );
     if (targets.length === 0) {
       showErrorToast(t("profiles.bulkStop.noneToStop"));
@@ -2399,7 +2446,14 @@ export default function Home() {
       return;
     }
     void executeBulkStop(targets);
-  }, [selectedProfiles, profiles, runningProfiles, executeBulkStop, t]);
+  }, [
+    selectedProfiles,
+    unlockedSelection,
+    profiles,
+    runningProfiles,
+    executeBulkStop,
+    t,
+  ]);
 
   const handleCopyCookiesToProfile = useCallback((profile: BrowserProfile) => {
     setCookieCopySourceId(null);
@@ -3054,6 +3108,8 @@ export default function Home() {
             open ? openCreateProfile() : setCreateProfileDialogOpen(false)
           }
           canCreateProfiles={!teamReadOnly}
+          onQuickProfile={() => void quickProfile.start()}
+          quickProfileStarting={quickProfile.starting}
           searchQuery={searchQuery}
           onSearchQueryChange={changeProfileSearch}
           searchProfiles={profilesInGroup}
@@ -3552,6 +3608,12 @@ export default function Home() {
             tipsFlow.dismissPaidWelcome();
             openTips(id);
           }}
+        />
+
+        <QuickProfilePrompt
+          rows={quickProfile.stopped}
+          onKeep={quickProfile.keep}
+          onDiscard={quickProfile.discard}
         />
 
         <CloneProfileDialog

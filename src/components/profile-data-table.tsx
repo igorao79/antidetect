@@ -30,12 +30,18 @@ import {
   LuChevronDown,
   LuCircleAlert,
   LuCookie,
+  LuFileDown,
   LuInfo,
   LuLock,
+  LuLockOpen,
   LuMoon,
+  LuPin,
+  LuPinOff,
   LuPlay,
+  LuPlus,
   LuPuzzle,
   LuRefreshCw,
+  LuShieldCheck,
   LuShuffle,
   LuSlidersHorizontal,
   LuSquare,
@@ -90,6 +96,7 @@ import {
   LaunchControl,
   LiveDot,
 } from "@/components/profile-table/launch-control";
+import { LockHolderChip } from "@/components/profile-table/lock-holder-chip";
 import { RowContextMenuContent } from "@/components/profile-table/row-context-menu";
 import { RowPresence } from "@/components/profile-table/row-presence";
 import {
@@ -97,6 +104,8 @@ import {
   useTrafficPolling,
 } from "@/components/profile-table/traffic-cell";
 import { TrafficSnapshotStore } from "@/components/profile-table/traffic-snapshots";
+import { ProfilesExportDialog } from "@/components/profiles-export-dialog";
+import { ProxyChoiceLabel } from "@/components/proxy-choice-label";
 import { SaveTemplateDialog } from "@/components/save-template-dialog";
 import {
   DATA_TABLE_CLASSES,
@@ -150,6 +159,7 @@ import { useBrowserState } from "@/hooks/use-browser-state";
 import { useCloudAuth } from "@/hooks/use-cloud-auth";
 import { cookieBotScopeFor, useCookieBot } from "@/hooks/use-cookie-bot";
 import { useMotionAllowed } from "@/hooks/use-motion-allowed";
+import { usePinnedProfiles } from "@/hooks/use-pinned-profiles";
 import { useProxyEvents } from "@/hooks/use-proxy-events";
 import { type ProxyHealth, useProxyHealth } from "@/hooks/use-proxy-health";
 import { useRemoteHandoff } from "@/hooks/use-remote-handoff";
@@ -169,6 +179,12 @@ import {
   getProfileIcon,
   isCrossOsProfile,
 } from "@/lib/browser-utils";
+import { splitBulkLocked } from "@/lib/bulk-lock";
+import {
+  BULK_PROXY_CHECK_CONCURRENCY,
+  proxiesToCheck,
+  runPool,
+} from "@/lib/bulk-proxy-check";
 import { CLOUD_ONLY_COLUMNS, DONUT_CLOUD } from "@/lib/cloud-only-pages";
 import { type CoachAnchorId, tipAnchor } from "@/lib/coach-mark";
 import {
@@ -186,7 +202,11 @@ import {
   MOTION_SPRING,
   MOTION_SPRING_POSITION,
 } from "@/lib/motion";
+import { allPinned, pinnedFirst } from "@/lib/pinned-profiles";
 import { isMacOS } from "@/lib/platform";
+import { runProxyCheck } from "@/lib/proxy-check-store";
+import { orderProxyChoices } from "@/lib/proxy-choices";
+import { formatProxyUri } from "@/lib/proxy-uri";
 import type { RemoteHandoffState } from "@/lib/remote-sessions";
 import { isKey } from "@/lib/shortcuts";
 import { resolveTableVisibility } from "@/lib/table-tools";
@@ -212,6 +232,7 @@ import {
 import MultipleSelector, { type Option } from "./multiple-selector";
 import { ProxyCheckButton } from "./proxy-check-button";
 import { ProxyExpiryMarker } from "./proxy-expiry";
+import { ProxyFormDialog } from "./proxy-form-dialog";
 import { TrafficDetailsDialog } from "./traffic-details-dialog";
 import { Input } from "./ui/input";
 import { Skeleton } from "./ui/skeleton";
@@ -349,6 +370,13 @@ interface TableMeta {
     profileId: string,
     country: LocationItem,
   ) => Promise<void>;
+  /** Opens the proxy form; what it creates is assigned to this profile. */
+  openNewProxyFor: (profileId: string) => void;
+
+  // Pins (this device only) and the bulk lock
+  pinned: ReadonlySet<string>;
+  togglePin: (profileId: string) => void;
+  toggleBulkLock: (profile: BrowserProfile) => void;
 
   // Team locks
   isProfileLockedByAnother: (profileId: string) => boolean;
@@ -1369,6 +1397,47 @@ OverflowTooltipText.displayName = "OverflowTooltipText";
  * A row's proxy and VPN list. Its own component so the list is built only
  * while the popover shows, not on every render of every row.
  */
+/** The pin of a row: always drawn once pinned, on row hover before that. */
+function PinToggle({
+  pinned,
+  name,
+  onToggle,
+  t,
+}: {
+  pinned: boolean;
+  name: string;
+  onToggle: () => void;
+  t: TableMeta["t"];
+}) {
+  const label = pinned
+    ? t("profileTable.pin.unpin", { name })
+    : t("profileTable.pin.pin", { name });
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          data-slot="profile-pin"
+          aria-pressed={pinned}
+          aria-label={label}
+          className={cn(
+            "grid size-5 shrink-0 cursor-pointer place-items-center rounded-md transition-colors duration-100 hover:bg-foreground/6",
+            pinned ? "text-primary-text" : "row-reveal text-muted-foreground",
+            FOCUS_RING,
+          )}
+          onClick={onToggle}
+        >
+          <LuPin
+            className={cn("size-3", pinned && "fill-current")}
+            aria-hidden="true"
+          />
+        </button>
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 function ProxyPicker({
   profileId,
   meta,
@@ -1412,7 +1481,7 @@ function ProxyPicker({
             />
             {t("common.labels.none")}
           </CommandItem>
-          {meta.pickableProxies.map((proxy) => (
+          {orderProxyChoices(meta.pickableProxies, proxyId).map((proxy) => (
             <CommandItem
               key={proxy.id}
               value={proxy.name}
@@ -1426,7 +1495,7 @@ function ProxyPicker({
                   proxyId === proxy.id ? "opacity-100" : "opacity-0",
                 )}
               />
-              {proxy.name}
+              <ProxyChoiceLabel proxy={proxy} current={proxyId === proxy.id} />
             </CommandItem>
           ))}
         </CommandGroup>
@@ -1455,6 +1524,19 @@ function ProxyPicker({
             ))}
           </CommandGroup>
         )}
+        <CommandGroup>
+          <CommandItem
+            value="__add_proxy__"
+            forceMount
+            onSelect={() => {
+              meta.setOpenProxySelectorFor(null);
+              meta.openNewProxyFor(profileId);
+            }}
+          >
+            <LuPlus className="mr-2 size-4" aria-hidden="true" />
+            {t("createProfile.proxy.addProxy")}
+          </CommandItem>
+        </CommandGroup>
         {meta.canCreateLocationProxy && meta.creatableCountries.length > 0 && (
           <CommandGroup heading={t("profileTable.createByCountryHeading")}>
             {meta.creatableCountries.map((country) => (
@@ -2297,6 +2379,7 @@ export function ProfilesDataTable({
     React.useState<BrowserProfile | null>(null);
   const [statusesDialogOpen, setStatusesDialogOpen] = React.useState(false);
   const [bulkEditOpen, setBulkEditOpen] = React.useState(false);
+  const [exportOpen, setExportOpen] = React.useState(false);
   const [templateProfile, setTemplateProfile] =
     React.useState<BrowserProfile | null>(null);
   const [dnsBlocklistProfile, setDnsBlocklistProfile] =
@@ -2311,6 +2394,11 @@ export function ProfilesDataTable({
   );
 
   const { storedProxies } = useProxyEvents();
+  const {
+    pinned,
+    toggle: togglePin,
+    toggleMany: togglePinMany,
+  } = usePinnedProfiles();
   const { vpnConfigs } = useVpnEvents();
   const { user } = useCloudAuth();
   // On a joined Owl server the locks name its members; this member's own
@@ -2378,6 +2466,38 @@ export function ProfilesDataTable({
     string | null
   >(null);
   const [trafficStore] = React.useState(() => new TrafficSnapshotStore());
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a rolled-back override equals the profile's value and must be pruned too
+  React.useEffect(() => {
+    const prune = <T,>(
+      overrides: Record<string, T>,
+      reflected: (profile: BrowserProfile, value: T) => boolean,
+    ) => {
+      const kept = Object.entries(overrides).filter(([id, value]) => {
+        const profile = allProfiles.find((item) => item.id === id);
+        return profile !== undefined && !reflected(profile, value);
+      });
+      return kept.length === Object.keys(overrides).length
+        ? overrides
+        : Object.fromEntries(kept);
+    };
+    setProxyOverrides((prev) =>
+      prune(prev, (profile, value) => (profile.proxy_id ?? null) === value),
+    );
+    setVpnOverrides((prev) =>
+      prune(prev, (profile, value) => (profile.vpn_id ?? null) === value),
+    );
+    setTagsOverrides((prev) =>
+      prune(
+        prev,
+        (profile, value) =>
+          JSON.stringify(profile.tags ?? []) === JSON.stringify(value),
+      ),
+    );
+    setNoteOverrides((prev) =>
+      prune(prev, (profile, value) => (profile.note ?? null) === value),
+    );
+  }, [allProfiles, proxyOverrides, vpnOverrides, tagsOverrides, noteOverrides]);
+
   const [trafficDialogProfile, setTrafficDialogProfile] = React.useState<{
     id: string;
     name?: string;
@@ -2461,6 +2581,10 @@ export function ProfilesDataTable({
       ),
     [applyRouteChange],
   );
+
+  const [newProxyProfileId, setNewProxyProfileId] = React.useState<
+    string | null
+  >(null);
 
   const handleCreateCountryProxy = React.useCallback(
     async (profileId: string, country: LocationItem) => {
@@ -2907,6 +3031,18 @@ export function ProfilesDataTable({
     }
   }, [browserState.isClient, loadAllTags]);
 
+  const toggleBulkLock = React.useCallback(
+    (profile: BrowserProfile) => {
+      invoke("update_profile_bulk_locked", {
+        profileId: profile.id,
+        bulkLocked: !profile.bulk_locked,
+      }).catch((error: unknown) => {
+        showErrorToast(translateBackendError(t as never, error));
+      });
+    },
+    [t],
+  );
+
   // Build table meta from volatile state so columns can stay stable
   const selectedDragProfiles = React.useMemo(() => {
     const ids = new Set(selectedProfiles);
@@ -2916,6 +3052,40 @@ export function ProfilesDataTable({
     () => new Map(allProfiles.map((profile) => [profile.id, profile])),
     [allProfiles],
   );
+  const [checkingProxies, setCheckingProxies] = React.useState(false);
+  // Checks the proxy of every selected profile without launching anything.
+  // Each result lands in the shared check store, so the rows' proxy cells
+  // show it as it arrives; the toast sums it up.
+  const checkSelectedProxies = React.useCallback(async () => {
+    if (checkingProxies) return;
+    const targets = proxiesToCheck(selectedDragProfiles, storedProxies);
+    if (targets.length === 0) {
+      showErrorToast(t("profileTable.bulkProxyCheck.none"));
+      return;
+    }
+    setCheckingProxies(true);
+    let ok = 0;
+    let failed = 0;
+    try {
+      await runPool(targets, BULK_PROXY_CHECK_CONCURRENCY, async (proxy) => {
+        try {
+          const result = await runProxyCheck(proxy, (error) =>
+            translateBackendError(t as never, error),
+          );
+          if (result?.is_valid) ok += 1;
+          else if (result) failed += 1;
+        } catch {
+          failed += 1;
+        }
+      });
+    } finally {
+      setCheckingProxies(false);
+    }
+    const summary = t("profileTable.bulkProxyCheck.summary", { ok, failed });
+    if (failed > 0) showErrorToast(summary);
+    else showSuccessToast(summary);
+  }, [checkingProxies, selectedDragProfiles, storedProxies, t]);
+
   const canDragProfiles = React.useCallback(
     (targets: BrowserProfile[]) => {
       return (
@@ -3074,6 +3244,10 @@ export function ProfilesDataTable({
       canCreateLocationProxy,
       loadCountries,
       handleCreateCountryProxy,
+      openNewProxyFor: setNewProxyProfileId,
+      pinned,
+      togglePin,
+      toggleBulkLock,
 
       // Team locks
       isProfileLockedByAnother: isProfileLocked,
@@ -3159,6 +3333,9 @@ export function ProfilesDataTable({
       creatableCountries,
       loadCountries,
       handleCreateCountryProxy,
+      pinned,
+      togglePin,
+      toggleBulkLock,
       isProfileLocked,
       getLockInfo,
       handoffFor,
@@ -3462,6 +3639,29 @@ export function ProfilesDataTable({
                 />
                 {runtime.isRunning && <LiveDot />}
               </button>
+              <PinToggle
+                pinned={meta.pinned.has(profile.id)}
+                name={profile.name}
+                onToggle={() => meta.togglePin(profile.id)}
+                t={meta.t}
+              />
+              {profile.bulk_locked && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      data-slot="profile-bulk-lock"
+                      role="img"
+                      aria-label={meta.t("profileTable.bulkLock.label")}
+                      className="grid size-5 shrink-0 place-items-center text-muted-foreground"
+                    >
+                      <LuLock className="size-3" aria-hidden="true" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-64">
+                    {meta.t("profileTable.bulkLock.tooltip")}
+                  </TooltipContent>
+                </Tooltip>
+              )}
               {launchErrorText && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -3509,16 +3709,12 @@ export function ProfilesDataTable({
                 }
               />
               {isLocked && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span>
-                      <LuLock className="size-3 text-muted-foreground" />
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {meta.t("sync.team.profileLocked", { email: lockedEmail })}
-                  </TooltipContent>
-                </Tooltip>
+                <LockHolderChip
+                  holder={lockedEmail}
+                  tooltip={meta.t("sync.team.profileLocked", {
+                    email: lockedEmail,
+                  })}
+                />
               )}
             </div>
           );
@@ -4051,7 +4247,22 @@ export function ProfilesDataTable({
     },
     [columnFit, view.preferences.sizing],
   );
-  const sortedRows = table.getRowModel().rows;
+  const modelRows = table.getRowModel().rows;
+  const sortedRows = React.useMemo(
+    () => pinnedFirst(modelRows, (row) => pinned.has(row.id)),
+    [modelRows, pinned],
+  );
+  const exportSelection = React.useMemo(() => {
+    const ids = new Set(selectedProfiles);
+    const shown = sortedRows
+      .map((row) => row.original)
+      .filter((profile) => ids.has(profile.id));
+    const shownIds = new Set(shown.map((profile) => profile.id));
+    const hidden = profiles.filter(
+      (profile) => ids.has(profile.id) && !shownIds.has(profile.id),
+    );
+    return [...shown, ...hidden];
+  }, [profiles, selectedProfiles, sortedRows]);
   useScrollFade(scrollParentRef);
 
   React.useEffect(() => {
@@ -4087,6 +4298,7 @@ export function ProfilesDataTable({
   }, [ROW_HEIGHT, rowVirtualizer]);
 
   const keyboard = useTableKeyboard(table, {
+    rows: sortedRows,
     scrollToIndex: (index) =>
       rowVirtualizer.scrollToIndex(index, { align: "auto" }),
     edit: (rowId, columnId) => {
@@ -4109,12 +4321,21 @@ export function ProfilesDataTable({
    */
   const trashProfiles = React.useCallback(
     (focused: BrowserProfile | undefined, onlyFocused = false) => {
-      const ids =
-        !onlyFocused && selectedProfiles.length > 0
-          ? selectedProfiles
-          : focused
-            ? [focused.id]
-            : [];
+      const fromSelection = !onlyFocused && selectedProfiles.length > 0;
+      const unlocked =
+        fromSelection && selectedProfiles.length > 1
+          ? splitBulkLocked(allProfiles, selectedProfiles)
+          : null;
+      if (unlocked && unlocked.skipped > 0) {
+        showErrorToast(
+          t("profileTable.bulkLock.skipped", { count: unlocked.skipped }),
+        );
+      }
+      const ids = fromSelection
+        ? (unlocked?.allowed ?? selectedProfiles)
+        : focused
+          ? [focused.id]
+          : [];
       const targets = ids
         .map((id) => profilesById.get(id))
         .filter((profile): profile is BrowserProfile => {
@@ -4134,10 +4355,12 @@ export function ProfilesDataTable({
       } else {
         void onDeleteSelectedProfiles(targets.map((profile) => profile.id));
       }
-      if (ids === selectedProfiles) onSelectedProfilesChange([]);
+      if (fromSelection) onSelectedProfilesChange([]);
     },
     [
       selectedProfiles,
+      allProfiles,
+      t,
       profilesById,
       tableMeta,
       onDeleteProfile,
@@ -4246,6 +4469,19 @@ export function ProfilesDataTable({
           void onCloneProfile(profile);
         }
       : undefined);
+  const menuProxy =
+    menuProfile?.proxy_id && !menuProfile.vpn_id
+      ? storedProxies.find((proxy) => proxy.id === menuProfile.proxy_id)
+      : undefined;
+  const copyProxy = async (proxy: StoredProxy) => {
+    try {
+      await navigator.clipboard.writeText(formatProxyUri(proxy.proxy_settings));
+      showSuccessToast(t("toasts.success.copied"));
+    } catch {
+      showErrorToast(t("toasts.error.copyFailed"));
+    }
+  };
+
   const menuActions = (() => {
     if (!menuProfile) return null;
     const runtime = getRowRuntime(menuProfile, tableMeta);
@@ -4274,6 +4510,11 @@ export function ProfilesDataTable({
       onRunRemote: onRunRemote ? () => onRunRemote(menuProfile) : undefined,
       onLockNow: onLockProfile ? () => onLockProfile(menuProfile) : undefined,
       onTrash: () => trashProfiles(menuProfile, true),
+      isPinned: pinned.has(menuProfile.id),
+      onTogglePin: () => togglePin(menuProfile.id),
+      isBulkLocked: Boolean(menuProfile.bulk_locked),
+      onToggleBulkLock: () => toggleBulkLock(menuProfile),
+      onCopyProxy: menuProxy ? () => void copyProxy(menuProxy) : undefined,
     };
   })();
 
@@ -4292,6 +4533,7 @@ export function ProfilesDataTable({
     let run = 0;
     let stop = 0;
     for (const profile of selectedDragProfiles) {
+      if (profile.bulk_locked) continue;
       const runtime = getRowRuntime(profile, tableMeta);
       if (runtime.isLaunching || runtime.isStopping) continue;
       if (runtime.isRunning) stop += 1;
@@ -4829,6 +5071,7 @@ export function ProfilesDataTable({
           </span>
         )}
         <DataTableActionBarAction
+          size="icon"
           tooltip={t("bulkEdit.action")}
           onClick={() => setBulkEditOpen(true)}
         >
@@ -4836,6 +5079,7 @@ export function ProfilesDataTable({
         </DataTableActionBarAction>
         {onBulkGroupAssignment && (
           <DataTableActionBarAction
+            size="icon"
             tooltip={t("profiles.actionBar.assignToGroup")}
             onClick={onBulkGroupAssignment}
           >
@@ -4844,12 +5088,51 @@ export function ProfilesDataTable({
         )}
         {onBulkProxyAssignment && (
           <DataTableActionBarAction
+            size="icon"
             tooltip={t("profiles.actionBar.assignProxy")}
             onClick={onBulkProxyAssignment}
           >
             <LuWifi />
           </DataTableActionBarAction>
         )}
+        <DataTableActionBarAction
+          tooltip={t("profileTable.bulkProxyCheck.action")}
+          size="icon"
+          disabled={checkingProxies}
+          onClick={() => void checkSelectedProxies()}
+        >
+          <LuShieldCheck />
+        </DataTableActionBarAction>
+        <DataTableActionBarAction
+          size="icon"
+          tooltip={
+            allPinned(pinned, selectedProfiles)
+              ? t("profileTable.pin.unpinSelected")
+              : t("profileTable.pin.pinSelected")
+          }
+          onClick={() => togglePinMany(selectedProfiles)}
+        >
+          {allPinned(pinned, selectedProfiles) ? <LuPinOff /> : <LuPin />}
+        </DataTableActionBarAction>
+        <DataTableActionBarAction
+          tooltip={t("profileTable.bulkLock.toggleSelected")}
+          size="icon"
+          onClick={() => {
+            const profilesToToggle = selectedDragProfiles;
+            const lock = !profilesToToggle.every((p) => p.bulk_locked);
+            for (const profile of profilesToToggle) {
+              if (Boolean(profile.bulk_locked) !== lock) {
+                toggleBulkLock(profile);
+              }
+            }
+          }}
+        >
+          {selectedDragProfiles.every((p) => p.bulk_locked) ? (
+            <LuLockOpen />
+          ) : (
+            <LuLock />
+          )}
+        </DataTableActionBarAction>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -4886,6 +5169,14 @@ export function ProfilesDataTable({
                 {t("cookieRobot.actionBar")}
               </DropdownMenuItem>
             )}
+            <DropdownMenuItem
+              onSelect={() => {
+                setExportOpen(true);
+              }}
+            >
+              <LuFileDown />
+              {t("profilesExport.action")}
+            </DropdownMenuItem>
             {DONUT_CLOUD && onBulkEnableSync && (
               <DropdownMenuItem onSelect={onBulkEnableSync}>
                 <LuRefreshCw />
@@ -4916,6 +5207,17 @@ export function ProfilesDataTable({
           </DropdownMenuContent>
         </DropdownMenu>
       </DataTableActionBar>
+      <ProxyFormDialog
+        isOpen={newProxyProfileId !== null}
+        onClose={() => {
+          setNewProxyProfileId(null);
+        }}
+        onCreated={(proxy) => {
+          if (newProxyProfileId) {
+            void handleProxySelection(newProxyProfileId, proxy.id);
+          }
+        }}
+      />
       {trafficDialogProfile && (
         <TrafficDetailsDialog
           isOpen={trafficDialogProfile !== null}
@@ -4937,6 +5239,14 @@ export function ProfilesDataTable({
       <SaveTemplateDialog
         profile={templateProfile}
         onClose={() => setTemplateProfile(null)}
+      />
+      <ProfilesExportDialog
+        isOpen={exportOpen}
+        onClose={() => {
+          setExportOpen(false);
+        }}
+        selectedProfiles={exportSelection}
+        shownProfiles={sortedRows.map((row) => row.original)}
       />
       <BulkEditDialog
         isOpen={bulkEditOpen}

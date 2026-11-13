@@ -27,6 +27,7 @@ import {
   LuKeyRound,
   LuLayoutTemplate,
   LuLink,
+  LuListTodo,
   LuLock,
   LuLockOpen,
   LuPlus,
@@ -47,6 +48,7 @@ import {
 import { DnsServerField } from "@/components/dns-server-field";
 import { LogViewer } from "@/components/log-viewer";
 import { NetworkRequestsPanel } from "@/components/network-requests-panel";
+import { ProfileExitPreview } from "@/components/profile-exit-preview";
 import { ProfileHandoffStatus } from "@/components/profile-handoff-status";
 import { DebugEndpointBlock } from "@/components/profile-info/debug-endpoint";
 import {
@@ -64,9 +66,13 @@ import {
   useCanRunRemote,
   useProfileUnlocked,
 } from "@/components/profile-info/header-actions";
+import { LockHeldBanner } from "@/components/profile-info/lock-held-banner";
 import { ProfileLaunchActivity } from "@/components/profile-launch-activity";
 import { ProfileMetadataCard } from "@/components/profile-metadata-card";
+import { ProfileTasksSection } from "@/components/profile-tasks-section";
 import { ExportProfileSection } from "@/components/profile-transfer";
+import { ProxyFormDialog } from "@/components/proxy-form-dialog";
+import { ProxyPicker } from "@/components/proxy-picker";
 import { RestorePoints } from "@/components/restore-points";
 import { SharedFingerprintConfigForm } from "@/components/shared-fingerprint-config-form";
 import { ProfileTotpSection } from "@/components/totp-code";
@@ -129,6 +135,7 @@ import { DNS_BLOCKLIST_LEVELS } from "@/lib/dns-blocklist-levels";
 import { formatRelativeTime } from "@/lib/flag-utils";
 import { MOTION_DURATION, MOTION_EASE_OUT, MOTION_SPRING } from "@/lib/motion";
 import { rotateProxyIps } from "@/lib/proxy-rotation";
+import { formatProxyUri } from "@/lib/proxy-uri";
 import type { RemoteHandoffState } from "@/lib/remote-sessions";
 import { startPagesFromText } from "@/lib/start-pages";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
@@ -431,6 +438,9 @@ function profileInfoFocusSurfaces(surface: HTMLElement): HTMLElement[] {
   return surfaces;
 }
 
+/** The proxy picker's last item: create a proxy and assign it here. */
+const NEW_PROXY_VALUE = "__new_proxy__";
+
 export function ProfileInfoDialog(props: ProfileInfoDialogProps) {
   const { t } = useTranslation();
   const motionAllowed = useMotionAllowed();
@@ -574,6 +584,15 @@ export function ProfileInfoDialog(props: ProfileInfoDialogProps) {
           disableOutsidePointerEvents={isModal}
           deferPointerDownOutside
           onDismiss={() => void requestClose()}
+          onEscapeKeyDown={(event) => {
+            const target = event.target;
+            if (
+              target instanceof Element &&
+              target.closest('[data-slot="profile-task-form"]')
+            ) {
+              event.preventDefault();
+            }
+          }}
           onFocusOutside={(event) => event.preventDefault()}
           onPointerDownOutside={(event) => {
             const original = event.detail.originalEvent;
@@ -690,15 +709,34 @@ function ProfileInfoContents({
     string | null
   >(null);
 
+  const [groupsRevision, setGroupsRevision] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    let mounted = true;
+    let unlisten: (() => void) | undefined;
+    void listen("groups-changed", () => {
+      setGroupsRevision((n) => n + 1);
+    }).then((u) => {
+      if (mounted) unlisten = u;
+      else u();
+    });
+    return () => {
+      mounted = false;
+      unlisten?.();
+    };
+  }, [isOpen]);
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: groupsRevision re-runs the lookup after a group is renamed
   React.useEffect(() => {
     let current = true;
-    setGroupName(null);
     if (!isOpen || !profile?.group_id) {
+      setGroupName(null);
       return;
     }
     void (async () => {
       try {
-        const groups = await invoke<ProfileGroup[]>("get_groups");
+        const groups = await invoke<ProfileGroup[]>("get_profile_groups");
         const group = groups.find((g) => g.id === profile.group_id);
         if (current) setGroupName(group?.name ?? null);
       } catch {
@@ -708,7 +746,7 @@ function ProfileInfoContents({
     return () => {
       current = false;
     };
-  }, [isOpen, profile?.group_id]);
+  }, [isOpen, profile?.group_id, groupsRevision]);
 
   React.useEffect(() => {
     let current = true;
@@ -1103,6 +1141,7 @@ type ProfileSection =
   | "extensions"
   | "sync"
   | "automation"
+  | "tasks"
   | "requests"
   | "logs"
   | "transfer"
@@ -1281,6 +1320,11 @@ function ProfileInfoLayout({
       badge: profile.launch_hook ? t("profileInfo.badges.active") : undefined,
     },
     {
+      id: "tasks",
+      icon: <LuListTodo className="size-3.5" />,
+      label: t("profileInfo.sections.tasks"),
+    },
+    {
       id: "requests",
       icon: <LuActivity className="size-3.5" />,
       label: t("profileInfo.sections.requests"),
@@ -1382,6 +1426,8 @@ function ProfileInfoLayout({
           <LuX className="size-3.5" />
         </button>
       </div>
+
+      <LockHeldBanner profile={profile} runningHere={runningHere} />
 
       {runningHere && (
         <RunningBanner
@@ -1722,6 +1768,10 @@ function ProfileInfoLayout({
                   </Button>
                 )}
               </div>
+            )}
+
+            {section === "tasks" && (
+              <ProfileTasksSection profileId={profile.id} />
             )}
 
             {section === "requests" && (
@@ -2156,9 +2206,10 @@ function NetworkSectionInline({
   const [vpnId, setVpnId] = React.useState<string | null>(
     profile.vpn_id ?? null,
   );
-  const rotatableProxy = storedProxies.find(
-    (p) => p.id === proxyId && p.rotation_url,
-  );
+  const assignedProxy = storedProxies.find((p) => p.id === proxyId);
+  const rotatableProxy = assignedProxy?.rotation_url
+    ? assignedProxy
+    : undefined;
   const dnsServerId = React.useId();
   const [savedDnsServer, setSavedDnsServer] = React.useState(
     profile.dns_server ?? "",
@@ -2211,7 +2262,13 @@ function NetworkSectionInline({
     label: t("profileInfo.fields.dns"),
   });
 
+  const [isProxyFormOpen, setIsProxyFormOpen] = React.useState(false);
+
   const onProxyChange = async (value: string) => {
+    if (value === NEW_PROXY_VALUE) {
+      setIsProxyFormOpen(true);
+      return;
+    }
     const nextId = value === "__none__" ? null : value;
     setIsSaving(true);
     setError(null);
@@ -2230,6 +2287,17 @@ function NetworkSectionInline({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const copyProxy = async (proxy: StoredProxy) => {
+    try {
+      await navigator.clipboard.writeText(formatProxyUri(proxy.proxy_settings));
+    } catch {
+      showErrorToast(t("proxyPicker.copyFailed"));
+      return;
+    }
+    playUiSound("copy");
+    showSuccessToast(t("proxyPicker.copied"));
   };
 
   const onVpnChange = async (value: string) => {
@@ -2266,30 +2334,39 @@ function NetworkSectionInline({
         <span className="w-12 shrink-0 text-xs font-medium text-muted-foreground">
           {t("profileInfo.fields.proxy")}
         </span>
-        <Select
-          value={proxyId ?? "__none__"}
+        <ProxyPicker
+          proxies={storedProxies}
+          value={proxyId}
           disabled={isDisabled || isSaving}
-          onValueChange={(v) => {
-            void onProxyChange(v);
+          ariaLabel={t("profileInfo.fields.proxy")}
+          onSelect={(id) => {
+            void onProxyChange(id ?? "__none__");
           }}
-        >
-          <SelectTrigger
-            aria-label={t("profileInfo.fields.proxy")}
-            className="h-8 min-w-0 flex-1 text-xs"
+          onAdd={() => setIsProxyFormOpen(true)}
+        />
+        {assignedProxy && (
+          <Button
+            type="button"
+            variant="soft"
+            size="sm"
+            className="h-8 shrink-0 gap-1.5 px-2.5 text-xs"
+            data-slot="profile-proxy-copy"
+            title={t("proxyPicker.copyTooltip")}
+            onClick={() => void copyProxy(assignedProxy)}
           >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__none__">
-              {t("profileInfo.values.none")}
-            </SelectItem>
-            {storedProxies.map((p) => (
-              <SelectItem key={p.id} value={p.id}>
-                {p.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            <LuCopy className="size-3.5" />
+            {t("proxyPicker.copy")}
+          </Button>
+        )}
+        <ProxyFormDialog
+          isOpen={isProxyFormOpen}
+          onClose={() => {
+            setIsProxyFormOpen(false);
+          }}
+          onCreated={(proxy) => {
+            void onProxyChange(proxy.id);
+          }}
+        />
         {rotatableProxy && (
           <Button
             type="button"
@@ -2306,6 +2383,7 @@ function NetworkSectionInline({
           </Button>
         )}
       </div>
+      {assignedProxy && <ProfileExitPreview proxy={assignedProxy} />}
 
       <div className="flex items-center gap-2">
         <span className="w-12 shrink-0 text-xs font-medium text-muted-foreground">

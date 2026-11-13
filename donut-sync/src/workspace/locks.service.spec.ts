@@ -54,4 +54,18 @@ describe("LocksService", () => {
     locks.releaseAllOf("m1");
     expect(locks.list().map((lock) => lock.profileId)).toEqual(["p2"]);
   });
+
+  it("lets the owner or the holder force a lock free, nobody else", () => {
+    const locks = new LocksService(sync);
+    locks.acquire("p1", "m1", "Ivan");
+    expect(locks.forceRelease("p1", "m2", false)).toBe(false);
+    expect(locks.list()).toHaveLength(1);
+    expect(locks.forceRelease("p1", "m2", true)).toBe(true);
+    expect(locks.list()).toEqual([]);
+    expect(announced).toEqual(["profile-locks/p1", "profile-locks/p1"]);
+
+    locks.acquire("p1", "m1", "Ivan");
+    expect(locks.forceRelease("p1", "m1", false)).toBe(true);
+    expect(locks.forceRelease("p1", "m1", true)).toBeNull();
+  });
 });

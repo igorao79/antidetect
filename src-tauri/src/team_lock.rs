@@ -564,6 +564,78 @@ pub async fn get_team_lock_status(profile_id: String) -> Result<Option<ProfileLo
   Ok(PROFILE_LOCK.get_lock_status(&profile_id).await)
 }
 
+/// What a "Release" of another session's lock may do.
+#[derive(Debug, PartialEq, Eq)]
+enum ForcedRelease {
+  /// No lock is held any more, nothing to ask the server.
+  Gone,
+  Allowed,
+  Refused,
+}
+
+/// The server's owner and the member holding a lock may drop it; the server
+/// checks the same, this keeps the refusal coded and local.
+fn forced_release(
+  is_owner: bool,
+  member_id: &str,
+  held: Option<&ProfileLockInfo>,
+  held_here: bool,
+) -> ForcedRelease {
+  match held {
+    None => ForcedRelease::Gone,
+    Some(_) if held_here => ForcedRelease::Refused,
+    Some(lock) if is_owner || lock.locked_by == member_id => ForcedRelease::Allowed,
+    Some(_) => ForcedRelease::Refused,
+  }
+}
+
+/// Release a shared profile's lock that another session of an Owl server
+/// still holds (its machine went away without letting go). Only for a joined
+/// server: the Donut cloud's locks stay as they are.
+#[tauri::command]
+pub async fn release_team_lock(profile_id: String) -> Result<(), String> {
+  let info =
+    crate::workspace::current().ok_or_else(|| crate::backend_error("LOCK_RELEASE_NOT_ALLOWED"))?;
+  if !PROFILE_LOCK.is_connected().await {
+    PROFILE_LOCK.connect().await;
+  }
+  let held = PROFILE_LOCK.get_lock_status(&profile_id).await;
+  let held_here = PROFILE_LOCK.holds(&profile_id).await;
+  match forced_release(
+    info.member.is_owner(),
+    &info.member.id,
+    held.as_ref(),
+    held_here,
+  ) {
+    ForcedRelease::Refused => return Err(crate::backend_error("LOCK_RELEASE_NOT_ALLOWED")),
+    ForcedRelease::Gone => {
+      emit_lock_change(Some(&profile_id), "released");
+      return Ok(());
+    }
+    ForcedRelease::Allowed => {}
+  }
+
+  let path = format!("{}?force=1", lock_path(&urlencoding::encode(&profile_id)));
+  let response = lock_request(reqwest::Method::DELETE, &path)
+    .await
+    .map_err(|e| crate::coded_failure("LOCK_RELEASE_FAILED", e))?;
+  let status = response.status();
+  if status == reqwest::StatusCode::FORBIDDEN {
+    return Err(crate::backend_error("LOCK_RELEASE_NOT_ALLOWED"));
+  }
+  // A 404 means it lapsed or was released meanwhile: the wish is met.
+  if !status.is_success() && status != reqwest::StatusCode::NOT_FOUND {
+    return Err(crate::coded_failure(
+      "LOCK_RELEASE_FAILED",
+      format!("HTTP {}", status.as_u16()),
+    ));
+  }
+  log::info!("Profile lock released by force profile={profile_id}");
+  PROFILE_LOCK.locks.write().await.remove(&profile_id);
+  emit_lock_change(Some(&profile_id), "released");
+  Ok(())
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -588,6 +660,32 @@ mod tests {
     let json: serde_json::Value = serde_json::from_str(&err).expect("a code envelope");
     assert_eq!(json["code"], "PROFILE_LOCKED_BY_MEMBER");
     assert_eq!(json["params"]["email"], "mate@example.com");
+  }
+
+  #[test]
+  fn only_the_owner_or_the_holder_may_force_a_lock_free() {
+    let lock = server_lock("p1", "m1");
+    assert_eq!(
+      forced_release(false, "m2", None, false),
+      ForcedRelease::Gone
+    );
+    assert_eq!(
+      forced_release(false, "m2", Some(&lock), false),
+      ForcedRelease::Refused
+    );
+    assert_eq!(
+      forced_release(true, "m2", Some(&lock), false),
+      ForcedRelease::Allowed
+    );
+    assert_eq!(
+      forced_release(false, "m1", Some(&lock), false),
+      ForcedRelease::Allowed
+    );
+    // A lock this very app holds is released by stopping the profile.
+    assert_eq!(
+      forced_release(true, "m1", Some(&lock), true),
+      ForcedRelease::Refused
+    );
   }
 
   fn server_lock(profile_id: &str, holder: &str) -> ProfileLockInfo {

@@ -3257,6 +3257,51 @@ test("a proxy's expiry is typed as a date or days, or picked in the calendar", a
   });
 });
 
+test("a new proxy is made from a profile's proxy picker and assigned to it", async () => {
+  await withApp(
+    "ui-proxy-picker-new",
+    async (app) => {
+      const profile = await createUiProfile(app, "Picker Alpha");
+      const proxyOf = async () =>
+        (await app.invoke("list_browser_profiles")).find(
+          (p) => p.id === profile.id,
+        )?.proxy_id ?? null;
+      const trigger = `button[aria-label^="${en.profileTable.aria.proxy.split("{{")[0]}Picker Alpha"]`;
+      await app.waitFor(
+        () =>
+          app.execute("return Boolean(document.querySelector(arguments[0]));", [
+            trigger,
+          ]),
+        { description: "the profile's proxy cell" },
+      );
+
+      await app.clickSelector(trigger);
+      await app.clickText(en.createProfile.proxy.addProxy, {
+        roles: ["option"],
+      });
+      await app.waitForText("Add Proxy");
+      await app.fillSelector("#proxy-name", "Picker proxy");
+      await app.fillSelector("#proxy-host", "198.51.100.20");
+      await app.fillSelector("#proxy-port", "3128");
+      await app.clickTextIn('[role="dialog"]', en.proxies.add, {
+        roles: ["button"],
+      });
+
+      const stored = await app.waitFor(
+        async () =>
+          (await app.invoke("get_stored_proxies")).find(
+            (proxy) => proxy.name === "Picker proxy",
+          ) ?? null,
+        { description: "the proxy to be stored" },
+      );
+      await app.waitFor(async () => (await proxyOf()) === stored.id, {
+        description: "the new proxy to be assigned to the profile",
+      });
+    },
+    { seedDownloadedBrowser: true },
+  );
+});
+
 test("About exposes a searchable, responsive third-party license inventory", async () => {
   await withApp("ui-about-licenses", async (app) => {
     await app.clickSelector('[aria-label="More"]');
@@ -8431,5 +8476,122 @@ test("a running profile whose proxy goes down gets a banner that leaves when it 
     await app.waitFor(async () => (await banner()) === null, {
       description: "the banner leaves when the proxy answers again",
     });
+  });
+});
+
+test("a failed proxy check explains itself in the route details", async () => {
+  await withApp("ui-proxy-check-diagnosis", async (app) => {
+    const proxy = await app.invoke("create_stored_proxy", {
+      name: "Diagnosis HTTP Proxy",
+      proxySettings: {
+        proxy_type: "http",
+        host: "127.0.0.1",
+        port: 9,
+        username: null,
+        password: null,
+      },
+    });
+    await app.invokeError("check_proxy_validity", {
+      proxyId: proxy.id,
+      proxySettings: null,
+    });
+
+    await app.clickSelector('[aria-label="Network"]');
+    await app.waitForText(proxy.name);
+    await app.clickSelector(`[aria-label="${en.appFeedback.routeDetails}"]`);
+    await app.waitFor(
+      () =>
+        app.execute(
+          `return Boolean(document.querySelector('[data-slot="route-diagnosis"]'));`,
+        ),
+      { description: "the failure diagnosis" },
+    );
+    const note = await app.execute(
+      `return document.querySelector('[data-slot="route-diagnosis"]').innerText.replace(/\\s+/g, " ").trim();`,
+    );
+    assert.ok(note.includes(en.routeDiagnosis.tryLabel), note);
+    assert.ok(note.includes(en.routeDiagnosis.localNote), note);
+  });
+});
+
+test("a profile's network section lists its proxy first, offers a copy button and says where it will appear from", async () => {
+  await withApp("ui-proxy-picker-preview", async (app) => {
+    const settings = (port) => ({
+      proxy_type: "http",
+      host: "127.0.0.1",
+      port,
+      username: "user",
+      password: "pass",
+    });
+    await app.invoke("create_stored_proxy", {
+      name: "Aaa first alphabetically",
+      proxySettings: settings(9),
+    });
+    const assigned = await app.invoke("create_stored_proxy", {
+      name: "Zzz assigned",
+      proxySettings: settings(10),
+    });
+    const profile = await createUiProfile(app, "Picker Profile");
+    await app.invoke("update_profile_proxy", {
+      profileId: profile.id,
+      proxyId: assigned.id,
+    });
+    await app.waitForText("Picker Profile");
+    await app.clickSelector(
+      `[data-slot="profile-inspect-trigger"][data-profile-id="${profile.id}"]`,
+    );
+    await app.clickSelector(
+      '[data-slot="profile-info-section"][data-section="network"]',
+    );
+    await app.waitForText(en.profileExit.title);
+    assert.equal(
+      await app.execute(
+        `return document.querySelector('[data-slot="profile-proxy-copy"]') !== null;`,
+      ),
+      true,
+    );
+    assert.ok(
+      (
+        await app.execute(
+          `return document.querySelector('[data-slot="profile-exit-preview"]').innerText;`,
+        )
+      ).includes(en.profileExit.notChecked),
+    );
+
+    await app.clickSelector(
+      `button[role="combobox"][aria-label="${en.profileInfo.fields.proxy}"]`,
+    );
+    const names = await app.execute(`
+      return [...document.querySelectorAll('[cmdk-item]')]
+        .map((item) => item.innerText.split('\\n')[0].trim());
+    `);
+    const proxies = names.filter((name) => /^(Aaa|Zzz)/.test(name));
+    assert.deepEqual(proxies, ["Zzz assigned", "Aaa first alphabetically"]);
+  });
+});
+
+test("a pinned profile rises above the sort and a bulk-locked one shows its lock", async () => {
+  await withApp("ui-pin-and-bulk-lock", async (app) => {
+    const first = await createUiProfile(app, "Pin Aaa");
+    const last = await createUiProfile(app, "Pin Zzz");
+    await app.waitForText("Pin Zzz");
+    const topRow = `return document.querySelector('tr[data-table-row][data-profile-id]')?.getAttribute('data-profile-id');`;
+    assert.equal(await app.execute(topRow), first.id);
+
+    await app.execute(
+      `document.querySelector('tr[data-profile-id="${last.id}"] [data-slot="profile-pin"]').click();`,
+    );
+    await app.waitFor(async () => (await app.execute(topRow)) === last.id);
+
+    await app.invoke("update_profile_bulk_locked", {
+      profileId: first.id,
+      bulkLocked: true,
+    });
+    await app.waitFor(
+      async () =>
+        await app.execute(
+          `return document.querySelector('tr[data-profile-id="${first.id}"] [data-slot="profile-bulk-lock"]') !== null;`,
+        ),
+    );
   });
 });

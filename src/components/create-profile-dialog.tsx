@@ -39,6 +39,10 @@ import { DnsServerField } from "@/components/dns-server-field";
 import { EphemeralStorageNotice } from "@/components/ephemeral-storage-notice";
 import { LoadingButton } from "@/components/loading-button";
 import { ProfileGlyph } from "@/components/profile-glyph";
+import {
+  checkHighlightedProxy,
+  ProxyChoiceLabel,
+} from "@/components/proxy-choice-label";
 import { ProxyFormDialog } from "@/components/proxy-form-dialog";
 import { SharedCamoufoxConfigForm } from "@/components/shared-camoufox-config-form";
 import {
@@ -100,6 +104,7 @@ import { getOSDisplayName, getOSIcon } from "@/lib/browser-utils";
 import { DNS_BLOCKLIST_LEVELS } from "@/lib/dns-blocklist-levels";
 import { extensionGroupFitsEngine } from "@/lib/extension-compat";
 import { MOTION_DURATION, MOTION_EASE_OUT, MOTION_SPRING } from "@/lib/motion";
+import { orderProxyChoices } from "@/lib/proxy-choices";
 import { startPagesFromText } from "@/lib/start-pages";
 import { notifySystem } from "@/lib/system-notify";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
@@ -466,10 +471,12 @@ export function CreateProfileDialog({
       t("createProfile.proxy.noProxy"));
   // The route list is the shared list, plus a just-created proxy until that
   // list catches up, so the checked item and the pill agree.
-  const proxyChoices =
+  const proxyChoices = orderProxyChoices(
     createdProxy && !storedProxies.some((proxy) => proxy.id === createdProxy.id)
       ? [createdProxy, ...storedProxies]
-      : storedProxies;
+      : storedProxies,
+    selectedProxyId,
+  );
   const destinationGroup = groups.find(
     (group) => group.id === destinationGroupId,
   );
@@ -1064,7 +1071,7 @@ export function CreateProfileDialog({
                 </button>
               </PopoverTrigger>
               <PopoverContent className="w-72 p-0" align="start" sideOffset={6}>
-                <Command>
+                <Command onKeyDown={checkHighlightedProxy}>
                   <CommandInput placeholder={t("createProfile.proxy.search")} />
                   <CommandList id={proxyListboxId}>
                     <CommandEmpty>
@@ -1093,6 +1100,7 @@ export function CreateProfileDialog({
                       </CommandItem>
                       {proxyChoices.map((proxy) => (
                         <CommandItem
+                          aria-label={proxy.name}
                           key={proxy.id}
                           value={proxy.id}
                           keywords={[proxy.name]}
@@ -1110,7 +1118,10 @@ export function CreateProfileDialog({
                             )}
                             aria-hidden="true"
                           />
-                          <span className="truncate">{proxy.name}</span>
+                          <ProxyChoiceLabel
+                            proxy={proxy}
+                            current={selectedProxyId === proxy.id}
+                          />
                         </CommandItem>
                       ))}
                     </CommandGroup>
@@ -2178,7 +2189,7 @@ function TemplatePicker({
 }
 
 /** One line of the count stepper's tooltip. */
-interface CountHintLine {
+export interface CountHintLine {
   text: string;
   /** Says what bounds the count; stressed once the count is at the bound. */
   limit?: boolean;
@@ -2211,18 +2222,20 @@ function SwapLabel({ labels, shown }: { labels: string[]; shown: number }) {
  * what the count means (the names, the allowance, the bound) shows in a
  * tooltip while the pointer or focus is on it, so nothing around it moves.
  */
-function CountStepper({
+export function CountStepper({
   value,
   max,
   onChange,
   disabled,
   hint,
+  onEnter,
 }: {
   value: number;
   max: number;
   onChange: (value: number) => void;
   disabled: boolean;
   hint: CountHintLine[];
+  onEnter?: () => void;
 }) {
   const { t } = useTranslation();
   const hintId = useId();
@@ -2311,6 +2324,9 @@ function CountStepper({
               if (event.key === "ArrowUp" || event.key === "ArrowDown") {
                 event.preventDefault();
                 set(value + (event.key === "ArrowUp" ? 1 : -1));
+              } else if (event.key === "Enter" && onEnter) {
+                event.preventDefault();
+                onEnter();
               }
             }}
             className="w-8 bg-transparent text-center text-sm tabular-nums outline-none disabled:opacity-50"

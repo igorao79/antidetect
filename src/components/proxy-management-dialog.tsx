@@ -48,10 +48,17 @@ import {
   useEntityTableTools,
 } from "@/components/managed-data-table";
 import { ProfileUsageButton } from "@/components/profile-usage-button";
+import { ProxyAssignProfilesDialog } from "@/components/proxy-assign-profiles-dialog";
 import { ProxyExpiryCell } from "@/components/proxy-expiry";
+import {
+  ProxyExpirySummary,
+  ProxyExtendMenu,
+} from "@/components/proxy-expiry-tools";
 import { ProxyExportDialog } from "@/components/proxy-export-dialog";
 import { ProxyFormDialog } from "@/components/proxy-form-dialog";
 import { ProxyImportDialog } from "@/components/proxy-import-dialog";
+import { ProxyReplaceDialog } from "@/components/proxy-replace-dialog";
+import { ProxyRowMenu } from "@/components/proxy-row-menu";
 import { SortableColumnHeader } from "@/components/table-controls";
 import { ProxyRouteScene } from "@/components/tips/scenes-essentials";
 import {
@@ -80,6 +87,7 @@ import { useVpnEvents } from "@/hooks/use-vpn-events";
 import { parseBackendError, translateBackendError } from "@/lib/backend-errors";
 import { DONUT_CLOUD } from "@/lib/cloud-only-pages";
 import { runProxyCheck } from "@/lib/proxy-check-store";
+import { expiresWithin, extendedExpiry } from "@/lib/proxy-expiry";
 import { rotateProxyIps } from "@/lib/proxy-rotation";
 import { isFirstHopEncrypted, proxyProtocolToken } from "@/lib/proxy-string";
 import { canonicalProxyType, proxyTypeLabelKey } from "@/lib/proxy-type";
@@ -90,6 +98,9 @@ import { RippleButton } from "./ui/ripple";
 import { VpnCheckButton } from "./vpn-check-button";
 import { VpnFormDialog } from "./vpn-form-dialog";
 import { VpnImportDialog } from "./vpn-import-dialog";
+
+/** The summary line above the table counts proxies ending within this many days. */
+const EXPIRY_SUMMARY_DAYS = 7;
 
 interface ProxyManagementDialogProps {
   isOpen: boolean;
@@ -115,6 +126,11 @@ export function ProxyManagementDialog({
   const [editingProxy, setEditingProxy] = useState<StoredProxy | null>(null);
   const [proxyToDelete, setProxyToDelete] = useState<StoredProxy | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [proxyToReplace, setProxyToReplace] = useState<StoredProxy | null>(
+    null,
+  );
+  const [proxyToAssign, setProxyToAssign] = useState<StoredProxy | null>(null);
+  const [expiringOnly, setExpiringOnly] = useState(false);
   const [proxySyncStatus, setProxySyncStatus] = useState<
     Record<string, SyncStatus>
   >({});
@@ -310,11 +326,25 @@ export function ProxyManagementDialog({
   // Undo. Only "Delete at once" asks first, through the dialog below.
   const handleDeleteProxy = useCallback(
     async (proxy: StoredProxy) => {
+      if ((proxyUsage[proxy.id] ?? 0) > 0) {
+        showErrorToast(
+          t("proxies.management.cannotDelete", {
+            count: proxyUsage[proxy.id],
+          }),
+          {
+            action: {
+              label: t("proxies.actions.replaceInProfiles"),
+              onClick: () => setProxyToReplace(proxy),
+            },
+          },
+        );
+        return;
+      }
       dropProxySelection(
         await requestProxyTrash([proxy], () => setProxyToDelete(proxy)),
       );
     },
-    [requestProxyTrash, dropProxySelection],
+    [requestProxyTrash, dropProxySelection, proxyUsage, t],
   );
 
   const handleConfirmDelete = useCallback(async () => {
@@ -551,14 +581,23 @@ export function ProxyManagementDialog({
       {
         id: "expires",
         size: 84,
-        header: () => t("proxies.expiry.column"),
+        enableSorting: true,
+        accessorFn: (proxy) => proxy.expires_at ?? undefined,
+        sortUndefined: "last",
+        sortingFn: "basic",
+        header: ({ column }) => (
+          <SortableColumnHeader
+            column={column}
+            label={t("proxies.expiry.column")}
+          />
+        ),
         cell: ({ row }) => (
           <ProxyExpiryCell expiresAt={row.original.expires_at} />
         ),
       },
       {
         id: "usage",
-        size: 64,
+        size: 104,
         enableSorting: false,
         header: () => t("proxies.management.usage"),
         cell: ({ row }) => (
@@ -601,7 +640,7 @@ export function ProxyManagementDialog({
       {
         id: "actions",
         // Room for Change IP only when some proxy has a rotation link.
-        size: hasRotation ? 104 : 76,
+        size: hasRotation ? 132 : 104,
         enableSorting: false,
         header: () => (
           <span className="sr-only">{t("common.labels.actions")}</span>
@@ -638,10 +677,14 @@ export function ProxyManagementDialog({
                 }
                 icon={<LuTrash2 />}
                 tone="destructive"
-                disabled={usage > 0}
                 onClick={() => {
                   void handleDeleteProxy(proxy);
                 }}
+              />
+              <ProxyRowMenu
+                proxy={proxy}
+                onReplace={setProxyToReplace}
+                onAssign={setProxyToAssign}
               />
             </RowActions>
           );
@@ -664,9 +707,25 @@ export function ProxyManagementDialog({
     ],
   );
 
+  const expiringCount = useMemo(
+    () =>
+      storedProxies.filter((proxy) =>
+        expiresWithin(proxy.expires_at, EXPIRY_SUMMARY_DAYS),
+      ).length,
+    [storedProxies],
+  );
+  const tableProxies = useMemo(
+    () =>
+      expiringOnly
+        ? storedProxies.filter((proxy) =>
+            expiresWithin(proxy.expires_at, EXPIRY_SUMMARY_DAYS),
+          )
+        : storedProxies,
+    [storedProxies, expiringOnly],
+  );
   const proxiesTableTools = useEntityTableTools(
     "proxies",
-    storedProxies,
+    tableProxies,
     setProxiesRowSelection,
   );
   const proxiesTable = useReactTable({
@@ -879,11 +938,22 @@ export function ProxyManagementDialog({
 
   const warnSkippedProxies = useCallback(() => {
     if (skippedProxyCount > 0) {
+      const inUse = selectedProxies.find(
+        (proxy) => (proxyUsage[proxy.id] ?? 0) > 0,
+      );
       toast.warning(
         t("proxies.bulkDelete.skippedProxies", { count: skippedProxyCount }),
+        inUse
+          ? {
+              action: {
+                label: t("proxies.actions.replaceInProfiles"),
+                onClick: () => setProxyToReplace(inUse),
+              },
+            }
+          : undefined,
       );
     }
-  }, [skippedProxyCount, t]);
+  }, [skippedProxyCount, selectedProxies, proxyUsage, t]);
   const warnSkippedVpns = useCallback(() => {
     if (skippedVpnCount > 0) {
       toast.warning(
@@ -985,6 +1055,30 @@ export function ProxyManagementDialog({
     }
     await emit("stored-proxies-changed");
   }, [selectedProxies, proxyInUse, t]);
+
+  /** Moves each selected proxy's expiry forward through the usual update. */
+  const handleExtendSelected = useCallback(
+    async (days: number) => {
+      const results = await Promise.allSettled(
+        selectedProxies.map((proxy) =>
+          invoke("update_stored_proxy", {
+            proxyId: proxy.id,
+            expiresAt: extendedExpiry(proxy.expires_at, days),
+          }),
+        ),
+      );
+      const done = results.filter((r) => r.status === "fulfilled").length;
+      const failure = results.find(
+        (r): r is PromiseRejectedResult => r.status === "rejected",
+      );
+      if (done > 0) {
+        showSuccessToast(t("proxies.expiry.extended", { count: done, days }));
+      }
+      if (failure) showErrorToast(translateBackendError(t, failure.reason));
+      void emit("stored-proxies-changed");
+    },
+    [selectedProxies, t],
+  );
 
   /** Checks the selection a few at a time, then reports the tally once. */
   const handleBulkCheckProxies = useCallback(async () => {
@@ -1133,6 +1227,12 @@ export function ProxyManagementDialog({
                 value="proxies"
                 className="mt-4 min-h-0 flex-1 flex-col data-[state=active]:flex"
               >
+                <ProxyExpirySummary
+                  count={expiringCount}
+                  days={EXPIRY_SUMMARY_DAYS}
+                  active={expiringOnly}
+                  onToggle={() => setExpiringOnly((on) => !on)}
+                />
                 <ManagedDataTable
                   table={proxiesTable}
                   tools={proxiesTableTools}
@@ -1237,6 +1337,17 @@ export function ProxyManagementDialog({
         confirmButtonText={t("common.buttons.delete")}
         isLoading={isDeleting}
       />
+      <ProxyReplaceDialog
+        proxy={proxyToReplace}
+        proxies={storedProxies}
+        usage={proxyToReplace ? (proxyUsage[proxyToReplace.id] ?? 0) : 0}
+        onClose={() => setProxyToReplace(null)}
+      />
+      <ProxyAssignProfilesDialog
+        proxy={proxyToAssign}
+        profiles={referencedProfiles}
+        onClose={() => setProxyToAssign(null)}
+      />
       <ProxyImportDialog
         isOpen={showImportDialog}
         onClose={() => {
@@ -1284,6 +1395,9 @@ export function ProxyManagementDialog({
               <LuRefreshCw />
             </DataTableActionBarAction>
           )}
+          <ProxyExtendMenu
+            onExtend={(days) => void handleExtendSelected(days)}
+          />
           <DataTableActionBarAction
             tooltip={t("proxies.management.checkSelected")}
             onClick={() => void handleBulkCheckProxies()}

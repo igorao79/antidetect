@@ -388,6 +388,23 @@ export type BackendErrorCode =
   | "VPN_NAME_EXISTS"
   | "VPN_IMPORT_INVALID"
   | "DNS_SOURCE_INVALID"
+  | "GROUP_NAME_TOO_LONG"
+  | "GROUP_NAME_INVALID"
+  | "PROXY_REPLACE_SAME"
+  | "PROXY_REPLACE_FAILED"
+  | "CLONE_COUNT_INVALID"
+  | "PROFILE_CLONE_FAILED"
+  | "LOCK_RELEASE_NOT_ALLOWED"
+  | "LOCK_RELEASE_FAILED"
+  | "PROFILE_TASK_TITLE_EMPTY"
+  | "PROFILE_TASK_TITLE_TOO_LONG"
+  | "PROFILE_TASK_NOT_FOUND"
+  | "PROFILE_TASK_LIMIT_REACHED"
+  | "PROFILE_TASKS_LOAD_FAILED"
+  | "PROFILE_TASKS_SAVE_FAILED"
+  | "PROFILES_EXPORT_PATH_INVALID"
+  | "PROFILES_EXPORT_TOO_LARGE"
+  | "PROFILES_EXPORT_FAILED"
   | "VPN_KEY_UNREADABLE"
   // Synchronised windows.
   | "SYNC_SESSION_NOT_FOUND"
@@ -1286,6 +1303,56 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       return t("backendErrors.vpnImportInvalid", {
         detail: parsed.params?.detail ?? "",
       });
+    case "PROXY_REPLACE_SAME":
+      return t("backendErrors.proxyReplaceSame");
+    case "PROXY_REPLACE_FAILED":
+      return t("backendErrors.proxyReplaceFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "CLONE_COUNT_INVALID":
+      return t("backendErrors.cloneCountInvalid", {
+        max: parsed.params?.max ?? "",
+      });
+    case "PROFILE_CLONE_FAILED":
+      return t("backendErrors.profileCloneFailed", {
+        detail: parsed.params?.detail ?? "",
+        done: parsed.params?.done ?? "",
+        total: parsed.params?.total ?? "",
+      });
+    case "LOCK_RELEASE_NOT_ALLOWED":
+      return t("backendErrors.lockReleaseNotAllowed");
+    case "LOCK_RELEASE_FAILED":
+      return t("backendErrors.lockReleaseFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "PROFILE_TASK_TITLE_EMPTY":
+      return t("backendErrors.profileTaskTitleEmpty");
+    case "PROFILE_TASK_TITLE_TOO_LONG":
+      return t("backendErrors.profileTaskTitleTooLong");
+    case "PROFILE_TASK_NOT_FOUND":
+      return t("backendErrors.profileTaskNotFound");
+    case "PROFILE_TASK_LIMIT_REACHED":
+      return t("backendErrors.profileTaskLimitReached");
+    case "PROFILE_TASKS_LOAD_FAILED":
+      return t("backendErrors.profileTasksLoadFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "PROFILE_TASKS_SAVE_FAILED":
+      return t("backendErrors.profileTasksSaveFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "PROFILES_EXPORT_PATH_INVALID":
+      return t("backendErrors.profilesExportPathInvalid");
+    case "PROFILES_EXPORT_TOO_LARGE":
+      return t("backendErrors.profilesExportTooLarge");
+    case "PROFILES_EXPORT_FAILED":
+      return t("backendErrors.profilesExportFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "GROUP_NAME_TOO_LONG":
+      return t("backendErrors.groupNameTooLong");
+    case "GROUP_NAME_INVALID":
+      return t("backendErrors.groupNameInvalid");
     case "DNS_SOURCE_INVALID":
       return t("backendErrors.dnsSourceInvalid", {
         source: parsed.params?.source ?? "",

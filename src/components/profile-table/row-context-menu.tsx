@@ -9,7 +9,10 @@ import {
   LuFolderInput,
   LuInfo,
   LuLock,
+  LuLockOpen,
   LuPencil,
+  LuPin,
+  LuPinOff,
   LuPlay,
   LuSquare,
   LuSquareStack,
@@ -39,6 +42,13 @@ export interface RowMenuActions {
   onMoveToGroup?: () => void;
   onRunRemote?: () => void;
   onLockNow?: () => void;
+  isPinned: boolean;
+  onTogglePin: () => void;
+  /** Whether bulk actions skip this profile. */
+  isBulkLocked: boolean;
+  onToggleBulkLock?: () => void;
+  /** Present only when the profile has a proxy of its own. */
+  onCopyProxy?: () => void;
   onTrash?: () => void;
 }
 
@@ -136,6 +146,26 @@ export function RowContextMenuContent({
         <ContextMenuItem onSelect={actions.onMoveToGroup}>
           <LuFolderInput />
           {t("profileTable.menu.moveToGroup")}
+        </ContextMenuItem>
+      )}
+      <ContextMenuItem onSelect={actions.onTogglePin}>
+        {actions.isPinned ? <LuPinOff /> : <LuPin />}
+        {actions.isPinned
+          ? t("profileTable.menu.unpin")
+          : t("profileTable.menu.pin")}
+      </ContextMenuItem>
+      {actions.onToggleBulkLock && (
+        <ContextMenuItem onSelect={actions.onToggleBulkLock}>
+          {actions.isBulkLocked ? <LuLockOpen /> : <LuLock />}
+          {actions.isBulkLocked
+            ? t("profileTable.menu.bulkUnlock")
+            : t("profileTable.menu.bulkLock")}
+        </ContextMenuItem>
+      )}
+      {actions.onCopyProxy && (
+        <ContextMenuItem onSelect={actions.onCopyProxy}>
+          <LuCopy />
+          {t("profileTable.menu.copyProxy")}
         </ContextMenuItem>
       )}
       <ContextMenuItem onSelect={() => void copyId()}>

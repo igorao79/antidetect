@@ -171,10 +171,13 @@ mod profile_generation_limiter;
 mod profile_import;
 mod profile_importer;
 mod profile_statuses;
+mod profile_tasks;
 mod profile_templates;
 mod profile_totp;
+mod profiles_export;
 mod proxy_distribution;
 mod proxy_manager;
+mod proxy_replace;
 mod proxy_rotation;
 pub mod proxy_runner;
 pub mod proxy_server;
@@ -254,8 +257,8 @@ use browser_runner::{
 use profile::manager::{
   bulk_update_profiles, check_browser_status, clone_profile, create_browser_profile_new,
   delete_profile, list_browser_profiles, rename_profile, update_camoufox_config,
-  update_profile_clear_on_close, update_profile_dns_blocklist, update_profile_dns_server,
-  update_profile_launch_hook, update_profile_note, update_profile_proxy,
+  update_profile_bulk_locked, update_profile_clear_on_close, update_profile_dns_blocklist,
+  update_profile_dns_server, update_profile_launch_hook, update_profile_note, update_profile_proxy,
   update_profile_proxy_bypass_rules, update_profile_start_urls, update_profile_tags,
   update_profile_vpn, update_profile_window_color, update_wayfern_config,
 };
@@ -578,6 +581,15 @@ async fn update_stored_proxy(
       None => Ok(proxy),
     })
     .map_err(|e| crate::coded_failure("PROXY_SAVE_FAILED", e))
+}
+
+#[tauri::command]
+async fn replace_proxy_in_profiles(
+  app_handle: tauri::AppHandle,
+  from_proxy_id: String,
+  to_proxy_id: String,
+) -> Result<usize, String> {
+  crate::proxy_replace::replace_proxy_in_profiles(app_handle, from_proxy_id, to_proxy_id).await
 }
 
 #[tauri::command]
@@ -2149,6 +2161,7 @@ async fn generate_sample_fingerprint(
     start_urls: Vec::new(),
     password_protected: false,
     clear_on_close: false,
+    bulk_locked: false,
     created_at: None,
     updated_at: None,
   };
@@ -3619,6 +3632,10 @@ pub fn run_with_builder(
       entity_trash::restore_trashed_entity,
       entity_trash::purge_trashed_entity,
       clone_profile,
+      profile::clone_copies::clone_profile_copies,
+      profile::quick::create_quick_profile,
+      profile::quick::keep_quick_profile,
+      profile::quick::discard_quick_profile,
       check_browser_exists,
       create_browser_profile_new,
       list_browser_profiles,
@@ -3634,6 +3651,7 @@ pub fn run_with_builder(
       update_profile_tags,
       update_profile_note,
       update_profile_clear_on_close,
+      update_profile_bulk_locked,
       update_profile_launch_hook,
       update_profile_window_color,
       update_profile_proxy_bypass_rules,
@@ -3647,6 +3665,12 @@ pub fn run_with_builder(
       profile_statuses::update_profile_status,
       profile_statuses::delete_profile_status,
       profile_statuses::set_profiles_status,
+      profile_tasks::list_profile_tasks,
+      profile_tasks::add_profile_task,
+      profile_tasks::update_profile_task,
+      profile_tasks::delete_profile_task,
+      profile_tasks::mark_profile_tasks_reminded,
+      profiles_export::write_profiles_csv,
       profile_templates::list_profile_templates,
       profile_templates::create_profile_template,
       profile_templates::update_profile_template,
@@ -3716,6 +3740,7 @@ pub fn run_with_builder(
       create_stored_proxy,
       get_stored_proxies,
       update_stored_proxy,
+      replace_proxy_in_profiles,
       delete_stored_proxy,
       check_proxy_validity,
       get_cached_proxy_check,
@@ -3888,6 +3913,7 @@ pub fn run_with_builder(
       // Team lock commands
       team_lock::get_team_locks,
       team_lock::get_team_lock_status,
+      team_lock::release_team_lock,
       // Synchronizer commands
       synchronizer::start_sync_session,
       synchronizer::stop_sync_session,

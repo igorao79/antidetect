@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { translateBackendError } from "@/lib/backend-errors";
+import { diagnoseRouteFailure } from "@/lib/proxy-check-diagnosis";
 import { showErrorToast, showSuccessToast } from "@/lib/toast-utils";
 import type {
   ConsistencyResult,
@@ -185,6 +186,11 @@ export function PreLaunchGateDialog({
   const fingerprint = findings?.fingerprint ?? null;
   const extensions = findings?.vpnExtensions ?? [];
   const route = findings?.routeUnreachable ?? null;
+  const routeCode = JSON.stringify({ code: route?.code });
+  const routeDiagnosis = route ? diagnoseRouteFailure(routeCode) : null;
+  const routeMeaning = routeDiagnosis
+    ? t(routeDiagnosis.meaningKey)
+    : translateBackendError(t, routeCode);
   // Two different claims, kept visually apart. The first names extensions as
   // VPN/proxy tools; the second says only that an extension holds Chromium's
   // proxy permission, which a download manager needs to route its own
@@ -339,9 +345,7 @@ export function PreLaunchGateDialog({
                   ? t("prelaunchGate.routeVpnHeading")
                   : t("prelaunchGate.routeProxyHeading")}
               </p>
-              <p className="text-xs text-muted-foreground">
-                {translateBackendError(t, JSON.stringify({ code: route.code }))}
-              </p>
+              <p className="text-xs text-muted-foreground">{routeMeaning}</p>
               <p className="text-xs text-muted-foreground">
                 {t("prelaunchGate.routeExplainer")}
               </p>

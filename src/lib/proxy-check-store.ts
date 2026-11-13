@@ -1,5 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useSyncExternalStore } from "react";
+import {
+  diagnoseRouteFailure,
+  type RouteDiagnosis,
+} from "@/lib/proxy-check-diagnosis";
 import type { ProxyCheckResult, StoredProxy } from "@/types";
 
 /**
@@ -17,6 +21,8 @@ export interface ProxyCheckEntry {
   checking: boolean;
   /** Translated failure text from the last check on this route. */
   failure: string | null;
+  /** What that failure means and what to try, when it is about the route. */
+  diagnosis: RouteDiagnosis | null;
 }
 
 const IDLE: ProxyCheckEntry = {
@@ -24,6 +30,7 @@ const IDLE: ProxyCheckEntry = {
   result: null,
   checking: false,
   failure: null,
+  diagnosis: null,
 };
 
 const entries = new Map<string, ProxyCheckEntry>();
@@ -96,13 +103,24 @@ export async function runProxyCheck(
   const routeKey = proxyRouteKey(proxy);
   const before = entryFor(proxy.id, routeKey);
   if (before.checking) return null;
-  publish(proxy.id, { ...before, checking: true, failure: null });
+  publish(proxy.id, {
+    ...before,
+    checking: true,
+    failure: null,
+    diagnosis: null,
+  });
   try {
     const result = await invoke<ProxyCheckResult>("check_proxy_validity", {
       proxyId: proxy.id,
       proxySettings: proxy.proxy_settings,
     });
-    publish(proxy.id, { routeKey, result, checking: false, failure: null });
+    publish(proxy.id, {
+      routeKey,
+      result,
+      checking: false,
+      failure: null,
+      diagnosis: null,
+    });
     return result;
   } catch (error) {
     publish(proxy.id, {
@@ -114,6 +132,7 @@ export async function runProxyCheck(
       },
       checking: false,
       failure: translateFailure(error),
+      diagnosis: diagnoseRouteFailure(error, { assumeRoute: true }),
     });
     throw error;
   }

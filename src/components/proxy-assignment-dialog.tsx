@@ -2,11 +2,16 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { emit } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { LuCheck, LuChevronsUpDown } from "react-icons/lu";
+import { LuCheck, LuChevronsUpDown, LuPlus } from "react-icons/lu";
 import { toast } from "sonner";
 import { LoadingButton } from "@/components/loading-button";
+import {
+  checkHighlightedProxy,
+  ProxyChoiceLabel,
+} from "@/components/proxy-choice-label";
+import { ProxyFormDialog } from "@/components/proxy-form-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,6 +36,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { orderProxyChoices, sharedProxyId } from "@/lib/proxy-choices";
 import { cn } from "@/lib/utils";
 import type { BrowserProfile, StoredProxy, VpnConfig } from "@/types";
 import { RippleButton } from "./ui/ripple";
@@ -63,6 +69,37 @@ export function ProxyAssignmentDialog({
   const [isAssigning, setIsAssigning] = useState(false);
   const [proxyPopoverOpen, setProxyPopoverOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isProxyFormOpen, setIsProxyFormOpen] = useState(false);
+  const [createdProxies, setCreatedProxies] = useState<StoredProxy[]>([]);
+  const allProxies = useMemo(
+    () => [
+      ...storedProxies,
+      ...createdProxies.filter(
+        (c) => !storedProxies.some((p) => p.id === c.id),
+      ),
+    ],
+    [storedProxies, createdProxies],
+  );
+
+  const currentProxyId = useMemo(
+    () =>
+      sharedProxyId(
+        selectedProfiles.map(
+          (id) => profiles.find((p) => p.id === id)?.proxy_id ?? null,
+        ),
+      ),
+    [selectedProfiles, profiles],
+  );
+  const proxyChoices = useMemo(
+    () =>
+      orderProxyChoices(
+        allProxies.filter(
+          (proxy) => !proxy.is_cloud_managed && !proxy.is_cloud_derived,
+        ),
+        currentProxyId,
+      ),
+    [allProxies, currentProxyId],
+  );
 
   const handleValueChange = useCallback((value: string) => {
     if (value === "none") {
@@ -135,6 +172,7 @@ export function ProxyAssignmentDialog({
       setSelectedId(null);
       setSelectionType("none");
       setError(null);
+      setCreatedProxies([]);
     }
   }, [isOpen]);
 
@@ -196,9 +234,7 @@ export function ProxyAssignmentDialog({
                         ? `WG — ${vpn.name}`
                         : t("proxyAssignment.noneOption");
                     }
-                    const proxy = storedProxies.find(
-                      (p) => p.id === selectedId,
-                    );
+                    const proxy = allProxies.find((p) => p.id === selectedId);
                     return proxy ? proxy.name : t("proxyAssignment.noneOption");
                   })()}
                   <LuChevronsUpDown className="ml-2 size-4 shrink-0 opacity-50" />
@@ -209,7 +245,7 @@ export function ProxyAssignmentDialog({
                 className="w-(--radix-popover-trigger-width) p-0"
                 sideOffset={8}
               >
-                <Command>
+                <Command onKeyDown={checkHighlightedProxy}>
                   <CommandInput
                     placeholder={t("proxyAssignment.searchPlaceholder")}
                   />
@@ -233,32 +269,32 @@ export function ProxyAssignmentDialog({
                         />
                         {t("proxyAssignment.noneOption")}
                       </CommandItem>
-                      {storedProxies
-                        .filter(
-                          (proxy) =>
-                            !proxy.is_cloud_managed && !proxy.is_cloud_derived,
-                        )
-                        .map((proxy) => (
-                          <CommandItem
-                            key={proxy.id}
-                            value={proxy.name}
-                            onSelect={() => {
-                              handleValueChange(proxy.id);
-                              setProxyPopoverOpen(false);
-                            }}
-                          >
-                            <LuCheck
-                              className={cn(
-                                "mr-2 size-4",
-                                selectionType === "proxy" &&
-                                  selectedId === proxy.id
-                                  ? "opacity-100"
-                                  : "opacity-0",
-                              )}
-                            />
-                            {proxy.name}
-                          </CommandItem>
-                        ))}
+                      {proxyChoices.map((proxy) => (
+                        <CommandItem
+                          aria-label={proxy.name}
+                          key={proxy.id}
+                          value={proxy.id}
+                          keywords={[proxy.name]}
+                          onSelect={() => {
+                            handleValueChange(proxy.id);
+                            setProxyPopoverOpen(false);
+                          }}
+                        >
+                          <LuCheck
+                            className={cn(
+                              "mr-2 size-4 shrink-0",
+                              selectionType === "proxy" &&
+                                selectedId === proxy.id
+                                ? "opacity-100"
+                                : "opacity-0",
+                            )}
+                          />
+                          <ProxyChoiceLabel
+                            proxy={proxy}
+                            current={currentProxyId === proxy.id}
+                          />
+                        </CommandItem>
+                      ))}
                     </CommandGroup>
                     {vpnConfigs.length > 0 && (
                       <CommandGroup
@@ -292,6 +328,19 @@ export function ProxyAssignmentDialog({
                         ))}
                       </CommandGroup>
                     )}
+                    <CommandGroup>
+                      <CommandItem
+                        forceMount
+                        value="__add_proxy__"
+                        onSelect={() => {
+                          setProxyPopoverOpen(false);
+                          setIsProxyFormOpen(true);
+                        }}
+                      >
+                        <LuPlus className="mr-2 size-4" aria-hidden="true" />
+                        {t("createProfile.proxy.addProxy")}
+                      </CommandItem>
+                    </CommandGroup>
                   </CommandList>
                 </Command>
               </PopoverContent>
@@ -321,6 +370,16 @@ export function ProxyAssignmentDialog({
           </LoadingButton>
         </DialogFooter>
       </DialogContent>
+      <ProxyFormDialog
+        isOpen={isProxyFormOpen}
+        onClose={() => {
+          setIsProxyFormOpen(false);
+        }}
+        onCreated={(proxy) => {
+          setCreatedProxies((prev) => [...prev, proxy]);
+          handleValueChange(proxy.id);
+        }}
+      />
     </Dialog>
   );
 }

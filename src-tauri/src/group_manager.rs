@@ -42,8 +42,24 @@ struct GroupsData {
   groups: Vec<ProfileGroup>,
 }
 
+const MAX_GROUP_NAME_CHARS: usize = 40;
+
 fn same_group_name(a: &str, b: &str) -> bool {
-  a.to_lowercase() == b.to_lowercase()
+  a.trim().to_lowercase() == b.trim().to_lowercase()
+}
+
+fn checked_group_name(name: &str) -> Result<String, String> {
+  let name = name.trim();
+  if name.is_empty() {
+    return Err(serde_json::json!({ "code": "NAME_CANNOT_BE_EMPTY" }).to_string());
+  }
+  if name.chars().count() > MAX_GROUP_NAME_CHARS {
+    return Err(serde_json::json!({ "code": "GROUP_NAME_TOO_LONG" }).to_string());
+  }
+  if name.chars().any(char::is_control) {
+    return Err(serde_json::json!({ "code": "GROUP_NAME_INVALID" }).to_string());
+  }
+  Ok(name.to_string())
 }
 
 pub struct GroupManager;
@@ -92,13 +108,7 @@ impl GroupManager {
     _app_handle: &tauri::AppHandle,
     name: String,
   ) -> Result<ProfileGroup, Box<dyn std::error::Error>> {
-    if name.trim().is_empty() {
-      return Err(
-        serde_json::json!({ "code": "NAME_CANNOT_BE_EMPTY" })
-          .to_string()
-          .into(),
-      );
-    }
+    let name = checked_group_name(&name)?;
 
     let mut groups_data = self.load_groups_data()?;
 
@@ -152,13 +162,7 @@ impl GroupManager {
     id: String,
     name: String,
   ) -> Result<ProfileGroup, Box<dyn std::error::Error>> {
-    if name.trim().is_empty() {
-      return Err(
-        serde_json::json!({ "code": "NAME_CANNOT_BE_EMPTY" })
-          .to_string()
-          .into(),
-      );
-    }
+    let name = checked_group_name(&name)?;
 
     let mut groups_data = self.load_groups_data()?;
 
@@ -496,11 +500,31 @@ pub async fn delete_selected_profiles(
 
 #[cfg(test)]
 mod tests {
-  use super::same_group_name;
+  use super::{checked_group_name, same_group_name};
 
   #[test]
   fn group_names_differing_only_in_case_are_the_same_name() {
     assert!(same_group_name("Existing Group", "Existing group"));
     assert!(!same_group_name("Existing Group", "Other group"));
+  }
+
+  #[test]
+  fn padded_names_match_their_trimmed_form() {
+    assert!(same_group_name("  Pad  ", "pad"));
+    assert_eq!(checked_group_name("  Pad  ").unwrap(), "Pad");
+  }
+
+  #[test]
+  fn long_and_multiline_names_are_refused() {
+    assert!(checked_group_name(&"a".repeat(500))
+      .unwrap_err()
+      .contains("GROUP_NAME_TOO_LONG"));
+    assert!(checked_group_name("a\nb")
+      .unwrap_err()
+      .contains("GROUP_NAME_INVALID"));
+    assert!(checked_group_name("   ")
+      .unwrap_err()
+      .contains("NAME_CANNOT_BE_EMPTY"));
+    assert!(checked_group_name(&"я".repeat(40)).is_ok());
   }
 }

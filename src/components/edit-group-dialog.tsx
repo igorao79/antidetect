@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { translateBackendError } from "@/lib/backend-errors";
 import type { ProfileGroup } from "@/types";
+import { GROUP_NAME_MAX_LENGTH } from "./create-group-dialog";
 import { RippleButton } from "./ui/ripple";
 
 interface EditGroupDialogProps {
@@ -88,6 +89,7 @@ export function EditGroupDialog({
             <Label htmlFor="group-name">{t("groups.form.name")}</Label>
             <Input
               id="group-name"
+              maxLength={GROUP_NAME_MAX_LENGTH}
               placeholder={t("groups.form.namePlaceholder")}
               value={groupName}
               onChange={(e) => {

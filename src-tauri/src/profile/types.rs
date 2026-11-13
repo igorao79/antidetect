@@ -100,6 +100,10 @@ pub struct BrowserProfile {
   /// exits. Ignored for ephemeral and password-protected profiles.
   #[serde(default)]
   pub clear_on_close: bool,
+  /// Bulk launch, stop, delete and assign skip this profile; a single-row
+  /// action still works. Synced with the metadata.
+  #[serde(default)]
+  pub bulk_locked: bool,
   /// Profile creation timestamp (epoch seconds, UTC). `None` for legacy
   /// profiles that pre-date this field — those are treated as ancient by
   /// any staleness check.
@@ -219,6 +223,26 @@ impl BrowserProfile {
 #[cfg(test)]
 mod tests {
   use super::*;
+
+  #[test]
+  fn bulk_lock_survives_a_round_trip_and_defaults_to_off() {
+    let mut profile = BrowserProfile::default();
+    let legacy = serde_json::to_string(&profile)
+      .unwrap()
+      .replace("\"bulk_locked\":false,", "");
+    assert!(
+      !serde_json::from_str::<BrowserProfile>(&legacy)
+        .unwrap()
+        .bulk_locked
+    );
+    profile.bulk_locked = true;
+    let json = serde_json::to_string(&profile).unwrap();
+    assert!(
+      serde_json::from_str::<BrowserProfile>(&json)
+        .unwrap()
+        .bulk_locked
+    );
+  }
 
   #[test]
   fn host_os_is_always_a_valid_host_os() {

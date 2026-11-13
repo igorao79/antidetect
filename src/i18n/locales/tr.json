@@ -367,7 +367,10 @@
     "donutLogo": "Owl logosu",
     "scrollGroupsLeft": "Grupları sola kaydır",
     "scrollGroupsRight": "Grupları sağa kaydır",
-    "allGroups": "Tüm gruplar"
+    "allGroups": "Tüm gruplar",
+    "quickProfile": "Hızlı profil",
+    "quickProfileHint": "Varsayılan ayarlarla geçici bir profil, hemen başlatılır. Kapanınca saklayıp saklamayacağınıza siz karar verirsiniz.",
+    "moreWaysToCreate": "Profil oluşturmanın diğer yolları"
   },
   "search": {
     "helpLabel": "Arama söz dizimi",
@@ -887,7 +890,40 @@
       "invalid": "Tarih değil. {{example}} biçiminde ya da gün sayısı olarak yazın.",
       "openCalendar": "Tarih seç",
       "prevMonth": "Önceki ay",
-      "nextMonth": "Sonraki ay"
+      "nextMonth": "Sonraki ay",
+      "summary": "{{days}} gün içinde bitiyor: {{count}}",
+      "summaryFilter": "Yalnızca bunları göster",
+      "summaryShowAll": "Tümünü göster",
+      "extend": "Süreyi uzat",
+      "extendBy": "{{days}} gün uzat",
+      "extended": "{{days}} gün uzatılan proxy sayısı: {{count}}"
+    },
+    "actions": {
+      "copyProxy": "Proxy'yi kopyala",
+      "copied": "Proxy kopyalandı",
+      "copyFailed": "Proxy kopyalanamadı",
+      "more": "{{name}} için diğer işlemler",
+      "moreTooltip": "Diğer işlemler",
+      "replaceInProfiles": "Profillerde değiştir…",
+      "assignToProfiles": "Profillere ata…"
+    },
+    "replace": {
+      "title": "Profillerdeki proxy'yi değiştir",
+      "description": "\"{{name}}\" kullanan tüm profiller seçtiğiniz proxy'ye geçer.",
+      "target": "Yeni proxy",
+      "targetPlaceholder": "Bir proxy seçin",
+      "confirm": "Değiştir",
+      "done": "\"{{name}}\" proxy'sine taşınan profil sayısı: {{count}}",
+      "usedBy": "Şu an kullanan profil sayısı: {{count}}",
+      "noneUsing": "Bu proxy'yi kullanan profil yok."
+    },
+    "assign": {
+      "title": "\"{{name}}\" proxy'sini profillere ata",
+      "description": "Bu proxy'yi kullanacak profilleri işaretleyin. İşareti kaldırılan profilden proxy çıkarılır.",
+      "search": "Profillerde ara",
+      "empty": "Profil bulunamadı",
+      "save": "Kaydet",
+      "saved": "Değiştirilen profil sayısı: {{count}}"
     }
   },
   "groups": {
@@ -1803,7 +1839,12 @@
       "title": "Profili Klonla",
       "description": "Klonlanan profil için bir ad girin",
       "namePlaceholder": "Profil adı",
-      "button": "Klonla"
+      "button": "Klonla",
+      "copiedNote": "Kopyalananlar: ayarlar ve tarayıcı klasörünün tamamı (çerezler, kayıtlı girişler ve açık sekmeler dahil). Yeni olanlar: parmak izinin gürültü tohumları. Kopyalanmayanlar: eşitleme ve parola kilidi.",
+      "madeMany": "{{count}} kopya oluşturuldu",
+      "buttonMany": "{{count}} kez kopyala",
+      "namesHint": "Kopyalar {{first}}, {{second}}… olarak adlandırılır (kullanılan adlar atlanır)",
+      "maxHint": "Aynı anda en fazla {{max}} kopya"
     },
     "duplicate": "Çoğalt",
     "breadcrumbRoot": "Profil",
@@ -1824,7 +1865,8 @@
       "startPages": "Başlangıç sayfaları",
       "twoFactor": "2FA kodları",
       "requests": "İstekler",
-      "logs": "Günlükler"
+      "logs": "Günlükler",
+      "tasks": "Görevler"
     },
     "sectionDesc": {
       "fingerprint": "Bu profilin parmak izi tarama betiklerine nasıl görüneceğini yapılandırın.",
@@ -1902,6 +1944,14 @@
       "copyPort": "Bağlantı noktasını kopyala",
       "copyWsUrl": "WebSocket URL'sini kopyala",
       "copyCode": "{{tool}} kodunu kopyala"
+    },
+    "lockHeld": {
+      "byMember": "{{name}} başka bir bilgisayarda açtı",
+      "byYou": "Başka bir oturumunuzda açık",
+      "release": "Serbest bırak",
+      "confirmTitle": "Bu profil serbest bırakılsın mı?",
+      "confirmBody": "“{{profile}}” {{name}} tarafından açık. Serbest bırakırsanız o oturumun eşitlenmemiş değişiklikleri kaybolabilir.",
+      "released": "“{{profile}}” serbest bırakıldı"
     }
   },
   "profileTransfer": {
@@ -2570,7 +2620,12 @@
       "copyId": "Kimliği kopyala",
       "runRemote": "Bulutta çalıştır",
       "lockNow": "Şimdi kilitle",
-      "moveToTrash": "Çöp kutusuna taşı"
+      "moveToTrash": "Çöp kutusuna taşı",
+      "pin": "Üste sabitle",
+      "unpin": "Sabitlemeyi kaldır",
+      "bulkLock": "Toplu işlemlerden koru",
+      "bulkUnlock": "Toplu işlemlere izin ver",
+      "copyProxy": "Proxy'yi kopyala"
     },
     "emptyGroupTitle": "Bu grup boş",
     "emptyGroupHint": "Bu grupta bir profil oluşturun veya mevcut profilleri buraya taşıyın.",
@@ -2586,6 +2641,26 @@
       "launching": "Başlatılıyor…",
       "stopping": "Durduruluyor…",
       "singleInstance": "Bu tarayıcının aynı anda yalnızca bir örneği çalışabilir. Önce çalışanı durdurun."
+    },
+    "pin": {
+      "pin": "{{name}} sabitle",
+      "unpin": "{{name}} sabitlemesini kaldır",
+      "pinSelected": "Seçilenleri üste sabitle",
+      "unpinSelected": "Seçilenlerin sabitlemesini kaldır",
+      "filter": "Sabitlenenler",
+      "filterPinned": "Sabitlenmiş",
+      "filterUnpinned": "Sabitlenmemiş"
+    },
+    "bulkLock": {
+      "label": "Toplu işlemlerden korunuyor",
+      "tooltip": "Toplu başlatma, durdurma, silme ve atama bu profili atlar. Tek satırlık işlemler yine çalışır.",
+      "toggleSelected": "Seçilenleri toplu işlemlerden koru (veya izin ver)",
+      "skipped": "Korunan {{count}} profil atlandı"
+    },
+    "bulkProxyCheck": {
+      "action": "Seçili profillerin proxy'lerini kontrol et",
+      "none": "Seçili profillerin hiçbirinde kontrol edilecek proxy yok",
+      "summary": "Proxy kontrolü: {{ok}} çalışıyor, {{failed}} başarısız"
     }
   },
   "dataTableActionBar": {
@@ -2768,7 +2843,7 @@
     "profileNameExists": "\"{{name}}\" adlı bir profil zaten var",
     "importSourceNotFound": "Kaynak yol mevcut değil",
     "importNoItems": "İçe aktarmak için hiçbir şey seçilmedi",
-    "browserNotDownloaded": "{{browser}} tarayıcısının indirilmiş bir sürümü yok. Önce indirin, sonra içe aktarmayı yeniden deneyin.",
+    "browserNotDownloaded": "{{browser}} tarayıcısının indirilmiş bir sürümü yok. Önce indirin.",
     "archiveExtractionFailed": "Arşiv çıkarılamadı: {{detail}}",
     "unsupportedArchiveFormat": "Desteklenmeyen arşiv biçimi. Yalnızca ZIP arşivleri desteklenir.",
     "clearOnCloseUnavailable": "Kapatırken temizleme, geçici veya parola korumalı profillerde kullanılamaz.",
@@ -3141,7 +3216,24 @@
     "proxyTypeUnsupported": "\"{{type}}\" proxy türü desteklenmiyor.",
     "vpnNameExists": "\"{{name}}\" adlı bir VPN zaten var.",
     "vpnImportInvalid": "VPN yapılandırması içe aktarılamadı: {{detail}}",
-    "dnsSourceInvalid": "\"{{source}}\" geçerli bir liste kaynağı değil. http:// veya https:// adresi kullanın."
+    "dnsSourceInvalid": "\"{{source}}\" geçerli bir liste kaynağı değil. http:// veya https:// adresi kullanın.",
+    "groupNameTooLong": "Grup adı en fazla 40 karakter olabilir.",
+    "groupNameInvalid": "Grup adı kontrol karakteri içermeyen tek bir satır olmalıdır.",
+    "proxyReplaceSame": "Değiştirmek için farklı bir proxy seçin.",
+    "proxyReplaceFailed": "Profillerdeki proxy değiştirilemedi: {{detail}}",
+    "cloneCountInvalid": "1 ile {{max}} arasında kopya sayısı seçin.",
+    "profileCloneFailed": "Kopyalama {{total}} kopyadan {{done}} tanesinden sonra durdu: {{detail}}",
+    "lockReleaseNotAllowed": "Kilidi yalnızca sunucu sahibi veya kilidi tutan üye serbest bırakabilir; bu bilgisayarda açık bir profil için olmaz.",
+    "lockReleaseFailed": "Profil kilidi serbest bırakılamadı: {{detail}}",
+    "profileTaskTitleEmpty": "Bir görev başlığı girin.",
+    "profileTaskTitleTooLong": "Görev başlığı çok uzun (en fazla 200 karakter).",
+    "profileTaskNotFound": "Bu görev artık yok.",
+    "profileTaskLimitReached": "Bu profilde çok fazla görev var. Önce tamamlananları silin.",
+    "profileTasksLoadFailed": "Görev dosyası okunamadı: {{detail}}",
+    "profileTasksSaveFailed": "Görevler kaydedilemedi: {{detail}}",
+    "profilesExportPathInvalid": ".csv uzantılı bir dosya seçin.",
+    "profilesExportTooLarge": "Dışa aktarım kaydedilemeyecek kadar büyük.",
+    "profilesExportFailed": "Dışa aktarım dosyası yazılamadı: {{detail}}"
   },
   "rail": {
     "profiles": "Profiller",
@@ -5130,5 +5222,137 @@
     "trafficStopped": "Trafik durdu.",
     "waiting": "Proxy yanıt verdiğinde trafik devam eder.",
     "cut": "Oturum kesildi: yeniden bağlanmak için profili durdurup tekrar başlatın."
+  },
+  "proxyPicker": {
+    "current": "geçerli",
+    "check": "Kontrol et",
+    "checking": "Kontrol ediliyor...",
+    "checkNamed": "{{name}} proxy'sini kontrol et",
+    "copy": "Proxy'yi kopyala",
+    "copyTooltip": "Proxy'yi şema://kullanıcı:parola@sunucu:port biçiminde kopyala",
+    "copied": "Proxy adresi kopyalandı",
+    "copyFailed": "Proxy adresi kopyalanamadı"
+  },
+  "profileExit": {
+    "title": "Şuradan görünecek",
+    "country": "Ülke",
+    "city": "Şehir",
+    "timezone": "Saat dilimi",
+    "language": "Dil",
+    "notChecked": "Henüz kontrol edilmedi. Bu profilin nereden görüneceğini görmek için proxy'yi kontrol edin.",
+    "recheck": "Yeniden kontrol et"
+  },
+  "quickProfile": {
+    "title": "Bu profil saklansın mı?",
+    "body": "Hızlı profil kapandı. Çerezleri ve verileriyle saklayın ya da silin.",
+    "nameLabel": "Profil adı",
+    "keep": "Sakla",
+    "discard": "Sil",
+    "kept": "Profil saklandı: {{name}}"
+  },
+  "routeDiagnosis": {
+    "details": "Ayrıntılar",
+    "tryLabel": "Denenecekler:",
+    "localNote": "Kontrol bu bilgisayardan yapılır; yerel bir VPN veya sistem proxy'si sonucu değiştirebilir.",
+    "timeout": {
+      "meaning": "Proxy zamanında yanıt vermedi. Yavaş, aşırı yüklü veya kapalı olabilir.",
+      "action": "Bir dakika sonra tekrar deneyin. Sürerse proxy'yi sağlayıcınızla kontrol edin."
+    },
+    "unreachable": {
+      "meaning": "Proxy ile bağlantı kurulamadı.",
+      "action": "Ana bilgisayar adını ve bağlantı noktasını kontrol edin; proxy'nin hâlâ etkin olduğunu sağlayıcınızdan doğrulayın."
+    },
+    "refused": {
+      "meaning": "Proxy sunucusu bağlantıyı reddetti veya kesti.",
+      "action": "Bağlantı noktasını ve proxy türünü (HTTP, SOCKS5) kontrol edin; proxy'nin çalıştığından emin olun."
+    },
+    "dns": {
+      "meaning": "Proxy'nin ana bilgisayar adı bulunamadı.",
+      "action": "Ana bilgisayar adında yazım hatası olup olmadığına bakın veya bunun yerine proxy'nin IP adresini kullanın."
+    },
+    "auth": {
+      "meaning": "Proxy kullanıcı adını veya parolayı kabul etmedi ya da IP adresinize izin vermiyor.",
+      "action": "Kullanıcı adını ve parolayı yeniden girin; sağlayıcının izinli IP listesini kontrol edin."
+    },
+    "forbidden": {
+      "meaning": "Proxy erişimi reddetti (403).",
+      "action": "IP adresinize sağlayıcıda izin verildiğini ve planın etkin olduğunu kontrol edin."
+    },
+    "payment": {
+      "meaning": "Sağlayıcı ödeme istiyor (402); plan sona ermiş veya trafik bitmiş olabilir.",
+      "action": "Bakiyeyi ve planı sağlayıcınızdan kontrol edin."
+    },
+    "gateway": {
+      "meaning": "Proxy bir sunucu hatasıyla yanıt verdi (502 veya 503): sağlayıcı tarafında arıza veya yoğunluk var.",
+      "action": "Biraz bekleyip yeniden kontrol edin veya sağlayıcıdan başka bir uç nokta isteyin."
+    },
+    "tls": {
+      "meaning": "Proxy ile güvenli bağlantı kurulamadı. Proxy bu bağlantı noktasında TLS kullanmıyor olabilir veya sertifikası ana bilgisayar adıyla eşleşmiyor olabilir.",
+      "action": "Proxy türünü ve bağlantı noktasını kontrol edin veya sertifikanın düzenlendiği ana bilgisayar adını kullanın."
+    },
+    "notWorking": {
+      "meaning": "Rota kontrolden geçemedi, bu yüzden şu anda kullanılamıyor.",
+      "action": "Ayrıntılar için proxy kontrolünü çalıştırın, ardından proxy'yi düzeltin veya değiştirin."
+    },
+    "missing": {
+      "meaning": "Bu profilin kullandığı proxy veya VPN silinmiş.",
+      "action": "Başlatmadan önce profilde başka bir proxy veya VPN seçin."
+    },
+    "config": {
+      "meaning": "Proxy'nin adresi, bağlantı noktası veya türü geçerli değil.",
+      "action": "Proxy'yi açıp ana bilgisayar adını, bağlantı noktasını ve türü düzeltin."
+    },
+    "generic": {
+      "meaning": "Kontrol proxy üzerinden geçemedi.",
+      "action": "Ana bilgisayar adını, bağlantı noktasını, türü ve giriş bilgilerini kontrol edip yeniden deneyin. Yine olmazsa sağlayıcıya sorun."
+    }
+  },
+  "profileTasks": {
+    "description": "Bu profil için isteğe bağlı son tarihli görevler. Yalnızca bu bilgisayarda kalır ve senkronize edilmez.",
+    "titleLabel": "Görev",
+    "titlePlaceholder": "Yapılması gereken",
+    "dueDate": "Son tarih",
+    "dueTime": "Son saat",
+    "add": "Görev ekle",
+    "empty": "Henüz görev yok.",
+    "openCount_one": "{{count}} açık görev",
+    "openCount_other": "{{count}} açık görev",
+    "openCount_few": "{{count}} açık görev",
+    "openCount_many": "{{count}} açık görev",
+    "dueAt": "Son tarih {{when}}",
+    "overdue": "{{when}} tarihinden beri gecikmiş",
+    "markDone": "\"{{title}}\" görevini tamamlandı olarak işaretle",
+    "edit": "\"{{title}}\" görevini düzenle",
+    "delete": "\"{{title}}\" görevini sil",
+    "reminderTitle": "Görev zamanı geldi: {{title}}",
+    "reminderTitleMany_one": "{{count}} görevin zamanı geldi",
+    "reminderTitleMany_other": "{{count}} görevin zamanı geldi",
+    "reminderTitleMany_few": "{{count}} görevin zamanı geldi",
+    "reminderTitleMany_many": "{{count}} görevin zamanı geldi"
+  },
+  "profilesExport": {
+    "action": "CSV olarak dışa aktar",
+    "title": "Profilleri CSV olarak dışa aktar",
+    "description": "Tabloyu Excel'in doğru karakterlerle açtığı bir dosya olarak kaydeder.",
+    "scopeSelected": "Seçili profiller ({{count}})",
+    "scopeShown": "Tabloda gösterilen tüm profiller ({{count}})",
+    "columnsHint": "Sütunlar: ad, grup, etiketler, not, durum, proxy, motor, oluşturulma, son başlatma. Proxy giriş bilgileri asla dışa aktarılmaz.",
+    "saved_one": "{{count}} profil dışa aktarıldı",
+    "saved_other": "{{count}} profil dışa aktarıldı",
+    "saved_few": "{{count}} profil dışa aktarıldı",
+    "saved_many": "{{count}} profil dışa aktarıldı",
+    "failed": "Profiller dışa aktarılamadı",
+    "columns": {
+      "name": "Ad",
+      "group": "Grup",
+      "tags": "Etiketler",
+      "note": "Not",
+      "status": "Durum",
+      "proxyName": "Proxy",
+      "proxyAddress": "Proxy adresi",
+      "engine": "Motor",
+      "created": "Oluşturulma",
+      "lastLaunched": "Son başlatma"
+    }
   }
 }

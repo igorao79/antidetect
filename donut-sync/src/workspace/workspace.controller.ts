@@ -11,6 +11,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
   Req,
   UnauthorizedException,
   UseGuards,
@@ -243,10 +244,34 @@ export class LocksController {
     return { refreshed: this.locks.heartbeat(profileId, this.holder(req).id) };
   }
 
+  /**
+   * `?force=1` lets the owner, or the member holding the lock from another
+   * machine, drop a lock its app never released. Without it the call is the
+   * original holder-only release.
+   */
   @Delete(":id")
   @HttpCode(204)
-  release(@Param("id") profileId: string, @Req() req: Request): void {
-    if (!this.locks.release(profileId, this.holder(req).id)) {
+  release(
+    @Param("id") profileId: string,
+    @Req() req: Request,
+    @Query("force") force?: string,
+  ): void {
+    const { id } = this.holder(req);
+    if (force === "1" || force === "true") {
+      const outcome = this.locks.forceRelease(
+        profileId,
+        id,
+        userOf(req).role === "owner",
+      );
+      if (outcome === null) throw new NotFoundException();
+      if (!outcome) {
+        throw new ForbiddenException(
+          "Only the owner or the holder can release this lock",
+        );
+      }
+      return;
+    }
+    if (!this.locks.release(profileId, id)) {
       throw new NotFoundException();
     }
   }

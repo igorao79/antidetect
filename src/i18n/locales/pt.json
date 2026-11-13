@@ -368,7 +368,10 @@
     "donutLogo": "Logotipo do Owl",
     "scrollGroupsLeft": "Rolar grupos para a esquerda",
     "scrollGroupsRight": "Rolar grupos para a direita",
-    "allGroups": "Todos os grupos"
+    "allGroups": "Todos os grupos",
+    "quickProfile": "Perfil rápido",
+    "quickProfileHint": "Um perfil temporário com as configurações padrão, aberto na hora. Ao fechar, você decide se o mantém.",
+    "moreWaysToCreate": "Outras formas de criar um perfil"
   },
   "search": {
     "helpLabel": "Sintaxe de pesquisa",
@@ -894,7 +897,40 @@
       "invalid": "Não é uma data. Digite como {{example}} ou como número de dias.",
       "openCalendar": "Escolher data",
       "prevMonth": "Mês anterior",
-      "nextMonth": "Próximo mês"
+      "nextMonth": "Próximo mês",
+      "summary": "Expiram em {{days}} dias: {{count}}",
+      "summaryFilter": "Mostrar só estes",
+      "summaryShowAll": "Mostrar todos",
+      "extend": "Prolongar validade",
+      "extendBy": "Prolongar {{days}} dias",
+      "extended": "Validade prolongada em {{days}} dias nos proxies: {{count}}"
+    },
+    "actions": {
+      "copyProxy": "Copiar proxy",
+      "copied": "Proxy copiado",
+      "copyFailed": "Não foi possível copiar o proxy",
+      "more": "Mais ações para {{name}}",
+      "moreTooltip": "Mais ações",
+      "replaceInProfiles": "Substituir nos perfis…",
+      "assignToProfiles": "Atribuir a perfis…"
+    },
+    "replace": {
+      "title": "Substituir o proxy nos perfis",
+      "description": "Todos os perfis que usam \"{{name}}\" passarão para o proxy escolhido.",
+      "target": "Novo proxy",
+      "targetPlaceholder": "Escolha um proxy",
+      "confirm": "Substituir",
+      "done": "Perfis movidos para \"{{name}}\": {{count}}",
+      "usedBy": "Perfis que o usam agora: {{count}}",
+      "noneUsing": "Nenhum perfil usa este proxy."
+    },
+    "assign": {
+      "title": "Atribuir \"{{name}}\" a perfis",
+      "description": "Marque os perfis que devem usar este proxy. Desmarcar um perfil remove o proxy dele.",
+      "search": "Buscar perfis",
+      "empty": "Nenhum perfil encontrado",
+      "save": "Salvar",
+      "saved": "Perfis alterados: {{count}}"
     }
   },
   "groups": {
@@ -1816,7 +1852,12 @@
       "title": "Clonar Perfil",
       "description": "Digite um nome para o perfil clonado",
       "namePlaceholder": "Nome do perfil",
-      "button": "Clonar"
+      "button": "Clonar",
+      "copiedNote": "Copiados: as configurações e toda a pasta do navegador, incluindo cookies, logins salvos e abas abertas. Novas: as sementes de ruído da impressão digital. Não copiados: a sincronização e o bloqueio por senha.",
+      "madeMany": "{{count}} cópias criadas",
+      "buttonMany": "Clonar {{count}}",
+      "namesHint": "As cópias se chamarão {{first}}, {{second}}… (nomes já usados são pulados)",
+      "maxHint": "Até {{max}} cópias de uma vez"
     },
     "duplicate": "Duplicar",
     "breadcrumbRoot": "Perfil",
@@ -1837,7 +1878,8 @@
       "startPages": "Páginas iniciais",
       "twoFactor": "Códigos 2FA",
       "requests": "Requisições",
-      "logs": "Registros"
+      "logs": "Registros",
+      "tasks": "Tarefas"
     },
     "sectionDesc": {
       "fingerprint": "Configure como este perfil aparece para scripts de fingerprinting.",
@@ -1915,6 +1957,14 @@
       "copyPort": "Copiar porta",
       "copyWsUrl": "Copiar URL do WebSocket",
       "copyCode": "Copiar código do {{tool}}"
+    },
+    "lockHeld": {
+      "byMember": "Aberto por {{name}} em outro computador",
+      "byYou": "Aberto em outra sessão sua",
+      "release": "Liberar",
+      "confirmTitle": "Liberar este perfil?",
+      "confirmBody": "“{{profile}}” está aberto por {{name}}. Se você liberá-lo, as alterações não sincronizadas dessa sessão podem ser perdidas.",
+      "released": "“{{profile}}” liberado"
     }
   },
   "profileTransfer": {
@@ -2591,7 +2641,12 @@
       "copyId": "Copiar ID",
       "runRemote": "Executar na nuvem",
       "lockNow": "Bloquear agora",
-      "moveToTrash": "Mover para a lixeira"
+      "moveToTrash": "Mover para a lixeira",
+      "pin": "Fixar no topo",
+      "unpin": "Desafixar",
+      "bulkLock": "Proteger de ações em massa",
+      "bulkUnlock": "Permitir ações em massa",
+      "copyProxy": "Copiar proxy"
     },
     "emptyGroupTitle": "Este grupo está vazio",
     "emptyGroupHint": "Crie um perfil neste grupo ou mova perfis existentes para ele.",
@@ -2607,6 +2662,26 @@
       "launching": "Abrindo…",
       "stopping": "Parando…",
       "singleInstance": "Só uma instância deste navegador pode rodar por vez. Pare primeiro a que está aberta."
+    },
+    "pin": {
+      "pin": "Fixar {{name}}",
+      "unpin": "Desafixar {{name}}",
+      "pinSelected": "Fixar selecionados no topo",
+      "unpinSelected": "Desafixar selecionados",
+      "filter": "Fixados",
+      "filterPinned": "Fixados",
+      "filterUnpinned": "Não fixados"
+    },
+    "bulkLock": {
+      "label": "Protegido de ações em massa",
+      "tooltip": "Iniciar, parar, excluir e atribuir em massa ignoram este perfil. As ações em uma única linha continuam funcionando.",
+      "toggleSelected": "Proteger selecionados de ações em massa (ou permitir)",
+      "skipped": "{{count}} perfil(is) protegido(s) ignorado(s)"
+    },
+    "bulkProxyCheck": {
+      "action": "Verificar os proxies dos perfis selecionados",
+      "none": "Nenhum dos perfis selecionados tem proxy para verificar",
+      "summary": "Proxies verificados: {{ok}} funcionando, {{failed}} com falha"
     }
   },
   "dataTableActionBar": {
@@ -2789,7 +2864,7 @@
     "profileNameExists": "Já existe um perfil chamado \"{{name}}\"",
     "importSourceNotFound": "O caminho de origem não existe",
     "importNoItems": "Nada selecionado para importar",
-    "browserNotDownloaded": "Nenhuma versão baixada de {{browser}} está disponível. Baixe-a primeiro e tente importar novamente.",
+    "browserNotDownloaded": "Nenhuma versão baixada de {{browser}} está disponível. Baixe-a primeiro.",
     "archiveExtractionFailed": "Falha ao extrair o arquivo: {{detail}}",
     "unsupportedArchiveFormat": "Formato de arquivo não suportado. Apenas arquivos ZIP são suportados.",
     "clearOnCloseUnavailable": "A limpeza ao fechar não está disponível para perfis efêmeros ou protegidos por senha.",
@@ -3163,7 +3238,24 @@
     "proxyTypeUnsupported": "O tipo de proxy \"{{type}}\" não é compatível.",
     "vpnNameExists": "Já existe uma VPN chamada \"{{name}}\".",
     "vpnImportInvalid": "Não foi possível importar a configuração da VPN: {{detail}}",
-    "dnsSourceInvalid": "\"{{source}}\" não é uma fonte de lista válida. Use um endereço http:// ou https://."
+    "dnsSourceInvalid": "\"{{source}}\" não é uma fonte de lista válida. Use um endereço http:// ou https://.",
+    "groupNameTooLong": "O nome de um grupo pode ter no máximo 40 caracteres.",
+    "groupNameInvalid": "O nome de um grupo deve ter uma única linha, sem caracteres de controle.",
+    "proxyReplaceSame": "Escolha outro proxy para substituí-lo.",
+    "proxyReplaceFailed": "Não foi possível substituir o proxy nos perfis: {{detail}}",
+    "cloneCountInvalid": "Escolha entre 1 e {{max}} cópias.",
+    "profileCloneFailed": "A clonagem parou após {{done}} de {{total}} cópias: {{detail}}",
+    "lockReleaseNotAllowed": "Somente o proprietário do servidor ou o membro que mantém o bloqueio pode liberá-lo, e não para um perfil aberto neste computador.",
+    "lockReleaseFailed": "Não foi possível liberar o bloqueio do perfil: {{detail}}",
+    "profileTaskTitleEmpty": "Digite um título para a tarefa.",
+    "profileTaskTitleTooLong": "O título da tarefa é muito longo (máximo de 200 caracteres).",
+    "profileTaskNotFound": "Essa tarefa não existe mais.",
+    "profileTaskLimitReached": "Este perfil tem tarefas demais. Exclua primeiro as concluídas.",
+    "profileTasksLoadFailed": "Não foi possível ler o arquivo de tarefas: {{detail}}",
+    "profileTasksSaveFailed": "Não foi possível salvar as tarefas: {{detail}}",
+    "profilesExportPathInvalid": "Escolha um arquivo com a extensão .csv.",
+    "profilesExportTooLarge": "A exportação é grande demais para ser salva.",
+    "profilesExportFailed": "Não foi possível gravar o arquivo de exportação: {{detail}}"
   },
   "rail": {
     "profiles": "Perfis",
@@ -5184,5 +5276,137 @@
     "trafficStopped": "O tráfego parou.",
     "waiting": "O tráfego volta quando o proxy responder.",
     "cut": "A sessão foi cortada: pare o perfil e inicie-o novamente para reconectar."
+  },
+  "proxyPicker": {
+    "current": "atual",
+    "check": "Verificar",
+    "checking": "Verificando...",
+    "checkNamed": "Verificar o proxy {{name}}",
+    "copy": "Copiar proxy",
+    "copyTooltip": "Copiar o proxy como esquema://usuário:senha@host:porta",
+    "copied": "Endereço do proxy copiado",
+    "copyFailed": "Não foi possível copiar o endereço do proxy"
+  },
+  "profileExit": {
+    "title": "Vai aparecer de",
+    "country": "País",
+    "city": "Cidade",
+    "timezone": "Fuso horário",
+    "language": "Idioma",
+    "notChecked": "Ainda não verificado. Verifique o proxy para ver de onde este perfil vai aparecer.",
+    "recheck": "Verificar novamente"
+  },
+  "quickProfile": {
+    "title": "Manter este perfil?",
+    "body": "O perfil rápido foi fechado. Mantenha-o com seus cookies e dados ou descarte-o.",
+    "nameLabel": "Nome do perfil",
+    "keep": "Manter",
+    "discard": "Descartar",
+    "kept": "Perfil mantido: {{name}}"
+  },
+  "routeDiagnosis": {
+    "details": "Detalhes",
+    "tryLabel": "O que tentar:",
+    "localNote": "A verificação é feita a partir deste computador, por isso uma VPN local ou um proxy do sistema pode alterar o resultado.",
+    "timeout": {
+      "meaning": "O proxy não respondeu a tempo. Ele está lento, sobrecarregado ou fora do ar.",
+      "action": "Tente de novo em um minuto. Se continuar, consulte o seu provedor sobre o proxy."
+    },
+    "unreachable": {
+      "meaning": "Não foi possível abrir uma conexão com o proxy.",
+      "action": "Confira o host e a porta e veja com o provedor se o proxy ainda está ativo."
+    },
+    "refused": {
+      "meaning": "O servidor proxy recusou ou derrubou a conexão.",
+      "action": "Confira a porta e o tipo de proxy (HTTP, SOCKS5) e se o proxy está em funcionamento."
+    },
+    "dns": {
+      "meaning": "O nome de host do proxy não foi encontrado.",
+      "action": "Verifique se há erros de digitação no nome do host ou use o endereço IP do proxy."
+    },
+    "auth": {
+      "meaning": "O proxy não aceitou o usuário ou a senha, ou não permite o seu endereço IP.",
+      "action": "Digite o usuário e a senha novamente e confira a lista de IPs permitidos do provedor."
+    },
+    "forbidden": {
+      "meaning": "O proxy negou o acesso (403).",
+      "action": "Confira se o provedor permite o seu endereço IP e se o plano está ativo."
+    },
+    "payment": {
+      "meaning": "O provedor pede pagamento (402): o plano pode ter expirado ou o tráfego acabou.",
+      "action": "Confira o saldo e o plano com o seu provedor."
+    },
+    "gateway": {
+      "meaning": "O proxy respondeu com erro de servidor (502 ou 503): o lado do provedor está com falha ou ocupado.",
+      "action": "Aguarde um pouco e verifique de novo, ou peça outro endpoint ao provedor."
+    },
+    "tls": {
+      "meaning": "Não foi possível estabelecer uma conexão segura com o proxy. Ele pode não usar TLS nesta porta, ou o certificado não corresponde ao nome do host.",
+      "action": "Confira o tipo e a porta do proxy ou use o nome de host para o qual o certificado foi emitido."
+    },
+    "notWorking": {
+      "meaning": "A rota não passou na verificação e não pode ser usada no momento.",
+      "action": "Execute a verificação do proxy para ver os detalhes e depois corrija ou troque o proxy."
+    },
+    "missing": {
+      "meaning": "O proxy ou a VPN que este perfil usa foi excluído.",
+      "action": "Escolha outro proxy ou VPN no perfil antes de iniciar."
+    },
+    "config": {
+      "meaning": "O endereço, a porta ou o tipo do proxy não é válido.",
+      "action": "Abra o proxy e corrija o host, a porta e o tipo."
+    },
+    "generic": {
+      "meaning": "A verificação não conseguiu passar pelo proxy.",
+      "action": "Confira o host, a porta, o tipo e o login e tente de novo. Se ainda falhar, fale com o provedor."
+    }
+  },
+  "profileTasks": {
+    "description": "Tarefas deste perfil com prazo opcional. Ficam neste computador e não são sincronizadas.",
+    "titleLabel": "Tarefa",
+    "titlePlaceholder": "O que precisa ser feito",
+    "dueDate": "Data limite",
+    "dueTime": "Hora limite",
+    "add": "Adicionar tarefa",
+    "empty": "Ainda não há tarefas.",
+    "openCount_one": "{{count}} tarefa em aberto",
+    "openCount_other": "{{count}} tarefas em aberto",
+    "openCount_few": "{{count}} tarefas em aberto",
+    "openCount_many": "{{count}} tarefas em aberto",
+    "dueAt": "Prazo {{when}}",
+    "overdue": "Atrasada desde {{when}}",
+    "markDone": "Marcar \"{{title}}\" como concluída",
+    "edit": "Editar \"{{title}}\"",
+    "delete": "Excluir \"{{title}}\"",
+    "reminderTitle": "Tarefa no prazo: {{title}}",
+    "reminderTitleMany_one": "{{count}} tarefa no prazo",
+    "reminderTitleMany_other": "{{count}} tarefas no prazo",
+    "reminderTitleMany_few": "{{count}} tarefas no prazo",
+    "reminderTitleMany_many": "{{count}} tarefas no prazo"
+  },
+  "profilesExport": {
+    "action": "Exportar para CSV",
+    "title": "Exportar perfis para CSV",
+    "description": "Salva a tabela em um arquivo que o Excel abre com os caracteres corretos.",
+    "scopeSelected": "Perfis selecionados ({{count}})",
+    "scopeShown": "Todos os perfis exibidos na tabela ({{count}})",
+    "columnsHint": "Colunas: nome, grupo, tags, nota, status, proxy, motor, criado, último início. Credenciais do proxy nunca são exportadas.",
+    "saved_one": "{{count}} perfil exportado",
+    "saved_other": "{{count}} perfis exportados",
+    "saved_few": "{{count}} perfis exportados",
+    "saved_many": "{{count}} perfis exportados",
+    "failed": "Não foi possível exportar os perfis",
+    "columns": {
+      "name": "Nome",
+      "group": "Grupo",
+      "tags": "Tags",
+      "note": "Nota",
+      "status": "Status",
+      "proxyName": "Proxy",
+      "proxyAddress": "Endereço do proxy",
+      "engine": "Motor",
+      "created": "Criado",
+      "lastLaunched": "Último início"
+    }
   }
 }

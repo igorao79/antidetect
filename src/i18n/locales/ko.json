@@ -367,7 +367,10 @@
     "donutLogo": "Owl 로고",
     "scrollGroupsLeft": "그룹 왼쪽으로 스크롤",
     "scrollGroupsRight": "그룹 오른쪽으로 스크롤",
-    "allGroups": "모든 그룹"
+    "allGroups": "모든 그룹",
+    "quickProfile": "빠른 프로필",
+    "quickProfileHint": "기본 설정의 임시 프로필을 바로 실행합니다. 닫을 때 보관할지 선택합니다.",
+    "moreWaysToCreate": "프로필을 만드는 다른 방법"
   },
   "search": {
     "helpLabel": "검색 구문",
@@ -887,7 +890,40 @@
       "invalid": "날짜가 아닙니다. {{example}} 형식이나 일수로 입력하세요.",
       "openCalendar": "날짜 선택",
       "prevMonth": "이전 달",
-      "nextMonth": "다음 달"
+      "nextMonth": "다음 달",
+      "summary": "{{days}}일 이내 만료: {{count}}",
+      "summaryFilter": "이것만 보기",
+      "summaryShowAll": "모두 보기",
+      "extend": "만료일 연장",
+      "extendBy": "{{days}}일 연장",
+      "extended": "{{days}}일 연장된 프록시: {{count}}"
+    },
+    "actions": {
+      "copyProxy": "프록시 복사",
+      "copied": "프록시를 복사했습니다",
+      "copyFailed": "프록시를 복사할 수 없습니다",
+      "more": "{{name}} 추가 작업",
+      "moreTooltip": "추가 작업",
+      "replaceInProfiles": "프로필에서 교체…",
+      "assignToProfiles": "프로필에 할당…"
+    },
+    "replace": {
+      "title": "프로필의 프록시 교체",
+      "description": "\"{{name}}\"을(를) 사용하는 모든 프로필이 선택한 프록시로 바뀝니다.",
+      "target": "새 프록시",
+      "targetPlaceholder": "프록시 선택",
+      "confirm": "교체",
+      "done": "\"{{name}}\"(으)로 옮긴 프로필: {{count}}",
+      "usedBy": "현재 사용 중인 프로필: {{count}}",
+      "noneUsing": "이 프록시를 사용하는 프로필이 없습니다."
+    },
+    "assign": {
+      "title": "\"{{name}}\"을(를) 프로필에 할당",
+      "description": "이 프록시를 사용할 프로필을 선택하세요. 선택을 해제하면 해당 프로필에서 프록시가 제거됩니다.",
+      "search": "프로필 검색",
+      "empty": "프로필을 찾을 수 없습니다",
+      "save": "저장",
+      "saved": "변경된 프로필: {{count}}"
     }
   },
   "groups": {
@@ -1803,7 +1839,12 @@
       "title": "프로필 복제",
       "description": "복제된 프로필의 이름을 입력하세요",
       "namePlaceholder": "프로필 이름",
-      "button": "복제"
+      "button": "복제",
+      "copiedNote": "복사됨: 설정과 브라우저 폴더 전체(쿠키, 저장된 로그인, 열린 탭 포함). 새로 생성됨: 핑거프린트 노이즈 시드. 복사되지 않음: 동기화와 비밀번호 잠금.",
+      "madeMany": "사본 {{count}}개를 만들었습니다",
+      "buttonMany": "{{count}}개 복제",
+      "namesHint": "사본 이름은 {{first}}, {{second}}… 입니다(이미 사용 중인 이름은 건너뜁니다)",
+      "maxHint": "한 번에 최대 {{max}}개"
     },
     "duplicate": "복제",
     "breadcrumbRoot": "프로필",
@@ -1824,7 +1865,8 @@
       "startPages": "시작 페이지",
       "twoFactor": "2FA 코드",
       "requests": "요청",
-      "logs": "로그"
+      "logs": "로그",
+      "tasks": "작업"
     },
     "sectionDesc": {
       "fingerprint": "이 프로필이 핑거프린팅 스크립트에 어떻게 표시되는지 구성합니다.",
@@ -1902,6 +1944,14 @@
       "copyPort": "포트 복사",
       "copyWsUrl": "WebSocket URL 복사",
       "copyCode": "{{tool}} 코드 복사"
+    },
+    "lockHeld": {
+      "byMember": "{{name}}님이 다른 컴퓨터에서 열어 둠",
+      "byYou": "내 다른 세션에서 열려 있음",
+      "release": "해제",
+      "confirmTitle": "이 프로필을 해제할까요?",
+      "confirmBody": "“{{profile}}”은(는) {{name}}님이 열어 두었습니다. 해제하면 해당 세션의 동기화되지 않은 변경 사항이 사라질 수 있습니다.",
+      "released": "“{{profile}}” 해제됨"
     }
   },
   "profileTransfer": {
@@ -2570,7 +2620,12 @@
       "copyId": "ID 복사",
       "runRemote": "클라우드에서 실행",
       "lockNow": "지금 잠그기",
-      "moveToTrash": "휴지통으로 이동"
+      "moveToTrash": "휴지통으로 이동",
+      "pin": "맨 위에 고정",
+      "unpin": "고정 해제",
+      "bulkLock": "일괄 작업에서 보호",
+      "bulkUnlock": "일괄 작업 허용",
+      "copyProxy": "프록시 복사"
     },
     "emptyGroupTitle": "이 그룹은 비어 있습니다",
     "emptyGroupHint": "이 그룹에 프로필을 만들거나 기존 프로필을 이 그룹으로 옮기세요.",
@@ -2586,6 +2641,26 @@
       "launching": "실행 중…",
       "stopping": "중지 중…",
       "singleInstance": "이 브라우저는 한 번에 하나만 실행할 수 있습니다. 먼저 실행 중인 브라우저를 중지하세요."
+    },
+    "pin": {
+      "pin": "{{name}} 고정",
+      "unpin": "{{name}} 고정 해제",
+      "pinSelected": "선택 항목을 맨 위에 고정",
+      "unpinSelected": "선택 항목 고정 해제",
+      "filter": "고정됨",
+      "filterPinned": "고정됨",
+      "filterUnpinned": "고정 안 됨"
+    },
+    "bulkLock": {
+      "label": "일괄 작업에서 보호됨",
+      "tooltip": "일괄 실행, 중지, 삭제, 할당에서 이 프로필은 건너뜁니다. 개별 행 작업은 그대로 사용할 수 있습니다.",
+      "toggleSelected": "선택 항목을 일괄 작업에서 보호(또는 허용)",
+      "skipped": "보호된 프로필 {{count}}개를 건너뛰었습니다"
+    },
+    "bulkProxyCheck": {
+      "action": "선택한 프로필의 프록시 확인",
+      "none": "선택한 프로필 중 확인할 프록시가 있는 것이 없습니다",
+      "summary": "프록시 확인 완료: 정상 {{ok}}개, 실패 {{failed}}개"
     }
   },
   "dataTableActionBar": {
@@ -2768,7 +2843,7 @@
     "profileNameExists": "\"{{name}}\" 이름의 프로필이 이미 있습니다",
     "importSourceNotFound": "원본 경로가 존재하지 않습니다",
     "importNoItems": "가져올 항목이 선택되지 않았습니다",
-    "browserNotDownloaded": "{{browser}}의 다운로드된 버전이 없습니다. 먼저 다운로드한 후 가져오기를 다시 시도하세요.",
+    "browserNotDownloaded": "{{browser}}의 다운로드된 버전이 없습니다. 먼저 다운로드하세요.",
     "archiveExtractionFailed": "아카이브 추출에 실패했습니다: {{detail}}",
     "unsupportedArchiveFormat": "지원되지 않는 아카이브 형식입니다. ZIP 아카이브만 지원됩니다.",
     "clearOnCloseUnavailable": "닫을 때 지우기는 임시 프로필이나 비밀번호로 보호된 프로필에서는 사용할 수 없습니다.",
@@ -3141,7 +3216,24 @@
     "proxyTypeUnsupported": "프록시 유형 \"{{type}}\"은(는) 지원되지 않습니다.",
     "vpnNameExists": "\"{{name}}\" 이름의 VPN이 이미 있습니다.",
     "vpnImportInvalid": "VPN 구성을 가져올 수 없습니다: {{detail}}",
-    "dnsSourceInvalid": "\"{{source}}\"은(는) 올바른 목록 소스가 아닙니다. http:// 또는 https:// 주소를 사용하세요."
+    "dnsSourceInvalid": "\"{{source}}\"은(는) 올바른 목록 소스가 아닙니다. http:// 또는 https:// 주소를 사용하세요.",
+    "groupNameTooLong": "그룹 이름은 최대 40자까지 입력할 수 있습니다.",
+    "groupNameInvalid": "그룹 이름은 제어 문자가 없는 한 줄이어야 합니다.",
+    "proxyReplaceSame": "교체할 다른 프록시를 선택하세요.",
+    "proxyReplaceFailed": "프로필의 프록시를 교체할 수 없습니다: {{detail}}",
+    "cloneCountInvalid": "사본 수는 1~{{max}}개 사이로 선택하세요.",
+    "profileCloneFailed": "사본 {{total}}개 중 {{done}}개를 만든 뒤 복제가 중단되었습니다: {{detail}}",
+    "lockReleaseNotAllowed": "잠금은 서버 소유자 또는 잠금을 가진 구성원만 해제할 수 있으며, 이 컴퓨터에서 열린 프로필은 해제할 수 없습니다.",
+    "lockReleaseFailed": "프로필 잠금을 해제하지 못했습니다: {{detail}}",
+    "profileTaskTitleEmpty": "작업 제목을 입력하세요.",
+    "profileTaskTitleTooLong": "작업 제목이 너무 깁니다(최대 200자).",
+    "profileTaskNotFound": "해당 작업이 더 이상 없습니다.",
+    "profileTaskLimitReached": "이 프로필에 작업이 너무 많습니다. 완료된 작업을 먼저 삭제하세요.",
+    "profileTasksLoadFailed": "작업 파일을 읽을 수 없습니다: {{detail}}",
+    "profileTasksSaveFailed": "작업을 저장할 수 없습니다: {{detail}}",
+    "profilesExportPathInvalid": ".csv 확장자를 가진 파일을 선택하세요.",
+    "profilesExportTooLarge": "내보내기 파일이 너무 커서 저장할 수 없습니다.",
+    "profilesExportFailed": "내보내기 파일을 쓸 수 없습니다: {{detail}}"
   },
   "rail": {
     "profiles": "프로필",
@@ -5130,5 +5222,137 @@
     "trafficStopped": "트래픽이 멈췄습니다.",
     "waiting": "프록시가 응답하면 트래픽이 다시 흐릅니다.",
     "cut": "세션이 끊겼습니다. 다시 연결하려면 프로필을 중지한 뒤 다시 실행하세요."
+  },
+  "proxyPicker": {
+    "current": "현재",
+    "check": "확인",
+    "checking": "확인 중...",
+    "checkNamed": "프록시 {{name}} 확인",
+    "copy": "프록시 복사",
+    "copyTooltip": "scheme://user:pass@host:port 형식으로 프록시 복사",
+    "copied": "프록시 주소를 복사했습니다",
+    "copyFailed": "프록시 주소를 복사하지 못했습니다"
+  },
+  "profileExit": {
+    "title": "접속 위치",
+    "country": "국가",
+    "city": "도시",
+    "timezone": "시간대",
+    "language": "언어",
+    "notChecked": "아직 확인하지 않았습니다. 프록시를 확인하면 이 프로필의 접속 위치를 볼 수 있습니다.",
+    "recheck": "다시 확인"
+  },
+  "quickProfile": {
+    "title": "이 프로필을 보관할까요?",
+    "body": "빠른 프로필이 닫혔습니다. 쿠키와 데이터와 함께 보관하거나 삭제하세요.",
+    "nameLabel": "프로필 이름",
+    "keep": "보관",
+    "discard": "삭제",
+    "kept": "프로필을 보관했습니다: {{name}}"
+  },
+  "routeDiagnosis": {
+    "details": "자세히",
+    "tryLabel": "해볼 만한 방법:",
+    "localNote": "점검은 이 컴퓨터에서 실행되므로 로컬 VPN이나 시스템 프록시가 결과를 바꿀 수 있습니다.",
+    "timeout": {
+      "meaning": "프록시가 제때 응답하지 않았습니다. 느리거나 과부하 상태이거나 중단되었을 수 있습니다.",
+      "action": "1분 뒤에 다시 시도하세요. 계속되면 제공업체에 프록시 상태를 문의하세요."
+    },
+    "unreachable": {
+      "meaning": "프록시에 연결할 수 없었습니다.",
+      "action": "호스트와 포트를 확인하고, 프록시가 아직 활성 상태인지 제공업체에 확인하세요."
+    },
+    "refused": {
+      "meaning": "프록시 서버가 연결을 거부했거나 끊었습니다.",
+      "action": "포트와 프록시 유형(HTTP, SOCKS5)을 확인하고 프록시가 실행 중인지 확인하세요."
+    },
+    "dns": {
+      "meaning": "프록시의 호스트 이름을 찾을 수 없었습니다.",
+      "action": "호스트 이름에 오타가 없는지 확인하거나 프록시의 IP 주소를 대신 사용하세요."
+    },
+    "auth": {
+      "meaning": "프록시가 아이디나 비밀번호를 받아들이지 않았거나 사용 중인 IP 주소를 허용하지 않습니다.",
+      "action": "아이디와 비밀번호를 다시 입력하고 제공업체의 허용 IP 목록을 확인하세요."
+    },
+    "forbidden": {
+      "meaning": "프록시가 접근을 거부했습니다(403).",
+      "action": "제공업체에서 내 IP 주소를 허용했는지, 요금제가 활성 상태인지 확인하세요."
+    },
+    "payment": {
+      "meaning": "제공업체가 결제를 요구합니다(402). 요금제가 만료되었거나 트래픽이 소진되었을 수 있습니다.",
+      "action": "제공업체에서 잔액과 요금제를 확인하세요."
+    },
+    "gateway": {
+      "meaning": "프록시가 서버 오류(502 또는 503)로 응답했습니다. 제공업체 쪽 문제이거나 혼잡한 상태입니다.",
+      "action": "잠시 기다렸다가 다시 확인하거나, 제공업체에 다른 엔드포인트를 요청하세요."
+    },
+    "tls": {
+      "meaning": "프록시와 보안 연결을 설정할 수 없었습니다. 이 포트에서 TLS를 쓰지 않거나 인증서가 호스트 이름과 맞지 않을 수 있습니다.",
+      "action": "프록시 유형과 포트를 확인하거나 인증서가 발급된 호스트 이름을 사용하세요."
+    },
+    "notWorking": {
+      "meaning": "이 경로가 점검을 통과하지 못해 지금은 사용할 수 없습니다.",
+      "action": "프록시 점검을 실행해 원인을 확인한 뒤 프록시를 수정하거나 교체하세요."
+    },
+    "missing": {
+      "meaning": "이 프로필이 사용하던 프록시 또는 VPN이 삭제되었습니다.",
+      "action": "실행하기 전에 프로필에서 다른 프록시나 VPN을 선택하세요."
+    },
+    "config": {
+      "meaning": "프록시의 주소, 포트 또는 유형이 올바르지 않습니다.",
+      "action": "프록시를 열어 호스트, 포트, 유형을 수정하세요."
+    },
+    "generic": {
+      "meaning": "점검이 프록시를 통과하지 못했습니다.",
+      "action": "호스트, 포트, 유형, 로그인 정보를 확인하고 다시 시도하세요. 그래도 실패하면 제공업체에 문의하세요."
+    }
+  },
+  "profileTasks": {
+    "description": "이 프로필의 할 일이며 기한은 선택 사항입니다. 이 컴퓨터에만 저장되며 동기화되지 않습니다.",
+    "titleLabel": "작업",
+    "titlePlaceholder": "해야 할 일",
+    "dueDate": "기한 날짜",
+    "dueTime": "기한 시간",
+    "add": "작업 추가",
+    "empty": "아직 작업이 없습니다.",
+    "openCount_one": "진행 중인 작업 {{count}}개",
+    "openCount_other": "진행 중인 작업 {{count}}개",
+    "openCount_few": "진행 중인 작업 {{count}}개",
+    "openCount_many": "진행 중인 작업 {{count}}개",
+    "dueAt": "기한 {{when}}",
+    "overdue": "{{when}}부터 기한 초과",
+    "markDone": "\"{{title}}\" 완료로 표시",
+    "edit": "\"{{title}}\" 편집",
+    "delete": "\"{{title}}\" 삭제",
+    "reminderTitle": "작업 기한 도래: {{title}}",
+    "reminderTitleMany_one": "작업 {{count}}개의 기한이 되었습니다",
+    "reminderTitleMany_other": "작업 {{count}}개의 기한이 되었습니다",
+    "reminderTitleMany_few": "작업 {{count}}개의 기한이 되었습니다",
+    "reminderTitleMany_many": "작업 {{count}}개의 기한이 되었습니다"
+  },
+  "profilesExport": {
+    "action": "CSV로 내보내기",
+    "title": "프로필을 CSV로 내보내기",
+    "description": "표를 Excel에서 글자가 깨지지 않고 열리는 파일로 저장합니다.",
+    "scopeSelected": "선택한 프로필 ({{count}})",
+    "scopeShown": "표에 표시된 모든 프로필 ({{count}})",
+    "columnsHint": "열: 이름, 그룹, 태그, 메모, 상태, 프록시, 엔진, 생성일, 마지막 실행. 프록시 로그인 정보는 내보내지 않습니다.",
+    "saved_one": "프로필 {{count}}개를 내보냈습니다",
+    "saved_other": "프로필 {{count}}개를 내보냈습니다",
+    "saved_few": "프로필 {{count}}개를 내보냈습니다",
+    "saved_many": "프로필 {{count}}개를 내보냈습니다",
+    "failed": "프로필을 내보낼 수 없습니다",
+    "columns": {
+      "name": "이름",
+      "group": "그룹",
+      "tags": "태그",
+      "note": "메모",
+      "status": "상태",
+      "proxyName": "프록시",
+      "proxyAddress": "프록시 주소",
+      "engine": "엔진",
+      "created": "생성일",
+      "lastLaunched": "마지막 실행"
+    }
   }
 }

@@ -18,6 +18,10 @@ const TEAM_DATA_COMMANDS: &[&str] = &[
   // Profiles
   "create_browser_profile_new",
   "clone_profile",
+  "clone_profile_copies",
+  "create_quick_profile",
+  "keep_quick_profile",
+  "discard_quick_profile",
   "rename_profile",
   "delete_profile",
   "delete_selected_profiles",
@@ -33,6 +37,7 @@ const TEAM_DATA_COMMANDS: &[&str] = &[
   "update_profile_tags",
   "update_profile_note",
   "update_profile_clear_on_close",
+  "update_profile_bulk_locked",
   "update_profile_launch_hook",
   "update_profile_window_color",
   "update_profile_proxy_bypass_rules",
@@ -62,6 +67,7 @@ const TEAM_DATA_COMMANDS: &[&str] = &[
   // Proxies
   "create_stored_proxy",
   "update_stored_proxy",
+  "replace_proxy_in_profiles",
   "delete_stored_proxy",
   "import_proxies_json",
   "import_proxies_from_parsed",

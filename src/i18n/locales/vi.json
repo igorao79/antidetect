@@ -367,7 +367,10 @@
     "donutLogo": "Logo Owl",
     "scrollGroupsLeft": "Cuộn nhóm sang trái",
     "scrollGroupsRight": "Cuộn nhóm sang phải",
-    "allGroups": "Tất cả nhóm"
+    "allGroups": "Tất cả nhóm",
+    "quickProfile": "Hồ sơ nhanh",
+    "quickProfileHint": "Hồ sơ tạm với cài đặt mặc định, khởi chạy ngay. Khi đóng, bạn chọn giữ lại hay không.",
+    "moreWaysToCreate": "Các cách khác để tạo hồ sơ"
   },
   "search": {
     "helpLabel": "Cú pháp tìm kiếm",
@@ -887,7 +890,40 @@
       "invalid": "Không phải ngày. Hãy nhập như {{example}} hoặc số ngày.",
       "openCalendar": "Chọn ngày",
       "prevMonth": "Tháng trước",
-      "nextMonth": "Tháng sau"
+      "nextMonth": "Tháng sau",
+      "summary": "Hết hạn trong {{days}} ngày: {{count}}",
+      "summaryFilter": "Chỉ hiện các proxy này",
+      "summaryShowAll": "Hiện tất cả",
+      "extend": "Gia hạn",
+      "extendBy": "Gia hạn thêm {{days}} ngày",
+      "extended": "Đã gia hạn thêm {{days}} ngày cho số proxy: {{count}}"
+    },
+    "actions": {
+      "copyProxy": "Sao chép proxy",
+      "copied": "Đã sao chép proxy",
+      "copyFailed": "Không thể sao chép proxy",
+      "more": "Thêm thao tác cho {{name}}",
+      "moreTooltip": "Thêm thao tác",
+      "replaceInProfiles": "Thay thế trong hồ sơ…",
+      "assignToProfiles": "Gán cho hồ sơ…"
+    },
+    "replace": {
+      "title": "Thay proxy trong các hồ sơ",
+      "description": "Mọi hồ sơ đang dùng \"{{name}}\" sẽ chuyển sang proxy bạn chọn.",
+      "target": "Proxy mới",
+      "targetPlaceholder": "Chọn một proxy",
+      "confirm": "Thay thế",
+      "done": "Số hồ sơ đã chuyển sang \"{{name}}\": {{count}}",
+      "usedBy": "Số hồ sơ đang dùng: {{count}}",
+      "noneUsing": "Không có hồ sơ nào dùng proxy này."
+    },
+    "assign": {
+      "title": "Gán \"{{name}}\" cho hồ sơ",
+      "description": "Đánh dấu các hồ sơ sẽ dùng proxy này. Bỏ đánh dấu sẽ gỡ proxy khỏi hồ sơ đó.",
+      "search": "Tìm hồ sơ",
+      "empty": "Không tìm thấy hồ sơ",
+      "save": "Lưu",
+      "saved": "Số hồ sơ đã thay đổi: {{count}}"
     }
   },
   "groups": {
@@ -1803,7 +1839,12 @@
       "title": "Nhân bản profile",
       "description": "Nhập tên cho profile nhân bản",
       "namePlaceholder": "Tên profile",
-      "button": "Nhân bản"
+      "button": "Nhân bản",
+      "copiedNote": "Được sao chép: cài đặt và toàn bộ thư mục trình duyệt, gồm cookie, đăng nhập đã lưu và các tab đang mở. Mới: các seed nhiễu của vân tay. Không sao chép: đồng bộ và khóa mật khẩu.",
+      "madeMany": "Đã tạo {{count}} bản sao",
+      "buttonMany": "Nhân bản {{count}}",
+      "namesHint": "Các bản sao sẽ có tên {{first}}, {{second}}… (bỏ qua tên đã dùng)",
+      "maxHint": "Tối đa {{max}} bản sao mỗi lần"
     },
     "duplicate": "Nhân bản",
     "breadcrumbRoot": "Hồ sơ",
@@ -1824,7 +1865,8 @@
       "startPages": "Trang khởi động",
       "twoFactor": "Mã 2FA",
       "requests": "Yêu cầu",
-      "logs": "Nhật ký"
+      "logs": "Nhật ký",
+      "tasks": "Công việc"
     },
     "sectionDesc": {
       "fingerprint": "Cấu hình cách profile này hiển thị với các script vân tay.",
@@ -1902,6 +1944,14 @@
       "copyPort": "Sao chép cổng",
       "copyWsUrl": "Sao chép URL WebSocket",
       "copyCode": "Sao chép mã {{tool}}"
+    },
+    "lockHeld": {
+      "byMember": "{{name}} đang mở trên máy tính khác",
+      "byYou": "Đang mở ở một phiên khác của bạn",
+      "release": "Giải phóng",
+      "confirmTitle": "Giải phóng hồ sơ này?",
+      "confirmBody": "“{{profile}}” đang được {{name}} mở. Nếu giải phóng, các thay đổi chưa đồng bộ của phiên đó có thể bị mất.",
+      "released": "Đã giải phóng “{{profile}}”"
     }
   },
   "profileTransfer": {
@@ -2570,7 +2620,12 @@
       "copyId": "Sao chép ID",
       "runRemote": "Chạy trên đám mây",
       "lockNow": "Khóa ngay",
-      "moveToTrash": "Chuyển vào thùng rác"
+      "moveToTrash": "Chuyển vào thùng rác",
+      "pin": "Ghim lên đầu",
+      "unpin": "Bỏ ghim",
+      "bulkLock": "Bảo vệ khỏi thao tác hàng loạt",
+      "bulkUnlock": "Cho phép thao tác hàng loạt",
+      "copyProxy": "Sao chép proxy"
     },
     "emptyGroupTitle": "Nhóm này đang trống",
     "emptyGroupHint": "Tạo một hồ sơ trong nhóm này hoặc chuyển các hồ sơ hiện có vào đây.",
@@ -2586,6 +2641,26 @@
       "launching": "Đang khởi chạy…",
       "stopping": "Đang dừng…",
       "singleInstance": "Trình duyệt này chỉ chạy được một phiên bản cùng lúc. Hãy dừng phiên bản đang chạy trước."
+    },
+    "pin": {
+      "pin": "Ghim {{name}}",
+      "unpin": "Bỏ ghim {{name}}",
+      "pinSelected": "Ghim mục đã chọn lên đầu",
+      "unpinSelected": "Bỏ ghim mục đã chọn",
+      "filter": "Đã ghim",
+      "filterPinned": "Đã ghim",
+      "filterUnpinned": "Chưa ghim"
+    },
+    "bulkLock": {
+      "label": "Được bảo vệ khỏi thao tác hàng loạt",
+      "tooltip": "Khởi chạy, dừng, xóa và gán hàng loạt sẽ bỏ qua hồ sơ này. Thao tác trên từng dòng vẫn hoạt động.",
+      "toggleSelected": "Bảo vệ mục đã chọn khỏi thao tác hàng loạt (hoặc cho phép)",
+      "skipped": "Đã bỏ qua {{count}} hồ sơ được bảo vệ"
+    },
+    "bulkProxyCheck": {
+      "action": "Kiểm tra proxy của các hồ sơ đã chọn",
+      "none": "Không hồ sơ nào được chọn có proxy để kiểm tra",
+      "summary": "Đã kiểm tra proxy: {{ok}} hoạt động, {{failed}} thất bại"
     }
   },
   "dataTableActionBar": {
@@ -2768,7 +2843,7 @@
     "profileNameExists": "Hồ sơ có tên \"{{name}}\" đã tồn tại",
     "importSourceNotFound": "Đường dẫn nguồn không tồn tại",
     "importNoItems": "Chưa chọn mục nào để nhập",
-    "browserNotDownloaded": "Không có phiên bản {{browser}} nào đã tải xuống. Hãy tải xuống trước, sau đó thử nhập lại.",
+    "browserNotDownloaded": "Không có phiên bản {{browser}} nào đã tải xuống. Hãy tải xuống trước.",
     "archiveExtractionFailed": "Không thể giải nén tệp: {{detail}}",
     "unsupportedArchiveFormat": "Định dạng tệp nén không được hỗ trợ. Chỉ hỗ trợ tệp ZIP.",
     "clearOnCloseUnavailable": "Tính năng xóa khi đóng không khả dụng với hồ sơ tạm thời hoặc hồ sơ được bảo vệ bằng mật khẩu.",
@@ -3141,7 +3216,24 @@
     "proxyTypeUnsupported": "Loại proxy \"{{type}}\" không được hỗ trợ.",
     "vpnNameExists": "Đã có VPN tên \"{{name}}\".",
     "vpnImportInvalid": "Không thể nhập cấu hình VPN: {{detail}}",
-    "dnsSourceInvalid": "\"{{source}}\" không phải nguồn danh sách hợp lệ. Hãy dùng địa chỉ http:// hoặc https://."
+    "dnsSourceInvalid": "\"{{source}}\" không phải nguồn danh sách hợp lệ. Hãy dùng địa chỉ http:// hoặc https://.",
+    "groupNameTooLong": "Tên nhóm có tối đa 40 ký tự.",
+    "groupNameInvalid": "Tên nhóm phải là một dòng và không chứa ký tự điều khiển.",
+    "proxyReplaceSame": "Hãy chọn một proxy khác để thay thế.",
+    "proxyReplaceFailed": "Không thể thay proxy trong các hồ sơ: {{detail}}",
+    "cloneCountInvalid": "Hãy chọn từ 1 đến {{max}} bản sao.",
+    "profileCloneFailed": "Việc nhân bản dừng sau {{done}}/{{total}} bản sao: {{detail}}",
+    "lockReleaseNotAllowed": "Chỉ chủ máy chủ hoặc thành viên đang giữ khóa mới có thể giải phóng, và không áp dụng cho hồ sơ đang mở trên máy này.",
+    "lockReleaseFailed": "Không thể giải phóng khóa hồ sơ: {{detail}}",
+    "profileTaskTitleEmpty": "Hãy nhập tiêu đề công việc.",
+    "profileTaskTitleTooLong": "Tiêu đề công việc quá dài (tối đa 200 ký tự).",
+    "profileTaskNotFound": "Công việc này không còn tồn tại.",
+    "profileTaskLimitReached": "Hồ sơ này có quá nhiều công việc. Hãy xóa các việc đã xong trước.",
+    "profileTasksLoadFailed": "Không đọc được tệp công việc: {{detail}}",
+    "profileTasksSaveFailed": "Không lưu được công việc: {{detail}}",
+    "profilesExportPathInvalid": "Hãy chọn tệp có đuôi .csv.",
+    "profilesExportTooLarge": "Bản xuất quá lớn để lưu.",
+    "profilesExportFailed": "Không ghi được tệp xuất: {{detail}}"
   },
   "rail": {
     "profiles": "Profile",
@@ -5130,5 +5222,137 @@
     "trafficStopped": "Lưu lượng đã dừng.",
     "waiting": "Lưu lượng sẽ tiếp tục khi proxy phản hồi.",
     "cut": "Phiên đã bị ngắt: hãy dừng hồ sơ và khởi chạy lại để kết nối lại."
+  },
+  "proxyPicker": {
+    "current": "hiện tại",
+    "check": "Kiểm tra",
+    "checking": "Đang kiểm tra...",
+    "checkNamed": "Kiểm tra proxy {{name}}",
+    "copy": "Sao chép proxy",
+    "copyTooltip": "Sao chép proxy dạng scheme://user:pass@host:port",
+    "copied": "Đã sao chép địa chỉ proxy",
+    "copyFailed": "Không thể sao chép địa chỉ proxy"
+  },
+  "profileExit": {
+    "title": "Sẽ xuất hiện từ",
+    "country": "Quốc gia",
+    "city": "Thành phố",
+    "timezone": "Múi giờ",
+    "language": "Ngôn ngữ",
+    "notChecked": "Chưa kiểm tra. Hãy kiểm tra proxy để biết hồ sơ này sẽ xuất hiện từ đâu.",
+    "recheck": "Kiểm tra lại"
+  },
+  "quickProfile": {
+    "title": "Giữ hồ sơ này?",
+    "body": "Hồ sơ nhanh đã đóng. Giữ lại cùng cookie và dữ liệu, hoặc xóa bỏ.",
+    "nameLabel": "Tên hồ sơ",
+    "keep": "Giữ lại",
+    "discard": "Xóa bỏ",
+    "kept": "Đã giữ hồ sơ: {{name}}"
+  },
+  "routeDiagnosis": {
+    "details": "Chi tiết",
+    "tryLabel": "Nên thử:",
+    "localNote": "Việc kiểm tra chạy từ máy tính này, nên VPN cục bộ hoặc proxy hệ thống có thể làm thay đổi kết quả.",
+    "timeout": {
+      "meaning": "Proxy không phản hồi kịp thời. Có thể nó chậm, quá tải hoặc đã ngừng hoạt động.",
+      "action": "Hãy thử lại sau một phút. Nếu vẫn lỗi, hãy hỏi nhà cung cấp về proxy."
+    },
+    "unreachable": {
+      "meaning": "Không thể mở kết nối tới proxy.",
+      "action": "Kiểm tra máy chủ và cổng, đồng thời hỏi nhà cung cấp xem proxy còn hoạt động không."
+    },
+    "refused": {
+      "meaning": "Máy chủ proxy đã từ chối hoặc ngắt kết nối.",
+      "action": "Kiểm tra cổng và loại proxy (HTTP, SOCKS5), cũng như proxy có đang chạy không."
+    },
+    "dns": {
+      "meaning": "Không tìm thấy tên máy chủ của proxy.",
+      "action": "Kiểm tra tên máy chủ xem có gõ sai không, hoặc dùng địa chỉ IP của proxy."
+    },
+    "auth": {
+      "meaning": "Proxy không chấp nhận tên đăng nhập hoặc mật khẩu, hoặc không cho phép địa chỉ IP của bạn.",
+      "action": "Nhập lại tên đăng nhập và mật khẩu, đồng thời kiểm tra danh sách IP được phép của nhà cung cấp."
+    },
+    "forbidden": {
+      "meaning": "Proxy từ chối truy cập (403).",
+      "action": "Kiểm tra xem nhà cung cấp có cho phép địa chỉ IP của bạn và gói còn hiệu lực không."
+    },
+    "payment": {
+      "meaning": "Nhà cung cấp yêu cầu thanh toán (402), có thể gói đã hết hạn hoặc hết dung lượng.",
+      "action": "Kiểm tra số dư và gói cước với nhà cung cấp."
+    },
+    "gateway": {
+      "meaning": "Proxy trả về lỗi máy chủ (502 hoặc 503): phía nhà cung cấp đang gặp sự cố hoặc quá tải.",
+      "action": "Chờ một lát rồi kiểm tra lại, hoặc xin nhà cung cấp một điểm kết nối khác."
+    },
+    "tls": {
+      "meaning": "Không thể thiết lập kết nối bảo mật tới proxy. Có thể proxy không dùng TLS ở cổng này, hoặc chứng chỉ không khớp với tên máy chủ.",
+      "action": "Kiểm tra loại proxy và cổng, hoặc dùng đúng tên máy chủ mà chứng chỉ được cấp cho."
+    },
+    "notWorking": {
+      "meaning": "Tuyến kết nối không vượt qua kiểm tra nên hiện chưa dùng được.",
+      "action": "Chạy kiểm tra proxy để xem chi tiết, sau đó sửa hoặc thay proxy."
+    },
+    "missing": {
+      "meaning": "Proxy hoặc VPN mà hồ sơ này dùng đã bị xóa.",
+      "action": "Hãy chọn proxy hoặc VPN khác trong hồ sơ trước khi khởi chạy."
+    },
+    "config": {
+      "meaning": "Địa chỉ, cổng hoặc loại proxy không hợp lệ.",
+      "action": "Mở proxy và sửa lại máy chủ, cổng và loại."
+    },
+    "generic": {
+      "meaning": "Phép kiểm tra không đi qua được proxy.",
+      "action": "Kiểm tra máy chủ, cổng, loại và thông tin đăng nhập rồi thử lại. Nếu vẫn lỗi, hãy hỏi nhà cung cấp."
+    }
+  },
+  "profileTasks": {
+    "description": "Công việc cho hồ sơ này, có thể đặt hạn. Chỉ lưu trên máy này và không được đồng bộ.",
+    "titleLabel": "Công việc",
+    "titlePlaceholder": "Cần làm gì",
+    "dueDate": "Ngày hết hạn",
+    "dueTime": "Giờ hết hạn",
+    "add": "Thêm công việc",
+    "empty": "Chưa có công việc nào.",
+    "openCount_one": "{{count}} công việc đang mở",
+    "openCount_other": "{{count}} công việc đang mở",
+    "openCount_few": "{{count}} công việc đang mở",
+    "openCount_many": "{{count}} công việc đang mở",
+    "dueAt": "Hạn {{when}}",
+    "overdue": "Quá hạn từ {{when}}",
+    "markDone": "Đánh dấu \"{{title}}\" là đã xong",
+    "edit": "Sửa \"{{title}}\"",
+    "delete": "Xóa \"{{title}}\"",
+    "reminderTitle": "Công việc đến hạn: {{title}}",
+    "reminderTitleMany_one": "{{count}} công việc đến hạn",
+    "reminderTitleMany_other": "{{count}} công việc đến hạn",
+    "reminderTitleMany_few": "{{count}} công việc đến hạn",
+    "reminderTitleMany_many": "{{count}} công việc đến hạn"
+  },
+  "profilesExport": {
+    "action": "Xuất ra CSV",
+    "title": "Xuất hồ sơ ra CSV",
+    "description": "Lưu bảng thành tệp mà Excel mở đúng ký tự.",
+    "scopeSelected": "Hồ sơ đã chọn ({{count}})",
+    "scopeShown": "Tất cả hồ sơ đang hiển thị trong bảng ({{count}})",
+    "columnsHint": "Cột: tên, nhóm, thẻ, ghi chú, trạng thái, proxy, công cụ, ngày tạo, lần chạy cuối. Thông tin đăng nhập proxy không bao giờ được xuất.",
+    "saved_one": "Đã xuất {{count}} hồ sơ",
+    "saved_other": "Đã xuất {{count}} hồ sơ",
+    "saved_few": "Đã xuất {{count}} hồ sơ",
+    "saved_many": "Đã xuất {{count}} hồ sơ",
+    "failed": "Không thể xuất hồ sơ",
+    "columns": {
+      "name": "Tên",
+      "group": "Nhóm",
+      "tags": "Thẻ",
+      "note": "Ghi chú",
+      "status": "Trạng thái",
+      "proxyName": "Proxy",
+      "proxyAddress": "Địa chỉ proxy",
+      "engine": "Công cụ",
+      "created": "Ngày tạo",
+      "lastLaunched": "Lần chạy cuối"
+    }
   }
 }

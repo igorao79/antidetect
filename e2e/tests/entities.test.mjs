@@ -3374,3 +3374,189 @@ test("an Owl server is installed on a machine over SSH and joined as its owner",
     );
   });
 });
+
+test("profile tasks are added, ticked, edited, reminded and deleted, and the CSV export is written", async () => {
+  await withApp("entities-profile-tasks", async (app) => {
+    const due = Math.floor(Date.now() / 1000) + 3600;
+    const task = await app.invoke("add_profile_task", {
+      profileId: "profile-a",
+      title: "  Renew the proxy  ",
+      dueAt: due,
+    });
+    assert.equal(task.title, "Renew the proxy");
+    assert.equal(task.done, false);
+    await app.invoke("add_profile_task", {
+      profileId: "profile-b",
+      title: "Other profile",
+    });
+    assert.match(
+      await app.invokeError("add_profile_task", {
+        profileId: "profile-a",
+        title: "   ",
+      }),
+      /PROFILE_TASK_TITLE_EMPTY/,
+    );
+    assert.equal(
+      (await app.invoke("list_profile_tasks", { profileId: "profile-a" }))
+        .length,
+      1,
+    );
+
+    await app.invoke("mark_profile_tasks_reminded", { taskIds: [task.id] });
+    const ticked = await app.invoke("update_profile_task", {
+      taskId: task.id,
+      patch: { done: true },
+    });
+    assert.equal(ticked.done, true);
+    assert.equal(ticked.reminded, true);
+    const moved = await app.invoke("update_profile_task", {
+      taskId: task.id,
+      patch: { dueAt: due + 60 },
+    });
+    assert.equal(moved.reminded, false);
+
+    await app.invoke("delete_profile_task", { taskId: task.id });
+    assert.match(
+      await app.invokeError("delete_profile_task", { taskId: task.id }),
+      /PROFILE_TASK_NOT_FOUND/,
+    );
+    for (const left of await app.invoke("list_profile_tasks", {})) {
+      await app.invoke("delete_profile_task", { taskId: left.id });
+    }
+    assert.deepEqual(await app.invoke("list_profile_tasks", {}), []);
+
+    assert.match(
+      await app.invokeError("write_profiles_csv", {
+        path: "/tmp/owl-export.txt",
+        content: "name\n",
+      }),
+      /PROFILES_EXPORT_PATH_INVALID/,
+    );
+  });
+});
+
+test("replacing a proxy moves every profile that uses it, and refuses a missing target", async () => {
+  await withApp("entities-replace-proxy", async (app) => {
+    const makeProxy = (name, port) =>
+      app.invoke("create_stored_proxy", {
+        name,
+        proxySettings: { proxy_type: "http", host: "127.0.0.1", port },
+      });
+    const from = await makeProxy("Old exit", 9);
+    const to = await makeProxy("New exit", 10);
+    const first = await createProfile(app, "Replace 1");
+    const second = await createProfile(app, "Replace 2");
+    const bystander = await createProfile(app, "Replace 3");
+    for (const profile of [first, second]) {
+      await app.invoke("update_profile_proxy", {
+        profileId: profile.id,
+        proxyId: from.id,
+      });
+    }
+
+    assert.match(
+      await app.invokeError("replace_proxy_in_profiles", {
+        fromProxyId: from.id,
+        toProxyId: "missing-proxy",
+      }),
+      /PROXY_NOT_FOUND/,
+    );
+    assert.match(
+      await app.invokeError("replace_proxy_in_profiles", {
+        fromProxyId: from.id,
+        toProxyId: from.id,
+      }),
+      /PROXY_REPLACE_SAME/,
+    );
+
+    const moved = await app.invoke("replace_proxy_in_profiles", {
+      fromProxyId: from.id,
+      toProxyId: to.id,
+    });
+    assert.equal(moved, 2);
+
+    const profiles = await app.invoke("list_browser_profiles");
+    const proxyOf = (id) => profiles.find((p) => p.id === id).proxy_id ?? null;
+    assert.equal(proxyOf(first.id), to.id);
+    assert.equal(proxyOf(second.id), to.id);
+    assert.equal(proxyOf(bystander.id), null);
+  });
+});
+
+test("a profile can be locked against bulk actions and the flag survives a reload", async () => {
+  await withApp("entities-bulk-lock", async (app) => {
+    const profile = await createProfile(app, "Bulk Lock");
+    assert.ok(!profile.bulk_locked);
+
+    const locked = await app.invoke("update_profile_bulk_locked", {
+      profileId: profile.id,
+      bulkLocked: true,
+    });
+    assert.equal(locked.bulk_locked, true);
+    assert.ok(locked.updated_at >= (profile.updated_at ?? 0));
+
+    const listed = await app.invoke("list_browser_profiles");
+    assert.equal(listed.find((p) => p.id === profile.id).bulk_locked, true);
+
+    const open = await app.invoke("update_profile_bulk_locked", {
+      profileId: profile.id,
+      bulkLocked: false,
+    });
+    assert.ok(!open.bulk_locked);
+  });
+});
+
+test("clone_profile_copies numbers its copies, skips taken names and refuses a bad count", async () => {
+  await withApp("entities-clone-copies", async (app) => {
+    const profile = await createProfile(app, "Copy Source");
+    await createProfile(app, "Copy Source 3");
+
+    const copies = await app.invoke("clone_profile_copies", {
+      profileId: profile.id,
+      name: null,
+      count: 3,
+    });
+    assert.deepEqual(
+      copies.map((copy) => copy.name),
+      ["Copy Source 2", "Copy Source 4", "Copy Source 5"],
+    );
+    assert.equal(new Set(copies.map((copy) => copy.id)).size, 3);
+
+    for (const count of [0, 51]) {
+      await assert.rejects(
+        app.invoke("clone_profile_copies", {
+          profileId: profile.id,
+          name: null,
+          count,
+        }),
+        /CLONE_COUNT_INVALID/,
+      );
+    }
+  });
+});
+
+test("a profile that is not a quick profile cannot be kept or discarded as one", async () => {
+  await withApp("entities-quick-guard", async (app) => {
+    const profile = await createProfile(app, "Regular");
+    await assert.rejects(
+      app.invoke("discard_quick_profile", { profileId: profile.id }),
+      /PROFILE_NOT_FOUND/,
+    );
+    await assert.rejects(
+      app.invoke("keep_quick_profile", { profileId: profile.id, name: "X" }),
+      /PROFILE_NOT_FOUND/,
+    );
+    const listed = await app.invoke("list_browser_profiles");
+    assert.ok(listed.some((p) => p.id === profile.id));
+    // A quick profile is Camoufox, which this harness has not downloaded.
+    await assert.rejects(
+      app.invoke("create_quick_profile"),
+      /BROWSER_NOT_DOWNLOADED/,
+    );
+    assert.equal(
+      (await app.invoke("list_browser_profiles")).length,
+      listed.length,
+      "a refused quick profile leaves nothing behind",
+    );
+  });
+});
