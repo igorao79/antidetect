@@ -53,6 +53,7 @@ import { ProxyAssignmentDialog } from "@/components/proxy-assignment-dialog";
 import { ProxyDistributionDialog } from "@/components/proxy-distribution-dialog";
 import { ProxyManagementDialog } from "@/components/proxy-management-dialog";
 import { ProxyOutageBanner } from "@/components/proxy-outage-banner";
+import { QuickProfileDialog } from "@/components/quick-profile-dialog";
 import { QuickProfilePrompt } from "@/components/quick-profile-prompt";
 import { type AppPage, pageDirection, RailNav } from "@/components/rail-nav";
 import { RailUpdateButton } from "@/components/rail-update-button";
@@ -1899,6 +1900,7 @@ export default function Home() {
   );
 
   const quickProfile = useQuickProfile(launchProfile);
+  const [quickProfileDialogOpen, setQuickProfileDialogOpen] = useState(false);
 
   const handleCloneProfile = useCallback((profile: BrowserProfile) => {
     setCloneProfile(profile);
@@ -3108,7 +3110,9 @@ export default function Home() {
             open ? openCreateProfile() : setCreateProfileDialogOpen(false)
           }
           canCreateProfiles={!teamReadOnly}
-          onQuickProfile={() => void quickProfile.start()}
+          onQuickProfile={() => {
+            setQuickProfileDialogOpen(true);
+          }}
           quickProfileStarting={quickProfile.starting}
           searchQuery={searchQuery}
           onSearchQueryChange={changeProfileSearch}
@@ -3614,6 +3618,15 @@ export default function Home() {
           rows={quickProfile.stopped}
           onKeep={quickProfile.keep}
           onDiscard={quickProfile.discard}
+        />
+        <QuickProfileDialog
+          isOpen={quickProfileDialogOpen}
+          onClose={() => {
+            setQuickProfileDialogOpen(false);
+          }}
+          proxies={storedProxies}
+          starting={quickProfile.starting}
+          onStart={quickProfile.start}
         />
 
         <CloneProfileDialog

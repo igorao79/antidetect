@@ -764,7 +764,14 @@
       "nullCipherHeading": "Cipher này không mã hóa gì cả",
       "nullCipherBody": "Shadowsocks không bao giờ gửi mật khẩu qua mạng, nên ở đây không có thông tin đăng nhập nào bị lộ. Thứ bị lộ là lưu lượng: địa chỉ của mọi trang bạn truy cập, và mọi thứ bạn gửi, đi qua mạng ở dạng đọc được. Hãy chọn một cipher thực sự, ví dụ aes-256-gcm.",
       "httpsTlsHint": "Loại này cần một điểm cuối proxy kết thúc TLS. Nhà cung cấp thường công bố nó ở một cổng riêng, và chứng chỉ phải hợp lệ.",
-      "hostInvalid": "Chỉ nhập tên máy chủ hoặc địa chỉ IP, không có http://, đường dẫn, cổng hay dấu cách"
+      "hostInvalid": "Chỉ nhập tên máy chủ hoặc địa chỉ IP, không có http://, đường dẫn, cổng hay dấu cách",
+      "quickFill": {
+        "label": "Điền nhanh",
+        "placeholder": "Dán một dòng proxy: user:pass@host:port hoặc host:port:user:pass",
+        "idle": "Dán một dòng proxy, các ô bên dưới sẽ tự điền.",
+        "filled": "Đã điền từ dòng vừa dán. Hãy kiểm tra loại bên dưới.",
+        "failed": "Không đọc được dòng này. Dùng user:pass@host:port, host:port:user:pass hoặc một URL."
+      }
     },
     "types": {
       "http": "HTTP",
@@ -5248,7 +5255,9 @@
     "nameLabel": "Tên hồ sơ",
     "keep": "Giữ lại",
     "discard": "Xóa bỏ",
-    "kept": "Đã giữ hồ sơ: {{name}}"
+    "kept": "Đã giữ hồ sơ: {{name}}",
+    "launch": "Khởi chạy",
+    "routeRequired": "Khởi chạy không có proxy hay VPN đang bị chặn trong Cài đặt, mục Quyền riêng tư. Hãy chọn hoặc thêm một proxy."
   },
   "routeDiagnosis": {
     "details": "Chi tiết",

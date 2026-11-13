@@ -764,7 +764,14 @@
       "nullCipherHeading": "이 암호화 방식은 아무것도 암호화하지 않습니다",
       "nullCipherBody": "Shadowsocks는 비밀번호를 네트워크로 보내지 않으므로 여기에서 노출될 자격 증명은 없습니다. 대신 트래픽이 노출됩니다. 접속하는 모든 사이트의 주소와 보내는 모든 내용이 읽을 수 있는 상태로 네트워크를 지나갑니다. aes-256-gcm 같은 실제 암호화 방식을 선택하세요.",
       "httpsTlsHint": "이 유형에는 TLS를 종료하는 프록시 엔드포인트가 필요합니다. 제공업체는 보통 별도 포트로 제공하며, 인증서가 유효해야 합니다.",
-      "hostInvalid": "http://, 경로, 포트, 공백 없이 호스트 이름 또는 IP 주소만 입력하세요"
+      "hostInvalid": "http://, 경로, 포트, 공백 없이 호스트 이름 또는 IP 주소만 입력하세요",
+      "quickFill": {
+        "label": "빠른 입력",
+        "placeholder": "프록시 줄 붙여넣기: user:pass@host:port 또는 host:port:user:pass",
+        "idle": "프록시 줄을 붙여넣으면 아래 칸이 자동으로 채워집니다.",
+        "filled": "붙여넣은 줄로 채웠습니다. 아래 유형을 확인하세요.",
+        "failed": "이 줄을 읽을 수 없습니다. user:pass@host:port, host:port:user:pass 또는 URL을 사용하세요."
+      }
     },
     "types": {
       "http": "HTTP",
@@ -5248,7 +5255,9 @@
     "nameLabel": "프로필 이름",
     "keep": "보관",
     "discard": "삭제",
-    "kept": "프로필을 보관했습니다: {{name}}"
+    "kept": "프로필을 보관했습니다: {{name}}",
+    "launch": "실행",
+    "routeRequired": "프록시나 VPN 없는 실행은 설정의 개인정보 보호에서 차단되어 있습니다. 프록시를 선택하거나 추가하세요."
   },
   "routeDiagnosis": {
     "details": "자세히",

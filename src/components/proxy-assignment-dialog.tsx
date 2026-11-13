@@ -21,6 +21,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
+  CommandSeparator,
 } from "@/components/ui/command";
 import {
   Dialog,
@@ -250,6 +251,20 @@ export function ProxyAssignmentDialog({
                     placeholder={t("proxyAssignment.searchPlaceholder")}
                   />
                   <CommandList>
+                    <CommandGroup>
+                      <CommandItem
+                        forceMount
+                        value="__add_proxy__"
+                        onSelect={() => {
+                          setProxyPopoverOpen(false);
+                          setIsProxyFormOpen(true);
+                        }}
+                      >
+                        <LuPlus className="mr-2 size-4" aria-hidden="true" />
+                        {t("createProfile.proxy.addProxy")}
+                      </CommandItem>
+                    </CommandGroup>
+                    <CommandSeparator />
                     <CommandEmpty>{t("proxyAssignment.notFound")}</CommandEmpty>
                     <CommandGroup>
                       <CommandItem
@@ -328,19 +343,6 @@ export function ProxyAssignmentDialog({
                         ))}
                       </CommandGroup>
                     )}
-                    <CommandGroup>
-                      <CommandItem
-                        forceMount
-                        value="__add_proxy__"
-                        onSelect={() => {
-                          setProxyPopoverOpen(false);
-                          setIsProxyFormOpen(true);
-                        }}
-                      >
-                        <LuPlus className="mr-2 size-4" aria-hidden="true" />
-                        {t("createProfile.proxy.addProxy")}
-                      </CommandItem>
-                    </CommandGroup>
                   </CommandList>
                 </Command>
               </PopoverContent>

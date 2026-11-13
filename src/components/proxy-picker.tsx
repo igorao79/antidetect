@@ -83,6 +83,20 @@ export function ProxyPicker({
         <Command onKeyDown={checkHighlightedProxy}>
           <CommandInput placeholder={t("createProfile.proxy.search")} />
           <CommandList>
+            <CommandGroup forceMount>
+              <CommandItem
+                forceMount
+                value="__add_proxy__"
+                onSelect={() => {
+                  setOpen(false);
+                  onAdd();
+                }}
+              >
+                <LuPlus className="size-4 shrink-0" aria-hidden="true" />
+                {t("createProfile.proxy.addProxy")}
+              </CommandItem>
+            </CommandGroup>
+            <CommandSeparator />
             <CommandEmpty>{t("createProfile.proxy.notFound")}</CommandEmpty>
             <CommandGroup>
               <CommandItem
@@ -126,20 +140,6 @@ export function ProxyPicker({
                   />
                 </CommandItem>
               ))}
-            </CommandGroup>
-            <CommandSeparator />
-            <CommandGroup forceMount>
-              <CommandItem
-                forceMount
-                value="__add_proxy__"
-                onSelect={() => {
-                  setOpen(false);
-                  onAdd();
-                }}
-              >
-                <LuPlus className="size-4 shrink-0" aria-hidden="true" />
-                {t("createProfile.proxy.addProxy")}
-              </CommandItem>
             </CommandGroup>
           </CommandList>
         </Command>

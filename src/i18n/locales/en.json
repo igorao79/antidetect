@@ -764,7 +764,14 @@
       "nullCipherHeading": "This cipher does not encrypt anything",
       "nullCipherBody": "Shadowsocks never sends the password over the network, so there are no credentials to expose here. A null cipher exposes the traffic instead: the address of every site you reach, and everything you send, cross the network readable. Choose a real cipher, such as aes-256-gcm.",
       "httpsTlsHint": "This type needs a proxy endpoint that terminates TLS. Providers usually publish it as a separate port, and its certificate must validate.",
-      "hostInvalid": "Enter a host name or an IP address only, without http://, a path, a port or spaces"
+      "hostInvalid": "Enter a host name or an IP address only, without http://, a path, a port or spaces",
+      "quickFill": {
+        "label": "Quick fill",
+        "placeholder": "Paste a proxy line: user:pass@host:port or host:port:user:pass",
+        "idle": "Paste a proxy line and the fields below fill themselves.",
+        "filled": "Filled from the pasted line. Check the type below.",
+        "failed": "Could not read that line. Use user:pass@host:port, host:port:user:pass or a URL."
+      }
     },
     "types": {
       "http": "HTTP",
@@ -5248,7 +5255,9 @@
     "nameLabel": "Profile name",
     "keep": "Keep",
     "discard": "Discard",
-    "kept": "Profile kept: {{name}}"
+    "kept": "Profile kept: {{name}}",
+    "launch": "Launch",
+    "routeRequired": "Launches without a proxy or VPN are blocked in Settings, under Privacy. Pick a proxy or add one."
   },
   "routeDiagnosis": {
     "details": "Details",

@@ -764,7 +764,14 @@
       "nullCipherHeading": "この暗号方式では何も暗号化されません",
       "nullCipherBody": "Shadowsocks はパスワードをネットワークに送信しないため、ここに漏れる認証情報はありません。代わりに通信そのものが露出します。アクセスする各サイトのアドレスと送信する内容が、読み取り可能な状態でネットワークを通過します。aes-256-gcm などの実際の暗号方式を選んでください。",
       "httpsTlsHint": "このタイプには TLS を終端するプロキシのエンドポイントが必要です。多くのプロバイダーは別のポートとして公開しており、証明書が検証できる必要があります。",
-      "hostInvalid": "ホスト名または IP アドレスのみを入力してください（http://、パス、ポート、スペースは不可）"
+      "hostInvalid": "ホスト名または IP アドレスのみを入力してください（http://、パス、ポート、スペースは不可）",
+      "quickFill": {
+        "label": "クイック入力",
+        "placeholder": "プロキシの行を貼り付け: user:pass@host:port または host:port:user:pass",
+        "idle": "プロキシの行を貼り付けると、下の欄が自動で埋まります。",
+        "filled": "貼り付けた行から入力しました。下の種類を確認してください。",
+        "failed": "この行を読み取れません。user:pass@host:port、host:port:user:pass、または URL を使ってください。"
+      }
     },
     "types": {
       "http": "HTTP",
@@ -5248,7 +5255,9 @@
     "nameLabel": "プロファイル名",
     "keep": "保存",
     "discard": "破棄",
-    "kept": "プロファイルを保存しました: {{name}}"
+    "kept": "プロファイルを保存しました: {{name}}",
+    "launch": "起動",
+    "routeRequired": "プロキシや VPN なしの起動は、設定のプライバシーで禁止されています。プロキシを選ぶか追加してください。"
   },
   "routeDiagnosis": {
     "details": "詳細",

@@ -72,32 +72,38 @@ export function useQuickProfile(launch: Launch) {
     [t],
   );
 
-  const start = useCallback(async () => {
-    if (starting) return;
-    setStarting(true);
-    try {
-      let created: BrowserProfile;
+  const start = useCallback(
+    async (proxyId: string | null = null) => {
+      if (starting) return;
+      setStarting(true);
       try {
-        created = await invoke<BrowserProfile>("create_quick_profile");
-      } catch (error) {
-        showErrorToast(translateBackendError(t, error));
-        return;
-      }
-      // A failed launch has already told the person why; what is left is a
-      // profile no browser will ever stop, so it goes.
-      const launched = await launch(created).then(
-        (result) => result.status === "launched",
-        () => false,
-      );
-      if (!launched) {
-        await invoke("discard_quick_profile", { profileId: created.id }).catch(
-          () => undefined,
+        let created: BrowserProfile;
+        try {
+          created = await invoke<BrowserProfile>("create_quick_profile", {
+            proxyId,
+            vpnId: null,
+          });
+        } catch (error) {
+          showErrorToast(translateBackendError(t, error));
+          return;
+        }
+        // A failed launch has already told the person why; what is left is a
+        // profile no browser will ever stop, so it goes.
+        const launched = await launch(created).then(
+          (result) => result.status === "launched",
+          () => false,
         );
+        if (!launched) {
+          await invoke("discard_quick_profile", {
+            profileId: created.id,
+          }).catch(() => undefined);
+        }
+      } finally {
+        setStarting(false);
       }
-    } finally {
-      setStarting(false);
-    }
-  }, [launch, starting, t]);
+    },
+    [launch, starting, t],
+  );
 
   return { start, starting, stopped, keep, discard };
 }

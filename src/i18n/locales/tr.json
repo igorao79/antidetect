@@ -764,7 +764,14 @@
       "nullCipherHeading": "Bu şifreleme algoritması hiçbir şeyi şifrelemez",
       "nullCipherBody": "Shadowsocks parolayı ağ üzerinden hiç göndermez, bu yüzden burada açığa çıkacak bir kimlik bilgisi yoktur. Bunun yerine trafiğin kendisi açığa çıkar: ulaştığınız her sitenin adresi ve gönderdiğiniz her şey ağ üzerinden okunabilir biçimde geçer. aes-256-gcm gibi gerçek bir şifreleme algoritması seçin.",
       "httpsTlsHint": "Bu tür, TLS'i sonlandıran bir proxy uç noktası gerektirir. Sağlayıcılar bunu genellikle ayrı bir bağlantı noktasında yayımlar ve sertifikasının doğrulanması gerekir.",
-      "hostInvalid": "Yalnızca bir ana makine adı veya IP adresi girin; http://, yol, bağlantı noktası veya boşluk olmasın"
+      "hostInvalid": "Yalnızca bir ana makine adı veya IP adresi girin; http://, yol, bağlantı noktası veya boşluk olmasın",
+      "quickFill": {
+        "label": "Hızlı doldur",
+        "placeholder": "Proxy satırını yapıştırın: user:pass@host:port veya host:port:user:pass",
+        "idle": "Bir proxy satırı yapıştırın, aşağıdaki alanlar kendiliğinden dolsun.",
+        "filled": "Satırdan dolduruldu. Aşağıdaki türü kontrol edin.",
+        "failed": "Bu satır okunamadı. user:pass@host:port, host:port:user:pass veya bir URL kullanın."
+      }
     },
     "types": {
       "http": "HTTP",
@@ -5248,7 +5255,9 @@
     "nameLabel": "Profil adı",
     "keep": "Sakla",
     "discard": "Sil",
-    "kept": "Profil saklandı: {{name}}"
+    "kept": "Profil saklandı: {{name}}",
+    "launch": "Başlat",
+    "routeRequired": "Proxy veya VPN olmadan başlatma, Ayarlar'da Gizlilik altında engelli. Bir proxy seçin ya da ekleyin."
   },
   "routeDiagnosis": {
     "details": "Ayrıntılar",

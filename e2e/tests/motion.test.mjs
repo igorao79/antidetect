@@ -1851,87 +1851,92 @@ test(
 );
 
 test("connection diagnostics and extension impact expose real assigned profiles", async () => {
-  await withApp("motion-connection-impact", async (app) => {
-    await resize(app, 1120, 800);
-    const profile = await createProfile(app, "Assigned feedback profile");
-    const proxy = await app.invoke("create_stored_proxy", {
-      name: "Unavailable local route",
-      proxySettings: {
-        proxy_type: "http",
-        host: "127.0.0.1",
-        port: 9,
-        username: null,
-        password: null,
-      },
-    });
-    await app.invoke("update_profile_proxy", {
-      profileId: profile.id,
-      proxyId: proxy.id,
-    });
-    await app.pressShortcut({ ...modifier, shift: true, key: "n" });
-    await waitForSelector(app, slot("profile-usage"));
-    await app.clickSelector(slot("profile-usage"));
-    await app.waitForText(profile.name);
-    await app.capture("proxy-assignment-list");
-    await app.pressShortcut({ key: "Escape" });
-    await app.clickSelector(`[aria-label="${en.proxyCheck.tooltipDefault}"]`);
-    await waitForSelector(app, slot("proxy-route-details"));
-    await app.waitFor(
-      () => app.visibleTextIncludes(en.proxyCheck.tooltipFailedTitle),
-      { description: "actual failed proxy check" },
-    );
-    assert.equal(
-      await app.visibleTextIncludes(en.appFeedback.notVerified),
-      true,
-    );
-    await app.capture("proxy-route-failure");
-    await app.pressShortcut({ key: "Escape" });
-    await app.invoke("update_stored_proxy", {
-      proxyId: proxy.id,
-      name: proxy.name,
-      proxySettings: { ...proxy.proxy_settings, port: 19 },
-    });
-    assert.equal(
-      await app.invoke("get_cached_proxy_check", { proxyId: proxy.id }),
-      null,
-    );
+  await withApp(
+    "motion-connection-impact",
+    async (app) => {
+      await resize(app, 1120, 800);
+      const profile = await createProfile(app, "Assigned feedback profile");
+      const proxy = await app.invoke("create_stored_proxy", {
+        name: "Unavailable local route",
+        proxySettings: {
+          proxy_type: "http",
+          host: "127.0.0.1",
+          port: 9,
+          username: null,
+          password: null,
+        },
+      });
+      await app.invoke("update_profile_proxy", {
+        profileId: profile.id,
+        proxyId: proxy.id,
+      });
+      await app.pressShortcut({ ...modifier, shift: true, key: "n" });
+      await waitForSelector(app, slot("profile-usage"));
+      await app.clickSelector(slot("profile-usage"));
+      await app.waitForText(profile.name);
+      await app.capture("proxy-assignment-list");
+      await app.pressShortcut({ key: "Escape" });
+      await app.clickSelector(`[aria-label="${en.proxyCheck.tooltipDefault}"]`);
+      await waitForSelector(app, slot("proxy-route-details"));
+      await app.waitFor(
+        () => app.visibleTextIncludes(en.proxyCheck.tooltipFailedTitle),
+        { description: "actual failed proxy check" },
+      );
+      assert.equal(
+        await app.visibleTextIncludes(en.appFeedback.notVerified),
+        true,
+      );
+      await app.capture("proxy-route-failure");
+      await app.pressShortcut({ key: "Escape" });
+      await app.invoke("update_stored_proxy", {
+        proxyId: proxy.id,
+        name: proxy.name,
+        proxySettings: { ...proxy.proxy_settings, port: 19 },
+      });
+      assert.equal(
+        await app.invoke("get_cached_proxy_check", { proxyId: proxy.id }),
+        null,
+      );
 
-    const extension = await app.invoke("add_extension", {
-      name: "Fixture",
-      fileName: "fixture.zip",
-      fileData: [...Buffer.from(extensionZipBase64(), "base64")],
-    });
-    const group = await app.invoke("create_extension_group", {
-      name: "Feedback extensions",
-    });
-    await app.invoke("add_extension_to_group", {
-      groupId: group.id,
-      extensionId: extension.id,
-    });
-    await app.invoke("assign_extension_group_to_profile", {
-      profileId: profile.id,
-      extensionGroupId: group.id,
-    });
-    await app.invoke("update_extension", {
-      extensionId: extension.id,
-      name: "My chosen name",
-      fileName: null,
-      fileData: null,
-    });
-    await app.pressShortcut({ ...modifier, key: "e" });
-    await app.clickText("My chosen name", { roles: ["button"], exact: false });
-    await waitForSelector(app, slot("assignment-impact"));
-    const disclosures = await app.execute(
-      `return [...document.querySelectorAll('[data-slot="assignment-impact"] summary')].map(node => node.textContent.trim());`,
-    );
-    assert.ok(disclosures.some((text) => text.includes("1")));
-    await app.clickSelector(
-      `${slot("assignment-impact")} li:last-child summary`,
-    );
-    await app.waitForText(profile.name);
-    await app.waitFor(
-      () =>
-        app.execute(`
+      const extension = await app.invoke("add_extension", {
+        name: "Fixture",
+        fileName: "fixture.zip",
+        fileData: [...Buffer.from(extensionZipBase64(), "base64")],
+      });
+      const group = await app.invoke("create_extension_group", {
+        name: "Feedback extensions",
+      });
+      await app.invoke("add_extension_to_group", {
+        groupId: group.id,
+        extensionId: extension.id,
+      });
+      await app.invoke("assign_extension_group_to_profile", {
+        profileId: profile.id,
+        extensionGroupId: group.id,
+      });
+      await app.invoke("update_extension", {
+        extensionId: extension.id,
+        name: "My chosen name",
+        fileName: null,
+        fileData: null,
+      });
+      await app.pressShortcut({ ...modifier, key: "e" });
+      await app.clickText("My chosen name", {
+        roles: ["button"],
+        exact: false,
+      });
+      await waitForSelector(app, slot("assignment-impact"));
+      const disclosures = await app.execute(
+        `return [...document.querySelectorAll('[data-slot="assignment-impact"] summary')].map(node => node.textContent.trim());`,
+      );
+      assert.ok(disclosures.some((text) => text.includes("1")));
+      await app.clickSelector(
+        `${slot("assignment-impact")} li:last-child summary`,
+      );
+      await app.waitForText(profile.name);
+      await app.waitFor(
+        () =>
+          app.execute(`
         const impact = document.querySelector('[data-slot="assignment-impact"]');
         const marker = impact.querySelector('[data-slot="operation-marker"]')?.getBoundingClientRect();
         const label = impact.querySelector('li[aria-current="step"]')?.getBoundingClientRect();
@@ -1943,24 +1948,26 @@ test("connection diagnostics and extension impact expose real assigned profiles"
         }
         return true;
       `),
-      { description: "extension flow aligned without horizontal overflow" },
-    );
-    await app.capture("extension-assignment-impact");
-    await app.clickText(en.appFeedback.useManifestName, { roles: ["button"] });
-    await app.clickTextIn('[role="dialog"]', en.common.buttons.save, {
-      roles: ["button"],
-    });
-    await app.waitFor(
-      async () =>
-        (await app.invoke("list_extensions"))[0].name === extension.name,
-      { description: "explicit manifest-name choice persists" },
-    );
+        { description: "extension flow aligned without horizontal overflow" },
+      );
+      await app.capture("extension-assignment-impact");
+      await app.clickText(en.appFeedback.useManifestName, {
+        roles: ["button"],
+      });
+      await app.clickTextIn('[role="dialog"]', en.common.buttons.save, {
+        roles: ["button"],
+      });
+      await app.waitFor(
+        async () =>
+          (await app.invoke("list_extensions"))[0].name === extension.name,
+        { description: "explicit manifest-name choice persists" },
+      );
 
-    await app.pressShortcut({ ...modifier, key: "i" });
-    await waitForSelector(app, slot("integration-diagnostics"));
-    const receipt = () =>
-      app.execute(
-        `const panel = document.querySelector('[data-slot="integration-diagnostics"]');
+      await app.pressShortcut({ ...modifier, key: "i" });
+      await waitForSelector(app, slot("integration-diagnostics"));
+      const receipt = () =>
+        app.execute(
+          `const panel = document.querySelector('[data-slot="integration-diagnostics"]');
          const flow = panel.querySelector('[data-slot="operation-flow"]');
          return {
            flow: flow ? [flow.dataset.variant, flow.dataset.state] : null,
@@ -1968,32 +1975,34 @@ test("connection diagnostics and extension impact expose real assigned profiles"
            problem: panel.querySelector('[data-slot="integration-diagnostics-problem"]')?.textContent ?? null,
            text: panel.innerText,
          };`,
+        );
+      const untested = await receipt();
+      assert.equal(untested.flow, null, "no stations before the first test");
+      assert.ok(!untested.text.includes(en.appFeedback.notVerified));
+      await app.clickTextIn(
+        slot("integration-diagnostics"),
+        en.appFeedback.testConnection,
+        { roles: ["button"] },
       );
-    const untested = await receipt();
-    assert.equal(untested.flow, null, "no stations before the first test");
-    assert.ok(!untested.text.includes(en.appFeedback.notVerified));
-    await app.clickTextIn(
-      slot("integration-diagnostics"),
-      en.appFeedback.testConnection,
-      { roles: ["button"] },
-    );
-    await app.waitFor(
-      async () =>
-        (await receipt()).status.includes(
-          en.proxyCheck.tooltipChecked.split("{{")[0],
-        ),
-      { description: "real local API probe receipt" },
-    );
-    // One compact line of stations; a test that did not pass says why.
-    const tested = await receipt();
-    assert.equal(tested.flow[0], "compact");
-    assert.equal(
-      tested.flow[1] === "failed",
-      tested.problem !== null,
-      JSON.stringify(tested),
-    );
-    await app.capture("integration-connection-receipt");
-  });
+      await app.waitFor(
+        async () =>
+          (await receipt()).status.includes(
+            en.proxyCheck.tooltipChecked.split("{{")[0],
+          ),
+        { description: "real local API probe receipt" },
+      );
+      // One compact line of stations; a test that did not pass says why.
+      const tested = await receipt();
+      assert.equal(tested.flow[0], "compact");
+      assert.equal(
+        tested.flow[1] === "failed",
+        tested.problem !== null,
+        JSON.stringify(tested),
+      );
+      await app.capture("integration-connection-receipt");
+    },
+    { settings: { api_enabled: true } },
+  );
 });
 
 test("partial import receipts survive retry without duplicating successful profiles", async () => {

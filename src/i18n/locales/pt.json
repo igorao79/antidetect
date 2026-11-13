@@ -766,7 +766,14 @@
       "nullCipherHeading": "Esta cifra não cifra nada",
       "nullCipherBody": "O Shadowsocks nunca envia a palavra-passe pela rede, por isso não há aqui credenciais para expor. O que fica exposto é o tráfego: o endereço de cada site que alcança, e tudo o que envia, atravessam a rede legíveis. Escolha uma cifra real, como aes-256-gcm.",
       "httpsTlsHint": "Este tipo exige um ponto de acesso de proxy que termine TLS. Normalmente os fornecedores publicam-no numa porta separada, e o certificado tem de ser válido.",
-      "hostInvalid": "Digite apenas um nome de host ou um endereço IP, sem http://, caminho, porta ou espaços"
+      "hostInvalid": "Digite apenas um nome de host ou um endereço IP, sem http://, caminho, porta ou espaços",
+      "quickFill": {
+        "label": "Preenchimento rápido",
+        "placeholder": "Cole uma linha de proxy: user:pass@host:port ou host:port:user:pass",
+        "idle": "Cole uma linha de proxy e os campos abaixo se preenchem sozinhos.",
+        "filled": "Preenchido a partir da linha. Confira o tipo abaixo.",
+        "failed": "Não foi possível ler essa linha. Use user:pass@host:port, host:port:user:pass ou uma URL."
+      }
     },
     "types": {
       "http": "HTTP",
@@ -5302,7 +5309,9 @@
     "nameLabel": "Nome do perfil",
     "keep": "Manter",
     "discard": "Descartar",
-    "kept": "Perfil mantido: {{name}}"
+    "kept": "Perfil mantido: {{name}}",
+    "launch": "Iniciar",
+    "routeRequired": "Inícios sem proxy ou VPN estão bloqueados em Configurações, em Privacidade. Escolha um proxy ou adicione um."
   },
   "routeDiagnosis": {
     "details": "Detalhes",

@@ -764,7 +764,14 @@
       "nullCipherHeading": "Diese Methode verschlüsselt nichts",
       "nullCipherBody": "Shadowsocks sendet das Passwort nie über das Netzwerk, daher gibt es hier keine Zugangsdaten, die offengelegt werden könnten. Eine Null-Methode legt stattdessen den Datenverkehr offen: Die Adresse jeder aufgerufenen Seite und alles, was Sie senden, gehen lesbar über das Netzwerk. Wählen Sie eine echte Methode, z. B. aes-256-gcm.",
       "httpsTlsHint": "Dieser Typ benötigt einen Proxy-Endpunkt, der TLS terminiert. Anbieter stellen ihn meist als eigenen Port bereit, und sein Zertifikat muss gültig sein.",
-      "hostInvalid": "Nur einen Hostnamen oder eine IP-Adresse eingeben, ohne http://, Pfad, Port oder Leerzeichen"
+      "hostInvalid": "Nur einen Hostnamen oder eine IP-Adresse eingeben, ohne http://, Pfad, Port oder Leerzeichen",
+      "quickFill": {
+        "label": "Schnell ausfüllen",
+        "placeholder": "Proxy-Zeile einfügen: user:pass@host:port oder host:port:user:pass",
+        "idle": "Füge eine Proxy-Zeile ein, dann füllen sich die Felder darunter selbst.",
+        "filled": "Aus der Zeile ausgefüllt. Prüfe unten den Typ.",
+        "failed": "Diese Zeile ist nicht lesbar. Nutze user:pass@host:port, host:port:user:pass oder eine URL."
+      }
     },
     "types": {
       "http": "HTTP",
@@ -5248,7 +5255,9 @@
     "nameLabel": "Profilname",
     "keep": "Behalten",
     "discard": "Verwerfen",
-    "kept": "Profil behalten: {{name}}"
+    "kept": "Profil behalten: {{name}}",
+    "launch": "Starten",
+    "routeRequired": "Starts ohne Proxy oder VPN sind in den Einstellungen unter Datenschutz gesperrt. Wähle einen Proxy oder füge einen hinzu."
   },
   "routeDiagnosis": {
     "details": "Details",

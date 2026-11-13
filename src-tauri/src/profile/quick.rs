@@ -56,7 +56,11 @@ fn quick_profile(profile_id: &str) -> Result<BrowserProfile, String> {
 /// Make a temporary Camoufox profile with the default settings. The caller
 /// launches it; a launch that fails is followed by `discard_quick_profile`.
 #[tauri::command]
-pub async fn create_quick_profile(app_handle: tauri::AppHandle) -> Result<BrowserProfile, String> {
+pub async fn create_quick_profile(
+  app_handle: tauri::AppHandle,
+  proxy_id: Option<String>,
+  vpn_id: Option<String>,
+) -> Result<BrowserProfile, String> {
   let mut versions = crate::downloaded_browsers_registry::DownloadedBrowsersRegistry::instance()
     .get_downloaded_versions("camoufox");
   versions.sort_by(|a, b| crate::api_client::compare_versions(b, a));
@@ -79,8 +83,8 @@ pub async fn create_quick_profile(app_handle: tauri::AppHandle) -> Result<Browse
       "camoufox",
       &version,
       "stable",
-      None,
-      None,
+      proxy_id.filter(|id| !id.is_empty()),
+      vpn_id.filter(|id| !id.is_empty()),
       Some(CamoufoxConfig::default()),
       None,
       None,

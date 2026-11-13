@@ -766,7 +766,14 @@
       "nullCipherHeading": "Ce chiffrement ne chiffre rien",
       "nullCipherBody": "Shadowsocks n'envoie jamais le mot de passe sur le réseau : aucun identifiant n'est donc exposé ici. C'est le trafic qui l'est : l'adresse de chaque site que vous atteignez, et tout ce que vous envoyez, traversent le réseau en clair. Choisissez un vrai chiffrement, par exemple aes-256-gcm.",
       "httpsTlsHint": "Ce type nécessite un point d'accès proxy qui termine TLS. Les fournisseurs le publient généralement sur un port distinct, et son certificat doit être valide.",
-      "hostInvalid": "Saisissez uniquement un nom d'hôte ou une adresse IP, sans http://, chemin, port ni espaces"
+      "hostInvalid": "Saisissez uniquement un nom d'hôte ou une adresse IP, sans http://, chemin, port ni espaces",
+      "quickFill": {
+        "label": "Remplissage rapide",
+        "placeholder": "Collez une ligne de proxy : user:pass@host:port ou host:port:user:pass",
+        "idle": "Collez une ligne de proxy et les champs ci-dessous se remplissent seuls.",
+        "filled": "Rempli depuis la ligne. Vérifiez le type ci-dessous.",
+        "failed": "Impossible de lire cette ligne. Utilisez user:pass@host:port, host:port:user:pass ou une URL."
+      }
     },
     "types": {
       "http": "HTTP",
@@ -5302,7 +5309,9 @@
     "nameLabel": "Nom du profil",
     "keep": "Garder",
     "discard": "Supprimer",
-    "kept": "Profil conservé : {{name}}"
+    "kept": "Profil conservé : {{name}}",
+    "launch": "Lancer",
+    "routeRequired": "Les lancements sans proxy ni VPN sont bloqués dans Réglages, sous Confidentialité. Choisissez un proxy ou ajoutez-en un."
   },
   "routeDiagnosis": {
     "details": "Détails",

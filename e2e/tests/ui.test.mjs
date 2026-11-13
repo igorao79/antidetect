@@ -3009,7 +3009,8 @@ test("pasting a proxy string into the form fills every field", async () => {
       "SOCKS5",
     );
 
-    // No scheme in the line, so the type falls back to HTTP.
+    // No scheme in the line, so the type the form has (SOCKS5 from the line
+    // before) stays: a SOCKS5 provider's host:port:user:pass is not HTTP.
     await paste("#proxy-name", "5.6.7.8:8080:dave:hunter2");
     await app.waitFor(async () => (await fieldValues())[1] === "5.6.7.8", {
       description: "scheme-less proxy string parsed",
@@ -3024,7 +3025,7 @@ test("pasting a proxy string into the form fills every field", async () => {
       await app.execute(
         `return document.querySelector("#proxy-type")?.textContent?.trim();`,
       ),
-      "HTTP",
+      "SOCKS5",
     );
 
     // A bare hostname is not a proxy string, so the form is left alone and the
@@ -3107,6 +3108,64 @@ test("an SSH proxy string fills the form, reads as an encrypted first hop, and i
     assert.equal(saved.proxy_settings.proxy_type, "ssh");
     assert.equal(saved.proxy_settings.port, 2222);
     assert.equal(saved.proxy_settings.username, "carol");
+  });
+});
+
+test("quick fill spreads a pasted proxy line over the form and keeps the chosen type", async () => {
+  await withApp("ui-proxy-quick-fill", async (app) => {
+    const fields = () =>
+      app.execute(
+        `return ["#proxy-name", "#proxy-host", "#proxy-port", "#proxy-username", "#proxy-password"]
+           .map((selector) => document.querySelector(selector)?.value ?? null)
+           .concat(document.querySelector("#proxy-type")?.textContent?.trim() ?? null);`,
+      );
+    const paste = (text) =>
+      app.execute(
+        `const field = document.querySelector("#proxy-quick-fill");
+         const data = new DataTransfer();
+         data.setData("text/plain", arguments[0]);
+         field.focus();
+         return field.dispatchEvent(new ClipboardEvent("paste", { bubbles: true, cancelable: true, clipboardData: data }));`,
+        [text],
+      );
+
+    await app.clickSelector('[aria-label="Network"]');
+    await app.waitForText("New proxy");
+    await app.clickSelector('[aria-label="New proxy"]');
+    await app.waitForText("Add Proxy");
+    await chooseSelectOption(app, "#proxy-type", "SOCKS5");
+
+    // host:port:user:pass, with no scheme: the chosen SOCKS5 stays.
+    await paste("res.example.net:10000:0a1b2c3d:Secret99");
+    await app.waitFor(async () => (await fields())[1] === "res.example.net", {
+      description: "fields filled from host:port:user:pass",
+    });
+    assert.deepEqual(await fields(), [
+      "res.example.net:10000",
+      "res.example.net",
+      "10000",
+      "0a1b2c3d",
+      "Secret99",
+      "SOCKS5",
+    ]);
+    await app.waitForText(en.proxies.form.quickFill.filled);
+
+    // user:pass@host:port, the user holding dots and underscores.
+    await paste("a1b2__zone.ru:c3d4@gw.example.com:823");
+    await app.waitFor(async () => (await fields())[1] === "gw.example.com", {
+      description: "fields filled from user:pass@host:port",
+    });
+    const second = await fields();
+    assert.deepEqual(second.slice(1), [
+      "gw.example.com",
+      "823",
+      "a1b2__zone.ru",
+      "c3d4",
+      "SOCKS5",
+    ]);
+
+    await paste("not a proxy at all");
+    await app.waitForText(en.proxies.form.quickFill.failed.split(".")[0]);
   });
 });
 

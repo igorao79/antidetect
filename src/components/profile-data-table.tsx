@@ -1467,6 +1467,20 @@ function ProxyPicker({
         }}
       />
       <CommandList>
+        <CommandGroup>
+          <CommandItem
+            value="__add_proxy__"
+            forceMount
+            onSelect={() => {
+              meta.setOpenProxySelectorFor(null);
+              meta.openNewProxyFor(profileId);
+            }}
+          >
+            <LuPlus className="mr-2 size-4" aria-hidden="true" />
+            {t("createProfile.proxy.addProxy")}
+          </CommandItem>
+        </CommandGroup>
+        <CommandSeparator />
         <CommandEmpty>{t("createProfile.proxy.notFound")}</CommandEmpty>
         <CommandGroup>
           <CommandItem
@@ -1524,19 +1538,6 @@ function ProxyPicker({
             ))}
           </CommandGroup>
         )}
-        <CommandGroup>
-          <CommandItem
-            value="__add_proxy__"
-            forceMount
-            onSelect={() => {
-              meta.setOpenProxySelectorFor(null);
-              meta.openNewProxyFor(profileId);
-            }}
-          >
-            <LuPlus className="mr-2 size-4" aria-hidden="true" />
-            {t("createProfile.proxy.addProxy")}
-          </CommandItem>
-        </CommandGroup>
         {meta.canCreateLocationProxy && meta.creatableCountries.length > 0 && (
           <CommandGroup heading={t("profileTable.createByCountryHeading")}>
             {meta.creatableCountries.map((country) => (

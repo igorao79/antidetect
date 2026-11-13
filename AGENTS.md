@@ -134,7 +134,7 @@ Fork-specific rules:
 - Proxy conveniences (fork): every proxy picker (profile details' `proxy-picker.tsx`, the create
   dialog, the table cell, bulk "Assign proxy") lists the current proxy first, the rest by name
   (`src/lib/proxy-choices.ts`), can check a proxy in place
-  (`proxy-choice-label.tsx`) and ends with "Add proxy", which opens the proxy form and assigns
+  (`proxy-choice-label.tsx`) and starts with "Add proxy", which opens the proxy form and assigns
   what it creates. "Copy proxy" (`src/lib/proxy-uri.ts`, `scheme://user:pass@host:port`) is on
   the Network page's row menu, the profile row menu and profile details, which also shows where
   the profile will appear from by its proxy's last check (`profile-exit-preview.tsx`). On the
@@ -144,6 +144,9 @@ Fork-specific rules:
   profiles"; a delete refused with `ENTITY_IN_USE` offers the replace. A failed check or launch
   says what the failure means and what to try (`src/lib/proxy-check-diagnosis.ts`,
   `route-diagnosis-note.tsx`, `route-failure-toast.ts`).
+  The proxy form's "Quick fill" field (and a paste into its other fields) spreads one proxy
+  line over the form: `user:pass@host:port`, `host:port:user:pass`, a URL or a share link,
+  through `parse_txt_proxies`; a line without a scheme keeps the type the form has.
 - Profile table conveniences (fork): pinned profiles stay on top (per device, `localStorage`
   `owl.pinnedProfiles`, `use-pinned-profiles.ts`) with a Pinned filter; "Check proxies" checks
   the selection's proxies without launching (`src/lib/bulk-proxy-check.ts`); a profile can be
@@ -154,7 +157,8 @@ Fork-specific rules:
   locks DELETE, `lock-held-banner.tsx`). Clone takes a copy count (`clone_profile_copies`,
   `profile/clone_copies.rs`; a Camoufox clone gets new noise seeds; cookies, logins and tabs
   are copied with the folder). "Quick profile" beside New creates and launches a temporary
-  Camoufox profile and asks on stop whether to keep it (`profile/quick.rs`: temporary and not
+  Camoufox profile (a small dialog picks its proxy first, remembering the last one in
+  `owl.quickProfileProxy`, and says up front when launches without a route are blocked) and asks on stop whether to keep it (`profile/quick.rs`: temporary and not
   ephemeral, unlike the local API's one-time profiles; `quick-profile-prompt.tsx`).
 - Profile tasks (`profile_tasks.rs`, `profile-tasks-section.tsx`, device only, not synced):
   to-dos with an optional due time in a profile's details, a system notification when one
@@ -279,7 +283,9 @@ Fork-specific rules:
   hand (a minor one) ships as it is. Pull before working on the branch again, the bump commit
   is only on GitHub (`gh workflow run release-macos.yml` starts a release by hand). GitHub's
   macOS runner runs `scripts/release-macos.sh`,
-  which builds, writes `SHA256SUMS.txt` and publishes the release, with the signing certificate
+  which builds, writes `SHA256SUMS.txt` and publishes the release (`beforeBuildCommand` builds the
+  frontend before the `donut-proxy` sidecar: the crate embeds `dist`, so the other order compiled
+  it twice and added about 11 minutes), with the signing certificate
   and the API key from the repository's Actions secrets (listed in the workflow). The script
   also runs on this Mac.
   Publishing is public (the repository is public): ask before pushing app changes to

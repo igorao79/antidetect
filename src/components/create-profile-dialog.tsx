@@ -1074,6 +1074,26 @@ export function CreateProfileDialog({
                 <Command onKeyDown={checkHighlightedProxy}>
                   <CommandInput placeholder={t("createProfile.proxy.search")} />
                   <CommandList id={proxyListboxId}>
+                    <CommandGroup forceMount>
+                      <CommandItem
+                        value="__add_proxy__"
+                        forceMount
+                        onSelect={() => {
+                          setProxyPopoverOpen(false);
+                          setShowProxyForm(true);
+                        }}
+                      >
+                        <LuPlus
+                          className="size-4 shrink-0"
+                          aria-hidden="true"
+                        />
+                        {t("createProfile.proxy.addProxy")}
+                      </CommandItem>
+                    </CommandGroup>
+                    <CommandSeparator
+                      alwaysRender
+                      className="my-1 bg-foreground/8"
+                    />
                     <CommandEmpty>
                       {t("createProfile.proxy.notFound")}
                     </CommandEmpty>
@@ -1157,26 +1177,6 @@ export function CreateProfileDialog({
                         ))}
                       </CommandGroup>
                     )}
-                    <CommandSeparator
-                      alwaysRender
-                      className="my-1 bg-foreground/8"
-                    />
-                    <CommandGroup forceMount>
-                      <CommandItem
-                        value="__add_proxy__"
-                        forceMount
-                        onSelect={() => {
-                          setProxyPopoverOpen(false);
-                          setShowProxyForm(true);
-                        }}
-                      >
-                        <LuPlus
-                          className="size-4 shrink-0"
-                          aria-hidden="true"
-                        />
-                        {t("createProfile.proxy.addProxy")}
-                      </CommandItem>
-                    </CommandGroup>
                   </CommandList>
                 </Command>
               </PopoverContent>

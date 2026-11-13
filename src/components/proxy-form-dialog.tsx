@@ -38,6 +38,7 @@ import {
   pickParsedProxy,
 } from "@/lib/proxy-string";
 import { canonicalProxyType } from "@/lib/proxy-type";
+import { cn } from "@/lib/utils";
 import type { ProxyParseResult, StoredProxy } from "@/types";
 import { ProxyExpiryField } from "./proxy-expiry";
 import { RippleButton } from "./ui/ripple";
@@ -177,12 +178,18 @@ export function ProxyFormDialog({
     setForm(DEFAULT_FORM);
   }, []);
   const [isExpiryValid, setIsExpiryValid] = useState(true);
+  const [quickFill, setQuickFill] = useState("");
+  const [quickFillState, setQuickFillState] = useState<
+    "idle" | "filled" | "failed"
+  >("idle");
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
     setIsExpiryValid(true);
+    setQuickFill("");
+    setQuickFillState("idle");
 
     if (!editingProxy) {
       resetForm();
@@ -351,40 +358,70 @@ export function ProxyFormDialog({
   // the same Rust parser the import dialog uses and spread the result across
   // the form. The default paste is left alone until the answer comes back, so a
   // string that isn't a proxy (a hostname, a port) lands where it was dropped.
+  /**
+   * Spreads one proxy line (`user:pass@host:port`, `host:port:user:pass`, a
+   * URL or a share link) over the fields. A line without a scheme keeps the
+   * type the form has, so a SOCKS5 proxy pasted as `host:port:user:pass`
+   * stays SOCKS5. Resolves to whether the line was understood.
+   */
+  const fillFromLine = useCallback(
+    async (content: string, nameBeforePaste: string): Promise<boolean> => {
+      try {
+        const results = await invoke<ProxyParseResult[]>("parse_txt_proxies", {
+          content,
+        });
+        const parsed = pickParsedProxy(results);
+        if (!parsed) {
+          return false;
+        }
+        const hasScheme = content.includes("://");
+        setForm((previous) => ({
+          ...previous,
+          name: nameBeforePaste || `${parsed.host}:${parsed.port}`,
+          proxy_type: hasScheme ? parsed.proxy_type : previous.proxy_type,
+          host: parsed.host,
+          port: parsed.port,
+          username: parsed.username ?? "",
+          password: parsed.password ?? "",
+          vless_uri: parsed.vless_uri ?? "",
+        }));
+        return true;
+      } catch (error: unknown) {
+        console.error("Failed to parse pasted proxy:", error);
+        return false;
+      }
+    },
+    [],
+  );
+
   const handleProxyPaste = useCallback(
     (event: React.ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const content = event.clipboardData.getData("text").trim();
       if (!content) {
         return;
       }
-
       // Captured before the browser applies the paste, so a proxy string
       // dropped into the empty name field names the proxy after its endpoint
       // instead of keeping the raw line.
-      const nameBeforePaste = form.name.trim();
-
-      void invoke<ProxyParseResult[]>("parse_txt_proxies", { content })
-        .then((results) => {
-          const parsed = pickParsedProxy(results);
-          if (!parsed) {
-            return;
-          }
-          setForm((previous) => ({
-            ...previous,
-            name: nameBeforePaste || `${parsed.host}:${parsed.port}`,
-            proxy_type: parsed.proxy_type,
-            host: parsed.host,
-            port: parsed.port,
-            username: parsed.username ?? "",
-            password: parsed.password ?? "",
-            vless_uri: parsed.vless_uri ?? "",
-          }));
-        })
-        .catch((error: unknown) => {
-          console.error("Failed to parse pasted proxy:", error);
-        });
+      void fillFromLine(content, form.name.trim());
     },
-    [form.name],
+    [fillFromLine, form.name],
+  );
+
+  const applyQuickFill = useCallback(
+    async (text: string) => {
+      const line = text.trim();
+      if (!line) {
+        setQuickFillState("idle");
+        return;
+      }
+      const understood = await fillFromLine(line, form.name.trim());
+      setQuickFillState(understood ? "filled" : "failed");
+      if (understood) {
+        setQuickFill("");
+      }
+    },
+    [fillFromLine, form.name],
   );
 
   // The stored spelling is not the UI's to assume: a Shadowsocks proxy created
@@ -504,6 +541,56 @@ export function ProxyFormDialog({
         </DialogHeader>
 
         <div className="@container grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="proxy-quick-fill">
+              {t("proxies.form.quickFill.label")}
+            </Label>
+            <Input
+              id="proxy-quick-fill"
+              value={quickFill}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(e) => {
+                setQuickFill(e.target.value);
+                setQuickFillState("idle");
+              }}
+              onPaste={(e) => {
+                const text = e.clipboardData.getData("text").trim();
+                if (!text) return;
+                e.preventDefault();
+                setQuickFill(text);
+                void applyQuickFill(text);
+              }}
+              onKeyDown={(e) => {
+                if (e.key !== "Enter") return;
+                e.preventDefault();
+                e.stopPropagation();
+                void applyQuickFill(quickFill);
+              }}
+              onBlur={() => {
+                if (quickFill.trim()) void applyQuickFill(quickFill);
+              }}
+              placeholder={t("proxies.form.quickFill.placeholder")}
+              aria-describedby="proxy-quick-fill-hint"
+              aria-invalid={quickFillState === "failed" || undefined}
+              disabled={isSubmitting}
+              className="font-mono text-xs"
+            />
+            <p
+              id="proxy-quick-fill-hint"
+              role="status"
+              className={cn(
+                "text-xs",
+                quickFillState === "filled"
+                  ? "text-success"
+                  : quickFillState === "failed"
+                    ? "text-destructive-text"
+                    : "text-muted-foreground",
+              )}
+            >
+              {t(`proxies.form.quickFill.${quickFillState}`)}
+            </p>
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="proxy-name">{t("proxies.form.name")}</Label>
             <Input

@@ -1194,14 +1194,12 @@ export function IntegrationsDialog({
                         successMessage={t("common.buttons.copied")}
                       />
                     </section>
+                    <IntegrationDiagnostics
+                      key={`${apiServerPort}:${settings.api_token ?? ""}`}
+                      target="api"
+                    />
                   </div>
                 </AnimatedDisclosureContent>
-
-                <IntegrationDiagnostics
-                  key={`${apiServerPort}:${settings.api_token ?? ""}`}
-                  target="api"
-                  className="mt-4"
-                />
 
                 <div className="mt-4">
                   <ServerApiLink
