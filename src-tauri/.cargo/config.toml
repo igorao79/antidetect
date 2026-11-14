@@ -2,3 +2,10 @@
 # Omit jobs setting to use all cores
 
 incremental = true
+
+# The linker signs Apple Silicon executables ad hoc, not Intel ones. Tauri
+# signs the app's main executable before donut-proxy beside it, and codesign
+# refused it while that subcomponent was "not signed at all", so the Intel
+# release build failed; with a linker signature both arches bundle the same.
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "link-arg=-Wl,-adhoc_codesign"]
