@@ -1,6 +1,8 @@
 # Builds, signs, notarizes and publishes an Owl release on GitHub's macOS
-# runner, so a release does not take a developer's Mac for half an hour. It
-# runs scripts/release-macos.sh, the same script a local release runs.
+# runners, so a release does not take a developer's Mac for half an hour. It
+# runs scripts/release-macos.sh, the same script a local release runs: one
+# runner builds the Apple Silicon image, another cross-compiles the Intel one
+# at the same time, and a third job publishes both once both are notarized.
 #
 # Starts on every push to main-antidetect that changes the app (docs, CI,
 # tests and test scenarios do not) and ships it as a new version: when the
@@ -73,8 +75,17 @@ jobs:
           fi
           echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-  release:
+  build:
     needs: version
+    strategy:
+      matrix:
+        include:
+          # The name the Apple Silicon cache had before Intel builds came,
+          # so it stays warm.
+          - target: aarch64-apple-darwin
+            cache: release-macos
+          - target: x86_64-apple-darwin
+            cache: release-macos-x86_64
     runs-on: macos-15
     timeout-minutes: 120
     env:
@@ -99,11 +110,13 @@ jobs:
           cache: pnpm
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
-          shared-key: release-macos
+          shared-key: ${{ matrix.cache }}
           # A key that already exists is never saved again, so a cache of
           # other settings came back at every run and everything compiled
           # anew; a new prefix starts over.
@@ -145,26 +158,22 @@ jobs:
           printf '%s\n' "$APPLE_API_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
           echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
 
-      - name: Build, sign, notarize and publish
+      - name: Build, sign and notarize
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
           APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
           GH_TOKEN: ${{ github.token }}
-        run: scripts/release-macos.sh
+        run: scripts/release-macos.sh build ${{ matrix.target }}
 
-      # A run that built and notarized but could not publish (GitHub answered
-      # 0.33.7's release call with 403) keeps the disk image, so it can be
-      # published by hand instead of building again.
-      - name: Keep the disk image when publishing failed
-        if: failure()
-        uses: actions/upload-artifact@v4
+      # Handed to the publish job; also kept a week, so a run that built and
+      # notarized but could not publish (GitHub answered 0.33.7's release call
+      # with 403) can be published by hand instead of building again.
+      - uses: actions/upload-artifact@v4
         with:
-          name: owl-dmg
-          path: |
-            src-tauri/target/release/bundle/dmg/*.dmg
-            src-tauri/target/release/bundle/dmg/SHA256SUMS.txt
-          if-no-files-found: ignore
+          name: owl-dmg-${{ matrix.target }}
+          path: release-out/*.dmg
+          if-no-files-found: error
           retention-days: 7
 
       - name: Remove the signing material
@@ -172,3 +181,25 @@ jobs:
         run: |
           security delete-keychain "$RUNNER_TEMP/owl-signing.keychain-db" 2> /dev/null || true
           rm -f "$RUNNER_TEMP/AuthKey.p8" "$RUNNER_TEMP/certificate.p12"
+
+  # Publishes only when every architecture built, so no release lacks one.
+  publish:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.version.outputs.sha }}
+          # The release notes list the commits since the previous release.
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: owl-dmg-*
+          path: release-out
+          merge-multiple: true
+
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/release-macos.sh publish

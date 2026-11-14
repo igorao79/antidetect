@@ -18,6 +18,11 @@ const PROFILE =
 
 function getTarget() {
   if (process.env.TARGET) return process.env.TARGET;
+  // Tauri names the triple of `tauri build --target <triple>` to its
+  // beforeBuildCommand, so an Intel build gets an Intel sidecar and Xray.
+  if (process.env.TAURI_ENV_TARGET_TRIPLE) {
+    return process.env.TAURI_ENV_TARGET_TRIPLE;
+  }
   try {
     const output = execSync("rustc -vV", { encoding: "utf-8" });
     const match = output.match(/host:\s*(.+)/);

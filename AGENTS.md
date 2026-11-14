@@ -281,9 +281,13 @@ Fork-specific rules:
   `package.json`, `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock` and `tauri.conf.json`; the
   workflow commits that to the branch as "Owl <version>" and builds it. A version raised by
   hand (a minor one) ships as it is. Pull before working on the branch again, the bump commit
-  is only on GitHub (`gh workflow run release-macos.yml` starts a release by hand). GitHub's
-  macOS runner runs `scripts/release-macos.sh`,
-  which builds, writes `SHA256SUMS.txt` and publishes the release (the release sidecar build in
+  is only on GitHub (`gh workflow run release-macos.yml` starts a release by hand). A release
+  carries two disk images, `Owl_<v>_aarch64.dmg` and `Owl_<v>_x64.dmg` for Intel Macs
+  (cross-compiled as `x86_64-apple-darwin`; the updater picks its own architecture's): two
+  macOS runners run `scripts/release-macos.sh build <target>` side by side, each building,
+  signing and notarizing one image, and a third job runs `release-macos.sh publish`, which
+  writes `SHA256SUMS.txt` for both and publishes only when both built (`tauri build --target`
+  hands the triple to the sidecar build as `TAURI_ENV_TARGET_TRIPLE`; the release sidecar build in
   `copy-proxy-binary.mjs` sets `MACOSX_DEPLOYMENT_TARGET` from `minimumSystemVersion` as `tauri
   build` does: without it every crate with C code got other fingerprints and the app build
   compiled the whole crate graph a second time, about 15 minutes), with the signing certificate

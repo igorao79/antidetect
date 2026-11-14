@@ -71,3 +71,6 @@ HANDOFF.md
 .claude/quota-blocked.json
 session-recover.yaml
 # Claude Code session-recovery state
+
+# Disk images scripts/release-macos.sh builds before publishing
+/release-out/
