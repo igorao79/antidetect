@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LuTimer, LuTriangleAlert } from "react-icons/lu";
 import { ProxyFormDialog } from "@/components/proxy-form-dialog";
+import { ProxyGeneratorDialog } from "@/components/proxy-generator-dialog";
 import { ProxyPicker } from "@/components/proxy-picker";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,6 +63,7 @@ export function QuickProfileDialog({
   const [proxyId, setProxyId] = useState<string | null>(null);
   const [routeRequired, setRouteRequired] = useState(false);
   const [isProxyFormOpen, setIsProxyFormOpen] = useState(false);
+  const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
 
   const proxiesRef = useRef(proxies);
   proxiesRef.current = proxies;
@@ -114,6 +116,9 @@ export function QuickProfileDialog({
             onAdd={() => {
               setIsProxyFormOpen(true);
             }}
+            onGenerate={() => {
+              setIsGeneratorOpen(true);
+            }}
           />
           {blocked && (
             <p
@@ -148,6 +153,16 @@ export function QuickProfileDialog({
         }}
         onCreated={(proxy) => {
           setProxyId(proxy.id);
+        }}
+      />
+      <ProxyGeneratorDialog
+        isOpen={isGeneratorOpen}
+        single
+        onClose={() => {
+          setIsGeneratorOpen(false);
+        }}
+        onGenerated={([proxy]) => {
+          if (proxy) setProxyId(proxy.id);
         }}
       />
     </Dialog>

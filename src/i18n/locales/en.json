@@ -931,6 +931,10 @@
       "empty": "No profiles found",
       "save": "Save",
       "saved": "Profiles changed: {{count}}"
+    },
+    "note": {
+      "label": "Note",
+      "placeholder": "What the proxy is for"
     }
   },
   "groups": {
@@ -3240,7 +3244,15 @@
     "profileTasksSaveFailed": "Could not save the tasks: {{detail}}",
     "profilesExportPathInvalid": "Choose a file with the .csv extension.",
     "profilesExportTooLarge": "The export is too large to save.",
-    "profilesExportFailed": "Could not write the export file: {{detail}}"
+    "profilesExportFailed": "Could not write the export file: {{detail}}",
+    "proxyGeneratorNoKey": "Enter the proxy generator key first.",
+    "proxyGeneratorKeyInvalid": "The proxy generator did not accept the key and secret. Check them in the bot (/keys).",
+    "proxyGeneratorClockSkew": "This computer's clock is off by more than a minute, so the proxy generator refused the request. Set the time automatically and try again.",
+    "proxyGeneratorLimit": "You already have the most live proxies the generator allows. Delete some in Owl or the bot.",
+    "proxyGeneratorPoolExhausted": "The proxy generator has no free ports left. Tell its admin.",
+    "proxyGeneratorRateLimited": "Too many requests to the proxy generator. Wait a minute and try again.",
+    "proxyGeneratorUnavailable": "The proxy generator is unavailable: {{detail}}",
+    "proxyGeneratorRejected": "The proxy generator refused the request: {{detail}}"
   },
   "rail": {
     "profiles": "Profiles",
@@ -5362,6 +5374,68 @@
       "engine": "Engine",
       "created": "Created",
       "lastLaunched": "Last launched"
+    }
+  },
+  "proxyGenerator": {
+    "open": "Generate",
+    "pickerItem": "Generate proxy",
+    "title": "Generate proxies",
+    "description": "New proxies from the team's proxy generator. They are added to Network and checked right away.",
+    "generate": "Generate",
+    "count": "How many (1–{{max}})",
+    "name": "Name",
+    "namePlaceholder": "Empty: host:port",
+    "namePlaceholderBatch": "kraken → kraken_1, kraken_2…",
+    "protocol": "Protocol",
+    "releaseFailed": "A deleted proxy could not be released in the proxy generator. Its port stays taken there until it expires or is deleted in the bot.",
+    "countries": {
+      "label": "Exit countries",
+      "modes": {
+        "any": "Any",
+        "only": "Only",
+        "exclude": "All except"
+      },
+      "more": "More",
+      "search": "Search countries",
+      "notFound": "No country found"
+    },
+    "ttl": {
+      "label": "Lifetime",
+      "forever": "Forever",
+      "custom": "Custom",
+      "hours": "{{count}} h",
+      "days": "{{count}} d",
+      "amount": "Amount",
+      "unit": "Unit",
+      "units": {
+        "minutes": "Minutes",
+        "hours": "Hours",
+        "days": "Days"
+      },
+      "hint": "When the lifetime ends, the generator deletes the proxy; Owl shows the date under Expires."
+    },
+    "key": {
+      "description": "Enter the key and secret the proxy generator's bot gives with /keys.",
+      "hint": "In the bot @proxyhubbbbot send /keys and create a key. The secret is shown once; Owl keeps it sealed on this device.",
+      "current": "Saved key: {{hint}}",
+      "keyLabel": "Key",
+      "secretLabel": "Secret",
+      "save": "Save key",
+      "forget": "Forget key",
+      "change": "Change key"
+    },
+    "errors": {
+      "count": "Enter how many proxies, 1 to {{max}}.",
+      "countries": "Pick at least one country.",
+      "ttl": "Lifetime: a whole number, from 5 minutes to 30 days.",
+      "textTooLong": "Name and note: up to 120 characters."
+    },
+    "done": {
+      "toast": "Proxies generated: {{count}}",
+      "copied": "Proxies copied",
+      "copyAll": "Copy all",
+      "more": "Generate more",
+      "finish": "Done"
     }
   }
 }

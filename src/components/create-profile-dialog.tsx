@@ -37,6 +37,7 @@ import {
 } from "react-icons/lu";
 import { DnsServerField } from "@/components/dns-server-field";
 import { EphemeralStorageNotice } from "@/components/ephemeral-storage-notice";
+import { GenerateProxyCommandItem } from "@/components/generate-proxy-command-item";
 import { LoadingButton } from "@/components/loading-button";
 import { ProfileGlyph } from "@/components/profile-glyph";
 import {
@@ -44,6 +45,7 @@ import {
   ProxyChoiceLabel,
 } from "@/components/proxy-choice-label";
 import { ProxyFormDialog } from "@/components/proxy-form-dialog";
+import { ProxyGeneratorDialog } from "@/components/proxy-generator-dialog";
 import { SharedCamoufoxConfigForm } from "@/components/shared-camoufox-config-form";
 import {
   AnimatedDisclosureChevron,
@@ -221,6 +223,7 @@ export function CreateProfileDialog({
   );
   const [osPopoverOpen, setOsPopoverOpen] = useState(false);
   const [showProxyForm, setShowProxyForm] = useState(false);
+  const [showProxyGenerator, setShowProxyGenerator] = useState(false);
   const [dnsBlocklist, setDnsBlocklist] = useState("");
   const [dnsServer, setDnsServer] = useState("");
   const [dnsServerValid, setDnsServerValid] = useState(true);
@@ -1089,6 +1092,12 @@ export function CreateProfileDialog({
                         />
                         {t("createProfile.proxy.addProxy")}
                       </CommandItem>
+                      <GenerateProxyCommandItem
+                        onSelect={() => {
+                          setProxyPopoverOpen(false);
+                          setShowProxyGenerator(true);
+                        }}
+                      />
                     </CommandGroup>
                     <CommandSeparator
                       alwaysRender
@@ -1839,6 +1848,16 @@ export function CreateProfileDialog({
         isOpen={showProxyForm}
         onClose={() => setShowProxyForm(false)}
         onCreated={(proxy) => {
+          setCreatedProxy(proxy);
+          setSelectedProxyId(proxy.id);
+        }}
+      />
+      <ProxyGeneratorDialog
+        isOpen={showProxyGenerator}
+        single
+        onClose={() => setShowProxyGenerator(false)}
+        onGenerated={([proxy]) => {
+          if (!proxy) return;
           setCreatedProxy(proxy);
           setSelectedProxyId(proxy.id);
         }}

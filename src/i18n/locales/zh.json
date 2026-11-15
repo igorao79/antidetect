@@ -931,6 +931,10 @@
       "empty": "未找到配置文件",
       "save": "保存",
       "saved": "已更改的配置文件：{{count}}"
+    },
+    "note": {
+      "label": "备注",
+      "placeholder": "此代理的用途"
     }
   },
   "groups": {
@@ -3240,7 +3244,15 @@
     "profileTasksSaveFailed": "无法保存任务:{{detail}}",
     "profilesExportPathInvalid": "请选择扩展名为 .csv 的文件。",
     "profilesExportTooLarge": "导出内容过大,无法保存。",
-    "profilesExportFailed": "无法写入导出文件:{{detail}}"
+    "profilesExportFailed": "无法写入导出文件:{{detail}}",
+    "proxyGeneratorNoKey": "请先输入代理生成器的密钥。",
+    "proxyGeneratorKeyInvalid": "代理生成器未接受该密钥和私密值。请在机器人（/keys）中核对。",
+    "proxyGeneratorClockSkew": "本机时钟偏差超过一分钟，因此生成器拒绝了请求。请设为自动时间后重试。",
+    "proxyGeneratorLimit": "你的活动代理已达到生成器允许的上限。请在 Owl 或机器人中删除一些。",
+    "proxyGeneratorPoolExhausted": "代理生成器已没有空闲端口。请告知其管理员。",
+    "proxyGeneratorRateLimited": "对代理生成器的请求过多。请等待一分钟后重试。",
+    "proxyGeneratorUnavailable": "代理生成器不可用：{{detail}}",
+    "proxyGeneratorRejected": "代理生成器拒绝了请求：{{detail}}"
   },
   "rail": {
     "profiles": "配置文件",
@@ -5362,6 +5374,68 @@
       "engine": "引擎",
       "created": "创建时间",
       "lastLaunched": "上次启动"
+    }
+  },
+  "proxyGenerator": {
+    "open": "生成",
+    "pickerItem": "生成代理",
+    "title": "生成代理",
+    "description": "从团队的代理生成器获取新代理。它们会添加到 Network 并立即检测。",
+    "generate": "生成",
+    "count": "数量（1–{{max}}）",
+    "name": "名称",
+    "namePlaceholder": "留空：host:port",
+    "namePlaceholderBatch": "kraken → kraken_1, kraken_2…",
+    "protocol": "协议",
+    "releaseFailed": "已删除的代理未能在生成器中释放。在到期或在机器人中删除之前，它的端口在那里仍被占用。",
+    "countries": {
+      "label": "出口国家",
+      "modes": {
+        "any": "全部",
+        "only": "仅限",
+        "exclude": "排除"
+      },
+      "more": "更多",
+      "search": "搜索国家",
+      "notFound": "未找到国家"
+    },
+    "ttl": {
+      "label": "有效期",
+      "forever": "永久",
+      "custom": "自定义",
+      "hours": "{{count}} 小时",
+      "days": "{{count}} 天",
+      "amount": "数值",
+      "unit": "单位",
+      "units": {
+        "minutes": "分钟",
+        "hours": "小时",
+        "days": "天"
+      },
+      "hint": "有效期结束后，生成器会删除代理；Owl 在 Expires 列显示日期。"
+    },
+    "key": {
+      "description": "输入生成器机器人通过 /keys 提供的密钥和私密值。",
+      "hint": "向机器人 @proxyhubbbbot 发送 /keys 并创建密钥。私密值只显示一次；Owl 会在本设备上加密保存。",
+      "current": "已保存的密钥：{{hint}}",
+      "keyLabel": "密钥",
+      "secretLabel": "私密值",
+      "save": "保存密钥",
+      "forget": "移除密钥",
+      "change": "更换密钥"
+    },
+    "errors": {
+      "count": "请输入代理数量，1 到 {{max}}。",
+      "countries": "请至少选择一个国家。",
+      "ttl": "有效期：整数，5 分钟到 30 天。",
+      "textTooLong": "名称和备注：最多 120 个字符。"
+    },
+    "done": {
+      "toast": "已生成代理：{{count}}",
+      "copied": "已复制代理",
+      "copyAll": "全部复制",
+      "more": "继续生成",
+      "finish": "完成"
     }
   }
 }

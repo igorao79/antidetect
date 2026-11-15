@@ -24,6 +24,7 @@ import {
 import { orderProxyChoices } from "@/lib/proxy-choices";
 import { cn } from "@/lib/utils";
 import type { StoredProxy } from "@/types";
+import { GenerateProxyCommandItem } from "./generate-proxy-command-item";
 
 interface ProxyPickerProps {
   proxies: StoredProxy[];
@@ -33,6 +34,8 @@ interface ProxyPickerProps {
   ariaLabel: string;
   onSelect: (proxyId: string | null) => void;
   onAdd: () => void;
+  /** Opens the proxy generator; the entry is hidden without it. */
+  onGenerate?: () => void;
 }
 
 /** A searchable proxy list with the current route first and a Check action per row. */
@@ -43,6 +46,7 @@ export function ProxyPicker({
   ariaLabel,
   onSelect,
   onAdd,
+  onGenerate,
 }: ProxyPickerProps) {
   const { t } = useTranslation();
   const listboxId = React.useId();
@@ -95,6 +99,14 @@ export function ProxyPicker({
                 <LuPlus className="size-4 shrink-0" aria-hidden="true" />
                 {t("createProfile.proxy.addProxy")}
               </CommandItem>
+              {onGenerate && (
+                <GenerateProxyCommandItem
+                  onSelect={() => {
+                    setOpen(false);
+                    onGenerate();
+                  }}
+                />
+              )}
             </CommandGroup>
             <CommandSeparator />
             <CommandEmpty>{t("createProfile.proxy.notFound")}</CommandEmpty>

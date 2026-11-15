@@ -33,6 +33,14 @@ export type BackendErrorCode =
   | "GROUP_ASSIGN_FAILED"
   | "GEOIP_DOWNLOAD_FAILED"
   | "PROXY_SAVE_FAILED"
+  | "PROXY_GENERATOR_NO_KEY"
+  | "PROXY_GENERATOR_KEY_INVALID"
+  | "PROXY_GENERATOR_CLOCK_SKEW"
+  | "PROXY_GENERATOR_LIMIT"
+  | "PROXY_GENERATOR_POOL_EXHAUSTED"
+  | "PROXY_GENERATOR_RATE_LIMITED"
+  | "PROXY_GENERATOR_UNAVAILABLE"
+  | "PROXY_GENERATOR_REJECTED"
   | "PROXY_DELETE_FAILED"
   | "PROXY_IMPORT_FAILED"
   | "VPN_CONNECT_FAILED"
@@ -1615,6 +1623,26 @@ export function translateBackendError(t: TFunction, err: unknown): string {
       });
     case "GEOIP_DOWNLOAD_FAILED":
       return t("backendErrors.geoipDownloadFailed", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "PROXY_GENERATOR_NO_KEY":
+      return t("backendErrors.proxyGeneratorNoKey");
+    case "PROXY_GENERATOR_KEY_INVALID":
+      return t("backendErrors.proxyGeneratorKeyInvalid");
+    case "PROXY_GENERATOR_CLOCK_SKEW":
+      return t("backendErrors.proxyGeneratorClockSkew");
+    case "PROXY_GENERATOR_LIMIT":
+      return t("backendErrors.proxyGeneratorLimit");
+    case "PROXY_GENERATOR_POOL_EXHAUSTED":
+      return t("backendErrors.proxyGeneratorPoolExhausted");
+    case "PROXY_GENERATOR_RATE_LIMITED":
+      return t("backendErrors.proxyGeneratorRateLimited");
+    case "PROXY_GENERATOR_UNAVAILABLE":
+      return t("backendErrors.proxyGeneratorUnavailable", {
+        detail: parsed.params?.detail ?? "",
+      });
+    case "PROXY_GENERATOR_REJECTED":
+      return t("backendErrors.proxyGeneratorRejected", {
         detail: parsed.params?.detail ?? "",
       });
     case "PROXY_SAVE_FAILED":

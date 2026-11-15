@@ -931,6 +931,10 @@
       "empty": "Không tìm thấy hồ sơ",
       "save": "Lưu",
       "saved": "Số hồ sơ đã thay đổi: {{count}}"
+    },
+    "note": {
+      "label": "Ghi chú",
+      "placeholder": "Proxy dùng để làm gì"
     }
   },
   "groups": {
@@ -3240,7 +3244,15 @@
     "profileTasksSaveFailed": "Không lưu được công việc: {{detail}}",
     "profilesExportPathInvalid": "Hãy chọn tệp có đuôi .csv.",
     "profilesExportTooLarge": "Bản xuất quá lớn để lưu.",
-    "profilesExportFailed": "Không ghi được tệp xuất: {{detail}}"
+    "profilesExportFailed": "Không ghi được tệp xuất: {{detail}}",
+    "proxyGeneratorNoKey": "Hãy nhập khóa của trình tạo proxy trước.",
+    "proxyGeneratorKeyInvalid": "Trình tạo proxy không chấp nhận khóa và bí mật. Hãy kiểm tra trong bot (/keys).",
+    "proxyGeneratorClockSkew": "Đồng hồ máy này lệch hơn một phút nên trình tạo đã từ chối yêu cầu. Hãy đặt giờ tự động rồi thử lại.",
+    "proxyGeneratorLimit": "Bạn đã có số proxy đang hoạt động tối đa mà trình tạo cho phép. Hãy xóa bớt trong Owl hoặc trong bot.",
+    "proxyGeneratorPoolExhausted": "Trình tạo proxy đã hết cổng trống. Hãy báo quản trị viên của nó.",
+    "proxyGeneratorRateLimited": "Quá nhiều yêu cầu tới trình tạo proxy. Hãy đợi một phút rồi thử lại.",
+    "proxyGeneratorUnavailable": "Không kết nối được trình tạo proxy: {{detail}}",
+    "proxyGeneratorRejected": "Trình tạo proxy đã từ chối yêu cầu: {{detail}}"
   },
   "rail": {
     "profiles": "Profile",
@@ -5362,6 +5374,68 @@
       "engine": "Công cụ",
       "created": "Ngày tạo",
       "lastLaunched": "Lần chạy cuối"
+    }
+  },
+  "proxyGenerator": {
+    "open": "Tạo",
+    "pickerItem": "Tạo proxy",
+    "title": "Tạo proxy",
+    "description": "Proxy mới từ trình tạo proxy của nhóm. Chúng được thêm vào Network và kiểm tra ngay.",
+    "generate": "Tạo",
+    "count": "Số lượng (1–{{max}})",
+    "name": "Tên",
+    "namePlaceholder": "Để trống: host:port",
+    "namePlaceholderBatch": "kraken → kraken_1, kraken_2…",
+    "protocol": "Giao thức",
+    "releaseFailed": "Không thể giải phóng proxy đã xóa trong trình tạo. Cổng của nó vẫn bị chiếm ở đó cho đến khi hết hạn hoặc bị xóa trong bot.",
+    "countries": {
+      "label": "Quốc gia đầu ra",
+      "modes": {
+        "any": "Tất cả",
+        "only": "Chỉ",
+        "exclude": "Trừ"
+      },
+      "more": "Thêm",
+      "search": "Tìm quốc gia",
+      "notFound": "Không tìm thấy quốc gia"
+    },
+    "ttl": {
+      "label": "Thời hạn",
+      "forever": "Vĩnh viễn",
+      "custom": "Tùy chỉnh",
+      "hours": "{{count}} giờ",
+      "days": "{{count}} ngày",
+      "amount": "Số lượng",
+      "unit": "Đơn vị",
+      "units": {
+        "minutes": "Phút",
+        "hours": "Giờ",
+        "days": "Ngày"
+      },
+      "hint": "Khi hết thời hạn, trình tạo sẽ xóa proxy; Owl hiển thị ngày ở cột Expires."
+    },
+    "key": {
+      "description": "Nhập khóa và bí mật mà bot của trình tạo cấp qua /keys.",
+      "hint": "Gửi /keys cho bot @proxyhubbbbot và tạo một khóa. Bí mật chỉ hiện một lần; Owl lưu nó dạng mã hóa trên thiết bị này.",
+      "current": "Khóa đã lưu: {{hint}}",
+      "keyLabel": "Khóa",
+      "secretLabel": "Bí mật",
+      "save": "Lưu khóa",
+      "forget": "Quên khóa",
+      "change": "Đổi khóa"
+    },
+    "errors": {
+      "count": "Nhập số proxy, từ 1 đến {{max}}.",
+      "countries": "Chọn ít nhất một quốc gia.",
+      "ttl": "Thời hạn: số nguyên, từ 5 phút đến 30 ngày.",
+      "textTooLong": "Tên và ghi chú: tối đa 120 ký tự."
+    },
+    "done": {
+      "toast": "Đã tạo proxy: {{count}}",
+      "copied": "Đã sao chép proxy",
+      "copyAll": "Sao chép tất cả",
+      "more": "Tạo thêm",
+      "finish": "Xong"
     }
   }
 }

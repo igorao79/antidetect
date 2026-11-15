@@ -147,6 +147,25 @@ Fork-specific rules:
   The proxy form's "Quick fill" field (and a paste into its other fields) spreads one proxy
   line over the form: `user:pass@host:port`, `host:port:user:pass`, a URL or a share link,
   through `parse_txt_proxies`; a line without a scheme keeps the type the form has.
+- Proxy generator (`proxy_generator/`, `proxy-generator-dialog.tsx` with its key step, fields
+  and country picker, `src/lib/proxy-generator{,-form}.ts`): the team's own `proxygenerator`
+  service (bot @proxyhubbbbot, signed API at `https://telemanager.online/proxygen/api/v1`, its
+  contract in that repository's `docs/api.md`) as a source of stored proxies. "Generate" on the
+  Network page and "Generate proxy" in every proxy picker (create dialog, table cell, bulk
+  assign, profile details, Quick profile; a picker gets one proxy and assigns it) ask once for
+  the key pair the bot's `/keys` gives (`pgk_…` and its secret, both needed: the secret signs);
+  it is sealed with the vault key in `proxy-generator/credentials`, device only. Requests are
+  signed as scheme v2: hex HMAC-SHA256 over the canonical JSON of `{v: 2, method, path, query,
+  body}` (keys sorted at every level, `_timestamp` in ms in a GET's query or the body, path
+  without the `/proxygen` prefix); the unit test holds a signature the service's own
+  `signPayload` made. A generated proxy is an ordinary stored proxy (SOCKS5 or HTTP, the port
+  takes both) with the generator's name (batches `name_1…`), note, `expires_at` and
+  `generator_id`. Erasing it for good releases its port there (`release_later`: a permanent
+  delete, "Delete forever", emptying or expiry of the trash, "Delete at once"); moving it to the
+  trash does not, since a restore must still work. A failed release is logged and announced
+  (`proxy-generator-release-failed`, a toast). Debug builds take `OWL_PROXYGEN_URL`, which the
+  E2E stand-in in `e2e/tests/proxy-generator.test.mjs` uses. Every stored proxy has a `note`
+  (synced; proxy form, a grey line under the name on Network, row search).
 - Profile table conveniences (fork): pinned profiles stay on top (per device, `localStorage`
   `owl.pinnedProfiles`, `use-pinned-profiles.ts`) with a Pinned filter; "Check proxies" checks
   the selection's proxies without launching (`src/lib/bulk-proxy-check.ts`); a profile can be
@@ -364,13 +383,14 @@ Fork-specific rules:
   `profile/{after_exit,camoufox}.rs`, `ssh_upstream.rs`,
   `cookie_robot.rs`, `dropped_files.rs`, `octo_compat_api.rs`, `synchronizer_bidi.rs`,
   `profile_tasks.rs`, `profiles_export.rs`, `proxy_replace.rs`, `profile/{quick,clone_copies}.rs`,
+  `proxy_generator/`,
   `workspace.rs`,
   `workspace_deploy.rs` (with `workspace_deploy.sh` and `build_owl_server.rs`),
   `workspace_servers.rs`, `workspace_api.rs`, and on the
   frontend `camoufox-config-dialog.tsx`, `shared-camoufox-config-form.tsx`,
   `cookie-robot-dialog.tsx`, `interface-language-field.tsx`,
   `workspace-page.tsx`, `workspace-share-dialog.tsx`, `workspace-deploy-form.tsx`,
-  `workspace-server-list.tsx`, `workspace-api-panel.tsx`; on the server `donut-sync/src/storage/`,
+  `workspace-server-list.tsx`, `workspace-api-panel.tsx`, `proxy-generator-*.tsx`; on the server `donut-sync/src/storage/`,
   `donut-sync/src/workspace/` and `donut-sync/src/cli.ts`.
 - Keep the AGPL license and upstream copyright notices.
 - Commit only when the user asks.
@@ -476,6 +496,7 @@ donutbrowser/
 │   │   ├── ssh_upstream.rs          # SSH proxies: shared session, direct-tcpip channels (fork)
 │   │   ├── profile_dns.rs           # Per-profile DNS server: DoH/DoT/TCP resolver the worker runs through the profile's own route
 │   │   ├── proxy_storage.rs         # Proxy config persistence (JSON files)
+│   │   ├── proxy_generator/         # The team's proxy generator: signed client, sealed key, generate/release (fork)
 │   │   ├── api_server.rs            # REST API (utoipa + axum)
 │   │   ├── mcp_server.rs            # MCP tool engine, served over the remote bridge
 │   │   ├── mcp_toolsets.rs          # Optional MCP toolsets: which tools a client lists (core + opt-in sets)

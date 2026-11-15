@@ -931,6 +931,10 @@
       "empty": "プロファイルが見つかりません",
       "save": "保存",
       "saved": "変更したプロファイル: {{count}}"
+    },
+    "note": {
+      "label": "メモ",
+      "placeholder": "このプロキシの用途"
     }
   },
   "groups": {
@@ -3240,7 +3244,15 @@
     "profileTasksSaveFailed": "タスクを保存できませんでした: {{detail}}",
     "profilesExportPathInvalid": "拡張子が .csv のファイルを選んでください。",
     "profilesExportTooLarge": "エクスポートが大きすぎて保存できません。",
-    "profilesExportFailed": "エクスポートファイルを書き込めませんでした: {{detail}}"
+    "profilesExportFailed": "エクスポートファイルを書き込めませんでした: {{detail}}",
+    "proxyGeneratorNoKey": "先にプロキシジェネレーターのキーを入力してください。",
+    "proxyGeneratorKeyInvalid": "プロキシジェネレーターがキーとシークレットを受け付けませんでした。ボット (/keys) で確認してください。",
+    "proxyGeneratorClockSkew": "このコンピューターの時計が 1 分以上ずれているため、ジェネレーターがリクエストを拒否しました。時刻を自動設定にして再試行してください。",
+    "proxyGeneratorLimit": "ジェネレーターが許可する稼働中プロキシの上限に達しています。Owl かボットでいくつか削除してください。",
+    "proxyGeneratorPoolExhausted": "プロキシジェネレーターの空きポートがなくなりました。管理者に連絡してください。",
+    "proxyGeneratorRateLimited": "プロキシジェネレーターへのリクエストが多すぎます。1 分待ってから再試行してください。",
+    "proxyGeneratorUnavailable": "プロキシジェネレーターを利用できません: {{detail}}",
+    "proxyGeneratorRejected": "プロキシジェネレーターがリクエストを拒否しました: {{detail}}"
   },
   "rail": {
     "profiles": "プロファイル",
@@ -5362,6 +5374,68 @@
       "engine": "エンジン",
       "created": "作成日",
       "lastLaunched": "最終起動"
+    }
+  },
+  "proxyGenerator": {
+    "open": "生成",
+    "pickerItem": "プロキシを生成",
+    "title": "プロキシを生成",
+    "description": "チームのプロキシジェネレーターから新しいプロキシを取得します。Network に追加され、すぐにチェックされます。",
+    "generate": "生成",
+    "count": "個数 (1–{{max}})",
+    "name": "名前",
+    "namePlaceholder": "空欄: host:port",
+    "namePlaceholderBatch": "kraken → kraken_1, kraken_2…",
+    "protocol": "プロトコル",
+    "releaseFailed": "削除したプロキシをジェネレーターで解放できませんでした。そのポートは期限切れになるか、ボットで削除されるまで使用中のままです。",
+    "countries": {
+      "label": "出口の国",
+      "modes": {
+        "any": "すべて",
+        "only": "指定のみ",
+        "exclude": "指定以外"
+      },
+      "more": "その他",
+      "search": "国を検索",
+      "notFound": "国が見つかりません"
+    },
+    "ttl": {
+      "label": "有効期間",
+      "forever": "無期限",
+      "custom": "カスタム",
+      "hours": "{{count}} 時間",
+      "days": "{{count}} 日",
+      "amount": "数値",
+      "unit": "単位",
+      "units": {
+        "minutes": "分",
+        "hours": "時間",
+        "days": "日"
+      },
+      "hint": "期間が終わるとジェネレーターがプロキシを削除します。Owl は日付を Expires 列に表示します。"
+    },
+    "key": {
+      "description": "ジェネレーターのボットが /keys で発行するキーとシークレットを入力してください。",
+      "hint": "ボット @proxyhubbbbot に /keys を送ってキーを作成してください。シークレットは一度だけ表示されます。Owl はこのデバイスに暗号化して保存します。",
+      "current": "保存済みのキー: {{hint}}",
+      "keyLabel": "キー",
+      "secretLabel": "シークレット",
+      "save": "キーを保存",
+      "forget": "キーを削除",
+      "change": "キーを変更"
+    },
+    "errors": {
+      "count": "プロキシの個数を 1〜{{max}} で入力してください。",
+      "countries": "国を 1 つ以上選んでください。",
+      "ttl": "有効期間は 5 分〜30 日の整数で指定してください。",
+      "textTooLong": "名前とメモは 120 文字以内です。"
+    },
+    "done": {
+      "toast": "生成したプロキシ: {{count}}",
+      "copied": "プロキシをコピーしました",
+      "copyAll": "すべてコピー",
+      "more": "さらに生成",
+      "finish": "完了"
     }
   }
 }

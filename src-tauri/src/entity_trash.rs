@@ -311,7 +311,20 @@ fn purge_entry(root: &Path, kind: EntityKind, id: &str) -> Result<(), String> {
   if !dir.is_dir() {
     return Err(crate::backend_error("TRASH_ENTRY_NOT_FOUND"));
   }
-  erase_dir(&dir)
+  let entry = read_entry(root, kind, id).ok();
+  erase_dir(&dir)?;
+  if let Some(entry) = entry {
+    release_erased(&entry);
+  }
+  Ok(())
+}
+
+/// What an erased entity held elsewhere goes with it (fork: a generated
+/// proxy's port in the proxy generator).
+fn release_erased(entry: &TrashEntry) {
+  if entry.kind == EntityKind::Proxy {
+    crate::proxy_generator::release_stored_json(&entry.entity);
+  }
 }
 
 fn purge_all_in(root: &Path) -> Result<usize, String> {
@@ -579,6 +592,7 @@ fn trash_now(
   })?;
   if retention_days == 0 {
     erase_dir(&dir)?;
+    release_erased(&entry);
   }
   Ok(entry)
 }

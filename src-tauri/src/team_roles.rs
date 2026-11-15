@@ -69,6 +69,7 @@ const TEAM_DATA_COMMANDS: &[&str] = &[
   "update_stored_proxy",
   "replace_proxy_in_profiles",
   "delete_stored_proxy",
+  "proxy_generator_generate",
   "import_proxies_json",
   "import_proxies_from_parsed",
   "set_proxy_rotation_url",

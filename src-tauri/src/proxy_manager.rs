@@ -299,6 +299,14 @@ pub struct StoredProxy {
   /// enforced at launch.
   #[serde(default)]
   pub expires_at: Option<u64>,
+  /// What the person wrote about the proxy (fork): shown under its name,
+  /// searched, synced with the rest of it.
+  #[serde(default)]
+  pub note: Option<String>,
+  /// The proxy's id in the proxy generator it came from (fork,
+  /// `proxy_generator.rs`); erasing the proxy releases it there.
+  #[serde(default)]
+  pub generator_id: Option<String>,
 }
 
 /// Current unix time in whole seconds. Used to stamp `updated_at` on edits.
@@ -592,6 +600,8 @@ impl StoredProxy {
       dynamic_proxy_format: None,
       rotation_url: None,
       expires_at: None,
+      note: None,
+      generator_id: None,
     }
   }
 
@@ -619,6 +629,18 @@ impl StoredProxy {
       return false;
     }
     self.expires_at = expires_at;
+    self.updated_at = Some(now_secs());
+    true
+  }
+
+  /// Sets the note (blank clears it), bumping `updated_at` only when it
+  /// changes. Returns whether it changed.
+  pub fn set_note(&mut self, note: Option<String>) -> bool {
+    let note = note.map(|n| n.trim().to_string()).filter(|n| !n.is_empty());
+    if self.note == note {
+      return false;
+    }
+    self.note = note;
     self.updated_at = Some(now_secs());
     true
   }
@@ -1007,6 +1029,8 @@ impl ProxyManager {
         dynamic_proxy_format: None,
         rotation_url: None,
         expires_at: None,
+        note: None,
+        generator_id: None,
       };
       stored_proxies.insert(CLOUD_PROXY_ID.to_string(), cloud_proxy.clone());
       drop(stored_proxies);
@@ -1202,6 +1226,8 @@ impl ProxyManager {
       dynamic_proxy_format: None,
       rotation_url: None,
       expires_at: None,
+      note: None,
+      generator_id: None,
     };
 
     {
@@ -1449,6 +1475,51 @@ impl ProxyManager {
     self.commit_single_field_edit(updated)
   }
 
+  /// Applies a fork field edit (`edit` says whether anything changed) to a
+  /// proxy the person owns. Cloud proxies are refused.
+  fn edit_own_proxy(
+    &self,
+    proxy_id: &str,
+    edit: impl FnOnce(&mut StoredProxy) -> bool,
+  ) -> Result<StoredProxy, String> {
+    let updated = {
+      let mut stored_proxies = self.stored_proxies.lock().unwrap();
+      let proxy = stored_proxies
+        .get_mut(proxy_id)
+        .ok_or_else(|| crate::backend_error("PROXY_NOT_FOUND"))?;
+      if proxy.is_cloud_managed || proxy.is_cloud_derived {
+        return Err(crate::backend_error("CANNOT_MODIFY_CLOUD_MANAGED_PROXY"));
+      }
+      if !edit(proxy) {
+        return Ok(proxy.clone());
+      }
+      proxy.clone()
+    };
+    self.commit_single_field_edit(updated)
+  }
+
+  /// Set or clear a proxy's note (fork).
+  pub fn set_note(&self, proxy_id: &str, note: Option<String>) -> Result<StoredProxy, String> {
+    self.edit_own_proxy(proxy_id, |proxy| proxy.set_note(note))
+  }
+
+  /// Record which proxy generator entry a proxy came from (fork,
+  /// `proxy_generator.rs`).
+  pub fn set_generator_id(
+    &self,
+    proxy_id: &str,
+    generator_id: String,
+  ) -> Result<StoredProxy, String> {
+    self.edit_own_proxy(proxy_id, |proxy| {
+      if proxy.generator_id.as_deref() == Some(generator_id.as_str()) {
+        return false;
+      }
+      proxy.generator_id = Some(generator_id);
+      proxy.updated_at = Some(now_secs());
+      true
+    })
+  }
+
   /// Set or clear a proxy's "change IP" link. Cloud proxies are refused:
   /// the cloud owns their configuration.
   pub fn set_rotation_url(
@@ -1536,15 +1607,18 @@ impl ProxyManager {
 
     crate::entity_trash::refuse_in_use(crate::entity_trash::EntityKind::Proxy, proxy_id)?;
 
-    {
+    let removed = {
       let mut stored_proxies = self.stored_proxies.lock().unwrap();
-      if stored_proxies.remove(proxy_id).is_none() {
-        return Err(format!("Proxy with ID '{proxy_id}' not found"));
-      }
-    }
+      stored_proxies
+        .remove(proxy_id)
+        .ok_or_else(|| format!("Proxy with ID '{proxy_id}' not found"))?
+    };
 
     if let Err(e) = self.delete_proxy_file(proxy_id) {
       log::error!("Proxy file delete failed proxy={proxy_id} err=\"{e}\"");
+    }
+    if let Some(generator_id) = removed.generator_id {
+      crate::proxy_generator::release_later(removed.id, generator_id);
     }
 
     // If sync was enabled, also delete from S3
@@ -4079,6 +4153,8 @@ mod route_check_tests {
       dynamic_proxy_format: None,
       rotation_url: None,
       expires_at: None,
+      note: None,
+      generator_id: None,
     }
   }
 
@@ -5959,6 +6035,8 @@ mod tests {
       dynamic_proxy_format: None,
       rotation_url: None,
       expires_at: None,
+      note: None,
+      generator_id: None,
     };
 
     // Before migration
@@ -5987,6 +6065,24 @@ mod tests {
     proxy.sync_enabled = false;
     proxy.updated_at = Some(1);
     proxy
+  }
+
+  #[test]
+  fn a_note_is_trimmed_a_blank_one_clears_it_and_only_a_change_bumps() {
+    let mut proxy = expiry_test_proxy("note-struct");
+    assert!(proxy.set_note(Some("  for reg  ".to_string())));
+    assert_eq!(proxy.note.as_deref(), Some("for reg"));
+    assert!(proxy.updated_at.unwrap() > 1);
+    proxy.updated_at = Some(1);
+    assert!(!proxy.set_note(Some("for reg".to_string())));
+    assert_eq!(proxy.updated_at, Some(1));
+    assert!(proxy.set_note(Some("   ".to_string())));
+    assert_eq!(proxy.note, None);
+    let legacy: StoredProxy = serde_json::from_str(
+      r#"{"id":"x","name":"n","proxy_settings":{"proxy_type":"http","host":"h","port":1}}"#,
+    )
+    .unwrap();
+    assert_eq!((legacy.note, legacy.generator_id), (None, None));
   }
 
   #[test]

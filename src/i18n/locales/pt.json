@@ -938,6 +938,10 @@
       "empty": "Nenhum perfil encontrado",
       "save": "Salvar",
       "saved": "Perfis alterados: {{count}}"
+    },
+    "note": {
+      "label": "Nota",
+      "placeholder": "Para que serve o proxy"
     }
   },
   "groups": {
@@ -3262,7 +3266,15 @@
     "profileTasksSaveFailed": "Não foi possível salvar as tarefas: {{detail}}",
     "profilesExportPathInvalid": "Escolha um arquivo com a extensão .csv.",
     "profilesExportTooLarge": "A exportação é grande demais para ser salva.",
-    "profilesExportFailed": "Não foi possível gravar o arquivo de exportação: {{detail}}"
+    "profilesExportFailed": "Não foi possível gravar o arquivo de exportação: {{detail}}",
+    "proxyGeneratorNoKey": "Informe primeiro a chave do gerador de proxies.",
+    "proxyGeneratorKeyInvalid": "O gerador de proxies não aceitou a chave e o segredo. Confira-os no bot (/keys).",
+    "proxyGeneratorClockSkew": "O relógio deste computador está mais de um minuto fora, por isso o gerador recusou a solicitação. Ajuste a hora automaticamente e tente de novo.",
+    "proxyGeneratorLimit": "Você já tem o máximo de proxies ativos que o gerador permite. Exclua alguns no Owl ou no bot.",
+    "proxyGeneratorPoolExhausted": "O gerador de proxies não tem mais portas livres. Avise o administrador dele.",
+    "proxyGeneratorRateLimited": "Solicitações demais ao gerador de proxies. Aguarde um minuto e tente de novo.",
+    "proxyGeneratorUnavailable": "O gerador de proxies está indisponível: {{detail}}",
+    "proxyGeneratorRejected": "O gerador de proxies recusou a solicitação: {{detail}}"
   },
   "rail": {
     "profiles": "Perfis",
@@ -5416,6 +5428,68 @@
       "engine": "Motor",
       "created": "Criado",
       "lastLaunched": "Último início"
+    }
+  },
+  "proxyGenerator": {
+    "open": "Gerar",
+    "pickerItem": "Gerar proxy",
+    "title": "Gerar proxies",
+    "description": "Proxies novos do gerador de proxies da equipe. Eles são adicionados a Network e verificados na hora.",
+    "generate": "Gerar",
+    "count": "Quantos (1–{{max}})",
+    "name": "Nome",
+    "namePlaceholder": "Vazio: host:port",
+    "namePlaceholderBatch": "kraken → kraken_1, kraken_2…",
+    "protocol": "Protocolo",
+    "releaseFailed": "Não foi possível liberar no gerador um proxy excluído. A porta dele continua ocupada lá até expirar ou ser excluída no bot.",
+    "countries": {
+      "label": "Países de saída",
+      "modes": {
+        "any": "Todos",
+        "only": "Somente",
+        "exclude": "Todos exceto"
+      },
+      "more": "Mais",
+      "search": "Buscar país",
+      "notFound": "Nenhum país encontrado"
+    },
+    "ttl": {
+      "label": "Validade",
+      "forever": "Para sempre",
+      "custom": "Personalizada",
+      "hours": "{{count}} h",
+      "days": "{{count}} d",
+      "amount": "Quantidade",
+      "unit": "Unidade",
+      "units": {
+        "minutes": "Minutos",
+        "hours": "Horas",
+        "days": "Dias"
+      },
+      "hint": "Quando a validade acaba, o gerador exclui o proxy; o Owl mostra a data em Expires."
+    },
+    "key": {
+      "description": "Informe a chave e o segredo que o bot do gerador fornece com /keys.",
+      "hint": "Envie /keys ao bot @proxyhubbbbot e crie uma chave. O segredo aparece uma vez; o Owl o guarda criptografado neste dispositivo.",
+      "current": "Chave salva: {{hint}}",
+      "keyLabel": "Chave",
+      "secretLabel": "Segredo",
+      "save": "Salvar chave",
+      "forget": "Esquecer chave",
+      "change": "Trocar chave"
+    },
+    "errors": {
+      "count": "Informe quantos proxies, de 1 a {{max}}.",
+      "countries": "Escolha pelo menos um país.",
+      "ttl": "Validade: um número inteiro, de 5 minutos a 30 dias.",
+      "textTooLong": "Nome e nota: até 120 caracteres."
+    },
+    "done": {
+      "toast": "Proxies gerados: {{count}}",
+      "copied": "Proxies copiados",
+      "copyAll": "Copiar todos",
+      "more": "Gerar mais",
+      "finish": "Concluído"
     }
   }
 }

@@ -92,6 +92,7 @@ import { useProfileStatuses } from "@/hooks/use-profile-statuses";
 import { useProfileTableFilters } from "@/hooks/use-profile-table-filters";
 import { useProfileTaskReminders } from "@/hooks/use-profile-task-reminders";
 import { useProxyEvents } from "@/hooks/use-proxy-events";
+import { useProxyGeneratorReleaseNotices } from "@/hooks/use-proxy-generator-release-notices";
 import { useProxyOutages } from "@/hooks/use-proxy-outages";
 import { useQuickProfile } from "@/hooks/use-quick-profile";
 import { useSyncSessions } from "@/hooks/use-sync-session";
@@ -211,6 +212,7 @@ export default function Home() {
   } = useProfileEvents();
   useLaunchNotices(profiles);
   const proxyOutages = useProxyOutages(profiles, runningProfiles);
+  useProxyGeneratorReleaseNotices();
   useProfileTaskReminders(profiles);
 
   // First-run product tour: coach marks on the real controls.

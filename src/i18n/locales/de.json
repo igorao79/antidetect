@@ -931,6 +931,10 @@
       "empty": "Keine Profile gefunden",
       "save": "Speichern",
       "saved": "Geänderte Profile: {{count}}"
+    },
+    "note": {
+      "label": "Notiz",
+      "placeholder": "Wofür der Proxy ist"
     }
   },
   "groups": {
@@ -3240,7 +3244,15 @@
     "profileTasksSaveFailed": "Die Aufgaben konnten nicht gespeichert werden: {{detail}}",
     "profilesExportPathInvalid": "Wähle eine Datei mit der Endung .csv.",
     "profilesExportTooLarge": "Der Export ist zu groß zum Speichern.",
-    "profilesExportFailed": "Die Exportdatei konnte nicht geschrieben werden: {{detail}}"
+    "profilesExportFailed": "Die Exportdatei konnte nicht geschrieben werden: {{detail}}",
+    "proxyGeneratorNoKey": "Gib zuerst den Schlüssel des Proxy-Generators ein.",
+    "proxyGeneratorKeyInvalid": "Der Proxy-Generator hat Schlüssel und Geheimnis nicht akzeptiert. Prüfe sie im Bot (/keys).",
+    "proxyGeneratorClockSkew": "Die Uhr dieses Computers weicht um mehr als eine Minute ab, daher hat der Generator die Anfrage abgelehnt. Stelle die Zeit automatisch ein und versuche es erneut.",
+    "proxyGeneratorLimit": "Du hast bereits so viele aktive Proxys, wie der Generator erlaubt. Lösche einige in Owl oder im Bot.",
+    "proxyGeneratorPoolExhausted": "Der Proxy-Generator hat keine freien Ports mehr. Sag seinem Admin Bescheid.",
+    "proxyGeneratorRateLimited": "Zu viele Anfragen an den Proxy-Generator. Warte eine Minute und versuche es erneut.",
+    "proxyGeneratorUnavailable": "Der Proxy-Generator ist nicht erreichbar: {{detail}}",
+    "proxyGeneratorRejected": "Der Proxy-Generator hat die Anfrage abgelehnt: {{detail}}"
   },
   "rail": {
     "profiles": "Profile",
@@ -5362,6 +5374,68 @@
       "engine": "Engine",
       "created": "Erstellt",
       "lastLaunched": "Zuletzt gestartet"
+    }
+  },
+  "proxyGenerator": {
+    "open": "Generieren",
+    "pickerItem": "Proxy generieren",
+    "title": "Proxys generieren",
+    "description": "Neue Proxys aus dem Proxy-Generator des Teams. Sie erscheinen unter Network und werden sofort geprüft.",
+    "generate": "Generieren",
+    "count": "Anzahl (1–{{max}})",
+    "name": "Name",
+    "namePlaceholder": "Leer: host:port",
+    "namePlaceholderBatch": "kraken → kraken_1, kraken_2…",
+    "protocol": "Protokoll",
+    "releaseFailed": "Ein gelöschter Proxy konnte im Proxy-Generator nicht freigegeben werden. Sein Port bleibt dort belegt, bis er abläuft oder im Bot gelöscht wird.",
+    "countries": {
+      "label": "Ausgangsländer",
+      "modes": {
+        "any": "Alle",
+        "only": "Nur",
+        "exclude": "Alle außer"
+      },
+      "more": "Mehr",
+      "search": "Land suchen",
+      "notFound": "Kein Land gefunden"
+    },
+    "ttl": {
+      "label": "Laufzeit",
+      "forever": "Unbegrenzt",
+      "custom": "Eigene",
+      "hours": "{{count}} Std.",
+      "days": "{{count}} T.",
+      "amount": "Anzahl",
+      "unit": "Einheit",
+      "units": {
+        "minutes": "Minuten",
+        "hours": "Stunden",
+        "days": "Tage"
+      },
+      "hint": "Endet die Laufzeit, löscht der Generator den Proxy; Owl zeigt das Datum unter Expires."
+    },
+    "key": {
+      "description": "Gib den Schlüssel und das Geheimnis ein, die der Bot des Generators mit /keys ausgibt.",
+      "hint": "Sende dem Bot @proxyhubbbbot /keys und erstelle einen Schlüssel. Das Geheimnis wird einmal angezeigt; Owl bewahrt es verschlüsselt auf diesem Gerät auf.",
+      "current": "Gespeicherter Schlüssel: {{hint}}",
+      "keyLabel": "Schlüssel",
+      "secretLabel": "Geheimnis",
+      "save": "Schlüssel speichern",
+      "forget": "Schlüssel vergessen",
+      "change": "Schlüssel ändern"
+    },
+    "errors": {
+      "count": "Gib die Anzahl der Proxys an, 1 bis {{max}}.",
+      "countries": "Wähle mindestens ein Land.",
+      "ttl": "Laufzeit: eine ganze Zahl, von 5 Minuten bis 30 Tage.",
+      "textTooLong": "Name und Notiz: bis zu 120 Zeichen."
+    },
+    "done": {
+      "toast": "Proxys generiert: {{count}}",
+      "copied": "Proxys kopiert",
+      "copyAll": "Alle kopieren",
+      "more": "Weitere generieren",
+      "finish": "Fertig"
     }
   }
 }

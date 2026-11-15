@@ -72,6 +72,7 @@ import { ProfileMetadataCard } from "@/components/profile-metadata-card";
 import { ProfileTasksSection } from "@/components/profile-tasks-section";
 import { ExportProfileSection } from "@/components/profile-transfer";
 import { ProxyFormDialog } from "@/components/proxy-form-dialog";
+import { ProxyGeneratorDialog } from "@/components/proxy-generator-dialog";
 import { ProxyPicker } from "@/components/proxy-picker";
 import { RestorePoints } from "@/components/restore-points";
 import { SharedFingerprintConfigForm } from "@/components/shared-fingerprint-config-form";
@@ -2263,6 +2264,7 @@ function NetworkSectionInline({
   });
 
   const [isProxyFormOpen, setIsProxyFormOpen] = React.useState(false);
+  const [isGeneratorOpen, setIsGeneratorOpen] = React.useState(false);
 
   const onProxyChange = async (value: string) => {
     if (value === NEW_PROXY_VALUE) {
@@ -2343,6 +2345,7 @@ function NetworkSectionInline({
             void onProxyChange(id ?? "__none__");
           }}
           onAdd={() => setIsProxyFormOpen(true)}
+          onGenerate={() => setIsGeneratorOpen(true)}
         />
         {assignedProxy && (
           <Button
@@ -2365,6 +2368,16 @@ function NetworkSectionInline({
           }}
           onCreated={(proxy) => {
             void onProxyChange(proxy.id);
+          }}
+        />
+        <ProxyGeneratorDialog
+          isOpen={isGeneratorOpen}
+          single
+          onClose={() => {
+            setIsGeneratorOpen(false);
+          }}
+          onGenerated={([proxy]) => {
+            if (proxy) void onProxyChange(proxy.id);
           }}
         />
         {rotatableProxy && (

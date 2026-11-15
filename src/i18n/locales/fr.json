@@ -938,6 +938,10 @@
       "empty": "Aucun profil trouvé",
       "save": "Enregistrer",
       "saved": "Profils modifiés : {{count}}"
+    },
+    "note": {
+      "label": "Note",
+      "placeholder": "À quoi sert ce proxy"
     }
   },
   "groups": {
@@ -3262,7 +3266,15 @@
     "profileTasksSaveFailed": "Impossible d'enregistrer les tâches : {{detail}}",
     "profilesExportPathInvalid": "Choisissez un fichier avec l'extension .csv.",
     "profilesExportTooLarge": "L'export est trop volumineux pour être enregistré.",
-    "profilesExportFailed": "Impossible d'écrire le fichier d'export : {{detail}}"
+    "profilesExportFailed": "Impossible d'écrire le fichier d'export : {{detail}}",
+    "proxyGeneratorNoKey": "Saisissez d'abord la clé du générateur de proxys.",
+    "proxyGeneratorKeyInvalid": "Le générateur de proxys n'a pas accepté la clé et le secret. Vérifiez-les dans le bot (/keys).",
+    "proxyGeneratorClockSkew": "L'horloge de cet ordinateur est décalée de plus d'une minute, le générateur a donc refusé la requête. Réglez l'heure automatiquement et réessayez.",
+    "proxyGeneratorLimit": "Vous avez déjà le maximum de proxys actifs autorisé par le générateur. Supprimez-en dans Owl ou dans le bot.",
+    "proxyGeneratorPoolExhausted": "Le générateur de proxys n'a plus de ports libres. Prévenez son administrateur.",
+    "proxyGeneratorRateLimited": "Trop de requêtes vers le générateur de proxys. Attendez une minute et réessayez.",
+    "proxyGeneratorUnavailable": "Le générateur de proxys est indisponible : {{detail}}",
+    "proxyGeneratorRejected": "Le générateur de proxys a refusé la requête : {{detail}}"
   },
   "rail": {
     "profiles": "Profils",
@@ -5416,6 +5428,68 @@
       "engine": "Moteur",
       "created": "Créé",
       "lastLaunched": "Dernier lancement"
+    }
+  },
+  "proxyGenerator": {
+    "open": "Générer",
+    "pickerItem": "Générer un proxy",
+    "title": "Générer des proxys",
+    "description": "De nouveaux proxys issus du générateur de proxys de l'équipe. Ils sont ajoutés à Network et vérifiés aussitôt.",
+    "generate": "Générer",
+    "count": "Combien (1–{{max}})",
+    "name": "Nom",
+    "namePlaceholder": "Vide : host:port",
+    "namePlaceholderBatch": "kraken → kraken_1, kraken_2…",
+    "protocol": "Protocole",
+    "releaseFailed": "Un proxy supprimé n'a pas pu être libéré dans le générateur. Son port y reste pris jusqu'à son expiration ou sa suppression dans le bot.",
+    "countries": {
+      "label": "Pays de sortie",
+      "modes": {
+        "any": "Tous",
+        "only": "Seulement",
+        "exclude": "Tous sauf"
+      },
+      "more": "Plus",
+      "search": "Rechercher un pays",
+      "notFound": "Aucun pays trouvé"
+    },
+    "ttl": {
+      "label": "Durée de vie",
+      "forever": "Illimitée",
+      "custom": "Personnalisée",
+      "hours": "{{count}} h",
+      "days": "{{count}} j",
+      "amount": "Quantité",
+      "unit": "Unité",
+      "units": {
+        "minutes": "Minutes",
+        "hours": "Heures",
+        "days": "Jours"
+      },
+      "hint": "À la fin de la durée, le générateur supprime le proxy ; Owl affiche la date dans Expires."
+    },
+    "key": {
+      "description": "Saisissez la clé et le secret que le bot du générateur donne avec /keys.",
+      "hint": "Envoyez /keys au bot @proxyhubbbbot et créez une clé. Le secret n'est affiché qu'une fois ; Owl le garde chiffré sur cet appareil.",
+      "current": "Clé enregistrée : {{hint}}",
+      "keyLabel": "Clé",
+      "secretLabel": "Secret",
+      "save": "Enregistrer la clé",
+      "forget": "Oublier la clé",
+      "change": "Changer de clé"
+    },
+    "errors": {
+      "count": "Indiquez le nombre de proxys, de 1 à {{max}}.",
+      "countries": "Choisissez au moins un pays.",
+      "ttl": "Durée : un nombre entier, de 5 minutes à 30 jours.",
+      "textTooLong": "Nom et note : 120 caractères au plus."
+    },
+    "done": {
+      "toast": "Proxys générés : {{count}}",
+      "copied": "Proxys copiés",
+      "copyAll": "Tout copier",
+      "more": "En générer d'autres",
+      "finish": "Terminé"
     }
   }
 }

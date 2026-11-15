@@ -220,6 +220,7 @@ mod profile_templates;
 mod profile_totp;
 mod profiles_export;
 mod proxy_distribution;
+mod proxy_generator;
 mod proxy_manager;
 mod proxy_replace;
 mod proxy_rotation;
@@ -556,6 +557,7 @@ async fn create_stored_proxy(
   name: String,
   proxy_settings: Option<crate::browser::ProxySettings>,
   expires_at: Option<u64>,
+  note: Option<String>,
 ) -> Result<crate::proxy_manager::StoredProxy, String> {
   if let Some(settings) = proxy_settings {
     let manager = &crate::proxy_manager::PROXY_MANAGER;
@@ -563,6 +565,10 @@ async fn create_stored_proxy(
       .create_stored_proxy(&app_handle, name, settings)
       .and_then(|proxy| match expires_at {
         Some(_) => manager.set_expires_at(&proxy.id, expires_at),
+        None => Ok(proxy),
+      })
+      .and_then(|proxy| match note {
+        Some(_) => manager.set_note(&proxy.id, note),
         None => Ok(proxy),
       })
       .map_err(|e| crate::coded_failure("PROXY_SAVE_FAILED", e))
@@ -610,6 +616,7 @@ async fn update_stored_proxy(
   proxy_settings: Option<crate::browser::ProxySettings>,
   expires_at: Option<u64>,
   clear_expires_at: Option<bool>,
+  note: Option<String>,
 ) -> Result<crate::proxy_manager::StoredProxy, String> {
   // An omitted date leaves it as it is; `clear_expires_at` removes it.
   let expiry = match (expires_at, clear_expires_at.unwrap_or(false)) {
@@ -622,6 +629,11 @@ async fn update_stored_proxy(
     .update_stored_proxy(&app_handle, &proxy_id, name, proxy_settings)
     .and_then(|proxy| match expiry {
       Some(expires_at) => manager.set_expires_at(&proxy_id, expires_at),
+      None => Ok(proxy),
+    })
+    // An omitted note leaves it as it is; an empty one clears it.
+    .and_then(|proxy| match note {
+      Some(note) => manager.set_note(&proxy_id, Some(note)),
       None => Ok(proxy),
     })
     .map_err(|e| crate::coded_failure("PROXY_SAVE_FAILED", e))
@@ -3797,6 +3809,11 @@ pub fn run_with_builder(
       update_stored_proxy,
       replace_proxy_in_profiles,
       delete_stored_proxy,
+      proxy_generator::proxy_generator_status,
+      proxy_generator::proxy_generator_set_credentials,
+      proxy_generator::proxy_generator_clear_credentials,
+      proxy_generator::proxy_generator_options,
+      proxy_generator::proxy_generator_generate,
       check_proxy_validity,
       get_cached_proxy_check,
       get_proxy_check_history,

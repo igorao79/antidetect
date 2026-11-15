@@ -931,6 +931,10 @@
       "empty": "Profil bulunamadı",
       "save": "Kaydet",
       "saved": "Değiştirilen profil sayısı: {{count}}"
+    },
+    "note": {
+      "label": "Not",
+      "placeholder": "Proxy ne için"
     }
   },
   "groups": {
@@ -3240,7 +3244,15 @@
     "profileTasksSaveFailed": "Görevler kaydedilemedi: {{detail}}",
     "profilesExportPathInvalid": ".csv uzantılı bir dosya seçin.",
     "profilesExportTooLarge": "Dışa aktarım kaydedilemeyecek kadar büyük.",
-    "profilesExportFailed": "Dışa aktarım dosyası yazılamadı: {{detail}}"
+    "profilesExportFailed": "Dışa aktarım dosyası yazılamadı: {{detail}}",
+    "proxyGeneratorNoKey": "Önce proxy oluşturucu anahtarını girin.",
+    "proxyGeneratorKeyInvalid": "Proxy oluşturucu anahtarı ve gizli değeri kabul etmedi. Botta (/keys) kontrol edin.",
+    "proxyGeneratorClockSkew": "Bu bilgisayarın saati bir dakikadan fazla sapmış, bu yüzden oluşturucu isteği reddetti. Saati otomatik ayarlayıp yeniden deneyin.",
+    "proxyGeneratorLimit": "Oluşturucunun izin verdiği en fazla etkin proxy sayısına ulaştınız. Owl'da ya da botta bazılarını silin.",
+    "proxyGeneratorPoolExhausted": "Proxy oluşturucuda boş port kalmadı. Yöneticisine bildirin.",
+    "proxyGeneratorRateLimited": "Proxy oluşturucuya çok fazla istek gitti. Bir dakika bekleyip yeniden deneyin.",
+    "proxyGeneratorUnavailable": "Proxy oluşturucuya ulaşılamıyor: {{detail}}",
+    "proxyGeneratorRejected": "Proxy oluşturucu isteği reddetti: {{detail}}"
   },
   "rail": {
     "profiles": "Profiller",
@@ -5362,6 +5374,68 @@
       "engine": "Motor",
       "created": "Oluşturulma",
       "lastLaunched": "Son başlatma"
+    }
+  },
+  "proxyGenerator": {
+    "open": "Oluştur",
+    "pickerItem": "Proxy oluştur",
+    "title": "Proxy oluştur",
+    "description": "Ekibin proxy oluşturucusundan yeni proxy'ler. Network'e eklenir ve hemen denetlenir.",
+    "generate": "Oluştur",
+    "count": "Kaç tane (1–{{max}})",
+    "name": "Ad",
+    "namePlaceholder": "Boş: host:port",
+    "namePlaceholderBatch": "kraken → kraken_1, kraken_2…",
+    "protocol": "Protokol",
+    "releaseFailed": "Silinen bir proxy oluşturucuda serbest bırakılamadı. Portu, süresi dolana ya da botta silinene kadar orada dolu kalır.",
+    "countries": {
+      "label": "Çıkış ülkeleri",
+      "modes": {
+        "any": "Tümü",
+        "only": "Yalnızca",
+        "exclude": "Hariç"
+      },
+      "more": "Daha fazla",
+      "search": "Ülke ara",
+      "notFound": "Ülke bulunamadı"
+    },
+    "ttl": {
+      "label": "Ömür",
+      "forever": "Süresiz",
+      "custom": "Özel",
+      "hours": "{{count}} sa",
+      "days": "{{count}} g",
+      "amount": "Miktar",
+      "unit": "Birim",
+      "units": {
+        "minutes": "Dakika",
+        "hours": "Saat",
+        "days": "Gün"
+      },
+      "hint": "Ömür bitince oluşturucu proxy'yi siler; Owl tarihi Expires sütununda gösterir."
+    },
+    "key": {
+      "description": "Oluşturucu botunun /keys ile verdiği anahtarı ve gizli değeri girin.",
+      "hint": "@proxyhubbbbot botuna /keys gönderip bir anahtar oluşturun. Gizli değer bir kez gösterilir; Owl onu bu cihazda şifreli saklar.",
+      "current": "Kayıtlı anahtar: {{hint}}",
+      "keyLabel": "Anahtar",
+      "secretLabel": "Gizli değer",
+      "save": "Anahtarı kaydet",
+      "forget": "Anahtarı unut",
+      "change": "Anahtarı değiştir"
+    },
+    "errors": {
+      "count": "Proxy sayısını girin, 1 ile {{max}} arası.",
+      "countries": "En az bir ülke seçin.",
+      "ttl": "Ömür: tam sayı, 5 dakika ile 30 gün arası.",
+      "textTooLong": "Ad ve not: en fazla 120 karakter."
+    },
+    "done": {
+      "toast": "Oluşturulan proxy: {{count}}",
+      "copied": "Proxy'ler kopyalandı",
+      "copyAll": "Tümünü kopyala",
+      "more": "Daha fazla oluştur",
+      "finish": "Bitti"
     }
   }
 }

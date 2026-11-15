@@ -6,12 +6,14 @@ import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LuCheck, LuChevronsUpDown, LuPlus } from "react-icons/lu";
 import { toast } from "sonner";
+import { GenerateProxyCommandItem } from "@/components/generate-proxy-command-item";
 import { LoadingButton } from "@/components/loading-button";
 import {
   checkHighlightedProxy,
   ProxyChoiceLabel,
 } from "@/components/proxy-choice-label";
 import { ProxyFormDialog } from "@/components/proxy-form-dialog";
+import { ProxyGeneratorDialog } from "@/components/proxy-generator-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,6 +73,7 @@ export function ProxyAssignmentDialog({
   const [proxyPopoverOpen, setProxyPopoverOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isProxyFormOpen, setIsProxyFormOpen] = useState(false);
+  const [isGeneratorOpen, setIsGeneratorOpen] = useState(false);
   const [createdProxies, setCreatedProxies] = useState<StoredProxy[]>([]);
   const allProxies = useMemo(
     () => [
@@ -263,6 +266,12 @@ export function ProxyAssignmentDialog({
                         <LuPlus className="mr-2 size-4" aria-hidden="true" />
                         {t("createProfile.proxy.addProxy")}
                       </CommandItem>
+                      <GenerateProxyCommandItem
+                        onSelect={() => {
+                          setProxyPopoverOpen(false);
+                          setIsGeneratorOpen(true);
+                        }}
+                      />
                     </CommandGroup>
                     <CommandSeparator />
                     <CommandEmpty>{t("proxyAssignment.notFound")}</CommandEmpty>
@@ -378,6 +387,18 @@ export function ProxyAssignmentDialog({
           setIsProxyFormOpen(false);
         }}
         onCreated={(proxy) => {
+          setCreatedProxies((prev) => [...prev, proxy]);
+          handleValueChange(proxy.id);
+        }}
+      />
+      <ProxyGeneratorDialog
+        isOpen={isGeneratorOpen}
+        single
+        onClose={() => {
+          setIsGeneratorOpen(false);
+        }}
+        onGenerated={([proxy]) => {
+          if (!proxy) return;
           setCreatedProxies((prev) => [...prev, proxy]);
           handleValueChange(proxy.id);
         }}

@@ -938,6 +938,10 @@
       "empty": "No se encontraron perfiles",
       "save": "Guardar",
       "saved": "Perfiles modificados: {{count}}"
+    },
+    "note": {
+      "label": "Nota",
+      "placeholder": "Para qué es el proxy"
     }
   },
   "groups": {
@@ -3262,7 +3266,15 @@
     "profileTasksSaveFailed": "No se pudieron guardar las tareas: {{detail}}",
     "profilesExportPathInvalid": "Elige un archivo con la extensión .csv.",
     "profilesExportTooLarge": "La exportación es demasiado grande para guardarla.",
-    "profilesExportFailed": "No se pudo escribir el archivo de exportación: {{detail}}"
+    "profilesExportFailed": "No se pudo escribir el archivo de exportación: {{detail}}",
+    "proxyGeneratorNoKey": "Primero introduce la clave del generador de proxies.",
+    "proxyGeneratorKeyInvalid": "El generador de proxies no aceptó la clave y el secreto. Revísalos en el bot (/keys).",
+    "proxyGeneratorClockSkew": "El reloj de este equipo difiere en más de un minuto, así que el generador rechazó la solicitud. Ajusta la hora automáticamente y vuelve a intentarlo.",
+    "proxyGeneratorLimit": "Ya tienes el máximo de proxies activos que permite el generador. Elimina algunos en Owl o en el bot.",
+    "proxyGeneratorPoolExhausted": "El generador de proxies no tiene puertos libres. Avisa a su administrador.",
+    "proxyGeneratorRateLimited": "Demasiadas solicitudes al generador de proxies. Espera un minuto y vuelve a intentarlo.",
+    "proxyGeneratorUnavailable": "El generador de proxies no está disponible: {{detail}}",
+    "proxyGeneratorRejected": "El generador de proxies rechazó la solicitud: {{detail}}"
   },
   "rail": {
     "profiles": "Perfiles",
@@ -5416,6 +5428,68 @@
       "engine": "Motor",
       "created": "Creado",
       "lastLaunched": "Último inicio"
+    }
+  },
+  "proxyGenerator": {
+    "open": "Generar",
+    "pickerItem": "Generar proxy",
+    "title": "Generar proxies",
+    "description": "Proxies nuevos del generador de proxies del equipo. Se añaden a Network y se comprueban al momento.",
+    "generate": "Generar",
+    "count": "Cuántos (1–{{max}})",
+    "name": "Nombre",
+    "namePlaceholder": "Vacío: host:port",
+    "namePlaceholderBatch": "kraken → kraken_1, kraken_2…",
+    "protocol": "Protocolo",
+    "releaseFailed": "No se pudo liberar en el generador un proxy eliminado. Su puerto sigue ocupado allí hasta que caduque o se elimine en el bot.",
+    "countries": {
+      "label": "Países de salida",
+      "modes": {
+        "any": "Todos",
+        "only": "Solo",
+        "exclude": "Todos menos"
+      },
+      "more": "Más",
+      "search": "Buscar país",
+      "notFound": "No se encontró el país"
+    },
+    "ttl": {
+      "label": "Duración",
+      "forever": "Para siempre",
+      "custom": "Personalizada",
+      "hours": "{{count}} h",
+      "days": "{{count}} d",
+      "amount": "Cantidad",
+      "unit": "Unidad",
+      "units": {
+        "minutes": "Minutos",
+        "hours": "Horas",
+        "days": "Días"
+      },
+      "hint": "Al terminar la duración, el generador elimina el proxy; Owl muestra la fecha en Expires."
+    },
+    "key": {
+      "description": "Introduce la clave y el secreto que da el bot del generador con /keys.",
+      "hint": "Envía /keys al bot @proxyhubbbbot y crea una clave. El secreto se muestra una vez; Owl lo guarda cifrado en este dispositivo.",
+      "current": "Clave guardada: {{hint}}",
+      "keyLabel": "Clave",
+      "secretLabel": "Secreto",
+      "save": "Guardar clave",
+      "forget": "Olvidar clave",
+      "change": "Cambiar clave"
+    },
+    "errors": {
+      "count": "Indica cuántos proxies, de 1 a {{max}}.",
+      "countries": "Elige al menos un país.",
+      "ttl": "Duración: un número entero, de 5 minutos a 30 días.",
+      "textTooLong": "Nombre y nota: hasta 120 caracteres."
+    },
+    "done": {
+      "toast": "Proxies generados: {{count}}",
+      "copied": "Proxies copiados",
+      "copyAll": "Copiar todos",
+      "more": "Generar más",
+      "finish": "Listo"
     }
   }
 }

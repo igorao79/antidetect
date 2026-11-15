@@ -931,6 +931,10 @@
       "empty": "프로필을 찾을 수 없습니다",
       "save": "저장",
       "saved": "변경된 프로필: {{count}}"
+    },
+    "note": {
+      "label": "메모",
+      "placeholder": "이 프록시의 용도"
     }
   },
   "groups": {
@@ -3240,7 +3244,15 @@
     "profileTasksSaveFailed": "작업을 저장할 수 없습니다: {{detail}}",
     "profilesExportPathInvalid": ".csv 확장자를 가진 파일을 선택하세요.",
     "profilesExportTooLarge": "내보내기 파일이 너무 커서 저장할 수 없습니다.",
-    "profilesExportFailed": "내보내기 파일을 쓸 수 없습니다: {{detail}}"
+    "profilesExportFailed": "내보내기 파일을 쓸 수 없습니다: {{detail}}",
+    "proxyGeneratorNoKey": "먼저 프록시 생성기 키를 입력하세요.",
+    "proxyGeneratorKeyInvalid": "프록시 생성기가 키와 시크릿을 받아들이지 않았습니다. 봇(/keys)에서 확인하세요.",
+    "proxyGeneratorClockSkew": "이 컴퓨터의 시계가 1분 넘게 어긋나 생성기가 요청을 거부했습니다. 시간을 자동으로 설정하고 다시 시도하세요.",
+    "proxyGeneratorLimit": "생성기가 허용하는 활성 프록시 최대 개수에 도달했습니다. Owl이나 봇에서 일부를 삭제하세요.",
+    "proxyGeneratorPoolExhausted": "프록시 생성기에 남은 포트가 없습니다. 관리자에게 알리세요.",
+    "proxyGeneratorRateLimited": "프록시 생성기에 요청이 너무 많습니다. 1분 기다린 뒤 다시 시도하세요.",
+    "proxyGeneratorUnavailable": "프록시 생성기를 사용할 수 없습니다: {{detail}}",
+    "proxyGeneratorRejected": "프록시 생성기가 요청을 거부했습니다: {{detail}}"
   },
   "rail": {
     "profiles": "프로필",
@@ -5362,6 +5374,68 @@
       "engine": "엔진",
       "created": "생성일",
       "lastLaunched": "마지막 실행"
+    }
+  },
+  "proxyGenerator": {
+    "open": "생성",
+    "pickerItem": "프록시 생성",
+    "title": "프록시 생성",
+    "description": "팀의 프록시 생성기에서 새 프록시를 받습니다. Network에 추가되고 바로 검사됩니다.",
+    "generate": "생성",
+    "count": "개수 (1–{{max}})",
+    "name": "이름",
+    "namePlaceholder": "비우면: host:port",
+    "namePlaceholderBatch": "kraken → kraken_1, kraken_2…",
+    "protocol": "프로토콜",
+    "releaseFailed": "삭제한 프록시를 생성기에서 해제하지 못했습니다. 해당 포트는 만료되거나 봇에서 삭제될 때까지 사용 중으로 남습니다.",
+    "countries": {
+      "label": "출구 국가",
+      "modes": {
+        "any": "전체",
+        "only": "선택만",
+        "exclude": "선택 제외"
+      },
+      "more": "더 보기",
+      "search": "국가 검색",
+      "notFound": "국가를 찾을 수 없습니다"
+    },
+    "ttl": {
+      "label": "유효 기간",
+      "forever": "무기한",
+      "custom": "직접 입력",
+      "hours": "{{count}}시간",
+      "days": "{{count}}일",
+      "amount": "값",
+      "unit": "단위",
+      "units": {
+        "minutes": "분",
+        "hours": "시간",
+        "days": "일"
+      },
+      "hint": "기간이 끝나면 생성기가 프록시를 삭제합니다. Owl은 날짜를 Expires 열에 표시합니다."
+    },
+    "key": {
+      "description": "생성기 봇이 /keys로 발급하는 키와 시크릿을 입력하세요.",
+      "hint": "봇 @proxyhubbbbot에 /keys를 보내 키를 만드세요. 시크릿은 한 번만 표시되며, Owl은 이 기기에 암호화해 보관합니다.",
+      "current": "저장된 키: {{hint}}",
+      "keyLabel": "키",
+      "secretLabel": "시크릿",
+      "save": "키 저장",
+      "forget": "키 삭제",
+      "change": "키 변경"
+    },
+    "errors": {
+      "count": "프록시 개수를 1~{{max}} 사이로 입력하세요.",
+      "countries": "국가를 하나 이상 선택하세요.",
+      "ttl": "유효 기간: 5분~30일 사이의 정수.",
+      "textTooLong": "이름과 메모: 최대 120자."
+    },
+    "done": {
+      "toast": "생성된 프록시: {{count}}",
+      "copied": "프록시를 복사했습니다",
+      "copyAll": "모두 복사",
+      "more": "더 생성",
+      "finish": "완료"
     }
   }
 }

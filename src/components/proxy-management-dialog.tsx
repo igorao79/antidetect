@@ -19,6 +19,7 @@ import {
   LuPlus,
   LuRefreshCcwDot,
   LuRefreshCw,
+  LuSparkles,
   LuTrash2,
   LuUpload,
 } from "react-icons/lu";
@@ -56,6 +57,7 @@ import {
 } from "@/components/proxy-expiry-tools";
 import { ProxyExportDialog } from "@/components/proxy-export-dialog";
 import { ProxyFormDialog } from "@/components/proxy-form-dialog";
+import { ProxyGeneratorDialog } from "@/components/proxy-generator-dialog";
 import { ProxyImportDialog } from "@/components/proxy-import-dialog";
 import { ProxyReplaceDialog } from "@/components/proxy-replace-dialog";
 import { ProxyRowMenu } from "@/components/proxy-row-menu";
@@ -121,6 +123,7 @@ export function ProxyManagementDialog({
     useProfileReferences(isOpen);
   // Proxy state
   const [showProxyForm, setShowProxyForm] = useState(false);
+  const [showGenerator, setShowGenerator] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [editingProxy, setEditingProxy] = useState<StoredProxy | null>(null);
@@ -478,15 +481,25 @@ export function ProxyManagementDialog({
           />
         ),
         cell: ({ row }) => (
-          <button
-            type="button"
-            className="block max-w-full min-w-0 truncate rounded-sm text-left font-medium hover:text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring"
-            onClick={() => {
-              handleEditProxy(row.original);
-            }}
-          >
-            {row.original.name}
-          </button>
+          <div className="min-w-0">
+            <button
+              type="button"
+              className="block max-w-full min-w-0 truncate rounded-sm text-left font-medium hover:text-muted-foreground focus-visible:outline-2 focus-visible:outline-ring"
+              onClick={() => {
+                handleEditProxy(row.original);
+              }}
+            >
+              {row.original.name}
+            </button>
+            {row.original.note && (
+              <p
+                className="truncate text-xs text-muted-foreground"
+                title={row.original.note}
+              >
+                {row.original.note}
+              </p>
+            )}
+          </div>
         ),
       },
       {
@@ -1197,6 +1210,13 @@ export function ProxyManagementDialog({
                         }}
                       />
                       <PageAction
+                        icon={<LuSparkles className="size-4" />}
+                        label={t("proxyGenerator.open")}
+                        onClick={() => {
+                          setShowGenerator(true);
+                        }}
+                      />
+                      <PageAction
                         primary
                         icon={<LuPlus className="size-4" />}
                         label={t("proxies.management.newProxy")}
@@ -1251,6 +1271,17 @@ export function ProxyManagementDialog({
                       >
                         <LuPlus className="size-4" />
                         {t("proxies.management.newProxy")}
+                      </RippleButton>
+                      <RippleButton
+                        size="sm"
+                        variant="soft"
+                        className="gap-2"
+                        onClick={() => {
+                          setShowGenerator(true);
+                        }}
+                      >
+                        <LuSparkles className="size-4" />
+                        {t("proxyGenerator.open")}
                       </RippleButton>
                       <RippleButton
                         size="sm"
@@ -1323,6 +1354,12 @@ export function ProxyManagementDialog({
         isOpen={showProxyForm}
         onClose={handleProxyFormClose}
         editingProxy={editingProxy}
+      />
+      <ProxyGeneratorDialog
+        isOpen={showGenerator}
+        onClose={() => {
+          setShowGenerator(false);
+        }}
       />
       <DeleteConfirmationDialog
         isOpen={proxyToDelete !== null}

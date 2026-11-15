@@ -229,10 +229,12 @@ import {
   DataTableActionBarSelection,
   tableSelectionCounts,
 } from "./data-table-action-bar";
+import { GenerateProxyCommandItem } from "./generate-proxy-command-item";
 import MultipleSelector, { type Option } from "./multiple-selector";
 import { ProxyCheckButton } from "./proxy-check-button";
 import { ProxyExpiryMarker } from "./proxy-expiry";
 import { ProxyFormDialog } from "./proxy-form-dialog";
+import { ProxyGeneratorDialog } from "./proxy-generator-dialog";
 import { TrafficDetailsDialog } from "./traffic-details-dialog";
 import { Input } from "./ui/input";
 import { Skeleton } from "./ui/skeleton";
@@ -372,6 +374,7 @@ interface TableMeta {
   ) => Promise<void>;
   /** Opens the proxy form; what it creates is assigned to this profile. */
   openNewProxyFor: (profileId: string) => void;
+  openProxyGeneratorFor: (profileId: string) => void;
 
   // Pins (this device only) and the bulk lock
   pinned: ReadonlySet<string>;
@@ -1479,6 +1482,12 @@ function ProxyPicker({
             <LuPlus className="mr-2 size-4" aria-hidden="true" />
             {t("createProfile.proxy.addProxy")}
           </CommandItem>
+          <GenerateProxyCommandItem
+            onSelect={() => {
+              meta.setOpenProxySelectorFor(null);
+              meta.openProxyGeneratorFor(profileId);
+            }}
+          />
         </CommandGroup>
         <CommandSeparator />
         <CommandEmpty>{t("createProfile.proxy.notFound")}</CommandEmpty>
@@ -2586,6 +2595,9 @@ export function ProfilesDataTable({
   const [newProxyProfileId, setNewProxyProfileId] = React.useState<
     string | null
   >(null);
+  const [generatorProfileId, setGeneratorProfileId] = React.useState<
+    string | null
+  >(null);
 
   const handleCreateCountryProxy = React.useCallback(
     async (profileId: string, country: LocationItem) => {
@@ -3246,6 +3258,7 @@ export function ProfilesDataTable({
       loadCountries,
       handleCreateCountryProxy,
       openNewProxyFor: setNewProxyProfileId,
+      openProxyGeneratorFor: setGeneratorProfileId,
       pinned,
       togglePin,
       toggleBulkLock,
@@ -5216,6 +5229,18 @@ export function ProfilesDataTable({
         onCreated={(proxy) => {
           if (newProxyProfileId) {
             void handleProxySelection(newProxyProfileId, proxy.id);
+          }
+        }}
+      />
+      <ProxyGeneratorDialog
+        isOpen={generatorProfileId !== null}
+        single
+        onClose={() => {
+          setGeneratorProfileId(null);
+        }}
+        onGenerated={([proxy]) => {
+          if (proxy && generatorProfileId) {
+            void handleProxySelection(generatorProfileId, proxy.id);
           }
         }}
       />

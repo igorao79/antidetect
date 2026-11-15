@@ -55,7 +55,7 @@ const donutLockfile = path.join(projectRoot, "src-tauri", "Cargo.lock");
 const suiteFiles = {
   smoke: ["diagnostics.test.mjs", "smoke.test.mjs", "coverage.test.mjs"],
   ui: ["ui.test.mjs", "motion.test.mjs"],
-  entities: ["entities.test.mjs"],
+  entities: ["entities.test.mjs", "proxy-generator.test.mjs"],
   network: ["network.test.mjs"],
   integrations: ["integrations.test.mjs"],
   sync: ["sync.test.mjs"],
@@ -67,6 +67,7 @@ const suiteFiles = {
     "ui.test.mjs",
     "motion.test.mjs",
     "entities.test.mjs",
+    "proxy-generator.test.mjs",
     "network.test.mjs",
     "integrations.test.mjs",
     "sync.test.mjs",

@@ -147,6 +147,18 @@ export const commandCoverage = {
       "import_proxies_from_parsed",
     ],
   },
+  proxyGenerator: {
+    suite: "entities",
+    level: "integration",
+    evidence: ["proxy-generator.test.mjs"],
+    commands: [
+      "proxy_generator::proxy_generator_status",
+      "proxy_generator::proxy_generator_set_credentials",
+      "proxy_generator::proxy_generator_clear_credentials",
+      "proxy_generator::proxy_generator_options",
+      "proxy_generator::proxy_generator_generate",
+    ],
+  },
   extensions: {
     suite: "entities",
     level: "integration",

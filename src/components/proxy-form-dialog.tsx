@@ -54,6 +54,7 @@ interface ProxyFormData {
   rotation_url: string;
   /** The expiry day as `YYYY-MM-DD`, or "" for none. */
   expires_on: string;
+  note: string;
 }
 
 interface ProxyFormDialogProps {
@@ -68,6 +69,8 @@ interface ProxyFormDialogProps {
   onCreated?: (proxy: StoredProxy) => void;
 }
 
+const PROXY_NOTE_MAX = 500;
+
 const DEFAULT_FORM: ProxyFormData = {
   name: "",
   proxy_type: "http",
@@ -78,6 +81,7 @@ const DEFAULT_FORM: ProxyFormData = {
   vless_uri: "",
   rotation_url: "",
   expires_on: "",
+  note: "",
 };
 
 /**
@@ -208,6 +212,7 @@ export function ProxyFormDialog({
       expires_on: editingProxy.expires_at
         ? dateInputFromExpiry(editingProxy.expires_at)
         : "",
+      note: editingProxy.note ?? "",
     });
   }, [editingProxy, isOpen, resetForm]);
 
@@ -294,10 +299,12 @@ export function ProxyFormDialog({
             : expiresAt === null
               ? { clearExpiresAt: true }
               : { expiresAt };
+        const note = form.note.trim();
         await invoke("update_stored_proxy", {
           proxyId: editingProxy.id,
           ...payload,
           ...expiry,
+          ...(note === (editingProxy.note ?? "") ? {} : { note }),
         });
         if (rotationUrl !== (editingProxy.rotation_url ?? "")) {
           await invoke("set_proxy_rotation_url", {
@@ -310,6 +317,7 @@ export function ProxyFormDialog({
         const created = await invoke<StoredProxy>("create_stored_proxy", {
           ...payload,
           expiresAt: expiresAt ?? undefined,
+          note: form.note.trim() || undefined,
         });
         // The rotation link is stored after the proxy itself, and its answer
         // is the settled object: hand that one on when there is a link.
@@ -833,6 +841,21 @@ export function ProxyFormDialog({
             onValidityChange={setIsExpiryValid}
             disabled={isSubmitting}
           />
+
+          <div className="grid gap-2">
+            <Label htmlFor="proxy-note">{t("proxies.note.label")}</Label>
+            <Textarea
+              id="proxy-note"
+              value={form.note}
+              onChange={(e) => {
+                setForm((previous) => ({ ...previous, note: e.target.value }));
+              }}
+              placeholder={t("proxies.note.placeholder")}
+              maxLength={PROXY_NOTE_MAX}
+              rows={2}
+              disabled={isSubmitting}
+            />
+          </div>
         </div>
 
         <DialogFooter>

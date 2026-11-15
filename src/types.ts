@@ -360,6 +360,10 @@ export interface StoredProxy {
   rotation_url?: string | null;
   /** Unix seconds when the proxy's plan ends; see `proxyExpiryStatus`. */
   expires_at?: number | null;
+  /** What the person wrote about the proxy (fork). */
+  note?: string | null;
+  /** Its id in the proxy generator it came from (fork). */
+  generator_id?: string | null;
 }
 
 export interface LocationItem {
