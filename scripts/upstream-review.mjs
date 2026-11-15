@@ -118,6 +118,42 @@ const shas = git(
   .split("\n")
   .filter(Boolean);
 
+// How Owl's tree differs from the upstream commit it merged: M is a file Owl
+// changed, D one it removed. Counted here so the model does not guess conflicts.
+const forkChanges = new Map(
+  git("diff", "--name-status", "--no-renames", merged, "HEAD")
+    .split("\n")
+    .map((line) => line.split("\t"))
+    .filter(([status]) => status === "M" || status === "D")
+    .map(([status, path]) => [path, status]),
+);
+// Owl changes these in every merge; naming them on each commit says nothing.
+const ALWAYS_TOUCHED =
+  /^src\/i18n\/locales\/|^src\/generated\/|\.lock$|^pnpm-lock\.yaml$|^AGENTS\.md$/;
+const OVERLAP_FILES = 12;
+
+const listFiles = (files) =>
+  files.length > OVERLAP_FILES
+    ? `${files.slice(0, OVERLAP_FILES).join(", ")} и ещё ${files.length - OVERLAP_FILES}`
+    : files.join(", ");
+
+function forkOverlap(sha) {
+  const files = git("show", "--format=", "--name-only", "--no-renames", sha)
+    .split("\n")
+    .filter((file) => file && !ALWAYS_TOUCHED.test(file));
+  const changed = files.filter((file) => forkChanges.get(file) === "M");
+  const removed = files.filter((file) => forkChanges.get(file) === "D");
+  if (!changed.length && !removed.length) {
+    return "Owl: файлов, которые форк менял или удалил, коммит не трогает";
+  }
+  return [
+    changed.length ? `Owl менял у себя: ${listFiles(changed)}` : "",
+    removed.length ? `Owl удалил у себя: ${listFiles(removed)}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+}
+
 let diffBudget = TOTAL_DIFF_CHARS;
 const commits = shas.map((sha) => {
   const head = git(
@@ -144,7 +180,7 @@ const commits = shas.map((sha) => {
   }
   if (diff.length > diffBudget) diff = "[diff left out: the prompt is full]";
   diffBudget -= diff.length;
-  return `=== ${head}\n${stat}\n${diff}`;
+  return `=== ${head}\n${forkOverlap(sha)}\n${stat}\n${diff}`;
 });
 
 const header = [
@@ -169,7 +205,16 @@ ${forkContext}
 Тебе дают коммиты Donut, которые ещё не влиты в Owl. Напиши по-русски короткое ревью для группы в Telegram, не длиннее 2500 знаков:
 1. Одной-двумя фразами: что главное поменялось.
 2. Что поменялось, по темам (2-6 пунктов), с короткими хешами коммитов.
-3. Что рекомендуешь Owl: влить скоро (безопасность, исправления прокси, запуска и Camoufox, общего кода), можно подождать, или не нужно (только Wayfern, облако Donut, Linux/Windows, их сервер синхронизации на Rust). Отметь, если коммит трогает то, что форк изменил у себя, и мерж будет конфликтным.
+3. Что рекомендуешь Owl: влить скоро (безопасность, исправления прокси, запуска и Camoufox, общего кода), можно подождать, или не нужно (только Wayfern, облако Donut, Linux/Windows, их сервер синхронизации на Rust). Отметь, какие коммиты дадут конфликтный мерж.
+
+Факты, которые важнее догадок по названиям:
+- У каждого коммита есть строка «Owl менял у себя» / «Owl удалил у себя», посчитанная по репозиторию. Конфликты называй только по ней. Файл из «удалил» значит, что форк эту часть выбросил и она ему не нужна (CI, сканеры и workflow Donut, Linux/Windows-пакеты, их Rust-сервер).
+- Owl собирается и работает только на macOS (Apple Silicon и Intel). Код только для Windows или Linux (ramfs/WinFsp, AppImage, Flatpak, MSI, Xvfb, portable-сборки) Owl не нужен, даже если звучит полезно.
+- Сервер Owl свой, на NestJS (TypeScript, donut-sync/). Коммиты в Rust-сервер Donut (donut-sync/src/*.rs) Owl не нужны. Если клиентский коммит опирается на новые эндпоинты или поля их сервера (аренды, at-rest и т. п.), отметь это как риск: на сервере Owl их нет.
+- Исправления клиентского движка синхронизации (src-tauri/src/sync/), которым не нужен новый сервер, Owl полезны: он синхронизируется тем же движком со своим сервером.
+- Снятие фиксации версий зависимостей (unpin) не обычный бамп: отметь его отдельно.
+- Упоминай только хеши из списка коммитов, ровно как они даны.
+
 Пиши по делу, без вступлений. Форматирование только тегами Telegram HTML: <b>, <i>, <code>. Не используй Markdown. Символы <, > и & вне тегов пиши как &lt; &gt; &amp;.`;
 
 const user = `Коммиты Donut за последние ${days} дней (всего не влито ${pending}):\n\n${commits.join("\n\n")}`;
@@ -269,6 +314,21 @@ async function send(text) {
   }
 }
 
+/** Marks hashes in the review that are not among the reviewed commits. */
+function checkHashes(text) {
+  const unknown = new Set();
+  const marked = text.replace(/\b[0-9a-f]{7,12}\b/g, (token) => {
+    // A hash has both digits and letters; plain numbers and words stay.
+    if (!/\d/.test(token) || !/[a-f]/.test(token)) return token;
+    if (shas.some((sha) => sha.startsWith(token))) return token;
+    unknown.add(token);
+    return `${token} (?)`;
+  });
+  if (unknown.size === 0) return marked;
+  console.warn(`Review names unknown hashes: ${[...unknown].join(" ")}`);
+  return `${marked}\n\n<i>(?) нет среди коммитов сверки: ${[...unknown].join(", ")}</i>`;
+}
+
 /** What the group gets when no review came: the commits themselves. */
 function withoutReview(error) {
   const list = shas.map((sha) =>
@@ -291,12 +351,14 @@ if (dryRun) {
   await send(`${header}\n\nЗа эти дни в Donut ничего нового.`);
   console.log("Sent: no new upstream commits");
 } else {
-  const text = await review().catch((error) => {
-    console.error(`No review: ${error.message}`);
-    // The run still shows red, so the key or the quota gets looked at.
-    process.exitCode = 1;
-    return withoutReview(error);
-  });
+  const text = await review()
+    .then(checkHashes)
+    .catch((error) => {
+      console.error(`No review: ${error.message}`);
+      // The run still shows red, so the key or the quota gets looked at.
+      process.exitCode = 1;
+      return withoutReview(error);
+    });
   await send(`${header}\n\n${text}`);
   console.log(
     `Sent ${commits.length} upstream commits ${process.exitCode ? "without" : "with"} a review`,
