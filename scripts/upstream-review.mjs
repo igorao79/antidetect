@@ -28,6 +28,11 @@ const UPSTREAM_URL = "https://github.com/zhom/donutbrowser";
 const COMMIT_DIFF_CHARS = 6000;
 const TOTAL_DIFF_CHARS = 150_000;
 const TELEGRAM_CHUNK = 3900;
+// A call that fails on the way (network, timeout, 429, 5xx) is tried again
+// after 10 s, then 20 s; a refusal such as a bad key fails at once.
+const ATTEMPTS = 3;
+const RETRY_BASE_MS = 10_000;
+const DEEPSEEK_TIMEOUT_MS = 5 * 60 * 1000;
 // Lock files and translations are long and say nothing a review needs.
 const DIFF_EXCLUDES = [
   ":(exclude)*.lock",
@@ -50,6 +55,36 @@ function required(name) {
   const value = process.env[name];
   if (!value) throw new Error(`${name} is not set`);
   return value;
+}
+
+if (!Number.isInteger(days) || days < 1) {
+  throw new Error(
+    `REVIEW_DAYS must be a whole number of days, got "${process.env.REVIEW_DAYS}"`,
+  );
+}
+
+const sleep = (ms) => new Promise((done) => setTimeout(done, ms));
+
+/** An HTTP failure; only 429 and 5xx are worth another attempt. */
+const httpError = (message, status, retryAfterMs) =>
+  Object.assign(new Error(message), {
+    permanent: status !== 429 && status < 500,
+    retryAfterMs,
+  });
+
+async function withRetries(label, attempt) {
+  for (let n = 1; ; n++) {
+    try {
+      return await attempt();
+    } catch (error) {
+      if (error.permanent || n >= ATTEMPTS) throw error;
+      const wait = error.retryAfterMs ?? RETRY_BASE_MS * 2 ** (n - 1);
+      console.warn(
+        `${label} failed (attempt ${n}/${ATTEMPTS}), again in ${Math.round(wait / 1000)} s: ${error.message}`,
+      );
+      await sleep(wait);
+    }
+  }
 }
 
 const [merged, mergedName = ""] = readFileSync(
@@ -139,7 +174,9 @@ ${forkContext}
 
 const user = `Коммиты Donut за последние ${days} дней (всего не влито ${pending}):\n\n${commits.join("\n\n")}`;
 
-async function review() {
+const review = () => withRetries("DeepSeek", reviewOnce);
+
+async function reviewOnce() {
   const response = await fetch("https://api.deepseek.com/chat/completions", {
     method: "POST",
     headers: {
@@ -156,15 +193,18 @@ async function review() {
         { role: "user", content: user },
       ],
     }),
-    signal: AbortSignal.timeout(10 * 60 * 1000),
+    signal: AbortSignal.timeout(DEEPSEEK_TIMEOUT_MS),
   });
   const body = await response.json().catch(() => ({}));
   const text = body.choices?.[0]?.message?.content?.trim();
-  if (!response.ok || !text) {
-    throw new Error(
+  if (!response.ok) {
+    throw httpError(
       `DeepSeek answered ${response.status}: ${body.error?.message ?? "no review"}`,
+      response.status,
     );
   }
+  // An empty answer (the thinking took every token) may come out whole next time.
+  if (!text) throw new Error("DeepSeek answered 200 without a review");
   return text;
 }
 
@@ -186,16 +226,33 @@ function chunks(text) {
 async function send(text) {
   const token = required("TELEGRAM_BOT_TOKEN");
   const chatId = required("TELEGRAM_CHAT_ID");
-  const post = (payload) =>
-    fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: chatId,
-        disable_web_page_preview: true,
-        ...payload,
-      }),
-    }).then((r) => r.json());
+  const postOnce = async (payload) => {
+    const response = await fetch(
+      `https://api.telegram.org/bot${token}/sendMessage`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: chatId,
+          disable_web_page_preview: true,
+          ...payload,
+        }),
+        signal: AbortSignal.timeout(30_000),
+      },
+    );
+    const result = await response.json().catch(() => ({}));
+    if (result.ok) return result;
+    const status = result.error_code ?? response.status;
+    // A markup refusal is answered by the plain-text retry below, not here.
+    if (status === 400) return result;
+    const retryAfter = result.parameters?.retry_after;
+    throw httpError(
+      `Telegram answered ${status}: ${result.description ?? "no answer"}`,
+      status,
+      retryAfter ? retryAfter * 1000 : undefined,
+    );
+  };
+  const post = (payload) => withRetries("Telegram", () => postOnce(payload));
   for (const chunk of chunks(text)) {
     let result = await post({ text: chunk, parse_mode: "HTML" });
     // The model's markup is not always what Telegram accepts; plain text is.
@@ -212,6 +269,18 @@ async function send(text) {
   }
 }
 
+/** What the group gets when no review came: the commits themselves. */
+function withoutReview(error) {
+  const list = shas.map((sha) =>
+    escapeHtml(git("show", "-s", "--format=%h %s", sha)),
+  );
+  return [
+    `<i>Ревью не получилось: ${escapeHtml(error.message)}</i>`,
+    "",
+    ...list,
+  ].join("\n");
+}
+
 if (dryRun) {
   console.log(header);
   console.log(
@@ -222,6 +291,14 @@ if (dryRun) {
   await send(`${header}\n\nЗа эти дни в Donut ничего нового.`);
   console.log("Sent: no new upstream commits");
 } else {
-  await send(`${header}\n\n${await review()}`);
-  console.log(`Sent a review of ${commits.length} upstream commits`);
+  const text = await review().catch((error) => {
+    console.error(`No review: ${error.message}`);
+    // The run still shows red, so the key or the quota gets looked at.
+    process.exitCode = 1;
+    return withoutReview(error);
+  });
+  await send(`${header}\n\n${text}`);
+  console.log(
+    `Sent ${commits.length} upstream commits ${process.exitCode ? "without" : "with"} a review`,
+  );
 }

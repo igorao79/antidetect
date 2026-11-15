@@ -2,7 +2,7 @@
 # and its short review of them, with what it recommends for Owl, goes to the
 # team's Telegram group (scripts/upstream-review.mjs). Also started by hand:
 #
-#   gh workflow run upstream-review.yml -R igorao79/antidetect
+#   gh workflow run upstream-review.yml -R igorao79/antidetect [-f days=21]
 #
 # Secrets (Settings → Secrets and variables → Actions):
 #   DEEPSEEK_API_KEY    DeepSeek API key
@@ -15,6 +15,10 @@ on:
     # Mondays, 09:00 Moscow time.
     - cron: "0 6 * * 1"
   workflow_dispatch:
+    inputs:
+      days:
+        description: Days of upstream commits to review
+        default: "7"
 
 permissions:
   contents: read
@@ -22,7 +26,7 @@ permissions:
 jobs:
   review:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -40,4 +44,5 @@ jobs:
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          REVIEW_DAYS: ${{ inputs.days || '7' }}
         run: node scripts/upstream-review.mjs
