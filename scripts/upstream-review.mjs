@@ -359,6 +359,8 @@ if (dryRun) {
       process.exitCode = 1;
       return withoutReview(error);
     });
+  // Kept in the run's log too, where the review can be read again later.
+  console.log(`${text}\n`);
   await send(`${header}\n\n${text}`);
   console.log(
     `Sent ${commits.length} upstream commits ${process.exitCode ? "without" : "with"} a review`,
