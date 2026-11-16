@@ -5240,7 +5240,9 @@
     "namesMore": "{{names}} and {{more}} more",
     "trafficStopped": "Traffic has stopped.",
     "waiting": "Traffic resumes when the proxy answers.",
-    "cut": "The session was cut: stop the profile and launch it again to reconnect."
+    "cut": "The session was cut: stop the profile and launch it again to reconnect.",
+    "reconnecting": "The session was cut. It reconnects by itself as soon as the proxy answers again.",
+    "exitMoved": "The proxy came back from another location: stop the profile and launch it again so its time zone and language match."
   },
   "proxyPicker": {
     "current": "current",

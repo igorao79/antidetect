@@ -122,6 +122,12 @@ impl BrowserRunner {
     } else {
       refresh_location(profile, &mut camoufox_config, &local_proxy_url).await;
     }
+    if let Some(exit) = crate::proxy_reconnect::launch_exit_of_fingerprint(
+      camoufox_config.location_follows_exit(),
+      camoufox_config.fingerprint.as_deref(),
+    ) {
+      crate::proxy_reconnect::note_launch_exit(Some(&local_proxy_url), exit);
+    }
 
     let override_profile_path = if profile.password_protected {
       Some(

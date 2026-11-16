@@ -87,7 +87,7 @@ export function useProxyOutages(
           ),
         );
         const opensOutage =
-          !("cleared" in payload) &&
+          "status" in payload &&
           payload.status === "down" &&
           !latest.current.outages.has(payload.profile_id);
         if (!opensOutage) return;

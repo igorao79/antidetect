@@ -222,6 +222,7 @@ mod profiles_export;
 mod proxy_distribution;
 mod proxy_generator;
 mod proxy_manager;
+mod proxy_reconnect;
 mod proxy_replace;
 mod proxy_rotation;
 pub mod proxy_runner;

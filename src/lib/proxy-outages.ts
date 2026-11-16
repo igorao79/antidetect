@@ -8,7 +8,11 @@ export type HealthStatus = "ok" | "degraded" | "down";
 
 export type ProxyHealthEvent =
   | { profile_id: string; status: HealthStatus; at: number; code?: string }
-  | { profile_id: string; cleared: true };
+  | { profile_id: string; cleared: true }
+  /** The cut session waits for its proxy and reconnects when it answers. */
+  | { profile_id: string; reconnecting: true }
+  /** The wait ended without a reconnect; the code says why. */
+  | { profile_id: string; reconnect_stopped: string };
 
 export interface ProxyOutage {
   profileId: string;
@@ -18,9 +22,13 @@ export interface ProxyOutage {
   since: number;
   /**
    * The backend cut the session's worker (the "Block launches without a
-   * proxy or VPN" switch): the browser runs on, but nothing reconnects it.
+   * proxy or VPN" switch): the browser runs on with no route.
    */
   cut: boolean;
+  /** A cut session the backend reconnects once its proxy answers. */
+  reconnecting?: boolean;
+  /** Why the backend gave up reconnecting a cut session. */
+  stopCode?: string;
 }
 
 export type Outages = ReadonlyMap<string, ProxyOutage>;
@@ -30,6 +38,8 @@ export interface OutageRow {
   name: string;
   code?: string;
   cut: boolean;
+  reconnecting?: boolean;
+  stopCode?: string;
 }
 
 /** How long a notification waits for more profiles of the same outage. */
@@ -62,6 +72,24 @@ export function applyHealthEvent(
 ): Outages {
   const id = event.profile_id;
   const current = outages.get(id);
+  if ("reconnecting" in event) {
+    if (!current || (current.cut && current.reconnecting)) return outages;
+    return withOutage(outages, {
+      ...current,
+      cut: true,
+      reconnecting: true,
+      stopCode: undefined,
+    });
+  }
+  if ("reconnect_stopped" in event) {
+    if (!current) return outages;
+    return withOutage(outages, {
+      ...current,
+      cut: true,
+      reconnecting: false,
+      stopCode: event.reconnect_stopped,
+    });
+  }
   if ("cleared" in event) {
     if (!current) return outages;
     if (!isRunning(id)) return without(outages, id);
@@ -74,7 +102,12 @@ export function applyHealthEvent(
   }
   if (current) {
     if (current.code === event.code && !current.cut) return outages;
-    return withOutage(outages, { ...current, code: event.code, cut: false });
+    return withOutage(outages, {
+      profileId: id,
+      code: event.code,
+      since: current.since,
+      cut: false,
+    });
   }
   return withOutage(outages, {
     profileId: id,
@@ -122,6 +155,8 @@ export function outageRows(
       name: names.get(outage.profileId) ?? "",
       code: outage.code,
       cut: outage.cut,
+      reconnecting: outage.reconnecting,
+      stopCode: outage.stopCode,
     }));
 }
 

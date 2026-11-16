@@ -135,3 +135,95 @@ test("no notice when the batch recovered before the window closed", () => {
   const rows = [{ profileId: "x", name: "X", cut: false }];
   assert.equal(outageNotice(new Set(["a"]), rows), null);
 });
+
+test("a cut session that waits for its proxy says so, and its return ends the outage", () => {
+  const cut = applyHealthEvent(
+    applyHealthEvent(new Map(), down("a"), running),
+    { profile_id: "a", cleared: true },
+    running,
+  );
+  const waiting = applyHealthEvent(
+    cut,
+    { profile_id: "a", reconnecting: true },
+    running,
+  );
+  assert.equal(waiting.get("a").cut, true);
+  assert.equal(waiting.get("a").reconnecting, true);
+  assert.equal(
+    applyHealthEvent(waiting, { profile_id: "a", reconnecting: true }, running),
+    waiting,
+  );
+  const back = applyHealthEvent(
+    waiting,
+    { profile_id: "a", status: "ok", at: 200 },
+    running,
+  );
+  assert.equal(back.size, 0);
+});
+
+test("a reconnect that gives up keeps the cut and names why", () => {
+  let outages = applyHealthEvent(new Map(), down("a"), running);
+  outages = applyHealthEvent(
+    outages,
+    { profile_id: "a", cleared: true },
+    running,
+  );
+  outages = applyHealthEvent(
+    outages,
+    { profile_id: "a", reconnecting: true },
+    running,
+  );
+  outages = applyHealthEvent(
+    outages,
+    { profile_id: "a", reconnect_stopped: "PROXY_EXIT_MOVED" },
+    running,
+  );
+  const outage = outages.get("a");
+  assert.equal(outage.cut, true);
+  assert.equal(outage.reconnecting, false);
+  assert.equal(outage.stopCode, "PROXY_EXIT_MOVED");
+  const [row] = outageRows(outages, [{ id: "a", name: "Alpha" }]);
+  assert.equal(row.reconnecting, false);
+  assert.equal(row.stopCode, "PROXY_EXIT_MOVED");
+});
+
+test("reconnect events for a profile without an outage change nothing", () => {
+  const empty = new Map();
+  assert.equal(
+    applyHealthEvent(empty, { profile_id: "a", reconnecting: true }, running),
+    empty,
+  );
+  assert.equal(
+    applyHealthEvent(
+      empty,
+      { profile_id: "a", reconnect_stopped: "PROXY_EXIT_MOVED" },
+      running,
+    ),
+    empty,
+  );
+});
+
+test("a new down verdict after a reconnect starts the session's outage afresh", () => {
+  let outages = applyHealthEvent(new Map(), down("a"), running);
+  outages = applyHealthEvent(
+    outages,
+    { profile_id: "a", cleared: true },
+    running,
+  );
+  outages = applyHealthEvent(
+    outages,
+    { profile_id: "a", reconnect_stopped: "PROXY_EXIT_MOVED" },
+    running,
+  );
+  outages = applyHealthEvent(
+    outages,
+    down("a", 300, "PROXY_AUTH_FAILED"),
+    running,
+  );
+  assert.deepEqual(outages.get("a"), {
+    profileId: "a",
+    code: "PROXY_AUTH_FAILED",
+    since: 100,
+    cut: false,
+  });
+});

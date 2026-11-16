@@ -36,6 +36,7 @@ python3 s1_camoufox_fingerprints.py
 | `s16_session_restore.py` | A profile reopens both tabs it had, with their session storage, after a stop that quits the browser at once, without the restore prompt. `SCN_DEBUG=1` prints every reading. |
 | `s17_detection_sites.py` | A Windows and a macOS profile on bot.sannysoft.com, browserscan.net, CreepJS and browserleaks' WebRTC page: no failed bot test, and with `SCN_REMOTE_PROXY` set every page shows the proxy's address and none of this machine's. Prints what each site reports. |
 | `s18_search_engine.py` | A search typed in the address bar goes to Google; the build's loopback engine is gone and other engines are offered. |
+| `s19_reconnect.py` | With the kill switch on, a session whose proxy dies is cut (nothing goes direct) and reconnects on its own port once the proxy answers again; a proxy that comes back from another country stays cut (`PROXY_EXIT_MOVED`). Needs `require_route_for_launch` on in the dev app; the moved-exit half needs `SCN_REMOTE_PROXY`. |
 | `s8_remote_exit.py` | Through a real remote proxy (`SCN_REMOTE_PROXY=http://user:password@host:port`): sites see the proxy's address and timezone, WebRTC shows nothing of this machine, the language is the same at every launch, and a profile whose exit moves follows it at the next launch. Skipped without the variable. |
 
 `EXPECT_TZ` and `EXPECT_LANG` (comma-separated) add geolocation assertions to

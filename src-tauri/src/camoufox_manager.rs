@@ -1052,6 +1052,9 @@ impl CamoufoxManager {
                user_pref(\"network.proxy.no_proxies_on\", \"\");\n"
             ));
           }
+          // A proxy that does not answer fails the request; Firefox never
+          // goes direct instead (the kill switch's cut relies on that).
+          prefs.push_str("user_pref(\"network.proxy.failover_direct\", false);\n");
         }
       }
 

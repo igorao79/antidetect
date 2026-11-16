@@ -5240,7 +5240,9 @@
     "namesMore": "{{names}} và {{more}} hồ sơ khác",
     "trafficStopped": "Lưu lượng đã dừng.",
     "waiting": "Lưu lượng sẽ tiếp tục khi proxy phản hồi.",
-    "cut": "Phiên đã bị ngắt: hãy dừng hồ sơ và khởi chạy lại để kết nối lại."
+    "cut": "Phiên đã bị ngắt: hãy dừng hồ sơ và khởi chạy lại để kết nối lại.",
+    "reconnecting": "Phiên đã bị ngắt. Phiên sẽ tự kết nối lại ngay khi proxy phản hồi trở lại.",
+    "exitMoved": "Proxy đã trở lại từ một vị trí khác: hãy dừng hồ sơ và khởi chạy lại để múi giờ và ngôn ngữ khớp."
   },
   "proxyPicker": {
     "current": "hiện tại",

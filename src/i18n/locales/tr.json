@@ -5240,7 +5240,9 @@
     "namesMore": "{{names}} ve {{more}} tane daha",
     "trafficStopped": "Trafik durdu.",
     "waiting": "Proxy yanıt verdiğinde trafik devam eder.",
-    "cut": "Oturum kesildi: yeniden bağlanmak için profili durdurup tekrar başlatın."
+    "cut": "Oturum kesildi: yeniden bağlanmak için profili durdurup tekrar başlatın.",
+    "reconnecting": "Oturum kesildi. Proxy yeniden yanıt verir vermez kendiliğinden yeniden bağlanacak.",
+    "exitMoved": "Proxy başka bir konumdan geri döndü: saat dilimi ve dilin uyuşması için profili durdurup yeniden başlatın."
   },
   "proxyPicker": {
     "current": "geçerli",

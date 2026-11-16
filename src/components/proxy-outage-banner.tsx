@@ -25,7 +25,13 @@ function OutageItem({
   const { t } = useTranslation();
   const nameId = useId();
   const [isStopping, setIsStopping] = useState(false);
-  const note = row.cut ? t("proxyOutage.cut") : t("proxyOutage.waiting");
+  const note = !row.cut
+    ? t("proxyOutage.waiting")
+    : row.reconnecting
+      ? t("proxyOutage.reconnecting")
+      : row.stopCode === "PROXY_EXIT_MOVED"
+        ? t("proxyOutage.exitMoved")
+        : t("proxyOutage.cut");
 
   const handleStop = async () => {
     setIsStopping(true);

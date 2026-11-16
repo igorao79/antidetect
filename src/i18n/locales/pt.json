@@ -5294,7 +5294,9 @@
     "namesMore": "{{names}} e mais {{more}}",
     "trafficStopped": "O tráfego parou.",
     "waiting": "O tráfego volta quando o proxy responder.",
-    "cut": "A sessão foi cortada: pare o perfil e inicie-o novamente para reconectar."
+    "cut": "A sessão foi cortada: pare o perfil e inicie-o novamente para reconectar.",
+    "reconnecting": "A sessão foi interrompida. Ela se reconecta sozinha assim que o proxy voltar a responder.",
+    "exitMoved": "O proxy voltou de outro local: pare o perfil e inicie-o de novo para que o fuso horário e o idioma correspondam."
   },
   "proxyPicker": {
     "current": "atual",

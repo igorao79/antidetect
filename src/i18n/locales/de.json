@@ -5240,7 +5240,9 @@
     "namesMore": "{{names}} und {{more}} weitere",
     "trafficStopped": "Der Datenverkehr steht.",
     "waiting": "Der Datenverkehr läuft weiter, sobald der Proxy antwortet.",
-    "cut": "Die Sitzung wurde getrennt: Profil stoppen und neu starten, um wieder zu verbinden."
+    "cut": "Die Sitzung wurde getrennt: Profil stoppen und neu starten, um wieder zu verbinden.",
+    "reconnecting": "Die Sitzung wurde getrennt. Sie verbindet sich von selbst neu, sobald der Proxy wieder antwortet.",
+    "exitMoved": "Der Proxy ist von einem anderen Ort zurück: Beenden Sie das Profil und starten Sie es neu, damit Zeitzone und Sprache passen."
   },
   "proxyPicker": {
     "current": "aktuell",

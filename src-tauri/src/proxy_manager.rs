@@ -519,6 +519,9 @@ enum WorkerStopReason {
   /// kill switch on. The route did not recover: its health streak is left
   /// open instead of being logged as a recovery.
   RouteDown,
+  /// The throwaway worker a reconnect measures the exit through (fork,
+  /// `proxy_reconnect.rs`).
+  ReconnectProbe,
 }
 
 impl WorkerStopReason {
@@ -526,6 +529,7 @@ impl WorkerStopReason {
     match self {
       Self::ProfileStop => "profile_stop",
       Self::RouteDown => "route_down",
+      Self::ReconnectProbe => "reconnect_probe",
     }
   }
 
@@ -2460,6 +2464,40 @@ impl ProxyManager {
     local_protocol: &str,
   ) -> Result<ProxySettings, String> {
     let _lifecycle = self.worker_lifecycle.lock().await;
+    self
+      .start_proxy_locked(
+        app_handle,
+        proxy_settings,
+        browser_pid,
+        profile_id,
+        bypass_rules,
+        blocklist_file,
+        dns_allowlist_mode,
+        dns_server,
+        record_domains,
+        local_protocol,
+        None,
+      )
+      .await
+  }
+
+  /// `start_proxy` with the worker lifecycle lock already held. `fixed_port`
+  /// makes the worker listen on that port (a reconnect, `proxy_reconnect.rs`).
+  #[allow(clippy::too_many_arguments)]
+  async fn start_proxy_locked(
+    &self,
+    app_handle: tauri::AppHandle,
+    proxy_settings: Option<&ProxySettings>,
+    browser_pid: u32,
+    profile_id: Option<&str>,
+    bypass_rules: Vec<String>,
+    blocklist_file: Option<String>,
+    dns_allowlist_mode: bool,
+    dns_server: Option<&str>,
+    record_domains: bool,
+    local_protocol: &str,
+    fixed_port: Option<u16>,
+  ) -> Result<ProxySettings, String> {
     ensure_route_health_monitor(&app_handle);
     let started = std::time::Instant::now();
     if let Some(name) = profile_id {
@@ -2564,6 +2602,9 @@ impl ProxyManager {
       .map_err(|e| format!("Failed to create sidecar: {e}"))?
       .arg("proxy")
       .arg("start");
+    if let Some(port) = fixed_port {
+      proxy_cmd = proxy_cmd.arg("--port").arg(port.to_string());
+    }
 
     // Add upstream proxy settings if provided, otherwise create direct proxy
     if let Some(proxy_settings) = proxy_settings {
@@ -2718,6 +2759,24 @@ impl ProxyManager {
       // Also record the active proxy id for this profile for quick cleanup on changes
       let mut map = self.profile_active_proxy_ids.lock().unwrap();
       map.insert(id.to_string(), proxy_info.id.clone());
+      if let Some(settings) = proxy_settings {
+        crate::proxy_reconnect::remember_start(
+          id,
+          proxy_info.local_port,
+          fixed_port.is_some(),
+          crate::proxy_reconnect::WorkerStart {
+            settings: settings.clone(),
+            bypass_rules: bypass_rules.clone(),
+            blocklist_file: blocklist_file.clone(),
+            dns_allowlist_mode,
+            dns_server: dns_server.map(str::to_string),
+            record_domains,
+            local_protocol: local_protocol.to_string(),
+          },
+        );
+      } else {
+        crate::proxy_reconnect::forget(id, Some(proxy_info.local_port));
+      }
     }
 
     // Return proxy settings for the browser
@@ -2743,19 +2802,34 @@ impl ProxyManager {
       .await
   }
 
+  /// Stop the throwaway worker a reconnect measured the exit through.
+  pub(crate) async fn stop_reconnect_probe(
+    &self,
+    app_handle: tauri::AppHandle,
+    probe_pid: u32,
+  ) -> Result<(), String> {
+    let _lifecycle = self.worker_lifecycle.lock().await;
+    self
+      .stop_proxy_inner(app_handle, probe_pid, WorkerStopReason::ReconnectProbe)
+      .await
+  }
+
   async fn stop_proxy_inner(
     &self,
     app_handle: tauri::AppHandle,
     browser_pid: u32,
     reason: WorkerStopReason,
   ) -> Result<(), String> {
-    let (proxy_id, profile_id): (String, Option<String>) = {
+    let (proxy_id, profile_id, local_port): (String, Option<String>, u16) = {
       let mut proxies = self.active_proxies.lock().unwrap();
       match proxies.remove(&browser_pid) {
-        Some(proxy) => (proxy.id, proxy.profile_id.clone()),
+        Some(proxy) => (proxy.id, proxy.profile_id.clone(), proxy.local_port),
         None => return Ok(()), // No proxy to stop
       }
     };
+    if let (WorkerStopReason::ProfileStop, Some(id)) = (reason, profile_id.as_deref()) {
+      crate::proxy_reconnect::forget(id, Some(local_port));
+    }
     let worker = WorkerSnapshot::take(&proxy_id);
 
     // Stop the proxy using the donut-proxy binary
@@ -3828,6 +3902,84 @@ impl ProxyManager {
     ids
   }
 
+  /// The live browser a worker serves and the local port it points that
+  /// browser at, before a stop forgets them.
+  fn session_of_worker(&self, proxy_id: &str) -> Option<crate::proxy_reconnect::CutSession> {
+    let proxies = self.active_proxies.lock().unwrap();
+    proxies
+      .iter()
+      .find(|(&pid, info)| info.id == proxy_id && pid != 0 && !is_launch_placeholder_pid(pid))
+      .map(|(&pid, info)| crate::proxy_reconnect::CutSession {
+        browser_pid: pid,
+        local_port: info.local_port,
+        upstream: (
+          info.upstream_type.clone(),
+          info.upstream_host.clone(),
+          info.upstream_port,
+        ),
+      })
+  }
+
+  /// Start a cut session's worker again on the port its browser points at,
+  /// checking under the lifecycle lock that the session is still the one the
+  /// reconnect measured for: the browser runs, no other start took the
+  /// profile, and the recorded start is the same one.
+  pub(crate) async fn reconnect_session(
+    &self,
+    app_handle: tauri::AppHandle,
+    profile_id: &str,
+    session: &crate::proxy_reconnect::CutSession,
+    generation: u64,
+    start: &crate::proxy_reconnect::WorkerStart,
+  ) -> crate::proxy_reconnect::Restart {
+    use crate::proxy_reconnect::Restart;
+    let _lifecycle = self.worker_lifecycle.lock().await;
+    if !crate::proxy_storage::is_process_running(session.browser_pid) {
+      return Restart::Abandon("browser_gone");
+    }
+    if self.resolve_proxy_id_for_profile(profile_id).is_some() {
+      return Restart::Abandon("profile_restarted");
+    }
+    if !crate::proxy_reconnect::start_is_current(profile_id, generation) {
+      return Restart::Abandon("profile_restarted");
+    }
+    let started = self
+      .start_proxy_locked(
+        app_handle.clone(),
+        Some(&start.settings),
+        session.browser_pid,
+        Some(profile_id),
+        start.bypass_rules.clone(),
+        start.blocklist_file.clone(),
+        start.dns_allowlist_mode,
+        start.dns_server.as_deref(),
+        start.record_domains,
+        &start.local_protocol,
+        Some(session.local_port),
+      )
+      .await;
+    let local = match started {
+      Ok(local) => local,
+      Err(e) => return Restart::Retry(e),
+    };
+    // The browser points at its own port, and the worker must know the
+    // browser it serves or its supervisor ends it as unclaimed.
+    let claimed = local.port == session.local_port
+      && self.set_browser_pid_for_profile(profile_id, session.browser_pid);
+    if claimed {
+      return Restart::Started;
+    }
+    log::warn!(
+      "Reconnect worker could not take over the session profile={profile_id} port={} wanted={}",
+      local.port,
+      session.local_port
+    );
+    let _ = self
+      .stop_proxy_inner(app_handle, session.browser_pid, WorkerStopReason::RouteDown)
+      .await;
+    Restart::Abandon("takeover_failed")
+  }
+
   /// Whether a live browser process still owns the profile's worker. Launch
   /// placeholders are not browser PIDs, so they never count as one.
   fn profile_browser_is_running(&self, profile_id: &str) -> bool {
@@ -3874,11 +4026,17 @@ impl ProxyManager {
         forget_route_down_stop(&profile_id);
         return;
       }
+      let session = PROXY_MANAGER.session_of_worker(&proxy_id);
       match PROXY_MANAGER
-        .stop_profile_worker(app_handle, &profile_id, WorkerStopReason::RouteDown)
+        .stop_profile_worker(app_handle.clone(), &profile_id, WorkerStopReason::RouteDown)
         .await
       {
-        Ok(()) => log::warn!("Route down, session cut profile={profile_id} code={code}"),
+        Ok(()) => {
+          log::warn!("Route down, session cut profile={profile_id} code={code}");
+          if let Some(session) = session {
+            crate::proxy_reconnect::begin(app_handle, &profile_id, session);
+          }
+        }
         Err(e) => log::warn!(
           "Proxy worker stop failed, route down profile={profile_id} code={code} err=\"{e}\""
         ),

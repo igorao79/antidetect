@@ -128,7 +128,18 @@ Fork-specific rules:
   `use-proxy-outages.ts`, `proxy-outage-banner.tsx`): a non-modal banner at the top of the main
   window lists the profiles with the reason and "Open details" / "Stop", until they recover, stop
   or are deleted; a `cleared` for a profile still running (the kill switch cut its worker) keeps
-  the row and says to restart it. One native notification per outage, grouped when several
+  the row. The cut session then waits for its proxy (`proxy_reconnect.rs`, row says it
+  reconnects by itself): after 15 s, 30 s, then every minute a throwaway worker on another port
+  measures the exit, and only when its time zone and country are the ones the profile's
+  fingerprint was launched with (any exit for a profile with automatic location off) is the
+  session's worker started again on the port the browser points at (`--port`, same upstream,
+  credentials and DNS; `ProxyManager::reconnect_session` re-checks under the worker lifecycle
+  lock that the browser runs and no stop, relaunch or proxy change came in between, and claims
+  the worker for the browser so its supervisor keeps it). The browser has no route at all until
+  then; a rotating upstream may still give the restarted worker another exit than the probe
+  saw. An exit elsewhere stops the wait (`PROXY_EXIT_MOVED`: restart to match), as does a launch
+  with no recorded place (Wayfern) or a cut of an upstream other than the recorded start's.
+  Camoufox's `user.js` sets `network.proxy.failover_direct` false. One native notification per outage, grouped when several
   profiles go down within 3 s, and only while the window is not in front (`notifySystem`).
   `degraded` stays a calm dot in the traffic cell.
 - Proxy conveniences (fork): every proxy picker (profile details' `proxy-picker.tsx`, the create
@@ -382,7 +393,8 @@ Fork-specific rules:
   `interface_language.rs`, `donut_cloud.rs`,
   `profile/{after_exit,camoufox}.rs`, `ssh_upstream.rs`,
   `cookie_robot.rs`, `dropped_files.rs`, `octo_compat_api.rs`, `synchronizer_bidi.rs`,
-  `profile_tasks.rs`, `profiles_export.rs`, `proxy_replace.rs`, `profile/{quick,clone_copies}.rs`,
+  `profile_tasks.rs`, `profiles_export.rs`, `proxy_replace.rs`, `proxy_reconnect.rs`,
+  `profile/{quick,clone_copies}.rs`,
   `proxy_generator/`,
   `workspace.rs`,
   `workspace_deploy.rs` (with `workspace_deploy.sh` and `build_owl_server.rs`),
@@ -497,6 +509,7 @@ donutbrowser/
 │   │   ├── profile_dns.rs           # Per-profile DNS server: DoH/DoT/TCP resolver the worker runs through the profile's own route
 │   │   ├── proxy_storage.rs         # Proxy config persistence (JSON files)
 │   │   ├── proxy_generator/         # The team's proxy generator: signed client, sealed key, generate/release (fork)
+│   │   ├── proxy_reconnect.rs       # Reconnects a session the kill switch cut once its proxy answers from the same place (fork)
 │   │   ├── api_server.rs            # REST API (utoipa + axum)
 │   │   ├── mcp_server.rs            # MCP tool engine, served over the remote bridge
 │   │   ├── mcp_toolsets.rs          # Optional MCP toolsets: which tools a client lists (core + opt-in sets)
