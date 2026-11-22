@@ -319,7 +319,10 @@ Fork-specific rules:
   workflow commits that to the branch as "Owl <version>" and builds it. A version raised by
   hand (a minor one) ships as it is. Pull before working on the branch again, the bump commit
   is only on GitHub (`gh workflow run release-macos.yml` starts a release by hand). A release
-  carries two disk images, `Owl_<v>_aarch64.dmg` and `Owl_<v>_x64.dmg` for Intel Macs
+  carries the Windows installer `Owl_<v>_x64-setup.exe` (a `windows-latest` job builds it
+  natively, as upstream does, unsigned; a failure there does not hold back the macOS images,
+  and `publish` attaches and checksums it only when it is in `release-out/`) and two disk
+  images, `Owl_<v>_aarch64.dmg` and `Owl_<v>_x64.dmg` for Intel Macs
   (cross-compiled as `x86_64-apple-darwin`; the updater picks its own architecture's): two
   macOS runners run `scripts/release-macos.sh build <target>` side by side, each building,
   signing and notarizing one image, and a third job runs `release-macos.sh publish`, which
@@ -347,11 +350,11 @@ Fork-specific rules:
   Store Connect API key come from `~/.config/owl/release.env`, outside the repository, and the
   script refuses to publish without them. Local builds stay ad-hoc signed (`signingIdentity`
   `-` in `tauri.conf.json`).
-- A Windows installer is built on this Mac, not in CI (`scripts/build-windows.sh`): upstream
-  builds `x86_64-pc-windows-msvc` on a windows-latest runner, the fork cross-compiles it with
+- A Windows installer can also be built on this Mac (`scripts/build-windows.sh`), when the
+  release's Windows job cannot run: the fork cross-compiles `x86_64-pc-windows-msvc` with
   cargo-xwin (clang-cl, lld-link from Homebrew's `llvm@22`/`lld@22`) and bundles NSIS with
-  Homebrew's `makensis`, giving `Owl_<v>_x64-setup.exe`, unsigned (SmartScreen warns) and not
-  attached to releases, so the updater does not offer it. The target directory and the
+  Homebrew's `makensis`, giving `Owl_<v>_x64-setup.exe`, unsigned (SmartScreen warns); with
+  `STABLE_RELEASE=1` and copied into `release-out/`, `release-macos.sh publish` attaches it. The target directory and the
   Windows SDK live on an APFS sparse image on the external disk (`OWL_WIN_IMAGE`; exFAT has no
   symlinks), the installer is copied to `OWL_WIN_OUT`. Host-keyed code broke such a build and
   is handled: `build.rs` delay-loads WinFsp by target (the `winfsp` build dependency is

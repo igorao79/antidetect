@@ -192,13 +192,23 @@ publish() {
     fi
     images+=("$image")
   done
-  # The checksums the updater checks, of the stapled images.
+  # The Windows installer, from the workflow's Windows job (or copied here
+  # from scripts/build-windows.sh), goes with them when there is one.
+  local installer="Owl_${version}_x64-setup.exe"
+  if [ -f "$OUT_DIR/$installer" ]; then
+    images+=("$OUT_DIR/$installer")
+  else
+    echo "No $installer in $OUT_DIR: releasing the macOS images only." >&2
+  fi
+  # The checksums the updater checks, of the stapled images and the installer.
+  local names=() file
+  for file in "${images[@]}"; do names+=("$(basename "$file")"); done
   (
     cd "$OUT_DIR"
     if command -v sha256sum > /dev/null; then
-      sha256sum Owl_"${version}"_*.dmg
+      sha256sum "${names[@]}"
     else
-      shasum -a 256 Owl_"${version}"_*.dmg
+      shasum -a 256 "${names[@]}"
     fi
   ) > "$OUT_DIR/SHA256SUMS.txt"
 
