@@ -24,6 +24,14 @@ fn main() {
   if build_target.contains("windows") {
     winfsp::build::winfsp_link_delayload();
   }
+  // A Windows build made on macOS (scripts/build-windows.sh, cargo-xwin) has
+  // no `winfsp` build dependency, which is keyed to the host: the same two
+  // lines, or the app would not start where WinFsp is not installed (fork).
+  #[cfg(not(windows))]
+  if build_target == "x86_64-pc-windows-msvc" {
+    println!("cargo:rustc-link-lib=dylib=delayimp");
+    println!("cargo:rustc-link-arg=/DELAYLOAD:winfsp-x64.dll");
+  }
 
   // Inject build version based on environment variables set by CI
   if let Ok(build_tag) = std::env::var("BUILD_TAG") {
@@ -84,7 +92,9 @@ fn main() {
     // or they crash with STATUS_ENTRYPOINT_NOT_FOUND (0xc0000139). We embed the
     // manifest for all targets, then suppress the duplicate for bins with /MANIFEST:NO
     // (tauri_build's resource-embedded manifest still takes effect for bins).
-    if build_target.contains("windows") {
+    // A Windows build made on macOS skips it: lld-link refuses /MANIFESTINPUT
+    // beside /MANIFEST:NO, and its test binaries cannot run there (fork).
+    if build_target.contains("windows") && cfg!(windows) {
       embed_windows_manifest();
       println!("cargo:rustc-link-arg-bins=/MANIFEST:NO");
     }
@@ -159,7 +169,13 @@ fn embed_windows_manifest() {
   }
 
   // Use the path directly (avoid canonicalize which adds \\?\ prefix that mt.exe rejects)
-  let manifest_str = manifest_path.to_str().unwrap().replace('/', "\\");
+  // (backslashes only on a Windows host: lld-link on macOS reads a Unix path).
+  let manifest_str = manifest_path.to_str().unwrap();
+  let manifest_str = if cfg!(windows) {
+    manifest_str.replace('/', "\\")
+  } else {
+    manifest_str.to_string()
+  };
   println!("cargo:rustc-link-arg=/MANIFEST:EMBED");
   println!("cargo:rustc-link-arg=/MANIFESTINPUT:{manifest_str}");
   println!("cargo:rerun-if-changed=app.manifest");

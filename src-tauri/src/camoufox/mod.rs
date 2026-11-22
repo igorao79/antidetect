@@ -9,6 +9,7 @@
 //!
 //! The process itself is spawned by `camoufox_manager`.
 
+#[cfg(target_os = "macos")]
 pub mod bundled_fonts;
 pub mod config;
 pub mod data;

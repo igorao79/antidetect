@@ -882,6 +882,7 @@ impl CamoufoxManager {
         crate::camoufox::search::ensure_search_engines(&source_for_app);
         crate::camoufox::last_window::ensure_quit_with_last_window(&source_for_app);
         crate::camoufox::profile_identity::ensure_profile_identity_hook(&source_for_app);
+        #[cfg(target_os = "macos")]
         crate::camoufox::bundled_fonts::shadow_installed_fonts(&source_for_app);
       })
     })

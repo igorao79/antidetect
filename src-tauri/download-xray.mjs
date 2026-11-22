@@ -100,7 +100,9 @@ export function windowsExtractionInvocation(archive, destinationDir) {
 }
 
 function extractArchive(archive, destinationDir, windowsTarget) {
-  if (windowsTarget) {
+  // A Windows build made on macOS (scripts/build-windows.sh) unpacks the
+  // Windows archive with unzip: PowerShell is a matter of the host.
+  if (windowsTarget && process.platform === "win32") {
     const { args, env } = windowsExtractionInvocation(archive, destinationDir);
     const result = spawnSync("powershell", args, { stdio: "inherit", env });
     if (result.status !== 0) {
@@ -113,9 +115,10 @@ function extractArchive(archive, destinationDir, windowsTarget) {
     };
   }
 
+  const binaryName = windowsTarget ? "xray.exe" : "xray";
   const result = spawnSync(
     "unzip",
-    ["-qq", "-j", archive, "xray", "LICENSE", "-d", destinationDir],
+    ["-qq", "-j", archive, binaryName, "LICENSE", "-d", destinationDir],
     { stdio: "inherit" },
   );
   if (result.status !== 0) {
@@ -123,7 +126,7 @@ function extractArchive(archive, destinationDir, windowsTarget) {
   }
 
   return {
-    binary: join(destinationDir, "xray"),
+    binary: join(destinationDir, binaryName),
     license: join(destinationDir, "LICENSE"),
   };
 }

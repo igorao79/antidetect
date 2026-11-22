@@ -340,6 +340,21 @@ Fork-specific rules:
   Store Connect API key come from `~/.config/owl/release.env`, outside the repository, and the
   script refuses to publish without them. Local builds stay ad-hoc signed (`signingIdentity`
   `-` in `tauri.conf.json`).
+- A Windows installer is built on this Mac, not in CI (`scripts/build-windows.sh`): upstream
+  builds `x86_64-pc-windows-msvc` on a windows-latest runner, the fork cross-compiles it with
+  cargo-xwin (clang-cl, lld-link from Homebrew's `llvm@22`/`lld@22`) and bundles NSIS with
+  Homebrew's `makensis`, giving `Owl_<v>_x64-setup.exe`, unsigned (SmartScreen warns) and not
+  attached to releases, so the updater does not offer it. The target directory and the
+  Windows SDK live on an APFS sparse image on the external disk (`OWL_WIN_IMAGE`; exFAT has no
+  symlinks), the installer is copied to `OWL_WIN_OUT`. Host-keyed code broke such a build and
+  is handled: `build.rs` delay-loads WinFsp by target (the `winfsp` build dependency is
+  host-only), keeps the manifest path a Unix one and leaves out the test-binary manifest that
+  lld-link refuses beside `/MANIFEST:NO`; `download-xray.mjs` unpacks with unzip off Windows;
+  `copy-proxy-binary.mjs` follows `CARGO_TARGET_DIR`; `camoufox/bundled_fonts.rs` is macOS-only.
+  makensis 3.13 crashes (`std::bad_alloc`) under the C locale, so the script sets UTF-8. Next
+  16 refuses a build an agent runs while the installed Next has an advisory, and with the static
+  export (`distDir: dist` is wiped) its retry never passes: upgrade Next. Nothing of the fork
+  has been run on Windows yet; the macOS-only layers (Dock clone, fonts) do not apply there.
 - The camera and microphone prompt at launch is offered once (`src/lib/permission-prompt.ts`);
   Settings requests them afterwards. An ad-hoc signed build is a new app to macOS after every
   rebuild, so a grant given to an earlier build does not carry over.

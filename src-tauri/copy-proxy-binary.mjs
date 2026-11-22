@@ -44,22 +44,14 @@ const TARGET = getTarget();
 const HOST_TARGET = getHostTarget();
 const isWindows = TARGET.includes("windows");
 
-// Determine source directory
-let srcDir;
-if (TARGET === HOST_TARGET || TARGET === "unknown") {
-  srcDir = join(
-    MANIFEST_DIR,
-    "target",
-    PROFILE === "release" ? "release" : "debug",
-  );
-} else {
-  srcDir = join(
-    MANIFEST_DIR,
-    "target",
-    TARGET,
-    PROFILE === "release" ? "release" : "debug",
-  );
-}
+// Determine source directory (CARGO_TARGET_DIR: the Windows build from macOS
+// keeps its target on an external disk, scripts/build-windows.sh).
+const targetRoot = process.env.CARGO_TARGET_DIR || join(MANIFEST_DIR, "target");
+const profileDir = PROFILE === "release" ? "release" : "debug";
+const srcDir =
+  TARGET === HOST_TARGET || TARGET === "unknown"
+    ? join(targetRoot, profileDir)
+    : join(targetRoot, TARGET, profileDir);
 
 const destDir = join(MANIFEST_DIR, "binaries");
 mkdirSync(destDir, { recursive: true });
