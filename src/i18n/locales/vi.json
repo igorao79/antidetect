@@ -3505,7 +3505,7 @@
     "steps": {
       "createProfile": {
         "title": "Tạo hồ sơ đầu tiên của bạn",
-        "content": "Nhấn vào đây để tạo hồ sơ đầu tiên của bạn. Chọn Wayfern làm trình duyệt — Chromium được khuyến nghị, có bảo vệ vân tay."
+        "content": "Nhấn vào đây để tạo hồ sơ đầu tiên của bạn. Hồ sơ sẽ mở trong Camoufox, trình duyệt Firefox chống phát hiện đi kèm Owl."
       },
       "dnsBlocking": {
         "title": "Chặn DNS",

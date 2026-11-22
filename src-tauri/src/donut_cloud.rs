@@ -8,12 +8,17 @@
 
 use crate::downloaded_browsers_registry::DownloadedBrowsersRegistry;
 
+/// Wayfern does not work in the fork (no Donut account), so it is switched
+/// off, as `WAYFERN` in `src/lib/cloud-only-pages.ts` is for the interface.
+pub const WAYFERN: bool = false;
+
 /// Wayfern takes its fingerprints, its launch token and its downloads from a
 /// Donut account. Without one it is offered only where a build is already
 /// installed, which also keeps the app from asking Donut's server for the
-/// current Wayfern version at every start.
+/// current Wayfern version at every start; with `WAYFERN` off, nowhere.
 pub fn wayfern_offered() -> bool {
-  !DownloadedBrowsersRegistry::instance()
-    .get_downloaded_versions("wayfern")
-    .is_empty()
+  WAYFERN
+    && !DownloadedBrowsersRegistry::instance()
+      .get_downloaded_versions("wayfern")
+      .is_empty()
 }

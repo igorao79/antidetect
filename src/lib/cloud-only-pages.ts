@@ -7,6 +7,16 @@
 export const DONUT_CLOUD = false;
 
 /**
+ * Wayfern takes its fingerprints, its launch token and its builds from a
+ * Donut account, so it does not work in this fork. Off, the interface offers
+ * none of it: no engine in the create dialog (the backend's `WAYFERN` leaves
+ * it out of the supported browsers), no import of Chromium profiles (they
+ * become Wayfern profiles), no Wayfern line in About and no tip about that
+ * import. The upstream code stays for merges.
+ */
+export const WAYFERN = false;
+
+/**
  * Destinations that only work against Donut's cloud: the cloud Cookie Bot,
  * the remote-control agent console and the account page. They are left out of
  * the rail, the shortcuts and the command palette. The local counterpart of

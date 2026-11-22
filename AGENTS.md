@@ -298,7 +298,14 @@ Fork-specific rules:
   where a build is already installed (`donut_cloud.rs::wayfern_offered`, applied in
   `get_supported_browsers`; the create dialog asks that command). With none installed the
   app no longer asks donutbrowser.com for the Wayfern version at every start. Signed out,
-  nothing else in the backend calls Donut's servers.
+  nothing else in the backend calls Donut's servers. Wayfern does not work in the fork, so it
+  is switched off by one flag on each side, `WAYFERN` in `donut_cloud.rs` (no
+  `wayfern_offered`, even with a build installed) and in `src/lib/cloud-only-pages.ts`: the
+  import page keeps only Owl archives (Chromium profiles become Wayfern ones), About has no
+  Wayfern line, the Chromium-import tip is not offered, and the onboarding tour names
+  Camoufox. The ui suite's tests that create through the dialog, and the motion suite's
+  Chromium import, are skipped with `WAYFERN_ONLY`; upstream's Wayfern code and tests stay
+  for merges.
 - Owl updates itself from the fork's GitHub releases (`RELEASES_REPO` in
   `app_auto_updater.rs`, the only source: upstream also asks donutbrowser.com, which lists
   Donut's builds; upstream's updater, which checks at start and every hour, downloads

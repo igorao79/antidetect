@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AppPage } from "@/components/rail-nav";
 import { getAgentConsole } from "@/lib/agent-console";
-import { CLOUD_ONLY_PAGES, DONUT_CLOUD } from "@/lib/cloud-only-pages";
+import { CLOUD_ONLY_PAGES, DONUT_CLOUD, WAYFERN } from "@/lib/cloud-only-pages";
 import { COACH_MARK_EXIT_MS } from "@/lib/coach-mark";
 import {
   effectivePlanOf,
@@ -294,7 +294,10 @@ export function useTips({
           (tip.action.kind !== "page" ||
             !CLOUD_ONLY_PAGES.has(tip.action.page)) &&
           // Feedback goes to Donut's servers, which the fork does not use.
-          (DONUT_CLOUD || tip.action.kind !== "feedback"),
+          (DONUT_CLOUD || tip.action.kind !== "feedback") &&
+          // Its copy is about importing Chromium profiles, which become
+          // Wayfern profiles.
+          (WAYFERN || tip.id !== "importProfiles"),
       ),
     [entitlements, launcher],
   );

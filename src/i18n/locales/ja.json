@@ -3505,7 +3505,7 @@
     "steps": {
       "createProfile": {
         "title": "最初のプロファイルを作成",
-        "content": "ここをクリックして最初のプロファイルを作成します。ブラウザには Wayfern を選んでください。フィンガープリント対策済みの推奨 Chromium です。"
+        "content": "ここをクリックして最初のプロファイルを作成します。Owl に同梱のアンチディテクト Firefox、Camoufox で開きます。"
       },
       "dnsBlocking": {
         "title": "DNS ブロック",

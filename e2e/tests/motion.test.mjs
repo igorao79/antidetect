@@ -1608,6 +1608,13 @@ const CLOUD_ONLY = {
   skip: "the fork leaves this page out: it only works against Donut's cloud",
 };
 
+// Chromium profiles are imported as Wayfern profiles, and the fork switches
+// Wayfern off (`WAYFERN` in src/lib/cloud-only-pages.ts), so the import page
+// keeps only Owl archives.
+const WAYFERN_ONLY = {
+  skip: "the fork switches Wayfern off, and with it the import of Chromium profiles",
+};
+
 test(
   "schedule displays every timezone and slot, and skipped run details work by keyboard",
   CLOUD_ONLY,
@@ -2005,40 +2012,49 @@ test("connection diagnostics and extension impact expose real assigned profiles"
   );
 });
 
-test("partial import receipts survive retry without duplicating successful profiles", async () => {
-  await withApp(
-    "motion-import-receipts",
-    async (app) => {
-      const root = path.join(app.root, "import-sources");
-      const sources = [
-        path.join(root, "Default"),
-        path.join(root, "Profile 1"),
-      ];
-      async function writeSource(index) {
-        await mkdir(sources[index], { recursive: true });
-        await writeFile(
-          path.join(sources[index], "Preferences"),
-          JSON.stringify({ profile: { name: `Receipt source ${index + 1}` } }),
-        );
-        await writeFile(
-          path.join(sources[index], "Bookmarks"),
-          JSON.stringify({
-            roots: {
-              bookmark_bar: {
-                type: "folder",
-                children: [
-                  { type: "url", name: "Example", url: "https://example.com/" },
-                ],
+test(
+  "partial import receipts survive retry without duplicating successful profiles",
+  WAYFERN_ONLY,
+  async () => {
+    await withApp(
+      "motion-import-receipts",
+      async (app) => {
+        const root = path.join(app.root, "import-sources");
+        const sources = [
+          path.join(root, "Default"),
+          path.join(root, "Profile 1"),
+        ];
+        async function writeSource(index) {
+          await mkdir(sources[index], { recursive: true });
+          await writeFile(
+            path.join(sources[index], "Preferences"),
+            JSON.stringify({
+              profile: { name: `Receipt source ${index + 1}` },
+            }),
+          );
+          await writeFile(
+            path.join(sources[index], "Bookmarks"),
+            JSON.stringify({
+              roots: {
+                bookmark_bar: {
+                  type: "folder",
+                  children: [
+                    {
+                      type: "url",
+                      name: "Example",
+                      url: "https://example.com/",
+                    },
+                  ],
+                },
               },
-            },
-          }),
-        );
-      }
-      await writeSource(0);
-      await writeSource(1);
-      // Only fingerprint generation is fixed for this offline UI suite. Scanning,
-      // file copying, reports, progress events and retries run through real IPC.
-      await app.execute(`
+            }),
+          );
+        }
+        await writeSource(0);
+        await writeSource(1);
+        // Only fingerprint generation is fixed for this offline UI suite. Scanning,
+        // file copying, reports, progress events and retries run through real IPC.
+        await app.execute(`
       window.__donutImportFetch = window.fetch;
       window.__donutImportBatches = [];
       window.fetch = function(input, init) {
@@ -2053,76 +2069,83 @@ test("partial import receipts survive retry without duplicating successful profi
         return window.__donutImportFetch.apply(this, arguments);
       };
     `);
-      try {
-        await app.pressShortcut({ ...modifier, key: "o" });
-        await app.clickText(en.importProfile.manualImport, { roles: ["tab"] });
-        await app.fillSelector("#manual-profile-path", root);
-        await app.clickText(en.importProfile.scanButton, { roles: ["button"] });
-        await app.waitFor(
-          () =>
-            app.execute(
-              `return document.querySelectorAll('[role="checkbox"][data-state="checked"]').length === 3;`,
-            ),
-          { description: "both scanned sources selected" },
-        );
-        await app.clickText(en.importProfile.nextButton, { roles: ["button"] });
-        await rm(sources[1], { recursive: true, force: true });
-        await app.clickText(
-          en.importProfile.importButtonCount.replace("{{count}}", "2"),
-          { roles: ["button"], exact: false },
-        );
-        await app.waitFor(
-          () =>
-            app.execute(
-              `return document.querySelectorAll('[data-slot="import-receipt"][data-status="imported"]').length === 1 && document.querySelectorAll('[data-slot="import-receipt"][data-status="failed"]').length === 1;`,
-            ),
-          { description: "real partial-import receipts" },
-        );
-        const first = await app.invoke("list_browser_profiles");
-        assert.equal(first.length, 1);
-        await app.capture("partial-import-receipts");
-        await writeSource(1);
-        await app.clickSelector(slot("import-retry"));
-        await app.waitFor(
-          () =>
-            app.execute(
-              `return document.querySelectorAll('[data-slot="import-receipt"][data-status="imported"]').length === 2;`,
-            ),
-          { description: "both import receipts after retry" },
-        );
-        const profiles = await app.invoke("list_browser_profiles");
-        assert.equal(profiles.length, 2);
-        assert.ok(profiles.some((profile) => profile.id === first[0].id));
-        await app.waitFor(
-          () =>
-            app.execute(
-              `return [...document.querySelectorAll('[data-sonner-toast]')].some(node => node.getAttribute('data-type') === 'success' && node.textContent.includes(arguments[0]));`,
-              [
-                en.importProfile.resultsSummary
-                  .replace("{{imported}}", "2")
-                  .replace("{{skipped}}", "0")
-                  .replace("{{failed}}", "0"),
-              ],
-            ),
-          { description: "retry toast agrees with the cumulative receipts" },
-        );
-        const batches = await app.execute(
-          `return window.__donutImportBatches;`,
-        );
-        assert.equal(batches[0].length, 2);
-        assert.deepEqual(batches[1], [sources[1]]);
-        await resize(app, 760, 620);
-        await assertContained(app, slot("import-receipts"));
-        await app.capture("import-retry-receipts-small");
-      } finally {
-        await app.execute(
-          `window.fetch = window.__donutImportFetch; delete window.__donutImportFetch; delete window.__donutImportBatches;`,
-        );
-      }
-    },
-    { seedDownloadedBrowser: true },
-  );
-});
+        try {
+          await app.pressShortcut({ ...modifier, key: "o" });
+          await app.clickText(en.importProfile.manualImport, {
+            roles: ["tab"],
+          });
+          await app.fillSelector("#manual-profile-path", root);
+          await app.clickText(en.importProfile.scanButton, {
+            roles: ["button"],
+          });
+          await app.waitFor(
+            () =>
+              app.execute(
+                `return document.querySelectorAll('[role="checkbox"][data-state="checked"]').length === 3;`,
+              ),
+            { description: "both scanned sources selected" },
+          );
+          await app.clickText(en.importProfile.nextButton, {
+            roles: ["button"],
+          });
+          await rm(sources[1], { recursive: true, force: true });
+          await app.clickText(
+            en.importProfile.importButtonCount.replace("{{count}}", "2"),
+            { roles: ["button"], exact: false },
+          );
+          await app.waitFor(
+            () =>
+              app.execute(
+                `return document.querySelectorAll('[data-slot="import-receipt"][data-status="imported"]').length === 1 && document.querySelectorAll('[data-slot="import-receipt"][data-status="failed"]').length === 1;`,
+              ),
+            { description: "real partial-import receipts" },
+          );
+          const first = await app.invoke("list_browser_profiles");
+          assert.equal(first.length, 1);
+          await app.capture("partial-import-receipts");
+          await writeSource(1);
+          await app.clickSelector(slot("import-retry"));
+          await app.waitFor(
+            () =>
+              app.execute(
+                `return document.querySelectorAll('[data-slot="import-receipt"][data-status="imported"]').length === 2;`,
+              ),
+            { description: "both import receipts after retry" },
+          );
+          const profiles = await app.invoke("list_browser_profiles");
+          assert.equal(profiles.length, 2);
+          assert.ok(profiles.some((profile) => profile.id === first[0].id));
+          await app.waitFor(
+            () =>
+              app.execute(
+                `return [...document.querySelectorAll('[data-sonner-toast]')].some(node => node.getAttribute('data-type') === 'success' && node.textContent.includes(arguments[0]));`,
+                [
+                  en.importProfile.resultsSummary
+                    .replace("{{imported}}", "2")
+                    .replace("{{skipped}}", "0")
+                    .replace("{{failed}}", "0"),
+                ],
+              ),
+            { description: "retry toast agrees with the cumulative receipts" },
+          );
+          const batches = await app.execute(
+            `return window.__donutImportBatches;`,
+          );
+          assert.equal(batches[0].length, 2);
+          assert.deepEqual(batches[1], [sources[1]]);
+          await resize(app, 760, 620);
+          await assertContained(app, slot("import-receipts"));
+          await app.capture("import-retry-receipts-small");
+        } finally {
+          await app.execute(
+            `window.fetch = window.__donutImportFetch; delete window.__donutImportFetch; delete window.__donutImportBatches;`,
+          );
+        }
+      },
+      { seedDownloadedBrowser: true },
+    );
+  },
+);
 
 test("About shows diagnostics and hides a donut lab that takes bites inside the dialog", async () => {
   await withApp("motion-donut-lab", async (app) => {
@@ -2198,7 +2221,8 @@ test("About shows diagnostics and hides a donut lab that takes bites inside the 
     assert.ok(details.startsWith(`Owl ${system.app_version}\n`));
     assert.ok(details.includes("Camoufox: "));
     assert.ok(details.includes(`System: ${system.os} ${system.arch}`));
-    assert.ok(details.includes("Wayfern: "));
+    // Wayfern is switched off in the fork (`WAYFERN`), so About leaves it out.
+    assert.ok(!details.includes("Wayfern: "));
     assert.doesNotMatch(details, /@|\/Users\/|\/home\/|\\Users\\/);
     await app.waitFor(
       () =>

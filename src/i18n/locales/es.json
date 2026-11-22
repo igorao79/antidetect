@@ -3527,7 +3527,7 @@
     "steps": {
       "createProfile": {
         "title": "Crea tu primer perfil",
-        "content": "Haz clic aquí para crear tu primer perfil. Elige Wayfern como navegador: el Chromium recomendado y protegido contra huellas digitales."
+        "content": "Haz clic aquí para crear tu primer perfil. Se abre en Camoufox, el Firefox antidetección que incluye Owl."
       },
       "dnsBlocking": {
         "title": "Bloqueo DNS",

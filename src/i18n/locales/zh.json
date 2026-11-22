@@ -3505,7 +3505,7 @@
     "steps": {
       "createProfile": {
         "title": "创建你的第一个配置文件",
-        "content": "点击这里创建您的第一个配置文件。浏览器请选择 Wayfern——推荐的、具备指纹保护的 Chromium。"
+        "content": "点击这里创建您的第一个配置文件。它会在 Owl 自带的反检测 Firefox——Camoufox 中打开。"
       },
       "dnsBlocking": {
         "title": "DNS 拦截",

@@ -49,7 +49,7 @@ import { StepTransition } from "@/components/ui/step-transition";
 import licenses from "@/generated/licenses.json";
 import xraySource from "@/generated/xray-source.json";
 import type { AppUpdateState } from "@/hooks/use-app-update-notifications";
-import { DONUT_CLOUD } from "@/lib/cloud-only-pages";
+import { DONUT_CLOUD, WAYFERN } from "@/lib/cloud-only-pages";
 import { MOTION_EASE_OUT } from "@/lib/motion";
 import { showErrorToast } from "@/lib/toast-utils";
 import { playUiSound } from "@/lib/ui-sounds";
@@ -157,13 +157,15 @@ export function AboutDialog({
       .catch(() => {
         setSystemInfo(null);
       });
-    invoke<string[]>("get_downloaded_browser_versions", {
-      browserStr: "wayfern",
-    })
-      .then(setWayfernVersions)
-      .catch(() => {
-        setWayfernVersions([]);
-      });
+    if (WAYFERN) {
+      invoke<string[]>("get_downloaded_browser_versions", {
+        browserStr: "wayfern",
+      })
+        .then(setWayfernVersions)
+        .catch(() => {
+          setWayfernVersions([]);
+        });
+    }
     invoke<string[]>("get_downloaded_browser_versions", {
       browserStr: "camoufox",
     })
@@ -211,7 +213,11 @@ export function AboutDialog({
       `Channel: ${build.channel}`,
       `System: ${systemInfo.os} ${systemInfo.arch}`,
       `Camoufox: ${camoufoxVersions?.length ? camoufoxVersions.join(", ") : "none"}`,
-      `Wayfern: ${wayfernVersions?.length ? wayfernVersions.join(", ") : "none"}`,
+      ...(WAYFERN
+        ? [
+            `Wayfern: ${wayfernVersions?.length ? wayfernVersions.join(", ") : "none"}`,
+          ]
+        : []),
       `Portable: ${systemInfo.portable ? "yes" : "no"}`,
       `Language: ${i18n.language}`,
     ].join("\n");
@@ -435,12 +441,14 @@ export function AboutDialog({
                           ? camoufoxVersions.join(", ")
                           : t("about.diagnostics.notInstalled"))}
                     </DiagnosticRow>
-                    <DiagnosticRow label="Wayfern">
-                      {wayfernVersions &&
-                        (wayfernVersions.length > 0
-                          ? wayfernVersions.join(", ")
-                          : t("about.diagnostics.notInstalled"))}
-                    </DiagnosticRow>
+                    {WAYFERN && (
+                      <DiagnosticRow label="Wayfern">
+                        {wayfernVersions &&
+                          (wayfernVersions.length > 0
+                            ? wayfernVersions.join(", ")
+                            : t("about.diagnostics.notInstalled"))}
+                      </DiagnosticRow>
+                    )}
                     <DiagnosticRow label={t("about.portable")}>
                       {systemInfo &&
                         (systemInfo.portable

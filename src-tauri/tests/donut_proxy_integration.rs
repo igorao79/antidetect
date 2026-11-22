@@ -60,11 +60,10 @@ async fn setup_test() -> Result<std::path::PathBuf, Box<dyn std::error::Error + 
   } else {
     "donut-proxy"
   };
-  let proxy_binary = project_root
-    .join("src-tauri")
-    .join("target")
-    .join("debug")
-    .join(proxy_binary_name);
+  let target_dir = std::env::var_os("CARGO_TARGET_DIR")
+    .map(std::path::PathBuf::from)
+    .unwrap_or_else(|| project_root.join("src-tauri").join("target"));
+  let proxy_binary = target_dir.join("debug").join(proxy_binary_name);
 
   let binary_is_current = proxy_binary.exists()
     && std::process::Command::new(&proxy_binary)

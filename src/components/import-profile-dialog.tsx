@@ -51,6 +51,7 @@ import {
   getBrowserDisplayName,
   getSourceBrowserIcon,
 } from "@/lib/browser-utils";
+import { WAYFERN } from "@/lib/cloud-only-pages";
 import { fireSprinkleConfetti } from "@/lib/confetti";
 import { notifySystem } from "@/lib/system-notify";
 import { cn } from "@/lib/utils";
@@ -171,6 +172,10 @@ interface ImportProfileDialogProps {
 
 type Step = "select" | "configure" | "importing";
 type ImportMode = "auto-detect" | "manual" | "donut-archive";
+
+// Chromium profiles are imported as Wayfern profiles, so without Wayfern
+// only Owl's own archives can be imported (fork).
+const FIRST_MODE: ImportMode = WAYFERN ? "auto-detect" : "donut-archive";
 type DuplicateStrategy = "rename" | "skip";
 
 export function ImportProfileDialog({
@@ -181,7 +186,7 @@ export function ImportProfileDialog({
 }: ImportProfileDialogProps) {
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState<Step>("select");
-  const [importMode, setImportMode] = useState<ImportMode>("auto-detect");
+  const [importMode, setImportMode] = useState<ImportMode>(FIRST_MODE);
 
   const [detectedProfiles, setDetectedProfiles] = useState<DetectedProfile[]>(
     [],
@@ -542,7 +547,13 @@ export function ImportProfileDialog({
   const handleClose = () => {
     void cleanupExtractedDir(extractedDir);
     setCurrentStep("select");
-    setImportMode(detectedProfiles.length > 0 ? "auto-detect" : "manual");
+    setImportMode(
+      !WAYFERN
+        ? FIRST_MODE
+        : detectedProfiles.length > 0
+          ? "auto-detect"
+          : "manual",
+    );
     setScannedProfiles([]);
     setManualPath("");
     setExtractedDir(null);
@@ -563,7 +574,7 @@ export function ImportProfileDialog({
   };
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && WAYFERN) {
       void loadDetectedProfiles();
     }
   }, [isOpen, loadDetectedProfiles]);
@@ -666,20 +677,25 @@ export function ImportProfileDialog({
                 }}
                 className="flex flex-col gap-6"
               >
-                <AnimatedTabsList>
-                  <AnimatedTabsTrigger value="auto-detect" disabled={isLoading}>
-                    {t("importProfile.autoDetect")}
-                  </AnimatedTabsTrigger>
-                  <AnimatedTabsTrigger value="manual" disabled={isLoading}>
-                    {t("importProfile.manualImport")}
-                  </AnimatedTabsTrigger>
-                  <AnimatedTabsTrigger
-                    value="donut-archive"
-                    disabled={isLoading}
-                  >
-                    {t("importProfile.donutArchive")}
-                  </AnimatedTabsTrigger>
-                </AnimatedTabsList>
+                {WAYFERN && (
+                  <AnimatedTabsList>
+                    <AnimatedTabsTrigger
+                      value="auto-detect"
+                      disabled={isLoading}
+                    >
+                      {t("importProfile.autoDetect")}
+                    </AnimatedTabsTrigger>
+                    <AnimatedTabsTrigger value="manual" disabled={isLoading}>
+                      {t("importProfile.manualImport")}
+                    </AnimatedTabsTrigger>
+                    <AnimatedTabsTrigger
+                      value="donut-archive"
+                      disabled={isLoading}
+                    >
+                      {t("importProfile.donutArchive")}
+                    </AnimatedTabsTrigger>
+                  </AnimatedTabsList>
+                )}
 
                 <AnimatedTabsContent value="auto-detect">
                   <div className="space-y-4">

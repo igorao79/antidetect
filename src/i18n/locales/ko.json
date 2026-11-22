@@ -3505,7 +3505,7 @@
     "steps": {
       "createProfile": {
         "title": "첫 프로필 만들기",
-        "content": "여기를 클릭하여 첫 프로필을 만드세요. 브라우저로는 Wayfern을 선택하세요. 핑거프린트 방지가 적용된 권장 Chromium입니다."
+        "content": "여기를 클릭하여 첫 프로필을 만드세요. Owl에 포함된 안티 디텍트 Firefox인 Camoufox에서 열립니다."
       },
       "dnsBlocking": {
         "title": "DNS 차단",

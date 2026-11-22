@@ -3505,7 +3505,7 @@
     "steps": {
       "createProfile": {
         "title": "Erstellen Sie Ihr erstes Profil",
-        "content": "Klicken Sie hier, um Ihr erstes Profil zu erstellen. Wählen Sie Wayfern als Browser: das empfohlene Chromium mit Fingerprint-Schutz."
+        "content": "Klicken Sie hier, um Ihr erstes Profil zu erstellen. Es öffnet sich in Camoufox, dem Anti-Detect-Firefox, der mit Owl kommt."
       },
       "dnsBlocking": {
         "title": "DNS-Blockierung",

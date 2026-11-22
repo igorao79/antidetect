@@ -3505,7 +3505,7 @@
     "steps": {
       "createProfile": {
         "title": "İlk profilinizi oluşturun",
-        "content": "İlk profilinizi oluşturmak için buraya tıklayın. Tarayıcı olarak Wayfern'ü seçin — önerilen, parmak izi korumalı Chromium."
+        "content": "İlk profilinizi oluşturmak için buraya tıklayın. Owl ile gelen anti-detect Firefox, Camoufox'ta açılır."
       },
       "dnsBlocking": {
         "title": "DNS engelleme",
