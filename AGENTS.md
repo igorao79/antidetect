@@ -123,7 +123,11 @@ Fork-specific rules:
   `create_stored_proxy` `expiresAt`, `update_stored_proxy`
   `expiresAt` or `clearExpiresAt`, REST `expires_at` (0 clears). The Network page has an
   "Expires" column; a profile whose proxy has expired or has 3 days or fewer left shows a
-  calendar marker in the table's proxy cell.
+  calendar marker in the table's proxy cell. A date that has passed removes the proxy
+  (`proxy_expiry.rs`, swept every 10 s): every profile using it is detached first (`proxy_id`
+  cleared, so its cell shows the unset dash and another proxy can be assigned), then the proxy
+  goes to the entity trash like a delete from the Network page. A proxy restored from the trash
+  comes back without a past date, or the next sweep would remove it again at once.
 - A proxy going down (`proxy-health-changed` `down`; `src/lib/proxy-outages.ts`,
   `use-proxy-outages.ts`, `proxy-outage-banner.tsx`): a non-modal banner at the top of the main
   window lists the profiles with the reason and "Open details" / "Stop", until they recover, stop
@@ -418,7 +422,8 @@ Fork-specific rules:
   `interface_language.rs`, `donut_cloud.rs`,
   `profile/{after_exit,camoufox}.rs`, `ssh_upstream.rs`,
   `cookie_robot.rs`, `dropped_files.rs`, `octo_compat_api.rs`, `synchronizer_bidi.rs`,
-  `profile_tasks.rs`, `profiles_export.rs`, `proxy_replace.rs`, `proxy_reconnect.rs`,
+  `profile_tasks.rs`, `profiles_export.rs`, `proxy_expiry.rs`, `proxy_replace.rs`,
+  `proxy_reconnect.rs`,
   `profile/{quick,clone_copies}.rs`,
   `proxy_generator/`,
   `workspace.rs`,

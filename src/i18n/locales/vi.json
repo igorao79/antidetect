@@ -882,7 +882,7 @@
     },
     "expiry": {
       "label": "Ngày hết hạn",
-      "hint": "Không bắt buộc. Nhập ngày hoặc số ngày. Hồ sơ dùng proxy này được đánh dấu ba ngày trước khi hết hạn.",
+      "hint": "Không bắt buộc. Nhập ngày hoặc số ngày. Hồ sơ dùng proxy này được đánh dấu ba ngày trước; khi qua ngày đó, proxy bị xóa và hồ sơ không còn proxy.",
       "presetDays": "{{days}} ngày",
       "presetAria": "Hết hạn sau {{days}} ngày kể từ hôm nay",
       "column": "Hết hạn",

@@ -667,6 +667,12 @@ fn put_back(
       proxy.sync_enabled = false;
       proxy.last_sync = None;
       proxy.updated_at = Some(now);
+      // An expired proxy was removed by the expiry sweep; a restore is the
+      // person asking for it back, so it returns without that date instead of
+      // being removed again at the next pass.
+      if proxy.expires_at.is_some_and(|at| at > 0 && at <= now) {
+        proxy.expires_at = None;
+      }
       let file = PROXY_MANAGER.get_proxy_file_path(&proxy.id);
       if let Some(parent) = file.parent() {
         fs::create_dir_all(parent).map_err(err_internal)?;
@@ -1212,6 +1218,21 @@ mod tests {
     assert_eq!(back.updated_at, Some(NOW + 1));
     assert!(PROXY_MANAGER.get_proxy_file_path(&proxy.id).is_file());
     assert_eq!(fs::read(&history).unwrap(), b"[]");
+    PROXY_MANAGER.remove_from_memory(&proxy.id);
+  }
+
+  #[test]
+  fn a_proxy_restored_after_its_date_comes_back_without_the_date() {
+    let (_dir, _guard, trash) = data_root();
+    let proxy = new_proxy("Temporary");
+    PROXY_MANAGER
+      .set_expires_at(&proxy.id, Some(NOW - 10))
+      .unwrap();
+
+    trash_now(&trash, EntityKind::Proxy, &proxy.id, NOW, DAYS).unwrap();
+    restore_now(&trash, EntityKind::Proxy, &proxy.id, NOW + 1).unwrap();
+
+    assert_eq!(stored_proxy(&proxy.id).unwrap().expires_at, None);
     PROXY_MANAGER.remove_from_memory(&proxy.id);
   }
 

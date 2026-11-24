@@ -882,7 +882,7 @@
     },
     "expiry": {
       "label": "Bitiş tarihi",
-      "hint": "İsteğe bağlı. Bir tarih ya da gün sayısı yazın. Bu proxy'yi kullanan profiller bitişten üç gün önce işaretlenir.",
+      "hint": "İsteğe bağlı. Bir tarih ya da gün sayısı yazın. Bu proxy'yi kullanan profiller üç gün önce işaretlenir; tarih geçince proxy silinir ve profiller proxysiz kalır.",
       "presetDays": "{{days}} g",
       "presetAria": "Bugünden {{days}} gün sonra bitsin",
       "column": "Bitiş",

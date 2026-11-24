@@ -887,7 +887,7 @@
     },
     "expiry": {
       "label": "Data de expiração",
-      "hint": "Opcional. Digite uma data ou um número de dias. Perfis com este proxy recebem uma marca três dias antes de expirar.",
+      "hint": "Opcional. Digite uma data ou um número de dias. Perfis com este proxy recebem uma marca três dias antes; quando a data passar, o proxy é excluído e eles ficam sem ele.",
       "presetDays": "{{days}} d",
       "presetAria": "Expira daqui a {{days}} dias",
       "column": "Expira",

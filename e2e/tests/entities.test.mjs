@@ -3483,6 +3483,54 @@ test("replacing a proxy moves every profile that uses it, and refuses a missing 
   });
 });
 
+test("a proxy past its expiry is removed and its profiles are left to be given another", async () => {
+  await withApp("entities-expired-proxy", async (app) => {
+    const makeProxy = (name, port, expiresAt) =>
+      app.invoke("create_stored_proxy", {
+        name,
+        proxySettings: { proxy_type: "socks5", host: "127.0.0.1", port },
+        ...(expiresAt === undefined ? {} : { expiresAt }),
+      });
+    const profile = await createProfile(app, "Temporary exit");
+    const expiring = await makeProxy(
+      "Short lived",
+      1080,
+      Math.floor(Date.now() / 1000) + 10,
+    );
+    const attached = await app.invoke("update_profile_proxy", {
+      profileId: profile.id,
+      proxyId: expiring.id,
+    });
+    assert.equal(attached.proxy_id, expiring.id);
+
+    // The sweep runs every 10 seconds: the proxy leaves the store once its
+    // date has passed, and the profile using it is detached first.
+    await app.waitFor(
+      async () =>
+        !(await app.invoke("get_stored_proxies")).some(
+          (proxy) => proxy.id === expiring.id,
+        ),
+      {
+        description: "the expired proxy to be removed",
+        timeoutMs: 40_000,
+      },
+    );
+
+    const detached = (await app.invoke("list_browser_profiles")).find(
+      (item) => item.id === profile.id,
+    );
+    assert.equal(detached.proxy_id, null, "the profile is left without it");
+
+    // The unset row now takes another proxy.
+    const replacement = await makeProxy("Replacement", 1081);
+    const reassigned = await app.invoke("update_profile_proxy", {
+      profileId: profile.id,
+      proxyId: replacement.id,
+    });
+    assert.equal(reassigned.proxy_id, replacement.id);
+  });
+});
+
 test("a profile can be locked against bulk actions and the flag survives a reload", async () => {
   await withApp("entities-bulk-lock", async (app) => {
     const profile = await createProfile(app, "Bulk Lock");

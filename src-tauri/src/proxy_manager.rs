@@ -295,8 +295,9 @@ pub struct StoredProxy {
   #[serde(default)]
   pub rotation_url: Option<String>,
   /// Unix seconds when the provider's plan for this proxy ends; `None` when
-  /// the person set no date. Shown next to profiles that use it, never
-  /// enforced at launch.
+  /// the person set no date. A date that has passed removes the proxy and
+  /// detaches every profile using it (`proxy_expiry.rs`); a launch never
+  /// reads it.
   #[serde(default)]
   pub expires_at: Option<u64>,
   /// What the person wrote about the proxy (fork): shown under its name,

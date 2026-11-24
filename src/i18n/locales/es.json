@@ -887,7 +887,7 @@
     },
     "expiry": {
       "label": "Fecha de caducidad",
-      "hint": "Opcional. Escribe una fecha o un número de días. Los perfiles con este proxy reciben una marca tres días antes de que caduque.",
+      "hint": "Opcional. Escribe una fecha o un número de días. Los perfiles con este proxy reciben una marca tres días antes; cuando la fecha pase, el proxy se elimina y se quedan sin él.",
       "presetDays": "{{days}} d",
       "presetAria": "Caduca dentro de {{days}} días",
       "column": "Caduca",

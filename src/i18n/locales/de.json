@@ -882,7 +882,7 @@
     },
     "expiry": {
       "label": "Ablaufdatum",
-      "hint": "Optional. Datum oder Anzahl Tage eingeben. Profile mit diesem Proxy erhalten drei Tage vor dem Ablauf eine Markierung.",
+      "hint": "Optional. Datum oder Anzahl Tage eingeben. Profile mit diesem Proxy erhalten drei Tage vorher eine Markierung; nach Ablauf wird der Proxy gelöscht und sie stehen ohne ihn da.",
       "presetDays": "{{days}} T.",
       "presetAria": "Läuft in {{days}} Tagen ab",
       "column": "Läuft ab",

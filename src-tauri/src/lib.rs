@@ -220,6 +220,7 @@ mod profile_templates;
 mod profile_totp;
 mod profiles_export;
 mod proxy_distribution;
+mod proxy_expiry;
 mod proxy_generator;
 mod proxy_manager;
 mod proxy_reconnect;
@@ -3242,6 +3243,10 @@ pub fn run_with_builder(
       // Expired trash entries are swept at startup and every six hours. Local
       // only, so it runs in every mode, e2e included.
       profile::trash::start_expiry_sweeper();
+
+      // A proxy whose date has passed leaves the store by itself, and the
+      // profiles it served are left without an exit node to replace.
+      crate::proxy_expiry::start_sweeper(app.handle().clone());
 
       // Files staged for an agent's upload are kept until the browser stops.
       crate::agent_uploads::clear_all();
