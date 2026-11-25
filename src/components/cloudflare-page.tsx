@@ -2,7 +2,7 @@
 
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LuCircleAlert, LuRefreshCw, LuTrash2 } from "react-icons/lu";
 import { Button } from "@/components/ui/button";
@@ -56,6 +56,12 @@ export function CloudflarePage() {
   const [accounts, setAccounts] = useState<CloudflareAccount[]>([]);
   const [running, setRunning] = useState(false);
   const [progress, setProgress] = useState<Record<string, string>>({});
+  const accountsRef = useRef<CloudflareAccount[]>([]);
+  const lastRefresh = useRef(0);
+
+  useEffect(() => {
+    accountsRef.current = accounts;
+  }, [accounts]);
   const [form, setForm] = useState({
     mailhubKey: "",
     mailhubSecret: "",
@@ -93,6 +99,16 @@ export function CloudflarePage() {
   }, [load]);
 
   useEffect(() => {
+    if (!running) return;
+    const timer = window.setInterval(() => {
+      void load();
+    }, 3000);
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [running, load]);
+
+  useEffect(() => {
     const unlisten = listen<{ id: string; status: string; line: string }>(
       "cloudflare-progress",
       (event) => {
@@ -107,12 +123,25 @@ export function CloudflarePage() {
               : account,
           ),
         );
+        // The command creates its record before the first event, so its card
+        // may not be in the list yet: fetch once so the run is visible.
+        if (
+          !accountsRef.current.some(
+            (account) => account.id === event.payload.id,
+          )
+        ) {
+          const now = Date.now();
+          if (now - lastRefresh.current > 1500) {
+            lastRefresh.current = now;
+            void load();
+          }
+        }
       },
     );
     return () => {
       void unlisten.then((off) => off());
     };
-  }, []);
+  }, [load]);
 
   const save = useCallback(async () => {
     try {
