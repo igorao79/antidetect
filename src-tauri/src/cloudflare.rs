@@ -57,6 +57,8 @@ pub struct Settings {
   pub country: Option<String>,
   pub ttl_minutes: Option<u32>,
   pub domain: Option<String>,
+  /// How many generated proxies one run may try before giving up.
+  pub attempts: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -384,6 +386,16 @@ async fn generate_inner(app: &AppHandle) -> Result<Account, String> {
   let node = node_binary()?;
   let script = script_path(&settings)?;
 
+  // A configured stored proxy is one exit and retrying it changes nothing; a
+  // generated one is a different exit every time, so a failed Turnstile gets a
+  // fresh proxy and another run.
+  let generated = settings.proxy_uuid.is_none();
+  let attempts = if generated {
+    settings.attempts.unwrap_or(3).clamp(1, 6)
+  } else {
+    1
+  };
+
   let id = uuid::Uuid::new_v4().to_string();
   let account = Account {
     id: id.clone(),
@@ -408,103 +420,154 @@ async fn generate_inner(app: &AppHandle) -> Result<Account, String> {
     write_accounts(&accounts)?;
   }
 
-  // A generated proxy becomes an ordinary stored proxy; the script assigns it.
-  let mut proxy_id = settings.proxy_uuid.clone();
-  if proxy_id.is_none() {
-    let request = crate::proxy_generator::GenerateRequest {
-      count: 1,
-      countries_mode: settings.country.clone().map(|_| "only".to_string()),
-      countries: settings.country.clone().into_iter().collect(),
-      ttl_minutes: settings.ttl_minutes,
-      name: Some(format!("cf {}", id.chars().take(6).collect::<String>())),
-      note: Some("cloudflare signup".to_string()),
-      protocol: Default::default(),
-    };
-    let generated = crate::proxy_generator::proxy_generator_generate(app.clone(), request).await?;
-    proxy_id = generated.first().map(|proxy| proxy.id.clone());
-    if proxy_id.is_none() {
-      let message = crate::backend_error("CLOUDFLARE_PROXY_FAILED");
-      update_account(&id, |account| {
-        account.status = "failed".to_string();
-        account.error = Some(message.clone());
-        account.finished_at = Some(now_secs());
-      })?;
-      return Err(message);
-    }
-    update_account(&id, |account| account.proxy_id = proxy_id.clone())?;
-  }
-
   let dir = ensure_dir()?;
-  let report_path = dir.join(format!("report-{id}.json"));
-  let proxy = proxy_id.clone().unwrap_or_default();
-  let mut args: Vec<String> = vec![
-    script.to_string_lossy().to_string(),
-    "--proxy-uuid".to_string(),
-    proxy,
-    "--os".to_string(),
-    "win".to_string(),
-    "--key-rounds".to_string(),
-    "4".to_string(),
-    "--key-wait".to_string(),
-    "75".to_string(),
-    "--report".to_string(),
-    report_path.to_string_lossy().to_string(),
-  ];
-  if let Some(domain) = settings.domain.clone() {
-    args.push("--domain".to_string());
-    args.push(domain);
+  let mut last_error = String::from("the script produced no report");
+  let mut last_report: Option<Report> = None;
+  let mut last_tail: Vec<String> = Vec::new();
+
+  for attempt in 1..=attempts {
+    let mut proxy_id = settings.proxy_uuid.clone();
+    if proxy_id.is_none() {
+      let request = crate::proxy_generator::GenerateRequest {
+        count: 1,
+        countries_mode: settings.country.clone().map(|_| "only".to_string()),
+        countries: settings.country.clone().into_iter().collect(),
+        ttl_minutes: settings.ttl_minutes,
+        name: Some(format!(
+          "cf {} a{attempt}",
+          id.chars().take(6).collect::<String>()
+        )),
+        note: Some("cloudflare signup".to_string()),
+        protocol: Default::default(),
+      };
+      let proxies =
+        match crate::proxy_generator::proxy_generator_generate(app.clone(), request).await {
+          Ok(proxies) => proxies,
+          Err(error) => {
+            last_error = error;
+            break;
+          }
+        };
+      proxy_id = proxies.first().map(|proxy| proxy.id.clone());
+      if proxy_id.is_none() {
+        last_error = crate::backend_error("CLOUDFLARE_PROXY_FAILED");
+        break;
+      }
+      let current_proxy = proxy_id.clone();
+      update_account(&id, |account| account.proxy_id = current_proxy)?;
+    }
+    let proxy = proxy_id.clone().unwrap_or_default();
+
+    let report_path = dir.join(format!("report-{id}-a{attempt}.json"));
+    let mut args: Vec<String> = vec![
+      script.to_string_lossy().to_string(),
+      "--proxy-uuid".to_string(),
+      proxy,
+      "--os".to_string(),
+      "win".to_string(),
+      "--turnstile-timeout".to_string(),
+      "60".to_string(),
+      "--key-rounds".to_string(),
+      "2".to_string(),
+      "--key-wait".to_string(),
+      "60".to_string(),
+      "--report".to_string(),
+      report_path.to_string_lossy().to_string(),
+    ];
+    if let Some(domain) = settings.domain.clone() {
+      args.push("--domain".to_string());
+      args.push(domain);
+    }
+
+    update_account(&id, |account| account.status = "running".to_string())?;
+    let _ = crate::events::emit(
+      PROGRESS_EVENT,
+      serde_json::json!({ "id": id, "status": "running", "line": format!("attempt {attempt}/{attempts}") }),
+    );
+
+    let mut child = Command::new(&node)
+      .args(&args)
+      .env("MAILHUB_KEY", settings.mailhub_key.trim())
+      .env("MAILHUB_SECRET", secret.trim())
+      .env("OWL_BASE", owl_base())
+      .env("PATH", std::env::var("PATH").unwrap_or_default())
+      .stdout(Stdio::piped())
+      .stderr(Stdio::piped())
+      .spawn()
+      .map_err(|e| detail("CLOUDFLARE_SPAWN_FAILED", e))?;
+
+    let stdout = child.stdout.take();
+    let stderr = child.stderr.take();
+    let out_id = id.clone();
+    let err_id = id.clone();
+    let out_thread = std::thread::spawn(move || {
+      read_pipe(
+        stdout.map(|pipe| Box::new(pipe) as Box<dyn std::io::Read + Send>),
+        true,
+        &out_id,
+      )
+    });
+    let err_thread = std::thread::spawn(move || {
+      read_pipe(
+        stderr.map(|pipe| Box::new(pipe) as Box<dyn std::io::Read + Send>),
+        false,
+        &err_id,
+      )
+    });
+    let mut lines = out_thread.join().unwrap_or_default();
+    lines.extend(err_thread.join().unwrap_or_default());
+    let _ = child.wait();
+
+    let report: Option<Report> = std::fs::read_to_string(&report_path)
+      .ok()
+      .and_then(|text| serde_json::from_str(&text).ok());
+    last_tail = lines.iter().rev().take(12).rev().cloned().collect();
+
+    match report {
+      Some(report)
+        if report
+          .outcome
+          .clone()
+          .unwrap_or_default()
+          .starts_with("created") =>
+      {
+        last_report = Some(report);
+        break;
+      }
+      Some(report) => {
+        last_error = report
+          .error
+          .clone()
+          .unwrap_or_else(|| "the run failed".to_string());
+        last_report = Some(report);
+        if attempt < attempts {
+          let _ = crate::events::emit(
+            PROGRESS_EVENT,
+            serde_json::json!({ "id": id, "status": "turnstile", "line": format!("retry {attempt}/{attempts}: {last_error}") }),
+          );
+        }
+      }
+      None => {
+        last_error = format!("the script produced no report: {}", last_tail.join(" / "));
+        if attempt < attempts {
+          let _ = crate::events::emit(
+            PROGRESS_EVENT,
+            serde_json::json!({ "id": id, "status": "running", "line": format!("retry {attempt}/{attempts}") }),
+          );
+        }
+      }
+    }
   }
 
-  update_account(&id, |account| account.status = "running".to_string())?;
-  let _ = crate::events::emit(
-    PROGRESS_EVENT,
-    serde_json::json!({ "id": id, "status": "running", "line": "started" }),
-  );
-
-  let mut child = Command::new(&node)
-    .args(&args)
-    .env("MAILHUB_KEY", settings.mailhub_key.trim())
-    .env("MAILHUB_SECRET", secret.trim())
-    .env("OWL_BASE", owl_base())
-    .env("PATH", std::env::var("PATH").unwrap_or_default())
-    .stdout(Stdio::piped())
-    .stderr(Stdio::piped())
-    .spawn()
-    .map_err(|e| detail("CLOUDFLARE_SPAWN_FAILED", e))?;
-
-  let stdout = child.stdout.take();
-  let stderr = child.stderr.take();
-  let out_id = id.clone();
-  let err_id = id.clone();
-  let out_thread = std::thread::spawn(move || {
-    read_pipe(
-      stdout.map(|pipe| Box::new(pipe) as Box<dyn std::io::Read + Send>),
-      true,
-      &out_id,
-    )
+  let report = last_report.unwrap_or(Report {
+    email: None,
+    password: None,
+    outcome: Some("failed".to_string()),
+    api_key: None,
+    api_token: None,
+    account_id: None,
+    error: Some(last_error.clone()),
   });
-  let err_thread = std::thread::spawn(move || {
-    read_pipe(
-      stderr.map(|pipe| Box::new(pipe) as Box<dyn std::io::Read + Send>),
-      false,
-      &err_id,
-    )
-  });
-  let mut lines = out_thread.join().unwrap_or_default();
-  lines.extend(err_thread.join().unwrap_or_default());
-  let status = child
-    .wait()
-    .map_err(|e| detail("CLOUDFLARE_SPAWN_FAILED", e))?;
-
-  let report: Option<Report> = std::fs::read_to_string(&report_path)
-    .ok()
-    .and_then(|text| serde_json::from_str(&text).ok());
-  let tail: Vec<String> = lines.iter().rev().take(12).rev().cloned().collect();
-  let report = report.ok_or_else(|| {
-    let message = tail.join(" / ");
-    detail("CLOUDFLARE_REPORT_MISSING", message)
-  })?;
-
   let token_ready = report.api_token.is_some();
   let outcome = report.outcome.clone().unwrap_or_default();
   let final_status = if outcome.starts_with("created") {
@@ -524,13 +587,13 @@ async fn generate_inner(app: &AppHandle) -> Result<Account, String> {
     account.account_id = report.account_id.clone();
     account.status = final_status.to_string();
     account.error = report.error.clone().or_else(|| {
-      if status.success() {
-        None
+      if final_status == "failed" {
+        Some(last_error.clone())
       } else {
-        Some(tail.join(" / "))
+        None
       }
     });
-    account.steps = tail.clone();
+    account.steps = last_tail.clone();
     account.finished_at = Some(now_secs());
   })?;
   let _ = crate::events::emit(
