@@ -110,11 +110,13 @@ was created but a later step (mail or verification) did not finish.
 4. `session.new`, `browsingContext.setViewport` (1280×1000, so the whole form
    fits), then the form: email and password typed as trusted key events, each
    value read back and retyped if React hydration swallowed it.
-5. Turnstile: the widget box is the lowest ~70 px box between the password
-   field and the submit button. Its challenge may resolve without a click; if
-   not, the checkbox is clicked at a small fixed offset inside the box
-   (`+22, +34` and neighbours). The widget sits in a closed shadow root, so it
-   cannot be addressed as an element.
+5. Turnstile: first reject the cookie-consent banner when one is present. Its
+   full-page overlay otherwise intercepts every checkbox click, leaving the
+   widget untouched until the timeout. The widget box is the lowest ~70 px box
+   between the password field and the submit button. Its challenge may resolve
+   without a click; if not, the checkbox is clicked at a small fixed offset
+   inside the box (`+22, +34` and neighbours). The widget sits in a closed
+   shadow root, so it cannot be addressed as an element.
 6. `button[type=submit]`, then the mail: `GET /mailboxes/:address/messages` →
    the first Cloudflare link → opened in the same profile.
 
@@ -132,9 +134,9 @@ was created but a later step (mail or verification) did not finish.
 | verification link → login page            | 6.6 s      |
 | **total**                                 | **~2 min** |
 
-Turnstile is the flaky step: of five attempts that reached the form, one
-produced a token in 28 s; the others sat on `Checking your Browser…` or
-`Verificando…` until the timeout. The checkbox click lands (the widget turns to
-"verifying"), but Cloudflare's verification sometimes never answers on a given
-exit. Retry with another proxy before assuming the script broke; `--manual` with
-a visible window is the fallback.
+Turnstile can still be exit-dependent: if the widget turns to "verifying" but
+never answers, retry with another proxy; `--manual` with a visible window is the
+fallback. An untouched checkbox at the timeout instead points to an overlay:
+the failed runs on 2026-11-25 had the cookie-consent banner covering the form,
+so their clicks never reached Turnstile. The script now rejects that
+banner before clicking.

@@ -557,6 +557,32 @@ function findWidgetExpression() {
   })()`;
 }
 
+async function dismissCookieConsent(bidi, context) {
+  const expression = `(() => {
+    const labels = /^(reject all(?: cookies)?|alle ablehnen|tout refuser|rechazar todo|recusar tudo|отклонить все)$/i;
+    const button = [...document.querySelectorAll('button,[role=button]')].find((candidate) => {
+      const text = (candidate.textContent || '').replace(/\\s+/g, ' ').trim();
+      const rect = candidate.getBoundingClientRect();
+      return labels.test(text) && rect.width > 0 && rect.height > 0;
+    });
+    if (!button) return null;
+    const rect = button.getBoundingClientRect();
+    return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) };
+  })()`;
+  let clicked = false;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const point = await bidi.json(context, expression);
+    if (!point) {
+      if (clicked) say("cookie consent: rejected");
+      return clicked;
+    }
+    await bidi.click(context, point.x, point.y);
+    clicked = true;
+    await sleep(750);
+  }
+  throw new Error("the cookie consent did not close");
+}
+
 async function solveTurnstile(bidi, context) {
   const started = Date.now();
   const deadline =
@@ -567,6 +593,7 @@ async function solveTurnstile(bidi, context) {
   let box = null;
 
   while (Date.now() < deadline) {
+    await dismissCookieConsent(bidi, context);
     const token = await bidi.evaluate(
       context,
       "(document.querySelector('input[name=cf_challenge_response]')?.value || '')",
