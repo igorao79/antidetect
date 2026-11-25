@@ -3299,7 +3299,8 @@
     "cookieBot": "Cookie Bot",
     "trash": "Çöp Kutusu",
     "agent": "Ajan",
-    "workspace": "Owl sunucusu"
+    "workspace": "Owl sunucusu",
+    "cloudflare": "Cloudflare"
   },
   "encryption": {
     "required": {
@@ -5442,25 +5443,25 @@
     }
   },
   "cloudflare": {
-    "title": "Uygulama üzerinden oluşturulan hesaplar",
-    "subtitle": "Ayarlar",
-    "settings": "mailhub anahtarı",
-    "mailhubKey": "mailhub sırrı",
-    "mailhubSecret": "mailhub alan adı",
-    "domain": "Proxy ülkesi",
-    "country": "Proxy TTL, dakika",
-    "ttl": "Kayıtlı proxy",
-    "proxy": "Boş: proxy oluşturucu ile üret",
-    "proxyHint": "Kaydet",
-    "save": "Ayarlar kaydedildi",
-    "saved": "Hesap oluştur",
-    "generate": "Oluşturuluyor…",
-    "running": "Henüz hesap yok",
-    "empty": "mailhub anahtarını ve sırrını doldur",
-    "needMailhub": "Parola",
-    "password": "API anahtarı",
-    "apiKey": "API token",
-    "apiToken": "Sil",
+    "title": "Cloudflare",
+    "subtitle": "Uygulama üzerinden oluşturulan hesaplar",
+    "settings": "Ayarlar",
+    "mailhubKey": "mailhub anahtarı",
+    "mailhubSecret": "mailhub sırrı",
+    "domain": "mailhub alan adı",
+    "country": "Proxy ülkesi",
+    "ttl": "Proxy TTL, dakika",
+    "proxy": "Kayıtlı proxy",
+    "proxyHint": "Boş: proxy oluşturucu ile üret",
+    "save": "Kaydet",
+    "saved": "Ayarlar kaydedildi",
+    "generate": "Hesap oluştur",
+    "running": "Oluşturuluyor…",
+    "empty": "Henüz hesap yok",
+    "needMailhub": "mailhub anahtarını ve sırrını doldur",
+    "password": "Parola",
+    "apiKey": "API anahtarı",
+    "apiToken": "API token",
     "status": {
       "queued": "Sırada",
       "running": "Çalışıyor",
@@ -5474,6 +5475,7 @@
       "token": "Token",
       "verified": "Doğrulandı",
       "failed": "Hata"
-    }
+    },
+    "delete": "Sil"
   }
 }

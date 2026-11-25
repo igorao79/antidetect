@@ -3299,7 +3299,8 @@
     "cookieBot": "Cookie Bot",
     "trash": "Papierkorb",
     "agent": "Agent",
-    "workspace": "Owl-Server"
+    "workspace": "Owl-Server",
+    "cloudflare": "Cloudflare"
   },
   "encryption": {
     "required": {
@@ -5442,25 +5443,25 @@
     }
   },
   "cloudflare": {
-    "title": "Über die App erstellte Konten",
-    "subtitle": "Einstellungen",
-    "settings": "Mailhub-Schlüssel",
-    "mailhubKey": "Mailhub-Geheimnis",
-    "mailhubSecret": "Mailhub-Domain",
-    "domain": "Proxy-Land",
-    "country": "Proxy-TTL, Minuten",
-    "ttl": "Gespeicherter Proxy",
-    "proxy": "Leer: über den Proxy-Generator erzeugen",
-    "proxyHint": "Speichern",
-    "save": "Einstellungen gespeichert",
-    "saved": "Konto erstellen",
-    "generate": "Wird erstellt…",
-    "running": "Noch keine Konten",
-    "empty": "Mailhub-Schlüssel und -Geheimnis ausfüllen",
-    "needMailhub": "Passwort",
-    "password": "API-Schlüssel",
-    "apiKey": "API-Token",
-    "apiToken": "Löschen",
+    "title": "Cloudflare",
+    "subtitle": "Über die App erstellte Konten",
+    "settings": "Einstellungen",
+    "mailhubKey": "Mailhub-Schlüssel",
+    "mailhubSecret": "Mailhub-Geheimnis",
+    "domain": "Mailhub-Domain",
+    "country": "Proxy-Land",
+    "ttl": "Proxy-TTL, Minuten",
+    "proxy": "Gespeicherter Proxy",
+    "proxyHint": "Leer: über den Proxy-Generator erzeugen",
+    "save": "Speichern",
+    "saved": "Einstellungen gespeichert",
+    "generate": "Konto erstellen",
+    "running": "Wird erstellt…",
+    "empty": "Noch keine Konten",
+    "needMailhub": "Mailhub-Schlüssel und -Geheimnis ausfüllen",
+    "password": "Passwort",
+    "apiKey": "API-Schlüssel",
+    "apiToken": "API-Token",
     "status": {
       "queued": "In Warteschlange",
       "running": "Läuft",
@@ -5474,6 +5475,7 @@
       "token": "Token",
       "verified": "Bestätigt",
       "failed": "Fehler"
-    }
+    },
+    "delete": "Löschen"
   }
 }

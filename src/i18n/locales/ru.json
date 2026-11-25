@@ -3355,7 +3355,8 @@
     "cookieBot": "Cookie Bot",
     "trash": "Корзина",
     "agent": "Агент",
-    "workspace": "Сервер Owl"
+    "workspace": "Сервер Owl",
+    "cloudflare": "Cloudflare"
   },
   "encryption": {
     "required": {
@@ -5564,25 +5565,25 @@
     }
   },
   "cloudflare": {
-    "title": "Аккаунты, созданные через приложение",
-    "subtitle": "Настройки",
-    "settings": "Ключ mailhub",
-    "mailhubKey": "Секрет mailhub",
-    "mailhubSecret": "Домен mailhub",
-    "domain": "Страна прокси",
-    "country": "TTL прокси, минуты",
-    "ttl": "Сохранённый прокси",
-    "proxy": "Пусто: сгенерировать через проксигенератор",
-    "proxyHint": "Сохранить",
-    "save": "Настройки сохранены",
-    "saved": "Создать аккаунт",
-    "generate": "Создаётся…",
-    "running": "Аккаунтов пока нет",
-    "empty": "Заполни ключ и секрет mailhub",
-    "needMailhub": "Пароль",
-    "password": "API-ключ",
-    "apiKey": "API-токен",
-    "apiToken": "Удалить",
+    "title": "Cloudflare",
+    "subtitle": "Аккаунты, созданные через приложение",
+    "settings": "Настройки",
+    "mailhubKey": "Ключ mailhub",
+    "mailhubSecret": "Секрет mailhub",
+    "domain": "Домен mailhub",
+    "country": "Страна прокси",
+    "ttl": "TTL прокси, минуты",
+    "proxy": "Сохранённый прокси",
+    "proxyHint": "Пусто: сгенерировать через проксигенератор",
+    "save": "Сохранить",
+    "saved": "Настройки сохранены",
+    "generate": "Создать аккаунт",
+    "running": "Создаётся…",
+    "empty": "Аккаунтов пока нет",
+    "needMailhub": "Заполни ключ и секрет mailhub",
+    "password": "Пароль",
+    "apiKey": "API-ключ",
+    "apiToken": "API-токен",
     "status": {
       "queued": "В очереди",
       "running": "Выполняется",
@@ -5596,6 +5597,7 @@
       "token": "Токен",
       "verified": "Подтверждён",
       "failed": "Ошибка"
-    }
+    },
+    "delete": "Удалить"
   }
 }

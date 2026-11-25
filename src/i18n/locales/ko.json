@@ -3299,7 +3299,8 @@
     "cookieBot": "Cookie Bot",
     "trash": "휴지통",
     "agent": "에이전트",
-    "workspace": "Owl 서버"
+    "workspace": "Owl 서버",
+    "cloudflare": "Cloudflare"
   },
   "encryption": {
     "required": {
@@ -5442,25 +5443,25 @@
     }
   },
   "cloudflare": {
-    "title": "앱에서 만든 계정",
-    "subtitle": "설정",
-    "settings": "mailhub 키",
-    "mailhubKey": "mailhub 시크릿",
-    "mailhubSecret": "mailhub 도메인",
-    "domain": "프록시 국가",
-    "country": "프록시 TTL(분)",
-    "ttl": "저장된 프록시",
-    "proxy": "비우면 프록시 생성기로 만듭니다",
-    "proxyHint": "저장",
-    "save": "설정을 저장했습니다",
-    "saved": "계정 만들기",
-    "generate": "만드는 중…",
-    "running": "아직 계정이 없습니다",
-    "empty": "mailhub 키와 시크릿을 입력하세요",
-    "needMailhub": "비밀번호",
-    "password": "API 키",
-    "apiKey": "API 토큰",
-    "apiToken": "삭제",
+    "title": "Cloudflare",
+    "subtitle": "앱에서 만든 계정",
+    "settings": "설정",
+    "mailhubKey": "mailhub 키",
+    "mailhubSecret": "mailhub 시크릿",
+    "domain": "mailhub 도메인",
+    "country": "프록시 국가",
+    "ttl": "프록시 TTL(분)",
+    "proxy": "저장된 프록시",
+    "proxyHint": "비우면 프록시 생성기로 만듭니다",
+    "save": "저장",
+    "saved": "설정을 저장했습니다",
+    "generate": "계정 만들기",
+    "running": "만드는 중…",
+    "empty": "아직 계정이 없습니다",
+    "needMailhub": "mailhub 키와 시크릿을 입력하세요",
+    "password": "비밀번호",
+    "apiKey": "API 키",
+    "apiToken": "API 토큰",
     "status": {
       "queued": "대기 중",
       "running": "실행 중",
@@ -5474,6 +5475,7 @@
       "token": "토큰",
       "verified": "확인됨",
       "failed": "오류"
-    }
+    },
+    "delete": "삭제"
   }
 }

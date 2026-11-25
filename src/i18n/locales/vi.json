@@ -3299,7 +3299,8 @@
     "cookieBot": "Cookie Bot",
     "trash": "Thùng rác",
     "agent": "Tác nhân",
-    "workspace": "Máy chủ Owl"
+    "workspace": "Máy chủ Owl",
+    "cloudflare": "Cloudflare"
   },
   "encryption": {
     "required": {
@@ -5442,25 +5443,25 @@
     }
   },
   "cloudflare": {
-    "title": "Tài khoản tạo qua ứng dụng",
-    "subtitle": "Cài đặt",
-    "settings": "Khóa mailhub",
-    "mailhubKey": "Bí mật mailhub",
-    "mailhubSecret": "Tên miền mailhub",
-    "domain": "Quốc gia proxy",
-    "country": "TTL proxy, phút",
-    "ttl": "Proxy đã lưu",
-    "proxy": "Trống: tạo bằng trình tạo proxy",
-    "proxyHint": "Lưu",
-    "save": "Đã lưu cài đặt",
-    "saved": "Tạo tài khoản",
-    "generate": "Đang tạo…",
-    "running": "Chưa có tài khoản",
-    "empty": "Điền khóa và bí mật mailhub",
-    "needMailhub": "Mật khẩu",
-    "password": "Khóa API",
-    "apiKey": "Token API",
-    "apiToken": "Xóa",
+    "title": "Cloudflare",
+    "subtitle": "Tài khoản tạo qua ứng dụng",
+    "settings": "Cài đặt",
+    "mailhubKey": "Khóa mailhub",
+    "mailhubSecret": "Bí mật mailhub",
+    "domain": "Tên miền mailhub",
+    "country": "Quốc gia proxy",
+    "ttl": "TTL proxy, phút",
+    "proxy": "Proxy đã lưu",
+    "proxyHint": "Trống: tạo bằng trình tạo proxy",
+    "save": "Lưu",
+    "saved": "Đã lưu cài đặt",
+    "generate": "Tạo tài khoản",
+    "running": "Đang tạo…",
+    "empty": "Chưa có tài khoản",
+    "needMailhub": "Điền khóa và bí mật mailhub",
+    "password": "Mật khẩu",
+    "apiKey": "Khóa API",
+    "apiToken": "Token API",
     "status": {
       "queued": "Đang chờ",
       "running": "Đang chạy",
@@ -5474,6 +5475,7 @@
       "token": "Token",
       "verified": "Đã xác minh",
       "failed": "Lỗi"
-    }
+    },
+    "delete": "Xóa"
   }
 }

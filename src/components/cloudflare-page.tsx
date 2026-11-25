@@ -253,7 +253,7 @@ export function CloudflarePage() {
           </div>
         </div>
         <div className="mt-3 flex items-center justify-between gap-3">
-          {!canGenerate && (
+          {!canGenerate && !running && (
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <LuCircleAlert className="size-3.5" />
               {t("cloudflare.needMailhub")}

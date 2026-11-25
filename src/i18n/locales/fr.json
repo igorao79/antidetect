@@ -3321,7 +3321,8 @@
     "cookieBot": "Cookie Bot",
     "trash": "Corbeille",
     "agent": "Agent",
-    "workspace": "Serveur Owl"
+    "workspace": "Serveur Owl",
+    "cloudflare": "Cloudflare"
   },
   "encryption": {
     "required": {
@@ -5496,25 +5497,25 @@
     }
   },
   "cloudflare": {
-    "title": "Comptes créés via l'application",
-    "subtitle": "Paramètres",
-    "settings": "Clé mailhub",
-    "mailhubKey": "Secret mailhub",
-    "mailhubSecret": "Domaine mailhub",
-    "domain": "Pays du proxy",
-    "country": "TTL du proxy, minutes",
-    "ttl": "Proxy enregistré",
-    "proxy": "Vide : générer via le générateur de proxies",
-    "proxyHint": "Enregistrer",
-    "save": "Paramètres enregistrés",
-    "saved": "Créer un compte",
-    "generate": "Création…",
-    "running": "Aucun compte pour l'instant",
-    "empty": "Renseignez la clé et le secret mailhub",
-    "needMailhub": "Mot de passe",
-    "password": "Clé API",
-    "apiKey": "Jeton API",
-    "apiToken": "Supprimer",
+    "title": "Cloudflare",
+    "subtitle": "Comptes créés via l'application",
+    "settings": "Paramètres",
+    "mailhubKey": "Clé mailhub",
+    "mailhubSecret": "Secret mailhub",
+    "domain": "Domaine mailhub",
+    "country": "Pays du proxy",
+    "ttl": "TTL du proxy, minutes",
+    "proxy": "Proxy enregistré",
+    "proxyHint": "Vide : générer via le générateur de proxies",
+    "save": "Enregistrer",
+    "saved": "Paramètres enregistrés",
+    "generate": "Créer un compte",
+    "running": "Création…",
+    "empty": "Aucun compte pour l'instant",
+    "needMailhub": "Renseignez la clé et le secret mailhub",
+    "password": "Mot de passe",
+    "apiKey": "Clé API",
+    "apiToken": "Jeton API",
     "status": {
       "queued": "En attente",
       "running": "En cours",
@@ -5528,6 +5529,7 @@
       "token": "Jeton",
       "verified": "Vérifié",
       "failed": "Erreur"
-    }
+    },
+    "delete": "Supprimer"
   }
 }
