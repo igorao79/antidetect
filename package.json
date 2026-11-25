@@ -2,7 +2,7 @@
   "name": "donutbrowser",
   "private": true,
   "license": "AGPL-3.0",
-  "version": "0.33.38",
+  "version": "0.33.39",
   "type": "module",
   "scripts": {
     "predev": "pnpm licenses:generate",
