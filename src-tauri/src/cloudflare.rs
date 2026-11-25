@@ -446,7 +446,7 @@ async fn generate_inner(app: &AppHandle) -> Result<Account, String> {
   // fresh proxy and another run.
   let generated = settings.proxy_uuid.is_none();
   let attempts = if generated {
-    settings.attempts.unwrap_or(3).clamp(1, 6)
+    settings.attempts.unwrap_or(4).clamp(1, 8)
   } else {
     1
   };
@@ -521,7 +521,7 @@ async fn generate_inner(app: &AppHandle) -> Result<Account, String> {
       "--os".to_string(),
       "win".to_string(),
       "--turnstile-timeout".to_string(),
-      "60".to_string(),
+      "90".to_string(),
       "--key-rounds".to_string(),
       "2".to_string(),
       "--key-wait".to_string(),
