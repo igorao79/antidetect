@@ -117,8 +117,10 @@ was created but a later step (mail or verification) did not finish.
    without a click; if not, the checkbox is clicked at a small fixed offset
    inside the box (`+22, +34` and neighbours). The widget sits in a closed
    shadow root, so it cannot be addressed as an element.
-6. `button[type=submit]`, then the mail: `GET /mailboxes/:address/messages` →
-   the first Cloudflare link → opened in the same profile.
+6. `button[type=submit]`, scrolled into the viewport first because the form can
+   extend below its 1000 px height, then the mail:
+   `GET /mailboxes/:address/messages` → the first Cloudflare link → opened in
+   the same profile.
 
 ## Measured on one account (2026-11-24, macOS, dataimpulse SOCKS5)
 

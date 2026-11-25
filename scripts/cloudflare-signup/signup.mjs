@@ -669,10 +669,12 @@ async function submitForm(bidi, context) {
   const button = await bidi.json(
     context,
     `(() => { const button = document.querySelector('button[type=submit]'); if (!button) return null;
+      button.scrollIntoView({ block: 'center' });
       const rect = button.getBoundingClientRect();
       return { x: Math.round(rect.x + rect.width / 2), y: Math.round(rect.y + rect.height / 2) }; })()`,
   );
   if (!button) throw new Error("no submit button");
+  await sleep(250);
   await bidi.click(context, button.x, button.y);
   await sleep(2500);
 
