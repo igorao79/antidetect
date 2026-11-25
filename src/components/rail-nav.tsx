@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import {
   LuBot,
   LuCloud,
+  LuCloudCog,
   LuCookie,
   LuDownload,
   LuEllipsis,
@@ -49,6 +50,7 @@ export type AppPage =
   | "vpns"
   | "settings"
   | "integrations"
+  | "cloudflare"
   | "account"
   | "workspace"
   | "import"
@@ -240,6 +242,7 @@ export const PAGE_ICONS: Record<AppPage, PageIcon> = {
   cookieBot: LuCookie,
   agent: LuBot,
   integrations: LuPlug,
+  cloudflare: LuCloudCog,
   account: LuCloud,
   workspace: LuServer,
   import: LuDownload,
@@ -257,6 +260,7 @@ const PAGE_ORDER: AppPage[] = [
   "cookieBot",
   "agent",
   "integrations",
+  "cloudflare",
   "workspace",
   "account",
   "import",
@@ -427,6 +431,11 @@ const ALL_TOP_ITEMS: RailItem[] = [
     page: "integrations",
     labelKey: "rail.integrations",
     anchor: "rail-integrations",
+  },
+  {
+    page: "cloudflare",
+    labelKey: "rail.cloudflare",
+    anchor: "rail-cloudflare",
   },
   { page: "account", labelKey: "rail.account", anchor: "rail-account" },
 ];

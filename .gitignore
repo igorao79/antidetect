@@ -74,3 +74,6 @@ session-recover.yaml
 
 # Disk images scripts/release-macos.sh builds before publishing
 /release-out/
+
+# Cloudflare signup runs: account credentials, not for git
+scripts/cloudflare-signup/reports/

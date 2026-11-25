@@ -3339,7 +3339,8 @@
     "agent": "Агент",
     "agentWaiting": "Агент, ожидающих запросов: {{count}}",
     "brand": "Owl",
-    "workspace": "Сервер"
+    "workspace": "Сервер",
+    "cloudflare": "Cloudflare"
   },
   "pageTitle": {
     "proxies": "Сеть",
@@ -5560,6 +5561,41 @@
       "copyAll": "Скопировать все",
       "more": "Ещё",
       "finish": "Готово"
+    }
+  },
+  "cloudflare": {
+    "title": "Аккаунты, созданные через приложение",
+    "subtitle": "Настройки",
+    "settings": "Ключ mailhub",
+    "mailhubKey": "Секрет mailhub",
+    "mailhubSecret": "Домен mailhub",
+    "domain": "Страна прокси",
+    "country": "TTL прокси, минуты",
+    "ttl": "Сохранённый прокси",
+    "proxy": "Пусто: сгенерировать через проксигенератор",
+    "proxyHint": "Сохранить",
+    "save": "Настройки сохранены",
+    "saved": "Создать аккаунт",
+    "generate": "Создаётся…",
+    "running": "Аккаунтов пока нет",
+    "empty": "Заполни ключ и секрет mailhub",
+    "needMailhub": "Пароль",
+    "password": "API-ключ",
+    "apiKey": "API-токен",
+    "apiToken": "Удалить",
+    "status": {
+      "queued": "В очереди",
+      "running": "Выполняется",
+      "mailbox": "Ящик",
+      "proxy": "Прокси",
+      "profile": "Профиль",
+      "browser": "Браузер",
+      "signup": "Регистрация",
+      "submitted": "Отправлено",
+      "email": "Почта",
+      "token": "Токен",
+      "verified": "Подтверждён",
+      "failed": "Ошибка"
     }
   }
 }

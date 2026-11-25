@@ -3283,7 +3283,8 @@
     "agent": "エージェント",
     "agentWaiting": "エージェント、対応待ちのリクエスト: {{count}}",
     "brand": "Owl",
-    "workspace": "サーバー"
+    "workspace": "サーバー",
+    "cloudflare": "Cloudflare"
   },
   "pageTitle": {
     "proxies": "ネットワーク",
@@ -5438,6 +5439,41 @@
       "copyAll": "すべてコピー",
       "more": "さらに生成",
       "finish": "完了"
+    }
+  },
+  "cloudflare": {
+    "title": "アプリで作成したアカウント",
+    "subtitle": "設定",
+    "settings": "mailhub キー",
+    "mailhubKey": "mailhub シークレット",
+    "mailhubSecret": "mailhub ドメイン",
+    "domain": "プロキシの国",
+    "country": "プロキシ TTL（分）",
+    "ttl": "保存済みプロキシ",
+    "proxy": "空欄ならプロキシ生成器で作成",
+    "proxyHint": "保存",
+    "save": "設定を保存しました",
+    "saved": "アカウントを作成",
+    "generate": "作成中…",
+    "running": "アカウントはまだありません",
+    "empty": "mailhub のキーとシークレットを入力してください",
+    "needMailhub": "パスワード",
+    "password": "API キー",
+    "apiKey": "API トークン",
+    "apiToken": "削除",
+    "status": {
+      "queued": "待機中",
+      "running": "実行中",
+      "mailbox": "メールボックス",
+      "proxy": "プロキシ",
+      "profile": "プロファイル",
+      "browser": "ブラウザ",
+      "signup": "登録",
+      "submitted": "送信済み",
+      "email": "メール",
+      "token": "トークン",
+      "verified": "確認済み",
+      "failed": "エラー"
     }
   }
 }

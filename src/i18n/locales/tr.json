@@ -3283,7 +3283,8 @@
     "agent": "Ajan",
     "agentWaiting": "Ajan, bekleyen istekler: {{count}}",
     "brand": "Owl",
-    "workspace": "Sunucu"
+    "workspace": "Sunucu",
+    "cloudflare": "Cloudflare"
   },
   "pageTitle": {
     "proxies": "Ağ",
@@ -5438,6 +5439,41 @@
       "copyAll": "Tümünü kopyala",
       "more": "Daha fazla oluştur",
       "finish": "Bitti"
+    }
+  },
+  "cloudflare": {
+    "title": "Uygulama üzerinden oluşturulan hesaplar",
+    "subtitle": "Ayarlar",
+    "settings": "mailhub anahtarı",
+    "mailhubKey": "mailhub sırrı",
+    "mailhubSecret": "mailhub alan adı",
+    "domain": "Proxy ülkesi",
+    "country": "Proxy TTL, dakika",
+    "ttl": "Kayıtlı proxy",
+    "proxy": "Boş: proxy oluşturucu ile üret",
+    "proxyHint": "Kaydet",
+    "save": "Ayarlar kaydedildi",
+    "saved": "Hesap oluştur",
+    "generate": "Oluşturuluyor…",
+    "running": "Henüz hesap yok",
+    "empty": "mailhub anahtarını ve sırrını doldur",
+    "needMailhub": "Parola",
+    "password": "API anahtarı",
+    "apiKey": "API token",
+    "apiToken": "Sil",
+    "status": {
+      "queued": "Sırada",
+      "running": "Çalışıyor",
+      "mailbox": "Posta kutusu",
+      "proxy": "Proxy",
+      "profile": "Profil",
+      "browser": "Tarayıcı",
+      "signup": "Kayıt",
+      "submitted": "Gönderildi",
+      "email": "Posta",
+      "token": "Token",
+      "verified": "Doğrulandı",
+      "failed": "Hata"
     }
   }
 }

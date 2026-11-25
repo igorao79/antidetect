@@ -3283,7 +3283,8 @@
     "agent": "智能体",
     "agentWaiting": "智能体，等待处理的请求：{{count}}",
     "brand": "Owl",
-    "workspace": "服务器"
+    "workspace": "服务器",
+    "cloudflare": "Cloudflare"
   },
   "pageTitle": {
     "proxies": "网络",
@@ -5438,6 +5439,41 @@
       "copyAll": "全部复制",
       "more": "继续生成",
       "finish": "完成"
+    }
+  },
+  "cloudflare": {
+    "title": "通过应用创建的账户",
+    "subtitle": "设置",
+    "settings": "mailhub 密钥",
+    "mailhubKey": "mailhub 密文",
+    "mailhubSecret": "mailhub 域名",
+    "domain": "代理国家",
+    "country": "代理 TTL（分钟）",
+    "ttl": "已保存的代理",
+    "proxy": "留空则通过代理生成器创建",
+    "proxyHint": "保存",
+    "save": "设置已保存",
+    "saved": "创建账户",
+    "generate": "创建中…",
+    "running": "还没有账户",
+    "empty": "请填写 mailhub 密钥和密文",
+    "needMailhub": "密码",
+    "password": "API 密钥",
+    "apiKey": "API 令牌",
+    "apiToken": "删除",
+    "status": {
+      "queued": "排队中",
+      "running": "运行中",
+      "mailbox": "邮箱",
+      "proxy": "代理",
+      "profile": "配置文件",
+      "browser": "浏览器",
+      "signup": "注册",
+      "submitted": "已提交",
+      "email": "邮件",
+      "token": "令牌",
+      "verified": "已验证",
+      "failed": "错误"
     }
   }
 }

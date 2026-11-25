@@ -12,6 +12,7 @@ import { AgentPage, type AgentTab } from "@/components/agent-page";
 import { CamoufoxConfigDialog } from "@/components/camoufox-config-dialog";
 import { CloneProfileDialog } from "@/components/clone-profile-dialog";
 import { CloseConfirmDialog } from "@/components/close-confirm-dialog";
+import { CloudflarePage } from "@/components/cloudflare-page";
 import { CommandPalette } from "@/components/command-palette";
 import { CommercialTrialModal } from "@/components/commercial-trial-modal";
 import { CookieBotPage, type CookieBotTab } from "@/components/cookie-bot-page";
@@ -3288,6 +3289,12 @@ export default function Home() {
                     page={currentPage}
                     onAction={runTipAction}
                   />
+                </div>
+              )}
+
+              {currentPage === "cloudflare" && (
+                <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+                  <CloudflarePage />
                 </div>
               )}
 

@@ -3283,7 +3283,8 @@
     "agent": "Agent",
     "agentWaiting": "Agent, requests waiting: {{count}}",
     "brand": "Owl",
-    "workspace": "Server"
+    "workspace": "Server",
+    "cloudflare": "Cloudflare"
   },
   "pageTitle": {
     "proxies": "Network",
@@ -5438,6 +5439,41 @@
       "copyAll": "Copy all",
       "more": "Generate more",
       "finish": "Done"
+    }
+  },
+  "cloudflare": {
+    "title": "Accounts generated through the app",
+    "subtitle": "Settings",
+    "settings": "Mailhub key",
+    "mailhubKey": "Mailhub secret",
+    "mailhubSecret": "Mailhub domain",
+    "domain": "Proxy country",
+    "country": "Proxy TTL, minutes",
+    "ttl": "Stored proxy",
+    "proxy": "Empty: generate through the proxy generator",
+    "proxyHint": "Save",
+    "save": "Settings saved",
+    "saved": "Generate account",
+    "generate": "Generating…",
+    "running": "No accounts yet",
+    "empty": "Fill in the mailhub key and secret",
+    "needMailhub": "Password",
+    "password": "API key",
+    "apiKey": "API token",
+    "apiToken": "Delete",
+    "status": {
+      "queued": "Queued",
+      "running": "Running",
+      "mailbox": "Mailbox",
+      "proxy": "Proxy",
+      "profile": "Profile",
+      "browser": "Browser",
+      "signup": "Signup",
+      "submitted": "Submitted",
+      "email": "Email",
+      "token": "Token",
+      "verified": "Verified",
+      "failed": "Failed"
     }
   }
 }

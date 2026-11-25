@@ -3305,7 +3305,8 @@
     "agent": "Agente",
     "agentWaiting": "Agente, pedidos à espera: {{count}}",
     "brand": "Owl",
-    "workspace": "Servidor"
+    "workspace": "Servidor",
+    "cloudflare": "Cloudflare"
   },
   "pageTitle": {
     "proxies": "Rede",
@@ -5492,6 +5493,41 @@
       "copyAll": "Copiar todos",
       "more": "Gerar mais",
       "finish": "Concluído"
+    }
+  },
+  "cloudflare": {
+    "title": "Contas criadas pelo aplicativo",
+    "subtitle": "Configurações",
+    "settings": "Chave do mailhub",
+    "mailhubKey": "Segredo do mailhub",
+    "mailhubSecret": "Domínio do mailhub",
+    "domain": "País do proxy",
+    "country": "TTL do proxy, minutos",
+    "ttl": "Proxy salvo",
+    "proxy": "Vazio: gerar pelo gerador de proxies",
+    "proxyHint": "Salvar",
+    "save": "Configurações salvas",
+    "saved": "Criar conta",
+    "generate": "Criando…",
+    "running": "Ainda não há contas",
+    "empty": "Preencha a chave e o segredo do mailhub",
+    "needMailhub": "Senha",
+    "password": "Chave de API",
+    "apiKey": "Token de API",
+    "apiToken": "Excluir",
+    "status": {
+      "queued": "Na fila",
+      "running": "Executando",
+      "mailbox": "Caixa",
+      "proxy": "Proxy",
+      "profile": "Perfil",
+      "browser": "Navegador",
+      "signup": "Cadastro",
+      "submitted": "Enviado",
+      "email": "E-mail",
+      "token": "Token",
+      "verified": "Verificado",
+      "failed": "Erro"
     }
   }
 }

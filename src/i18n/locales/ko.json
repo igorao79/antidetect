@@ -3283,7 +3283,8 @@
     "agent": "에이전트",
     "agentWaiting": "에이전트, 기다리는 요청: {{count}}",
     "brand": "Owl",
-    "workspace": "서버"
+    "workspace": "서버",
+    "cloudflare": "Cloudflare"
   },
   "pageTitle": {
     "proxies": "네트워크",
@@ -5438,6 +5439,41 @@
       "copyAll": "모두 복사",
       "more": "더 생성",
       "finish": "완료"
+    }
+  },
+  "cloudflare": {
+    "title": "앱에서 만든 계정",
+    "subtitle": "설정",
+    "settings": "mailhub 키",
+    "mailhubKey": "mailhub 시크릿",
+    "mailhubSecret": "mailhub 도메인",
+    "domain": "프록시 국가",
+    "country": "프록시 TTL(분)",
+    "ttl": "저장된 프록시",
+    "proxy": "비우면 프록시 생성기로 만듭니다",
+    "proxyHint": "저장",
+    "save": "설정을 저장했습니다",
+    "saved": "계정 만들기",
+    "generate": "만드는 중…",
+    "running": "아직 계정이 없습니다",
+    "empty": "mailhub 키와 시크릿을 입력하세요",
+    "needMailhub": "비밀번호",
+    "password": "API 키",
+    "apiKey": "API 토큰",
+    "apiToken": "삭제",
+    "status": {
+      "queued": "대기 중",
+      "running": "실행 중",
+      "mailbox": "메일함",
+      "proxy": "프록시",
+      "profile": "프로필",
+      "browser": "브라우저",
+      "signup": "가입",
+      "submitted": "전송됨",
+      "email": "메일",
+      "token": "토큰",
+      "verified": "확인됨",
+      "failed": "오류"
     }
   }
 }

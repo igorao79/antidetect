@@ -11,6 +11,7 @@ export const COACH_ANCHORS = [
   "rail-cookieBot",
   "rail-agent",
   "rail-integrations",
+  "rail-cloudflare",
   "rail-account",
   "rail-more",
   "rail-settings",

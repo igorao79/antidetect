@@ -178,6 +178,7 @@ pub mod camoufox;
 mod camoufox_manager;
 mod cdp_target;
 mod checksum;
+mod cloudflare;
 mod default_browser;
 mod diagnostics;
 mod dialer;
@@ -3820,6 +3821,11 @@ pub fn run_with_builder(
       proxy_generator::proxy_generator_clear_credentials,
       proxy_generator::proxy_generator_options,
       proxy_generator::proxy_generator_generate,
+      cloudflare::cloudflare_settings,
+      cloudflare::cloudflare_save_settings,
+      cloudflare::cloudflare_accounts,
+      cloudflare::cloudflare_delete_account,
+      cloudflare::cloudflare_generate,
       check_proxy_validity,
       get_cached_proxy_check,
       get_proxy_check_history,

@@ -3305,7 +3305,8 @@
     "agent": "Agent",
     "agentWaiting": "Agent, demandes en attente : {{count}}",
     "brand": "Owl",
-    "workspace": "Serveur"
+    "workspace": "Serveur",
+    "cloudflare": "Cloudflare"
   },
   "pageTitle": {
     "proxies": "Réseau",
@@ -5492,6 +5493,41 @@
       "copyAll": "Tout copier",
       "more": "En générer d'autres",
       "finish": "Terminé"
+    }
+  },
+  "cloudflare": {
+    "title": "Comptes créés via l'application",
+    "subtitle": "Paramètres",
+    "settings": "Clé mailhub",
+    "mailhubKey": "Secret mailhub",
+    "mailhubSecret": "Domaine mailhub",
+    "domain": "Pays du proxy",
+    "country": "TTL du proxy, minutes",
+    "ttl": "Proxy enregistré",
+    "proxy": "Vide : générer via le générateur de proxies",
+    "proxyHint": "Enregistrer",
+    "save": "Paramètres enregistrés",
+    "saved": "Créer un compte",
+    "generate": "Création…",
+    "running": "Aucun compte pour l'instant",
+    "empty": "Renseignez la clé et le secret mailhub",
+    "needMailhub": "Mot de passe",
+    "password": "Clé API",
+    "apiKey": "Jeton API",
+    "apiToken": "Supprimer",
+    "status": {
+      "queued": "En attente",
+      "running": "En cours",
+      "mailbox": "Boîte",
+      "proxy": "Proxy",
+      "profile": "Profil",
+      "browser": "Navigateur",
+      "signup": "Inscription",
+      "submitted": "Envoyé",
+      "email": "E-mail",
+      "token": "Jeton",
+      "verified": "Vérifié",
+      "failed": "Erreur"
     }
   }
 }
