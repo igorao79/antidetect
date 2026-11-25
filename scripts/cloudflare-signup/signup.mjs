@@ -653,7 +653,7 @@ async function submitForm(bidi, context) {
     () =>
       bidi.json(
         context,
-        `(() => ({ url: location.href, body: (document.body.innerText || '').slice(0, 1200) }))()`,
+        `(() => ({ url: location.href, body: (document.body?.innerText || '').slice(0, 1200) }))()`,
       ),
     (value) =>
       value &&
@@ -891,7 +891,7 @@ async function login(bidi, context, email, password) {
         () =>
           bidi.evaluate(
             context,
-            "document.readyState === 'complete' && !/loading dashboard/i.test((document.body.innerText || '').slice(0, 120))",
+            "document.readyState === 'complete' && !/loading dashboard/i.test((document.body?.innerText || '').slice(0, 120))",
           ),
         (settled) => settled === true,
         60000,
@@ -923,8 +923,21 @@ async function clickButtonText(bidi, context, expression, predicate = "true") {
   return true;
 }
 
-async function ensureEmailVerified(bidi, context, email) {
+async function ensureEmailVerified(bidi, context, email, password) {
+  // The dashboard swaps documents while its SPA boots; reading the body before
+  // it exists throws inside the page and used to kill the whole run.
+  const settled = async () => {
+    try {
+      return await bidi.evaluate(
+        context,
+        "document.readyState === 'complete' && !!document.body",
+      );
+    } catch {
+      return false;
+    }
+  };
   await navigateTo(bidi, context, "https://dash.cloudflare.com/");
+  await waitFor(settled, (ok) => ok === true, 20000, 1000);
   const current = await bidi.evaluate(context, "location.href");
   if (typeof current === "string" && current.includes("/login")) {
     return "login-required";
@@ -932,7 +945,7 @@ async function ensureEmailVerified(bidi, context, email) {
   await sleep(5000);
   const unverified = await bidi.evaluate(
     context,
-    "/verify your email address/i.test(document.body.innerText)",
+    "/verify your email address/i.test(document.body?.innerText)",
   );
   if (!unverified) return "already";
   const since = new Date().toISOString();
@@ -953,9 +966,24 @@ async function ensureEmailVerified(bidi, context, email) {
   if (!link) throw new Error("no verification email after the resend");
   await navigateTo(bidi, context, link);
   await sleep(7000);
+  await waitFor(settled, (ok) => ok === true, 20000, 1000);
+  // Opening the link signs the browser out and parks it on the sign-in page;
+  // signing in again is what finishes the verification. Checking the banner on
+  // the sign-in page always finds none and wrongly reports success.
+  let url = await bidi.evaluate(context, "location.href");
+  if (typeof url === "string" && url.includes("/login")) {
+    say("verification link opened, signing in to finish it");
+    await login(bidi, context, email, password);
+    await navigateTo(bidi, context, "https://dash.cloudflare.com/");
+    await sleep(5000);
+    url = await bidi.evaluate(context, "location.href");
+  }
+  if (typeof url === "string" && url.includes("/login")) {
+    return "login-required";
+  }
   const still = await bidi.evaluate(
     context,
-    "/verify your email address/i.test(document.body.innerText)",
+    "/verify your email address/i.test(document.body?.innerText)",
   );
   return still ? "still-unverified" : "verified";
 }
@@ -977,7 +1005,7 @@ async function revealGlobalKey(bidi, context, password, email) {
       // real reload is what closes it.
       const stuck = await bidi.evaluate(
         context,
-        "/complete the security check/i.test(document.body.innerText)",
+        "/complete the security check/i.test(document.body?.innerText)",
       );
       if (stuck) {
         try {
@@ -995,7 +1023,7 @@ async function revealGlobalKey(bidi, context, password, email) {
         () =>
           bidi.evaluate(
             context,
-            "/global api key/i.test(document.body.innerText)",
+            "/global api key/i.test(document.body?.innerText)",
           ),
         (value) => value === true,
         60000,
@@ -1071,14 +1099,39 @@ async function revealGlobalKey(bidi, context, password, email) {
     // (the footer buttons are Cancel / View, not the widget).
     const opened = await bidi.evaluate(
       context,
-      "/complete the security check/i.test(document.body.innerText)",
+      "/complete the security check/i.test(document.body?.innerText)",
     );
     say(`key dialog open: ${opened}`);
-    let solved = "";
-    if (opened) {
-      // The dialog holds a visible Turnstile checkbox: a ~404x71 widget between
-      // the text and the footer (the ~436x60 footer holds Cancel / View, and
-      // clicking its left side is what dismissed the dialog before).
+    const readKey = () =>
+      bidi.evaluate(
+        context,
+        `(() => {
+          const text = document.body?.innerText || "";
+          if (/please verify your email/i.test(text)) return "EMAIL_NOT_VERIFIED";
+          const match = text.match(/(cfk_[A-Za-z0-9]+|[0-9a-f]{37})/);
+          if (match) return match[0];
+          for (const input of document.querySelectorAll("input")) {
+            if (input.value && /^(cfk_[A-Za-z0-9]+|[0-9a-f]{37})$/.test(input.value)) return input.value;
+          }
+          return "";
+        })()`,
+      );
+    const checkShown = async () => {
+      try {
+        return await bidi.evaluate(
+          context,
+          "/complete the security check/i.test(document.body?.innerText || '')",
+        );
+      } catch {
+        return false;
+      }
+    };
+
+    // The token is short-lived: a View that comes too late re-arms the check.
+    // Stay in the dialog, tick again and press View again before starting over.
+    let key = "";
+    for (let attempt = 0; attempt < 3 && !key; attempt++) {
+      if (!(await checkShown())) break;
       let widgets = [];
       for (let i = 0; i < 12 && !widgets.length; i++) {
         widgets = await bidi.json(
@@ -1091,6 +1144,7 @@ async function revealGlobalKey(bidi, context, password, email) {
         if (!widgets.length) await sleep(1500);
       }
       say(`key widgets: ${JSON.stringify(widgets)}`);
+      let solved = "";
       for (const box of widgets) {
         for (const [dx, dy] of [
           [19, 32],
@@ -1108,58 +1162,40 @@ async function revealGlobalKey(bidi, context, password, email) {
         }
         if (solved) break;
       }
-    }
-    if (!solved) {
-      say(`key: no security token (round ${round + 1}), starting over`);
+      if (!solved) {
+        say(`key: no security token (attempt ${attempt + 1})`);
+        break;
+      }
+      say("key dialog: security check cleared");
       await sleep(2000);
-      continue;
-    }
-    say("key dialog: security check cleared");
-    // The View button enables a moment after the token lands; read its state,
-    // then wait for the 37-hex key (text or read-only input).
-    await sleep(1500);
-    const viewButtons = await bidi.json(
-      context,
-      `(() => [...document.querySelectorAll('button')]
-        .filter((b) => /^view$/i.test((b.textContent || '').trim()))
-        .map((b) => { const r = b.getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), disabled: b.disabled }; }))()`,
-    );
-    say(`key view buttons: ${JSON.stringify(viewButtons)}`);
-    const view = (viewButtons || []).find(
-      (b) => b.x > 700 && b.x < 1000 && b.y > 200,
-    );
-    if (!view) throw new Error("no View button in the key dialog");
-    await bidi.click(context, view.x, view.y);
-
-    const readKey = () =>
-      bidi.evaluate(
+      const viewButtons = await bidi.json(
         context,
-        `(() => {
-          const text = document.body.innerText || "";
-          if (/please verify your email/i.test(text)) return "EMAIL_NOT_VERIFIED";
-          const match = text.match(/(cfk_[A-Za-z0-9]+|[0-9a-f]{37})/);
-          if (match) return match[0];
-          for (const input of document.querySelectorAll("input")) {
-            if (input.value && /^(cfk_[A-Za-z0-9]+|[0-9a-f]{37})$/.test(input.value)) return input.value;
-          }
-          return "";
-        })()`,
+        `(() => [...document.querySelectorAll('button')]
+          .filter((b) => /^view$/i.test((b.textContent || '').trim()))
+          .map((b) => { const r = b.getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2), disabled: b.disabled }; }))()`,
       );
-    let key = "";
-    for (let i = 0; i < 8 && !key; i++) {
-      await sleep(1500);
-      key = await readKey();
-    }
-    say(
-      `key after view: ${key ? `${key.slice(0, 8)}…` : "(none)"} dialog: ${JSON.stringify(await bidi.evaluate(context, "(document.body.innerText || '').slice(-160)"))}`,
-    );
-    if (key === "EMAIL_NOT_VERIFIED") {
-      throw new Error(
-        "Cloudflare refuses the key: the account email is not verified",
+      say(`key view buttons: ${JSON.stringify(viewButtons)}`);
+      const view = (viewButtons || []).find(
+        (b) => b.x > 700 && b.x < 1000 && b.y > 200,
       );
+      if (!view) break;
+      await bidi.click(context, view.x, view.y);
+      for (let i = 0; i < 8 && !key; i++) {
+        await sleep(1500);
+        key = await readKey();
+      }
+      if (key === "EMAIL_NOT_VERIFIED") {
+        throw new Error(
+          "Cloudflare refuses the key: the account email is not verified",
+        );
+      }
+      if (!key) {
+        say(`key: view did not reveal the key (attempt ${attempt + 1})`);
+        await sleep(1500);
+      }
     }
     if (key) return key;
-    say("key: token cleared but the key was not shown, starting over");
+    say("key: the dialog did not reveal the key, starting over");
   }
 
   await bidi.screenshot(context, "key-turnstile-failed");
@@ -1296,6 +1332,7 @@ async function tokenOnlyRun() {
       opened.bidi,
       opened.context,
       config.email,
+      config.password,
     );
     say(`email verification: ${report.emailVerified}`);
     await runTokenSteps(
@@ -1426,6 +1463,7 @@ async function main() {
         bidi,
         context,
         report.email,
+        report.password,
       );
       if (
         report.emailVerified === "login-required" ||
@@ -1441,6 +1479,7 @@ async function main() {
           bidi,
           context,
           report.email,
+          report.password,
         );
       }
       say(`email verification: ${report.emailVerified}`);

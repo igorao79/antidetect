@@ -272,6 +272,44 @@ struct Report {
   error: Option<String>,
 }
 
+const MAILHUB_BASE: &str = "https://telemanager.online/mailhub";
+
+/// Asks mailhub whether this key pair signs correctly, so a wrong secret is
+/// refused at Save instead of failing every later run with INVALID_SIGNATURE.
+async fn verify_mailhub_pair(key: &str, secret: &str) -> Result<(), String> {
+  let timestamp = std::time::SystemTime::now()
+    .duration_since(std::time::UNIX_EPOCH)
+    .map(|d| d.as_millis())
+    .unwrap_or_default();
+  let mut query = serde_json::Map::new();
+  query.insert(
+    "_timestamp".to_string(),
+    serde_json::Value::String(timestamp.to_string()),
+  );
+  let payload = serde_json::json!({
+    "v": 2,
+    "method": "GET",
+    "path": "/api/v1/domains",
+    "query": query,
+    "body": serde_json::Map::<String, serde_json::Value>::new(),
+  });
+  let signature = crate::proxy_generator::client::sign(secret, &payload);
+  let response = reqwest::Client::new()
+    .get(format!(
+      "{MAILHUB_BASE}/api/v1/domains?_timestamp={timestamp}"
+    ))
+    .header("X-Store-Key", key)
+    .header("X-Signature", signature)
+    .send()
+    .await
+    .map_err(|e| detail("CLOUDFLARE_MAILHUB_UNREACHABLE", e))?;
+  if response.status().is_success() {
+    Ok(())
+  } else {
+    Err(code("CLOUDFLARE_KEY_INVALID"))
+  }
+}
+
 #[tauri::command]
 pub fn cloudflare_settings() -> Result<SettingsView, String> {
   let settings = read_settings()?;
@@ -288,7 +326,7 @@ pub fn cloudflare_settings() -> Result<SettingsView, String> {
 }
 
 #[tauri::command]
-pub fn cloudflare_save_settings(
+pub async fn cloudflare_save_settings(
   mailhub_key: String,
   mailhub_secret: Option<String>,
   proxy_uuid: Option<String>,
@@ -312,12 +350,29 @@ pub fn cloudflare_save_settings(
   settings.domain = domain
     .map(|v| v.trim().to_string())
     .filter(|v| !v.is_empty());
-  write_settings(&settings)?;
-  if let Some(secret) = mailhub_secret {
-    let secret = secret.trim();
-    if !secret.is_empty() {
-      write_secret(secret)?;
+
+  let provided = mailhub_secret
+    .as_deref()
+    .map(str::trim)
+    .filter(|secret| !secret.is_empty());
+  if let Some(secret) = provided {
+    let looks_like_secret = secret.len() == 64 && secret.chars().all(|c| c.is_ascii_hexdigit());
+    if !looks_like_secret {
+      return Err(code("CLOUDFLARE_SECRET_INVALID"));
     }
+  }
+  let secret = match provided {
+    Some(secret) => Some(secret.to_string()),
+    None => read_secret()?,
+  };
+  if !settings.mailhub_key.is_empty() {
+    if let Some(secret) = secret.as_deref() {
+      verify_mailhub_pair(&settings.mailhub_key, secret).await?;
+    }
+  }
+  write_settings(&settings)?;
+  if let Some(secret) = secret {
+    write_secret(&secret)?;
   }
   cloudflare_settings()
 }
