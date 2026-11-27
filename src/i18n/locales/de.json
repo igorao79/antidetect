@@ -4850,6 +4850,14 @@
     "profileHint": "Die Menüs erscheinen in der Sprache des Profil-Landes, wie auf einem echten Gerät dort. Websites sehen überall dieselbe Sprache.",
     "otherHint": "Leichter zu lesen, aber Websites können es bemerken: an Formularmeldungen sowie an Datums- und Zahlenformaten. Für wichtige Konten die Sprache des Profils beibehalten."
   },
+  "profileLanguage": {
+    "label": "Sprache für Websites",
+    "system": "Wie auf diesem Computer",
+    "systemHint": "Die Sprache dieses Computers, bei jedem Start gelesen. Auf einem anderen Computer spricht das Profil dessen Sprache. Zeitzone und Standort folgen weiterhin dem Proxy.",
+    "fromProxy": "Vom Proxy",
+    "fromProxyHint": "Folgt bei jedem Start dem Land des Proxys, wie die Zeitzone.",
+    "fixedHint": "Bleibt bei jedem Proxy gleich. Zeitzone und Standort folgen weiterhin dem Proxy."
+  },
   "workspace": {
     "title": "Owl-Server",
     "joinTitle": "Einem Server beitreten",

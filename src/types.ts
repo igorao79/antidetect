@@ -601,6 +601,9 @@ export interface CamoufoxConfig {
   os?: CamoufoxOS; // Operating system for fingerprint generation
   /** Language of the browser's own menus; unset follows the profile's locale. */
   interface_language?: string | null;
+  /** Language sites see: a tag such as `ru-RU`, `proxy` to follow the exit's
+   * country, or unset for this computer's. */
+  language?: string | null;
 }
 
 // Extended interface for the advanced fingerprint configuration

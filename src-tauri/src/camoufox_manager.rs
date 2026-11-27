@@ -28,6 +28,11 @@ pub struct CamoufoxConfig {
   /// profile's locale; see `interface_language`.
   #[serde(default)]
   pub interface_language: Option<String>,
+  /// The language sites see (fork): a tag such as `ru-RU`, `proxy` to follow
+  /// the exit's country at every launch, or unset (`system`) for the language
+  /// of the computer it launches on. See `interface_language`.
+  #[serde(default)]
+  pub language: Option<String>,
 }
 
 impl Default for CamoufoxConfig {
@@ -46,6 +51,7 @@ impl Default for CamoufoxConfig {
       randomize_fingerprint_on_launch: None,
       os: None,
       interface_language: None,
+      language: None,
     }
   }
 }
@@ -367,6 +373,10 @@ impl CamoufoxManager {
     // the matching note in camoufox/config.rs.
     fingerprint_config.remove("window.history.length");
     crate::camoufox::config::ensure_noise_seeds(&mut fingerprint_config, &profile.id.to_string());
+    crate::interface_language::apply_profile_language(
+      &mut fingerprint_config,
+      crate::interface_language::resolve_profile_language(config.language.as_deref()).as_deref(),
+    );
 
     // Convert to environment variables using CAMOU_CONFIG chunking
     let mut env_vars = crate::camoufox::env_vars::config_to_env_vars(&fingerprint_config)
@@ -1118,6 +1128,11 @@ mod tests {
 
     // Verify defaults
     assert_eq!(default_config.geoip, Some(serde_json::Value::Bool(true)));
+    // Unset is this computer's language, also for a profile stored before
+    // the field existed.
+    assert_eq!(default_config.language, None);
+    let stored: CamoufoxConfig = serde_json::from_str(r#"{"geoip":true}"#).unwrap();
+    assert_eq!(stored.language, None);
     assert_eq!(default_config.proxy, None);
     assert_eq!(default_config.fingerprint, None);
     assert_eq!(default_config.randomize_fingerprint_on_launch, None);

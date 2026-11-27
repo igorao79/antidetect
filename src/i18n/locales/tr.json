@@ -4850,6 +4850,14 @@
     "profileHint": "Menüler profilin ülkesinin dilinde görünür; oradaki gerçek bir cihazda olduğu gibi. Siteler her yerde tek bir dil görür.",
     "otherHint": "Okuması daha kolaydır ama siteler fark edebilir: form mesajlarının metninden ve tarih ile sayı biçimlerinden. Önemli hesaplar için profilin dilini koruyun."
   },
+  "profileLanguage": {
+    "label": "Sitelerin gördüğü dil",
+    "system": "Bu bilgisayardaki gibi",
+    "systemHint": "Bu bilgisayarın dili, her açılışta okunur. Başka bir bilgisayarda profil o bilgisayarın dilini kullanır. Saat dilimi ve konum proxy'yi izlemeye devam eder.",
+    "fromProxy": "Proxy'ye göre",
+    "fromProxyHint": "Her açılışta saat dilimi gibi proxy'nin ülkesini izler.",
+    "fixedHint": "Hangi proxy kullanılırsa kullanılsın aynı kalır. Saat dilimi ve konum proxy'yi izlemeye devam eder."
+  },
   "workspace": {
     "title": "Owl sunucusu",
     "joinTitle": "Bir sunucuya katıl",

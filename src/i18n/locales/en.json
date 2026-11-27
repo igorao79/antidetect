@@ -4850,6 +4850,14 @@
     "profileHint": "Menus are in the language of the profile's country, as on a real device there. Sites see one language everywhere.",
     "otherHint": "Easier to read, but sites can notice it: by the wording of form messages and by date and number formats. Keep the profile's language for accounts that matter."
   },
+  "profileLanguage": {
+    "label": "Language sites see",
+    "system": "Same as this computer",
+    "systemHint": "This computer's language, read at every launch. On another computer the profile speaks that computer's language. The time zone and location still follow the proxy.",
+    "fromProxy": "From the proxy",
+    "fromProxyHint": "Follows the proxy's country at every launch, like the time zone.",
+    "fixedHint": "Kept whatever proxy the profile uses. The time zone and location still follow the proxy."
+  },
   "workspace": {
     "title": "Owl server",
     "joinTitle": "Join a server",

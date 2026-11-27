@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { InterfaceLanguageField } from "@/components/interface-language-field";
 import { LoadingButton } from "@/components/loading-button";
 import MultipleSelector, { type Option } from "@/components/multiple-selector";
+import { ProfileLanguageField } from "@/components/profile-language-field";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -336,6 +337,16 @@ export function SharedCamoufoxConfigForm({
           </Label>
         </div>
       </div>
+
+      {browserType !== "wayfern" && (
+        <ProfileLanguageField
+          value={config.language}
+          onChange={(value) => {
+            onConfigChange("language", value);
+          }}
+          disabled={readOnly}
+        />
+      )}
 
       {browserType !== "wayfern" && (
         <InterfaceLanguageField

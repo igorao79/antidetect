@@ -4850,6 +4850,14 @@
     "profileHint": "Menu hiển thị bằng ngôn ngữ của quốc gia hồ sơ, như trên một thiết bị thật ở đó. Trang web thấy cùng một ngôn ngữ ở mọi nơi.",
     "otherHint": "Dễ đọc hơn, nhưng trang web có thể nhận ra: qua lời nhắc trong biểu mẫu và qua định dạng ngày và số. Hãy giữ ngôn ngữ của hồ sơ cho các tài khoản quan trọng."
   },
+  "profileLanguage": {
+    "label": "Ngôn ngữ trang web thấy",
+    "system": "Giống máy tính này",
+    "systemHint": "Ngôn ngữ của máy tính này, đọc mỗi lần khởi chạy. Trên máy khác, hồ sơ dùng ngôn ngữ của máy đó. Múi giờ và vị trí vẫn theo proxy.",
+    "fromProxy": "Theo proxy",
+    "fromProxyHint": "Theo quốc gia của proxy mỗi lần khởi chạy, giống múi giờ.",
+    "fixedHint": "Giữ nguyên với mọi proxy. Múi giờ và vị trí vẫn theo proxy."
+  },
   "workspace": {
     "title": "Máy chủ Owl",
     "joinTitle": "Tham gia máy chủ",

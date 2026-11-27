@@ -4900,6 +4900,14 @@
     "profileHint": "Os menus aparecem no idioma do país do perfil, como num dispositivo real de lá. Os sites veem um único idioma em toda parte.",
     "otherHint": "Mais fácil de ler, mas os sites podem perceber: pelas mensagens dos formulários e pelos formatos de data e número. Mantenha o idioma do perfil nas contas importantes."
   },
+  "profileLanguage": {
+    "label": "Idioma que os sites veem",
+    "system": "Igual a este computador",
+    "systemHint": "O idioma deste computador, lido a cada abertura. Em outro computador o perfil usa o idioma dele. O fuso horário e a localização continuam seguindo o proxy.",
+    "fromProxy": "Pelo proxy",
+    "fromProxyHint": "Segue o país do proxy a cada abertura, como o fuso horário.",
+    "fixedHint": "Fica igual com qualquer proxy. O fuso horário e a localização continuam seguindo o proxy."
+  },
   "workspace": {
     "title": "Servidor Owl",
     "joinTitle": "Entrar em um servidor",

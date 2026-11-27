@@ -413,6 +413,13 @@ Fork-specific rules:
   translations are inside the build. A profile may ask for another interface language (the
   app's): `navigator.languages` stay the profile's, and form messages and `Intl` turn to that
   language.
+  The profile's own language (what sites see) is `CamoufoxConfig.language` (the "Language
+  sites see" field, `profile-language-field.tsx`): unset (or `system`) is the language of the
+  computer the profile launches on, read with `sys-locale` at every launch, the default for
+  every profile, those made before the field included; `proxy` follows the exit country; a
+  tag such as `ru-RU` stays whatever the proxy. `apply_profile_language`
+  puts it in place of the exit's `locale:*` at every launch, after the exit place is recorded
+  for `proxy_reconnect`, while the timezone and coordinates still follow the exit.
 - SSH is a proxy type (`ssh://user:password@host:port`, password or keyboard-interactive
   login). `ssh_upstream.rs` runs inside the local proxy worker: one session per upstream, one
   `direct-tcpip` channel per browser connection, TCP only. Host keys are not pinned.
